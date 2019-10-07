@@ -1,10 +1,34 @@
 use rodio::{Decoder, Device, Sink};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::{
   collections::HashMap,
+  fs,
+  fs::File,
+  io,
   io::{prelude::*, BufReader, Cursor},
-  path::{Component, Path},
+  path::{Component, Path, PathBuf},
 };
+
+fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, dir_path: P) -> File {
+  let mut hasher = Sha256::new();
+  hasher.input(url.as_ref());
+
+  let hex_filename = format!("{:x}", hasher.result());
+
+  let path = dir_path.as_ref().join(hex_filename);
+  if !fs::metadata(&path)
+    .map(|meta| meta.is_file())
+    .unwrap_or(false)
+  {
+    // TODO it's a directory??
+    let mut file = File::create(&path).unwrap();
+    let mut response = reqwest::get(url.as_ref()).unwrap();
+    io::copy(&mut response, &mut file).unwrap();
+  }
+
+  File::open(&path).unwrap()
+}
 
 #[derive(Deserialize)]
 struct GitHubApiTrees {
@@ -36,6 +60,7 @@ struct ChatsoundsStore {
 }
 
 pub struct Chatsounds {
+  cache_path: PathBuf,
   stores: Vec<ChatsoundsStore>,
 
   pub device: Device,
@@ -43,16 +68,11 @@ pub struct Chatsounds {
   max_sinks: usize,
 }
 
-impl Default for Chatsounds {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
 impl Chatsounds {
   /// will download list of files from github `repo`, filtering to `repo_path`
-  pub fn new() -> Self {
+  pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
     Self {
+      cache_path: cache_path.as_ref().canonicalize().unwrap(),
       device: rodio::default_output_device().unwrap(),
       stores: Vec::new(),
       sinks: Vec::new(),
@@ -68,8 +88,8 @@ impl Chatsounds {
 
     let mut store: HashMap<String, Vec<String>> = HashMap::new();
 
-    let mut response = reqwest::get(&api_url).unwrap();
-    let mut trees: GitHubApiTrees = response.json().unwrap();
+    let mut response = cache_download(api_url, &self.cache_path);
+    let mut trees: GitHubApiTrees = serde_json::from_reader(&mut response).unwrap();
 
     for entry in trees.tree.iter_mut() {
       if entry.r#type != "blob" || !entry.path.starts_with(&repo_path) {
@@ -103,7 +123,7 @@ impl Chatsounds {
 
     let mut store: HashMap<String, Vec<String>> = HashMap::new();
 
-    let response = reqwest::get(&msgpack_url).unwrap();
+    let response = cache_download(msgpack_url, &self.cache_path);
     let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_read(response).unwrap();
 
     for entry in entries.drain(..) {
@@ -134,7 +154,7 @@ impl Chatsounds {
             store.repo, store.repo_path, sound_path
           );
 
-          found.push(Chatsound::from_url(download_url))
+          found.push(Chatsound::from_url(download_url, self.cache_path.clone()))
         }
       }
     }
@@ -152,16 +172,21 @@ impl Chatsounds {
 #[derive(Debug)]
 pub struct Chatsound {
   url: String,
+  cache_path: PathBuf,
   data: Option<Vec<u8>>,
 }
 
 impl Chatsound {
-  pub fn from_url(url: String) -> Self {
-    Self { url, data: None }
+  pub fn from_url(url: String, cache_path: PathBuf) -> Self {
+    Self {
+      url,
+      data: None,
+      cache_path,
+    }
   }
 
   pub fn download(&mut self) {
-    let mut response = reqwest::get(&self.url).unwrap();
+    let mut response = cache_download(&self.url, &self.cache_path);
 
     let mut data = Vec::new();
     response.read_to_end(&mut data).unwrap();
@@ -194,7 +219,9 @@ fn it_works() {
   [["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/1.ogg"],["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/2.ogg"],["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/3.ogg"],["melee_impacts","mvm weapon sword hi
   */
   
-  let mut chatsounds = Chatsounds::new();
+  fs::create_dir_all("cache").unwrap();
+
+  let mut chatsounds = Chatsounds::new("cache");
   chatsounds.load_github_msgpack(
     "PAC3-Server/chatsounds-valve-games".to_string(),
     "tf2".to_string(),
