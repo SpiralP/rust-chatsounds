@@ -10,24 +10,30 @@ use std::{
   path::{Component, Path, PathBuf},
 };
 
-fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, dir_path: P) -> BufReader<File> {
+fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> impl Read {
   let mut hasher = Sha256::new();
   hasher.input(url.as_ref());
 
-  let hex_filename = format!("{:x}", hasher.result());
+  let hex = format!("{:x}", hasher.result());
 
-  let path = dir_path.as_ref().join(hex_filename);
-  if !fs::metadata(&path)
+  let hex_dir = &hex[0..2];
+  let hex_filename = &hex[2..];
+
+  let dir_path = cache_path.as_ref().join(hex_dir);
+  fs::create_dir_all(&dir_path).unwrap();
+
+  let file_path = dir_path.join(hex_filename);
+  if !fs::metadata(&file_path)
     .map(|meta| meta.is_file())
     .unwrap_or(false)
   {
     // TODO it's a directory??
-    let mut file = File::create(&path).unwrap();
+    let mut file = File::create(&file_path).unwrap();
     let mut response = reqwest::get(url.as_ref()).unwrap();
     io::copy(&mut response, &mut file).unwrap();
   }
 
-  BufReader::new(File::open(&path).unwrap())
+  BufReader::new(File::open(&file_path).unwrap())
 }
 
 #[derive(Deserialize)]
