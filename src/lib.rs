@@ -10,7 +10,7 @@ use std::{
   path::{Component, Path, PathBuf},
 };
 
-fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, dir_path: P) -> File {
+fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, dir_path: P) -> BufReader<File> {
   let mut hasher = Sha256::new();
   hasher.input(url.as_ref());
 
@@ -27,7 +27,7 @@ fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, dir_path: P) -> File {
     io::copy(&mut response, &mut file).unwrap();
   }
 
-  File::open(&path).unwrap()
+  BufReader::new(File::open(&path).unwrap())
 }
 
 #[derive(Deserialize)]
@@ -222,12 +222,30 @@ fn it_works() {
   fs::create_dir_all("cache").unwrap();
 
   let mut chatsounds = Chatsounds::new("cache");
-  chatsounds.load_github_msgpack(
-    "PAC3-Server/chatsounds-valve-games".to_string(),
-    "tf2".to_string(),
+
+  println!("Metastruct/garrysmod-chatsounds");
+  chatsounds.load_github_api(
+    "Metastruct/garrysmod-chatsounds".to_string(),
+    "sound/chatsounds/autoadd".to_string(),
   );
 
-  let mut found = chatsounds.find("a");
+  println!("PAC3-Server/chatsounds");
+  chatsounds.load_github_api(
+    "PAC3-Server/chatsounds".to_string(),
+    "sounds/chatsounds".to_string(),
+  );
+
+  for folder in &[
+    "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+  ] {
+    println!("PAC3-Server/chatsounds-valve-games {}", folder);
+    chatsounds.load_github_msgpack(
+      "PAC3-Server/chatsounds-valve-games".to_string(),
+      folder.to_string(),
+    );
+  }
+
+  let found = chatsounds.find("a");
 
   println!("{:?}", found);
   // let mut loaded = found[0].download();
