@@ -1,10 +1,11 @@
+use bytes::{Buf, Bytes};
 use rodio::{Decoder, Device, Sink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{
-  collections::HashMap,
+  collections::{HashMap, VecDeque},
   fs,
-  fs::File,
+  fs::{File, OpenOptions},
   io,
   io::{prelude::*, BufReader, Cursor},
   path::{Component, Path, PathBuf},
@@ -20,20 +21,25 @@ fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> impl 
   let hex_filename = &hex[2..];
 
   let dir_path = cache_path.as_ref().join(hex_dir);
-  fs::create_dir_all(&dir_path).unwrap();
+  if !fs::metadata(&dir_path)
+    .map(|meta| meta.is_dir())
+    .unwrap_or(false)
+  {
+    fs::create_dir(&dir_path).unwrap();
+  }
 
   let file_path = dir_path.join(hex_filename);
   if !fs::metadata(&file_path)
     .map(|meta| meta.is_file())
     .unwrap_or(false)
   {
-    // TODO it's a directory??
     let mut file = File::create(&file_path).unwrap();
     let mut response = reqwest::get(url.as_ref()).unwrap();
     io::copy(&mut response, &mut file).unwrap();
   }
 
-  BufReader::new(File::open(&file_path).unwrap())
+  let file = OpenOptions::new().read(true).open(&file_path).unwrap();
+  BufReader::new(file)
 }
 
 #[derive(Deserialize)]
@@ -70,19 +76,20 @@ pub struct Chatsounds {
   stores: Vec<ChatsoundsStore>,
 
   pub device: Device,
-  pub sinks: Vec<Sink>,
+  pub sinks: VecDeque<Sink>,
   max_sinks: usize,
+  volume: f32,
 }
 
 impl Chatsounds {
-  /// will download list of files from github `repo`, filtering to `repo_path`
   pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
     Self {
       cache_path: cache_path.as_ref().canonicalize().unwrap(),
       device: rodio::default_output_device().unwrap(),
       stores: Vec::new(),
-      sinks: Vec::new(),
-      max_sinks: 2,
+      sinks: VecDeque::new(),
+      max_sinks: 8,
+      volume: 0.1,
     }
   }
 
@@ -155,12 +162,12 @@ impl Chatsounds {
     for store in &self.stores {
       if let Some(sound_paths) = store.store.get(&search) {
         for sound_path in sound_paths {
-          let download_url = format!(
+          let url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/{}",
             store.repo, store.repo_path, sound_path
           );
 
-          found.push(Chatsound::from_url(download_url, self.cache_path.clone()))
+          found.push(Chatsound { url, data: None });
         }
       }
     }
@@ -168,63 +175,58 @@ impl Chatsounds {
     found
   }
 
+  pub fn autocomplete<T: Into<String>>(&mut self, search: T) -> Vec<Chatsound> {
+    let search = search.into();
+
+    unimplemented!()
+  }
+
   pub fn stop_all(&mut self) {
     for sink in self.sinks.drain(..) {
       sink.stop();
     }
   }
+
+  pub fn set_volume(&mut self, volume: f32) {
+    self.volume = volume;
+
+    for sink in &mut self.sinks {
+      sink.set_volume(volume);
+    }
+  }
+
+  pub fn play(&mut self, chatsound: &mut Chatsound) {
+    if chatsound.data.is_none() {
+      let mut response = cache_download(&chatsound.url, &self.cache_path);
+
+      let mut data = Vec::new();
+      response.read_to_end(&mut data).unwrap();
+
+      chatsound.data = Some(Bytes::from(data));
+    }
+
+    let data = chatsound.data.as_ref().unwrap().clone();
+
+    let reader = BufReader::new(Cursor::new(data));
+    let source = Decoder::new(reader).unwrap();
+    let sink = Sink::new(&self.device);
+    sink.set_volume(self.volume);
+
+    sink.append(source);
+    self.sinks.push_back(sink);
+    if self.sinks.len() == self.max_sinks {
+      self.sinks.pop_front();
+    }
+  }
 }
 
-#[derive(Debug)]
 pub struct Chatsound {
   url: String,
-  cache_path: PathBuf,
-  data: Option<Vec<u8>>,
-}
-
-impl Chatsound {
-  pub fn from_url(url: String, cache_path: PathBuf) -> Self {
-    Self {
-      url,
-      data: None,
-      cache_path,
-    }
-  }
-
-  pub fn download(&mut self) {
-    let mut response = cache_download(&self.url, &self.cache_path);
-
-    let mut data = Vec::new();
-    response.read_to_end(&mut data).unwrap();
-
-    self.data = Some(data);
-  }
-
-  pub fn play(&mut self, device: &Device, sinks: &mut Vec<Sink>) {
-    if self.data.is_none() {
-      self.download();
-    }
-
-    if let Some(data) = &self.data {
-      let reader = BufReader::new(Cursor::new(data.clone()));
-
-      let source = Decoder::new(reader).unwrap();
-
-      let sink = Sink::new(&device);
-      sink.set_volume(0.1);
-
-      sink.append(source);
-      sinks.push(sink);
-    }
-  }
+  data: Option<Bytes>,
 }
 
 #[test]
 fn it_works() {
-  /*
-  [["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/1.ogg"],["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/2.ogg"],["melee_impacts","mvm weapon bottle brokenhitflesh","melee_impacts/mvm weapon bottle brokenhitflesh/3.ogg"],["melee_impacts","mvm weapon sword hi
-  */
-  
   fs::create_dir_all("cache").unwrap();
 
   let mut chatsounds = Chatsounds::new("cache");
@@ -251,11 +253,10 @@ fn it_works() {
     );
   }
 
-  let found = chatsounds.find("a");
+  let mut found = chatsounds.find("a");
 
-  println!("{:?}", found);
-  // let mut loaded = found[0].download();
-  // loaded.play(&chatsounds.sink);
+  println!("play");
+  chatsounds.play(&mut found[0]);
 
-  // std::thread::sleep_ms(2000);
+  std::thread::sleep(std::time::Duration::from_millis(2000));
 }
