@@ -283,15 +283,22 @@ fn it_works() {
     chatsounds.load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder);
   }
 
-  let mut chatsound = chatsounds.get("baa").remove(0);
+  let mut list: Vec<_> = vec!["helloh", "im gay", "dad please"]
+    .drain(..)
+    .map(|sentence| chatsounds.get(sentence).remove(0))
+    .collect();
 
   println!("load");
-  let mut loaded = chatsound.load(chatsounds.cache_path());
+  let mut loaded_list: Vec<_> = list
+    .drain(..)
+    .map(|mut chatsound| chatsound.load(chatsounds.cache_path()))
+    .collect();
 
   println!("play");
-  chatsounds.play(&mut loaded);
-
-  chatsounds.sleep_until_end();
+  for mut chatsound in loaded_list.drain(..) {
+    chatsounds.play(&mut chatsound);
+    chatsounds.sleep_until_end();
+  }
 }
 
 #[test]
