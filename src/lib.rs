@@ -1,4 +1,4 @@
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
 use rodio::{Decoder, Device, Sink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -64,42 +64,84 @@ struct GitHubApiFileEntry {
   pub size: Option<usize>,
 }
 
-struct ChatsoundsStore {
+pub trait ChatsoundTrait {
+  fn get_bytes<P: AsRef<Path>>(&mut self, cache_path: P) -> Bytes;
+}
+
+#[derive(Clone)]
+pub struct Chatsound {
+  // Metastruct/garrysmod-chatsounds
   repo: String,
+  // sound/chatsounds/autoadd
   repo_path: String,
-  /// [sound_name]: sound_path[]
-  store: HashMap<String, Vec<String>>,
+  // 26e/nestetrismusic/1.ogg
+  sound_path: String,
+  // nestetrismusic
+  sentence: String,
+}
+
+impl Chatsound {
+  pub fn load<P: AsRef<Path>>(&mut self, cache_path: P) -> LoadedChatsound {
+    let url = format!(
+      "https://raw.githubusercontent.com/{}/master/{}/{}",
+      self.repo, self.repo_path, self.sound_path
+    );
+
+    let mut response = cache_download(&url, cache_path);
+
+    let mut bytes = Vec::new();
+    response.read_to_end(&mut bytes).unwrap();
+    let bytes = Bytes::from(bytes);
+
+    LoadedChatsound { bytes }
+  }
+}
+
+pub struct LoadedChatsound {
+  bytes: Bytes,
+}
+
+impl ChatsoundTrait for LoadedChatsound {
+  fn get_bytes<P: AsRef<Path>>(&mut self, _cache_path: P) -> Bytes {
+    self.bytes.clone()
+  }
+}
+
+impl ChatsoundTrait for Chatsound {
+  fn get_bytes<P: AsRef<Path>>(&mut self, cache_path: P) -> Bytes {
+    let mut loaded_chatsound = self.load(&cache_path);
+    loaded_chatsound.get_bytes(&cache_path)
+  }
 }
 
 pub struct Chatsounds {
   cache_path: PathBuf,
-  stores: Vec<ChatsoundsStore>,
-
-  pub device: Device,
-  pub sinks: VecDeque<Sink>,
   max_sinks: usize,
   volume: f32,
+
+  // [sentence]: Chatsound[]
+  map_store: HashMap<String, Vec<Chatsound>>,
+  device: Device,
+  sinks: VecDeque<Sink>,
 }
 
 impl Chatsounds {
   pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
     Self {
       cache_path: cache_path.as_ref().canonicalize().unwrap(),
-      device: rodio::default_output_device().unwrap(),
-      stores: Vec::new(),
-      sinks: VecDeque::new(),
       max_sinks: 8,
       volume: 0.1,
+      map_store: HashMap::new(),
+      device: rodio::default_output_device().unwrap(),
+      sinks: VecDeque::new(),
     }
   }
 
-  pub fn load_github_api(&mut self, repo: String, repo_path: String) {
+  pub fn load_github_api(&mut self, repo: &'static str, repo_path: &'static str) {
     let api_url = format!(
       "https://api.github.com/repos/{}/git/trees/master?recursive=1",
       repo
     );
-
-    let mut store: HashMap<String, Vec<String>> = HashMap::new();
 
     let mut response = cache_download(api_url, &self.cache_path);
     let mut trees: GitHubApiTrees = serde_json::from_reader(&mut response).unwrap();
@@ -114,68 +156,62 @@ impl Chatsounds {
 
       let path = Path::new(&sound_path);
       if let Some(Component::Normal(s)) = path.components().nth(1) {
-        if let Some(name) = Path::new(&s).file_stem() {
-          let name = name.to_string_lossy().to_string();
-          let vec = store.entry(name).or_insert_with(Vec::new);
-          vec.push(sound_path);
+        if let Some(sentence) = Path::new(&s).file_stem() {
+          // TODO less cloning, maybe "atom"? or Cow or Rc?
+          let sentence = sentence.to_string_lossy().to_string();
+          let vec = self
+            .map_store
+            .entry(sentence.to_string())
+            .or_insert_with(Vec::new);
+          vec.push(Chatsound {
+            repo: repo.to_string(),
+            repo_path: repo_path.to_string(),
+            sound_path,
+            sentence,
+          });
         }
       }
     }
-    self.stores.push(ChatsoundsStore {
-      repo,
-      repo_path,
-      store,
-    });
   }
 
-  pub fn load_github_msgpack(&mut self, repo: String, repo_path: String) {
+  pub fn load_github_msgpack(&mut self, repo: &'static str, repo_path: &'static str) {
     let msgpack_url = format!(
       "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
       repo, repo_path
     );
-
-    let mut store: HashMap<String, Vec<String>> = HashMap::new();
 
     let response = cache_download(msgpack_url, &self.cache_path);
     let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_read(response).unwrap();
 
     for entry in entries.drain(..) {
       // e26/stop.ogg or e26/nestetrismusic/1.ogg
-      let name = entry[1].clone();
+      let sentence = entry[1].clone();
       let sound_path = entry[2].clone();
-      let vec = store.entry(name).or_insert_with(Vec::new);
-      vec.push(sound_path);
-    }
+      let vec = self
+        .map_store
+        .entry(sentence.to_string())
+        .or_insert_with(Vec::new);
 
-    self.stores.push(ChatsoundsStore {
-      repo,
-      repo_path,
-      store,
-    });
+      vec.push(Chatsound {
+        repo: repo.to_string(),
+        repo_path: repo_path.to_string(),
+        sound_path,
+        sentence,
+      });
+    }
   }
 
-  pub fn find<T: Into<String>>(&mut self, search: T) -> Vec<Chatsound> {
-    let search = search.into();
+  pub fn get<T: Into<String>>(&mut self, sentence: T) -> Vec<Chatsound> {
+    let sentence = sentence.into();
 
-    let mut found = Vec::new();
-
-    for store in &self.stores {
-      if let Some(sound_paths) = store.store.get(&search) {
-        for sound_path in sound_paths {
-          let url = format!(
-            "https://raw.githubusercontent.com/{}/master/{}/{}",
-            store.repo, store.repo_path, sound_path
-          );
-
-          found.push(Chatsound { url, data: None });
-        }
-      }
+    if let Some(chatsounds) = self.map_store.get(&sentence) {
+      chatsounds.to_vec()
+    } else {
+      vec![]
     }
-
-    found
   }
 
-  pub fn autocomplete<T: Into<String>>(&mut self, search: T) -> Vec<Chatsound> {
+  pub fn autocomplete<T: Into<String>>(&mut self, search: T) -> Vec<String> {
     let search = search.into();
 
     unimplemented!()
@@ -195,17 +231,16 @@ impl Chatsounds {
     }
   }
 
-  pub fn play(&mut self, chatsound: &mut Chatsound) {
-    if chatsound.data.is_none() {
-      let mut response = cache_download(&chatsound.url, &self.cache_path);
+  pub fn volume(&self) -> f32 {
+    self.volume
+  }
 
-      let mut data = Vec::new();
-      response.read_to_end(&mut data).unwrap();
+  pub fn cache_path(&self) -> &PathBuf {
+    &self.cache_path
+  }
 
-      chatsound.data = Some(Bytes::from(data));
-    }
-
-    let data = chatsound.data.as_ref().unwrap().clone();
+  pub fn play<C: ChatsoundTrait>(&mut self, chatsound: &mut C) {
+    let data = chatsound.get_bytes(&self.cache_path);
 
     let reader = BufReader::new(Cursor::new(data));
     let source = Decoder::new(reader).unwrap();
@@ -218,11 +253,12 @@ impl Chatsounds {
       self.sinks.pop_front();
     }
   }
-}
 
-pub struct Chatsound {
-  url: String,
-  data: Option<Bytes>,
+  pub fn sleep_until_end(&mut self) {
+    for sink in self.sinks.drain(..) {
+      sink.sleep_until_end();
+    }
+  }
 }
 
 #[test]
@@ -233,30 +269,34 @@ fn it_works() {
 
   println!("Metastruct/garrysmod-chatsounds");
   chatsounds.load_github_api(
-    "Metastruct/garrysmod-chatsounds".to_string(),
-    "sound/chatsounds/autoadd".to_string(),
+    "Metastruct/garrysmod-chatsounds",
+    "sound/chatsounds/autoadd",
   );
 
   println!("PAC3-Server/chatsounds");
-  chatsounds.load_github_api(
-    "PAC3-Server/chatsounds".to_string(),
-    "sounds/chatsounds".to_string(),
-  );
+  chatsounds.load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds");
 
   for folder in &[
     "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
   ] {
     println!("PAC3-Server/chatsounds-valve-games {}", folder);
-    chatsounds.load_github_msgpack(
-      "PAC3-Server/chatsounds-valve-games".to_string(),
-      folder.to_string(),
-    );
+    chatsounds.load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder);
   }
 
-  let mut found = chatsounds.find("a");
+  let mut chatsound = chatsounds.get("baa").remove(0);
+
+  println!("load");
+  let mut loaded = chatsound.load(chatsounds.cache_path());
 
   println!("play");
-  chatsounds.play(&mut found[0]);
+  chatsounds.play(&mut loaded);
 
-  std::thread::sleep(std::time::Duration::from_millis(2000));
+  chatsounds.sleep_until_end();
+}
+
+#[test]
+fn test_autocomplete() {
+  let store = {};
+
+  let search = "im g".to_string();
 }
