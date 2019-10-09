@@ -121,6 +121,7 @@ pub struct Chatsounds {
 
   // [sentence]: Chatsound[]
   map_store: HashMap<String, Vec<Chatsound>>,
+
   device: Device,
   sinks: VecDeque<Sink>,
 }
@@ -201,7 +202,7 @@ impl Chatsounds {
     }
   }
 
-  pub fn get<T: Into<String>>(&mut self, sentence: T) -> Vec<Chatsound> {
+  pub fn get<T: Into<String>>(&self, sentence: T) -> Vec<Chatsound> {
     let sentence = sentence.into();
 
     if let Some(chatsounds) = self.map_store.get(&sentence) {
@@ -211,10 +212,24 @@ impl Chatsounds {
     }
   }
 
-  pub fn autocomplete<T: Into<String>>(&mut self, search: T) -> Vec<String> {
-    let search = search.into();
+  pub fn search<T: AsRef<str>>(&self, search: T) -> Vec<String> {
+    let sentences: Vec<&str> = self.map_store.keys().map(|a| a.as_str()).collect();
 
-    unimplemented!()
+    let mut positions = Vec::new();
+    for text in sentences {
+      if let Some(pos) = twoway::find_str(text, search.as_ref()) {
+        positions.push((pos, text));
+      }
+    }
+
+    positions.sort_unstable_by(|(pos1, str1), (pos2, str2)| {
+      pos1
+        .partial_cmp(pos2)
+        .unwrap()
+        .then_with(|| str1.len().partial_cmp(&str2.len()).unwrap())
+    });
+
+    positions.iter().map(|(_, s)| s.to_string()).collect()
   }
 
   pub fn stop_all(&mut self) {
@@ -303,7 +318,39 @@ fn it_works() {
 
 #[test]
 fn test_autocomplete() {
-  let store = {};
+  let chatsounds = {
+    fs::create_dir_all("cache").unwrap();
 
-  let search = "im g".to_string();
+    let mut chatsounds = Chatsounds::new("cache");
+
+    println!("Metastruct/garrysmod-chatsounds");
+    chatsounds.load_github_api(
+      "Metastruct/garrysmod-chatsounds",
+      "sound/chatsounds/autoadd",
+    );
+
+    println!("PAC3-Server/chatsounds");
+    chatsounds.load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds");
+
+    for folder in &[
+      "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+    ] {
+      println!("PAC3-Server/chatsounds-valve-games {}", folder);
+      chatsounds.load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder);
+    }
+
+    chatsounds
+  };
+
+  println!("searching");
+  let search = "im ga";
+  let t0 = std::time::Instant::now();
+
+  let positions = chatsounds.search(search);
+  println!("took {:?}", std::time::Instant::now() - t0);
+
+  println!(
+    "{:#?}",
+    positions.iter().rev().take(10).rev().collect::<Vec<_>>()
+  );
 }
