@@ -82,7 +82,7 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
-  pub fn load<P: AsRef<Path>>(&mut self, cache_path: P) -> LoadedChatsound {
+  pub fn load<P: AsRef<Path>>(&self, cache_path: P) -> LoadedChatsound {
     let url = format!(
       "https://raw.githubusercontent.com/{}/master/{}/{}",
       self.repo, self.repo_path, self.sound_path
@@ -203,22 +203,18 @@ impl Chatsounds {
     }
   }
 
-  pub fn get<T: Into<String>>(&self, sentence: T) -> Vec<Chatsound> {
-    let sentence = sentence.into();
-
-    if let Some(chatsounds) = self.map_store.get(&sentence) {
-      chatsounds.to_vec()
-    } else {
-      vec![]
-    }
+  pub fn get<'a, T: AsRef<str>>(&'a self, sentence: T) -> Option<&'a Vec<Chatsound>> {
+    self.map_store.get(sentence.as_ref())
   }
 
-  pub fn search<'a>(&'a self, search: String) -> Vec<&'a String> {
+  pub fn search<'a, S: AsRef<str>>(&'a self, search: S) -> Vec<&'a String> {
+    let search = search.as_ref();
+
     let mut positions: Vec<_> = self
       .map_store
       .par_iter()
       .map(|(key, _value)| key)
-      .filter_map(|sentence| twoway::find_str(sentence, &search).map(|pos| (pos, sentence)))
+      .filter_map(|sentence| twoway::find_str(sentence, search).map(|pos| (pos, sentence)))
       .collect();
 
     positions.par_sort_unstable_by(|(pos1, str1), (pos2, str2)| {
@@ -299,13 +295,13 @@ fn it_works() {
 
   let mut list: Vec<_> = vec!["helloh", "im gay", "dad please"]
     .drain(..)
-    .map(|sentence| chatsounds.get(sentence).remove(0))
+    .filter_map(|sentence| chatsounds.get(sentence).and_then(|sounds| sounds.get(0)))
     .collect();
 
   println!("load");
   let mut loaded_list: Vec<_> = list
     .drain(..)
-    .map(|mut chatsound| chatsound.load(chatsounds.cache_path()))
+    .map(|chatsound| chatsound.load(chatsounds.cache_path()))
     .collect();
 
   println!("play");
