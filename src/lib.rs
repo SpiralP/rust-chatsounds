@@ -66,7 +66,7 @@ struct GitHubApiFileEntry {
 }
 
 pub trait ChatsoundTrait {
-  fn get_bytes<P: AsRef<Path>>(&mut self, cache_path: P) -> Bytes;
+  fn get_bytes<P: AsRef<Path>>(&self, cache_path: P) -> Bytes;
 }
 
 #[derive(Clone)]
@@ -103,14 +103,14 @@ pub struct LoadedChatsound {
 }
 
 impl ChatsoundTrait for LoadedChatsound {
-  fn get_bytes<P: AsRef<Path>>(&mut self, _cache_path: P) -> Bytes {
+  fn get_bytes<P: AsRef<Path>>(&self, _cache_path: P) -> Bytes {
     self.bytes.clone()
   }
 }
 
 impl ChatsoundTrait for Chatsound {
-  fn get_bytes<P: AsRef<Path>>(&mut self, cache_path: P) -> Bytes {
-    let mut loaded_chatsound = self.load(&cache_path);
+  fn get_bytes<P: AsRef<Path>>(&self, cache_path: P) -> Bytes {
+    let loaded_chatsound = self.load(&cache_path);
     loaded_chatsound.get_bytes(&cache_path)
   }
 }
@@ -249,7 +249,7 @@ impl Chatsounds {
     &self.cache_path
   }
 
-  pub fn play<C: ChatsoundTrait>(&mut self, chatsound: &mut C) {
+  pub fn play<C: ChatsoundTrait>(&mut self, chatsound: &C) {
     let data = chatsound.get_bytes(&self.cache_path);
 
     let reader = BufReader::new(Cursor::new(data));
@@ -305,8 +305,8 @@ fn it_works() {
     .collect();
 
   println!("play");
-  for mut chatsound in loaded_list.drain(..) {
-    chatsounds.play(&mut chatsound);
+  for chatsound in loaded_list.drain(..) {
+    chatsounds.play(&chatsound);
     chatsounds.sleep_until_end();
   }
 }
