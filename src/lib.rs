@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use rayon::prelude::*;
 use rodio::{Decoder, Device, Sink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -212,24 +213,22 @@ impl Chatsounds {
     }
   }
 
-  pub fn search<T: AsRef<str>>(&self, search: T) -> Vec<String> {
-    let sentences: Vec<&str> = self.map_store.keys().map(|a| a.as_str()).collect();
+  pub fn search<'a>(&'a self, search: String) -> Vec<&'a String> {
+    let mut positions: Vec<_> = self
+      .map_store
+      .par_iter()
+      .map(|(key, _value)| key)
+      .filter_map(|sentence| twoway::find_str(sentence, &search).map(|pos| (pos, sentence)))
+      .collect();
 
-    let mut positions = Vec::new();
-    for text in sentences {
-      if let Some(pos) = twoway::find_str(text, search.as_ref()) {
-        positions.push((pos, text));
-      }
-    }
-
-    positions.sort_unstable_by(|(pos1, str1), (pos2, str2)| {
+    positions.par_sort_unstable_by(|(pos1, str1), (pos2, str2)| {
       pos1
         .partial_cmp(pos2)
         .unwrap()
         .then_with(|| str1.len().partial_cmp(&str2.len()).unwrap())
     });
 
-    positions.iter().map(|(_, s)| s.to_string()).collect()
+    positions.par_iter().map(|(_, s)| *s).collect()
   }
 
   pub fn stop_all(&mut self) {
@@ -342,12 +341,13 @@ fn test_autocomplete() {
     chatsounds
   };
 
-  println!("searching");
-  let search = "im ga";
-  let t0 = std::time::Instant::now();
+  println!("searching {} keys", chatsounds.map_store.keys().count());
+  let search = "a";
 
-  let positions = chatsounds.search(search);
-  println!("took {:?}", std::time::Instant::now() - t0);
+  let t0 = std::time::Instant::now();
+  let positions = chatsounds.search(search.to_string());
+  let t1 = std::time::Instant::now();
+  println!("took {:?}", t1 - t0);
 
   println!(
     "{:#?}",
