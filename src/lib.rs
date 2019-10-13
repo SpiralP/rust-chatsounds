@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use rayon::prelude::*;
-use rodio::{Decoder, Device, Sink};
+use rodio::{Decoder, Device, Sink, SpatialSink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{
@@ -10,6 +10,7 @@ use std::{
   io,
   io::{prelude::*, BufReader, Cursor},
   path::{Component, Path, PathBuf},
+  sync::Arc,
 };
 
 fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> impl Read {
@@ -124,7 +125,8 @@ pub struct Chatsounds {
   map_store: HashMap<String, Vec<Chatsound>>,
 
   device: Device,
-  sinks: VecDeque<Sink>,
+  sinks: VecDeque<Arc<Sink>>,
+  spatial_sinks: VecDeque<Arc<SpatialSink>>,
 }
 
 impl Chatsounds {
@@ -136,6 +138,7 @@ impl Chatsounds {
       map_store: HashMap::new(),
       device: rodio::default_output_device().unwrap(),
       sinks: VecDeque::new(),
+      spatial_sinks: VecDeque::new(),
     }
   }
 
@@ -207,7 +210,7 @@ impl Chatsounds {
     self.map_store.get(sentence.as_ref())
   }
 
-  pub fn search<'a, S: AsRef<str>>(&'a self, search: S) -> Vec<&'a String> {
+  pub fn search<'a, S: AsRef<str>>(&'a self, search: S) -> Vec<(usize, &'a String)> {
     let search = search.as_ref();
 
     let mut positions: Vec<_> = self
@@ -224,7 +227,7 @@ impl Chatsounds {
         .then_with(|| str1.len().partial_cmp(&str2.len()).unwrap())
     });
 
-    positions.par_iter().map(|(_, s)| *s).collect()
+    positions.par_iter().cloned().collect()
   }
 
   pub fn stop_all(&mut self) {
@@ -249,24 +252,55 @@ impl Chatsounds {
     &self.cache_path
   }
 
-  pub fn play<C: ChatsoundTrait>(&mut self, chatsound: &C) {
+  pub fn play<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<Sink> {
     let data = chatsound.get_bytes(&self.cache_path);
 
     let reader = BufReader::new(Cursor::new(data));
     let source = Decoder::new(reader).unwrap();
     let sink = Sink::new(&self.device);
     sink.set_volume(self.volume);
-
     sink.append(source);
-    self.sinks.push_back(sink);
+
+    let sink = Arc::new(sink);
+    self.sinks.push_back(sink.clone());
     if self.sinks.len() == self.max_sinks {
       self.sinks.pop_front();
     }
+
+    sink
+  }
+
+  pub fn play_spatial<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<SpatialSink> {
+    let data = chatsound.get_bytes(&self.cache_path);
+
+    let reader = BufReader::new(Cursor::new(data));
+    let source = Decoder::new(reader).unwrap();
+
+    let sink = rodio::SpatialSink::new(
+      &self.device,
+      [0.0, 0.0, 0.0],
+      [-1.0, 0.0, 0.0],
+      [1.0, 0.0, 0.0],
+    );
+    sink.set_volume(self.volume);
+    sink.append(source);
+
+    let sink = Arc::new(sink);
+    self.spatial_sinks.push_back(sink.clone());
+    if self.spatial_sinks.len() == self.max_sinks {
+      self.spatial_sinks.pop_front();
+    }
+
+    sink
   }
 
   pub fn sleep_until_end(&mut self) {
     for sink in self.sinks.drain(..) {
       sink.sleep_until_end();
+    }
+
+    for spatial_sink in self.spatial_sinks.drain(..) {
+      spatial_sink.sleep_until_end();
     }
   }
 }
@@ -306,8 +340,8 @@ fn it_works() {
 
   println!("play");
   for chatsound in loaded_list.drain(..) {
-    chatsounds.play(&chatsound);
-    chatsounds.sleep_until_end();
+    let sink = chatsounds.play(&chatsound);
+    sink.sleep_until_end();
   }
 }
 
@@ -338,7 +372,7 @@ fn test_autocomplete() {
   };
 
   println!("searching {} keys", chatsounds.map_store.keys().count());
-  let search = "a";
+  let search = "and thats what";
 
   let t0 = std::time::Instant::now();
   let positions = chatsounds.search(search.to_string());
@@ -349,4 +383,24 @@ fn test_autocomplete() {
     "{:#?}",
     positions.iter().rev().take(10).rev().collect::<Vec<_>>()
   );
+}
+
+#[test]
+fn test_spatial() {
+  fs::create_dir_all("cache").unwrap();
+
+  let mut chatsounds = Chatsounds::new("cache");
+  println!("PAC3-Server/chatsounds-valve-games tf2");
+  chatsounds.load_github_msgpack("PAC3-Server/chatsounds-valve-games", "tf2");
+
+  if let Some(sounds) = chatsounds.get("music russian") {
+    if let Some(sound) = sounds.get(0).cloned() {
+      let sink = chatsounds.play_spatial(&sound);
+      sink.set_emitter_position([2.0, 0.0, 0.0]);
+
+      sink.sleep_until_end();
+    }
+  }
+
+  chatsounds.sleep_until_end();
 }
