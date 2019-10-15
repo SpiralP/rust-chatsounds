@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use rayon::prelude::*;
-use rodio::{Decoder, Device, Sink, SpatialSink};
+pub use rodio::{Decoder, Device, Sink, SpatialSink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{
@@ -234,6 +234,9 @@ impl Chatsounds {
     for sink in self.sinks.drain(..) {
       sink.stop();
     }
+    for sink in self.spatial_sinks.drain(..) {
+      sink.stop();
+    }
   }
 
   pub fn set_volume(&mut self, volume: f32) {
@@ -270,18 +273,19 @@ impl Chatsounds {
     sink
   }
 
-  pub fn play_spatial<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<SpatialSink> {
+  pub fn play_spatial<C: ChatsoundTrait>(
+    &mut self,
+    chatsound: &C,
+    emitter_pos: [f32; 3],
+    left_ear_pos: [f32; 3],
+    right_ear_pos: [f32; 3],
+  ) -> Arc<SpatialSink> {
     let data = chatsound.get_bytes(&self.cache_path);
 
     let reader = BufReader::new(Cursor::new(data));
     let source = Decoder::new(reader).unwrap();
 
-    let sink = rodio::SpatialSink::new(
-      &self.device,
-      [0.0, 0.0, 0.0],
-      [-1.0, 0.0, 0.0],
-      [1.0, 0.0, 0.0],
-    );
+    let sink = SpatialSink::new(&self.device, emitter_pos, left_ear_pos, right_ear_pos);
     sink.set_volume(self.volume);
     sink.append(source);
 
@@ -390,13 +394,61 @@ fn test_spatial() {
   fs::create_dir_all("cache").unwrap();
 
   let mut chatsounds = Chatsounds::new("cache");
-  println!("PAC3-Server/chatsounds-valve-games tf2");
-  chatsounds.load_github_msgpack("PAC3-Server/chatsounds-valve-games", "tf2");
+  println!("fetch");
+  chatsounds.load_github_api(
+    "Metastruct/garrysmod-chatsounds",
+    "sound/chatsounds/autoadd",
+  );
 
-  if let Some(sounds) = chatsounds.get("music russian") {
-    if let Some(sound) = sounds.get(0).cloned() {
-      let sink = chatsounds.play_spatial(&sound);
-      sink.set_emitter_position([2.0, 0.0, 0.0]);
+  if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+    if let Some(chatsound) = sounds.get(0).cloned() {
+      // play near right ear
+      let emitter_pos = [2.0, 0.0, 0.0];
+      let left_ear_pos = [-1.0, 0.0, 0.0];
+      let right_ear_pos = [1.0, 0.0, 0.0];
+
+      println!("play");
+
+      let sink = chatsounds.play_spatial(&chatsound, emitter_pos, left_ear_pos, right_ear_pos);
+
+      while !sink.empty() {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        sink.set_left_ear_position(left_ear_pos);
+        sink.set_right_ear_position(right_ear_pos);
+        sink.set_emitter_position(emitter_pos);
+      }
+
+      sink.sleep_until_end();
+    }
+  }
+
+  chatsounds.sleep_until_end();
+}
+
+#[test]
+fn test_mono_bug() {
+  fs::create_dir_all("cache").unwrap();
+
+  let mut chatsounds = Chatsounds::new("cache");
+  println!("fetch");
+  chatsounds.load_github_api(
+    "Metastruct/garrysmod-chatsounds",
+    "sound/chatsounds/autoadd",
+  );
+
+  if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+    if let Some(chatsound) = sounds.get(0).cloned() {
+      println!("play");
+
+      let data = chatsound.get_bytes(&chatsounds.cache_path);
+
+      let reader = BufReader::new(Cursor::new(data));
+      let source = Decoder::new(reader).unwrap();
+
+      let source = rodio::source::ChannelVolume::new(source, vec![0.5, 1.0]);
+      let sink = Sink::new(&chatsounds.device);
+      sink.set_volume(0.1);
+      sink.append(source);
 
       sink.sleep_until_end();
     }
