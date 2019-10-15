@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Chatsound",""],["Chatsounds",""],["LoadedChatsound",""]],"trait":[["ChatsoundTrait",""]]});
+initSidebarItems({"struct":[["Chatsound",""],["Chatsounds",""],["Decoder","Source of audio samples from decoding a file."],["Device","An opaque type that identifies a device that is capable of either audio input or output."],["LoadedChatsound",""],["Sink","Handle to an device that outputs sounds."],["SpatialSink",""]],"trait":[["ChatsoundTrait",""]]});
