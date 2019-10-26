@@ -2,7 +2,6 @@ use async_std::{
   fs,
   fs::{File, OpenOptions},
   io::prelude::*,
-  path::{Component, Path, PathBuf},
   sync::Arc,
 };
 use async_trait::async_trait;
@@ -14,6 +13,7 @@ use sha2::{Digest, Sha256};
 use std::{
   collections::{HashMap, VecDeque},
   io::{BufReader, Cursor},
+  path::{Component, Path, PathBuf},
 };
 
 async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
@@ -150,9 +150,9 @@ pub struct Chatsounds {
 }
 
 impl Chatsounds {
-  pub async fn new<T: AsRef<Path>>(cache_path: T) -> Self {
+  pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
     Self {
-      cache_path: cache_path.as_ref().canonicalize().await.unwrap(),
+      cache_path: cache_path.as_ref().canonicalize().unwrap(),
       max_sinks: 8,
       volume: 0.1,
       map_store: HashMap::new(),
@@ -345,7 +345,7 @@ mod tests {
     run_future(async {
       fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache").await;
+      let mut chatsounds = Chatsounds::new("cache");
 
       println!("Metastruct/garrysmod-chatsounds");
       chatsounds
@@ -396,7 +396,7 @@ mod tests {
       let chatsounds = {
         fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new("cache").await;
+        let mut chatsounds = Chatsounds::new("cache");
 
         println!("Metastruct/garrysmod-chatsounds");
         chatsounds
@@ -443,7 +443,8 @@ mod tests {
     run_future(async {
       fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache").await;
+      let mut chatsounds = Chatsounds::new("cache");
+
       println!("fetch");
       chatsounds
         .load_github_api(
@@ -485,7 +486,8 @@ mod tests {
     run_future(async {
       fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache").await;
+      let mut chatsounds = Chatsounds::new("cache");
+
       println!("fetch");
       chatsounds
         .load_github_api(
