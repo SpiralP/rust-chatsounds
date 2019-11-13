@@ -281,10 +281,11 @@ impl Chatsounds {
   pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Result<Arc<Sink>, String> {
     let text = text.as_ref();
 
+    let parsed_chatsounds = parser::parse(text)?;
+
     let sink = Sink::new(&self.device);
     sink.set_volume(self.volume);
 
-    let parsed_chatsounds = parser::parse(text)?;
     for parsed_chatsound in parsed_chatsounds {
       if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
         // TODO random hashed number passed in?

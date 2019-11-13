@@ -3,7 +3,7 @@ use nom::{
   branch::alt,
   bytes::complete::{tag, take_while1},
   character::{is_alphanumeric, is_space},
-  multi::many0,
+  multi::{many0, many1},
   number::complete::float,
   IResult,
 };
@@ -100,15 +100,9 @@ fn chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
 }
 
 pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>, String> {
-  many0(chatsound)(input)
+  many1(chatsound)(input)
     .map_err(|e| format!("{:?}", e))
-    .and_then(|(input, chatsounds)| {
-      if input.is_empty() {
-        Ok(chatsounds)
-      } else {
-        Err("input not empty".to_string())
-      }
-    })
+    .map(|(_input, chatsounds)| chatsounds)
 }
 
 #[test]
@@ -121,4 +115,13 @@ fn test_parser() {
     "got: {:#?}",
     parse("hello world:pitch(123) another one:volume(22):pitch(33) ").unwrap()
   );
+
+  println!(
+    "partial success: {:#?}",
+    parse("helloh:pitch(2) bad:pitch(bad)")
+  );
+  println!("partial success: {:#?}", parse("bad pitch:pitch(asdf)"));
+
+  println!("error: {:#?}", parse(""));
+  println!("error: {:#?}", parse("😂"));
 }
