@@ -278,21 +278,23 @@ impl Chatsounds {
     &self.cache_path
   }
 
-  pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Arc<Sink> {
+  pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Result<Arc<Sink>, String> {
     let text = text.as_ref();
 
     let sink = Sink::new(&self.device);
     sink.set_volume(self.volume);
 
-    let parsed_chatsounds = parser::parse(text).unwrap();
+    let parsed_chatsounds = parser::parse(text)?;
     for parsed_chatsound in parsed_chatsounds {
       if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
         // TODO random hashed number passed in?
         let chatsound = chatsounds.get(0).unwrap();
 
-        self
-          .append_source_with_modifiers(&sink, chatsound, parsed_chatsound.modifiers)
-          .await;
+        sink.append(
+          self
+            .get_source_with_modifiers(chatsound, parsed_chatsound.modifiers)
+            .await,
+        );
       }
     }
 
@@ -302,15 +304,49 @@ impl Chatsounds {
       self.sinks.pop_front();
     }
 
-    sink
+    Ok(sink)
   }
 
-  async fn append_source_with_modifiers<C: ChatsoundTrait>(
+  pub async fn play_spatial<S: AsRef<str>>(
+    &mut self,
+    text: S,
+    emitter_pos: [f32; 3],
+    left_ear_pos: [f32; 3],
+    right_ear_pos: [f32; 3],
+  ) -> Result<Arc<SpatialSink>, String> {
+    let text = text.as_ref();
+
+    let sink = SpatialSink::new(&self.device, emitter_pos, left_ear_pos, right_ear_pos);
+    sink.set_volume(self.volume);
+
+    let parsed_chatsounds = parser::parse(text)?;
+    for parsed_chatsound in parsed_chatsounds {
+      if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
+        // TODO random hashed number passed in?
+        let chatsound = chatsounds.get(0).unwrap();
+
+        sink.append(
+          self
+            .get_source_with_modifiers(chatsound, parsed_chatsound.modifiers)
+            .await,
+        );
+      }
+    }
+
+    let sink = Arc::new(sink);
+    self.spatial_sinks.push_back(sink.clone());
+    if self.spatial_sinks.len() == self.max_sinks {
+      self.spatial_sinks.pop_front();
+    }
+
+    Ok(sink)
+  }
+
+  async fn get_source_with_modifiers<C: ChatsoundTrait>(
     &self,
-    sink: &Sink,
     chatsound: &C,
     modifiers: Vec<Modifier>,
-  ) {
+  ) -> Box<dyn Source<Item = i16> + Send> {
     let mut source: Box<dyn Source<Item = _> + Send> = Box::new(self.make_source(chatsound).await);
 
     for modifier in modifiers {
@@ -326,7 +362,7 @@ impl Chatsounds {
       }
     }
 
-    sink.append(source);
+    source
   }
 
   async fn make_source<C: ChatsoundTrait>(
@@ -431,6 +467,7 @@ mod tests {
       chatsounds
         .play("helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)")
         .await
+        .unwrap()
         .sleep_until_end();
     });
   }
