@@ -1,3 +1,6 @@
+mod parser;
+
+use crate::parser::*;
 use async_std::{
   fs,
   fs::{File, OpenOptions},
@@ -7,6 +10,7 @@ use async_std::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use rayon::prelude::*;
+use rodio::Source;
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -14,6 +18,7 @@ use std::{
   collections::{HashMap, VecDeque},
   io::{BufReader, Cursor},
   path::{Component, Path, PathBuf},
+  time::Duration,
 };
 
 async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
@@ -70,16 +75,14 @@ struct GitHubApiTrees {
   pub tree: Vec<GitHubApiFileEntry>,
 }
 
-/*
-    {
-      "path": "sound/chatsounds/autoadd/instagib/sex1.ogg",
-      "mode": "100644",
-      "type": "blob",
-      "sha": "035b008bbf3d63ede0fb49eee52734ffa94321ba",
-      "size": 28324,
-      "url": "https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba"
-    },
-*/
+// {
+// "path": "sound/chatsounds/autoadd/instagib/sex1.ogg",
+// "mode": "100644",
+// "type": "blob",
+// "sha": "035b008bbf3d63ede0fb49eee52734ffa94321ba",
+// "size": 28324,
+// "url": "https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba"
+// },
 #[derive(Deserialize)]
 struct GitHubApiFileEntry {
   pub path: String,
@@ -275,11 +278,70 @@ impl Chatsounds {
     &self.cache_path
   }
 
-  pub async fn play<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<Sink> {
+  pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Arc<Sink> {
+    let text = text.as_ref();
+
+    let sink = Sink::new(&self.device);
+    sink.set_volume(self.volume);
+
+    let parsed_chatsounds = parser::parse(text).unwrap();
+    for parsed_chatsound in parsed_chatsounds {
+      if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
+        // TODO random hashed number passed in?
+        let chatsound = chatsounds.get(0).unwrap();
+
+        self
+          .append_source_with_modifiers(&sink, chatsound, parsed_chatsound.modifiers)
+          .await;
+      }
+    }
+
+    let sink = Arc::new(sink);
+    self.sinks.push_back(sink.clone());
+    if self.sinks.len() == self.max_sinks {
+      self.sinks.pop_front();
+    }
+
+    sink
+  }
+
+  async fn append_source_with_modifiers<C: ChatsoundTrait>(
+    &self,
+    sink: &Sink,
+    chatsound: &C,
+    modifiers: Vec<Modifier>,
+  ) {
+    let mut source: Box<dyn Source<Item = _> + Send> = Box::new(self.make_source(chatsound).await);
+
+    for modifier in modifiers {
+      source = match modifier {
+        Modifier::Pitch(pitch) => Box::new(source.speed(pitch)),
+
+        Modifier::Volume(volume) => Box::new(source.amplify(volume)),
+
+        Modifier::Echo(duration_secs, amplitude) => {
+          let duration = Duration::from_secs_f32(duration_secs);
+          Box::new(source.buffered().reverb(duration, amplitude))
+        }
+      }
+    }
+
+    sink.append(source);
+  }
+
+  async fn make_source<C: ChatsoundTrait>(
+    &self,
+    chatsound: &C,
+  ) -> Decoder<BufReader<Cursor<Bytes>>> {
     let bytes = chatsound.get_bytes(&self.cache_path).await;
 
     let reader = BufReader::new(Cursor::new(bytes));
-    let source = Decoder::new(reader).unwrap();
+    Decoder::new(reader).unwrap()
+  }
+
+  pub async fn play_chatsound<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<Sink> {
+    let source = self.make_source(chatsound).await;
+
     let sink = Sink::new(&self.device);
     sink.set_volume(self.volume);
     sink.append(source);
@@ -293,17 +355,14 @@ impl Chatsounds {
     sink
   }
 
-  pub async fn play_spatial<C: ChatsoundTrait>(
+  pub async fn play_chatsound_spatial<C: ChatsoundTrait>(
     &mut self,
     chatsound: &C,
     emitter_pos: [f32; 3],
     left_ear_pos: [f32; 3],
     right_ear_pos: [f32; 3],
   ) -> Arc<SpatialSink> {
-    let data = chatsound.get_bytes(&self.cache_path).await;
-
-    let reader = BufReader::new(Cursor::new(data));
-    let source = Decoder::new(reader).unwrap();
+    let source = self.make_source(chatsound).await;
 
     let sink = SpatialSink::new(&self.device, emitter_pos, left_ear_pos, right_ear_pos);
     sink.set_volume(self.volume);
@@ -369,152 +428,138 @@ mod tests {
           .await;
       }
 
-      let mut list: Vec<_> = vec!["helloh", "im gay", "dad please"]
-        .drain(..)
-        .filter_map(|sentence| chatsounds.get(sentence).and_then(|sounds| sounds.get(0)))
-        .collect();
-
-      println!("load");
-      use futures::prelude::*;
-      let mut loaded_list: Vec<_> = futures::stream::iter(list.drain(..))
-        .map(|chatsound| chatsound.load(chatsounds.cache_path()))
-        .buffered(4)
-        .collect()
-        .await;
-
-      println!("play");
-      for chatsound in loaded_list.drain(..) {
-        let sink = chatsounds.play(&chatsound).await;
-        sink.sleep_until_end();
-      }
-    });
-  }
-
-  #[test]
-  fn test_autocomplete() {
-    run_future(async {
-      let chatsounds = {
-        fs::create_dir_all("cache").await.unwrap();
-
-        let mut chatsounds = Chatsounds::new("cache");
-
-        println!("Metastruct/garrysmod-chatsounds");
-        chatsounds
-          .load_github_api(
-            "Metastruct/garrysmod-chatsounds",
-            "sound/chatsounds/autoadd",
-          )
-          .await;
-
-        println!("PAC3-Server/chatsounds");
-        chatsounds
-          .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-          .await;
-
-        for folder in &[
-          "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
-        ] {
-          println!("PAC3-Server/chatsounds-valve-games {}", folder);
-          chatsounds
-            .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-            .await;
-        }
-
-        chatsounds
-      };
-
-      println!("searching {} keys", chatsounds.map_store.keys().count());
-      let search = "and thats what";
-
-      let t0 = std::time::Instant::now();
-      let positions = chatsounds.search(search.to_string());
-      let t1 = std::time::Instant::now();
-      println!("took {:?}", t1 - t0);
-
-      println!(
-        "{:#?}",
-        positions.iter().rev().take(10).rev().collect::<Vec<_>>()
-      );
-    });
-  }
-
-  #[test]
-  fn test_spatial() {
-    run_future(async {
-      fs::create_dir_all("cache").await.unwrap();
-
-      let mut chatsounds = Chatsounds::new("cache");
-
-      println!("fetch");
       chatsounds
-        .load_github_api(
-          "Metastruct/garrysmod-chatsounds",
-          "sound/chatsounds/autoadd",
-        )
-        .await;
-
-      if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-        if let Some(chatsound) = sounds.get(0).cloned() {
-          // play near right ear
-          let emitter_pos = [2.0, 0.0, 0.0];
-          let left_ear_pos = [-1.0, 0.0, 0.0];
-          let right_ear_pos = [1.0, 0.0, 0.0];
-
-          println!("play");
-
-          let sink = chatsounds
-            .play_spatial(&chatsound, emitter_pos, left_ear_pos, right_ear_pos)
-            .await;
-
-          while !sink.empty() {
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            sink.set_left_ear_position(left_ear_pos);
-            sink.set_right_ear_position(right_ear_pos);
-            sink.set_emitter_position(emitter_pos);
-          }
-
-          sink.sleep_until_end();
-        }
-      }
-
-      chatsounds.sleep_until_end();
+        .play("helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)")
+        .await
+        .sleep_until_end();
     });
   }
 
-  #[test]
-  fn test_mono_bug() {
-    run_future(async {
-      fs::create_dir_all("cache").await.unwrap();
+  // #[test]
+  // fn test_autocomplete() {
+  //   run_future(async {
+  //     let chatsounds = {
+  //       fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache");
+  //       let mut chatsounds = Chatsounds::new("cache");
 
-      println!("fetch");
-      chatsounds
-        .load_github_api(
-          "Metastruct/garrysmod-chatsounds",
-          "sound/chatsounds/autoadd",
-        )
-        .await;
+  //       println!("Metastruct/garrysmod-chatsounds");
+  //       chatsounds
+  //         .load_github_api(
+  //           "Metastruct/garrysmod-chatsounds",
+  //           "sound/chatsounds/autoadd",
+  //         )
+  //         .await;
 
-      if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-        if let Some(chatsound) = sounds.get(0).cloned() {
-          println!("play");
+  //       println!("PAC3-Server/chatsounds");
+  //       chatsounds
+  //         .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
+  //         .await;
 
-          let data = chatsound.get_bytes(&chatsounds.cache_path).await;
+  //       for folder in &[
+  //         "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+  //       ] {
+  //         println!("PAC3-Server/chatsounds-valve-games {}", folder);
+  //         chatsounds
+  //           .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
+  //           .await;
+  //       }
 
-          let reader = BufReader::new(Cursor::new(data));
-          let source = Decoder::new(reader).unwrap();
+  //       chatsounds
+  //     };
 
-          let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
-          let sink = Sink::new(&chatsounds.device);
-          sink.set_volume(0.1);
-          sink.append(source);
+  //     println!("searching {} keys", chatsounds.map_store.keys().count());
+  //     let search = "and thats what";
 
-          sink.sleep_until_end();
-        }
-      }
+  //     let t0 = std::time::Instant::now();
+  //     let positions = chatsounds.search(search.to_string());
+  //     let t1 = std::time::Instant::now();
+  //     println!("took {:?}", t1 - t0);
 
-      chatsounds.sleep_until_end();
-    });
-  }
+  //     println!(
+  //       "{:#?}",
+  //       positions.iter().rev().take(10).rev().collect::<Vec<_>>()
+  //     );
+  //   });
+  // }
+
+  // #[test]
+  // fn test_spatial() {
+  //   run_future(async {
+  //     fs::create_dir_all("cache").await.unwrap();
+
+  //     let mut chatsounds = Chatsounds::new("cache");
+
+  //     println!("fetch");
+  //     chatsounds
+  //       .load_github_api(
+  //         "Metastruct/garrysmod-chatsounds",
+  //         "sound/chatsounds/autoadd",
+  //       )
+  //       .await;
+
+  //     if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+  //       if let Some(chatsound) = sounds.get(0).cloned() {
+  //         // play near right ear
+  //         let emitter_pos = [2.0, 0.0, 0.0];
+  //         let left_ear_pos = [-1.0, 0.0, 0.0];
+  //         let right_ear_pos = [1.0, 0.0, 0.0];
+
+  //         println!("play");
+
+  //         let sink = chatsounds
+  //           .play_spatial(&chatsound, emitter_pos, left_ear_pos, right_ear_pos)
+  //           .await;
+
+  //         while !sink.empty() {
+  //           std::thread::sleep(std::time::Duration::from_millis(10));
+  //           sink.set_left_ear_position(left_ear_pos);
+  //           sink.set_right_ear_position(right_ear_pos);
+  //           sink.set_emitter_position(emitter_pos);
+  //         }
+
+  //         sink.sleep_until_end();
+  //       }
+  //     }
+
+  //     chatsounds.sleep_until_end();
+  //   });
+  // }
+
+  // #[test]
+  // fn test_mono_bug() {
+  //   run_future(async {
+  //     fs::create_dir_all("cache").await.unwrap();
+
+  //     let mut chatsounds = Chatsounds::new("cache");
+
+  //     println!("fetch");
+  //     chatsounds
+  //       .load_github_api(
+  //         "Metastruct/garrysmod-chatsounds",
+  //         "sound/chatsounds/autoadd",
+  //       )
+  //       .await;
+
+  //     if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+  //       if let Some(chatsound) = sounds.get(0).cloned() {
+  //         println!("play");
+
+  //         let data = chatsound.get_bytes(&chatsounds.cache_path).await;
+
+  //         let reader = BufReader::new(Cursor::new(data));
+  //         let source = Decoder::new(reader).unwrap();
+
+  //         let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
+  //         let sink = Sink::new(&chatsounds.device);
+  //         sink.set_volume(0.1);
+  //         sink.append(source);
+
+  //         sink.sleep_until_end();
+  //       }
+  //     }
+
+  //     chatsounds.sleep_until_end();
+  //   });
+  // }
 }
