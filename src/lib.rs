@@ -1,73 +1,20 @@
+mod helpers;
 mod modifiers;
 mod parser;
 
-use async_std::{
-  fs,
-  fs::{File, OpenOptions},
-  io::prelude::*,
-  sync::Arc,
-};
+use crate::helpers::cache_download;
+use async_std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
 use rayon::prelude::*;
 use rodio::Source;
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
 use serde::Deserialize;
-use sha2::{Digest, Sha256};
 use std::{
   collections::{HashMap, VecDeque},
   io::{BufReader, Cursor},
   path::{Component, Path, PathBuf},
 };
-
-async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
-  let mut hasher = Sha256::new();
-  hasher.input(url.as_ref());
-
-  let hex = format!("{:x}", hasher.result());
-
-  let hex_dir = &hex[0..2];
-  let hex_filename = &hex[2..];
-
-  let dir_path = cache_path.as_ref().join(hex_dir);
-  if !fs::metadata(&dir_path)
-    .await
-    .map(|meta| meta.is_dir())
-    .unwrap_or(false)
-  {
-    fs::create_dir(&dir_path).await.unwrap();
-  }
-
-  let file_path = dir_path.join(hex_filename);
-  if !fs::metadata(&file_path)
-    .await
-    .map(|meta| meta.is_file())
-    .unwrap_or(false)
-  {
-    let mut file = File::create(&file_path).await.unwrap();
-    let bytes = reqwest::get(url.as_ref())
-      .await
-      .unwrap()
-      .bytes()
-      .await
-      .unwrap();
-
-    file.write_all(&bytes).await.unwrap();
-
-    bytes
-  } else {
-    let mut file = OpenOptions::new()
-      .read(true)
-      .open(&file_path)
-      .await
-      .unwrap();
-
-    let mut vec = Vec::new();
-    file.read_to_end(&mut vec).await.unwrap();
-
-    Bytes::from(vec)
-  }
-}
 
 #[derive(Deserialize)]
 struct GitHubApiTrees {
@@ -164,7 +111,7 @@ impl Chatsounds {
     }
   }
 
-  pub async fn load_github_api(&mut self, repo: &'static str, repo_path: &'static str) {
+  pub async fn load_github_api(&mut self, repo: &str, repo_path: &str) {
     let api_url = format!(
       "https://api.github.com/repos/{}/git/trees/master?recursive=1",
       repo
@@ -201,7 +148,7 @@ impl Chatsounds {
     }
   }
 
-  pub async fn load_github_msgpack(&mut self, repo: &'static str, repo_path: &'static str) {
+  pub async fn load_github_msgpack(&mut self, repo: &str, repo_path: &str) {
     let msgpack_url = format!(
       "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
       repo, repo_path
@@ -228,11 +175,11 @@ impl Chatsounds {
     }
   }
 
-  pub fn get<'a, T: AsRef<str>>(&'a self, sentence: T) -> Option<&'a Vec<Chatsound>> {
+  pub fn get<T: AsRef<str>>(&self, sentence: T) -> Option<&Vec<Chatsound>> {
     self.map_store.get(sentence.as_ref())
   }
 
-  pub fn search<'a, S: AsRef<str>>(&'a self, search: S) -> Vec<(usize, &'a String)> {
+  pub fn search<S: AsRef<str>>(&self, search: S) -> Vec<(usize, &String)> {
     let search = search.as_ref();
 
     let mut positions: Vec<_> = self
@@ -420,6 +367,8 @@ mod tests {
 
   #[test]
   fn it_works() {
+    use async_std::fs;
+
     run_future(async {
       fs::create_dir_all("cache").await.unwrap();
 
