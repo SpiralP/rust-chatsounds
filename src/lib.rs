@@ -7,11 +7,12 @@ use async_std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
 use rayon::prelude::*;
-use rodio::Source;
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
+use rodio::{Sample, Source};
 use serde::Deserialize;
 use std::{
   collections::{HashMap, VecDeque},
+  fmt::Debug,
   io::{BufReader, Cursor},
   path::{Component, Path, PathBuf},
 };
@@ -85,6 +86,60 @@ impl ChatsoundTrait for Chatsound {
   }
 }
 
+#[derive(Clone)]
+enum ChatsoundsSink {
+  Sink(Arc<Sink>),
+  Spatial(Arc<SpatialSink>),
+}
+
+impl ChatsoundsSink {
+  fn append<S>(&mut self, source: S)
+  where
+    S: Source + Send + 'static,
+    S::Item: Sample + Send + Debug,
+  {
+    match self {
+      ChatsoundsSink::Sink(sink) => sink.append(source),
+      ChatsoundsSink::Spatial(sink) => sink.append(source),
+    }
+  }
+
+  fn sleep_until_end(&mut self) {
+    match self {
+      ChatsoundsSink::Sink(sink) => sink.sleep_until_end(),
+      ChatsoundsSink::Spatial(sink) => sink.sleep_until_end(),
+    }
+  }
+
+  fn stop(&mut self) {
+    match self {
+      ChatsoundsSink::Sink(sink) => sink.stop(),
+      ChatsoundsSink::Spatial(sink) => sink.stop(),
+    }
+  }
+
+  fn set_volume(&mut self, volume: f32) {
+    match self {
+      ChatsoundsSink::Sink(sink) => sink.set_volume(volume),
+      ChatsoundsSink::Spatial(sink) => sink.set_volume(volume),
+    }
+  }
+
+  fn unwrap_sink(self) -> Arc<Sink> {
+    match self {
+      ChatsoundsSink::Sink(sink) => sink,
+      _ => unreachable!(),
+    }
+  }
+
+  fn unwrap_spatial(self) -> Arc<SpatialSink> {
+    match self {
+      ChatsoundsSink::Spatial(sink) => sink,
+      _ => unreachable!(),
+    }
+  }
+}
+
 pub struct Chatsounds {
   cache_path: PathBuf,
   max_sinks: usize,
@@ -94,8 +149,7 @@ pub struct Chatsounds {
   map_store: HashMap<String, Vec<Chatsound>>,
 
   device: Device,
-  sinks: VecDeque<Arc<Sink>>,
-  spatial_sinks: VecDeque<Arc<SpatialSink>>,
+  sinks: VecDeque<ChatsoundsSink>,
 }
 
 impl Chatsounds {
@@ -107,10 +161,10 @@ impl Chatsounds {
       map_store: HashMap::new(),
       device: rodio::default_output_device().unwrap(),
       sinks: VecDeque::new(),
-      spatial_sinks: VecDeque::new(),
     }
   }
 
+  // TODO parse HEAD request
   pub async fn load_github_api(&mut self, repo: &str, repo_path: &str) {
     let api_url = format!(
       "https://api.github.com/repos/{}/git/trees/master?recursive=1",
@@ -131,7 +185,6 @@ impl Chatsounds {
       let path = Path::new(&sound_path);
       if let Some(Component::Normal(s)) = path.components().nth(1) {
         if let Some(sentence) = Path::new(&s).file_stem() {
-          // TODO less cloning, maybe "atom"? or Cow or Rc?
           let sentence = sentence.to_string_lossy().to_string();
           let vec = self
             .map_store
@@ -200,10 +253,7 @@ impl Chatsounds {
   }
 
   pub fn stop_all(&mut self) {
-    for sink in self.sinks.drain(..) {
-      sink.stop();
-    }
-    for sink in self.spatial_sinks.drain(..) {
+    for mut sink in self.sinks.drain(..) {
       sink.stop();
     }
   }
@@ -225,36 +275,11 @@ impl Chatsounds {
   }
 
   pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Result<Arc<Sink>, String> {
-    let text = text.as_ref();
+    let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::new(&self.device)));
 
-    let parsed_chatsounds = parser::parse(text)?;
+    self.play_sink(text, &mut sink).await?;
 
-    let sink = Sink::new(&self.device);
-    sink.set_volume(self.volume);
-
-    for parsed_chatsound in parsed_chatsounds {
-      if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
-        // TODO random hashed number passed in?
-        let chatsound = chatsounds.get(0).unwrap();
-
-        let mut source: Box<dyn Source<Item = i16> + Send> =
-          Box::new(self.make_source(chatsound).await);
-
-        for modifier in parsed_chatsound.modifiers {
-          source = modifier.modify(source);
-        }
-
-        sink.append(source);
-      }
-    }
-
-    let sink = Arc::new(sink);
-    self.sinks.push_back(sink.clone());
-    if self.sinks.len() == self.max_sinks {
-      self.sinks.pop_front();
-    }
-
-    Ok(sink)
+    Ok(sink.unwrap_sink())
   }
 
   pub async fn play_spatial<S: AsRef<str>>(
@@ -264,12 +289,26 @@ impl Chatsounds {
     left_ear_pos: [f32; 3],
     right_ear_pos: [f32; 3],
   ) -> Result<Arc<SpatialSink>, String> {
-    let text = text.as_ref();
+    let mut sink = ChatsoundsSink::Spatial(Arc::new(SpatialSink::new(
+      &self.device,
+      emitter_pos,
+      left_ear_pos,
+      right_ear_pos,
+    )));
 
-    let sink = SpatialSink::new(&self.device, emitter_pos, left_ear_pos, right_ear_pos);
+    self.play_sink(text, &mut sink).await?;
+
+    Ok(sink.unwrap_spatial())
+  }
+
+  async fn play_sink<S: AsRef<str>>(
+    &mut self,
+    text: S,
+    sink: &mut ChatsoundsSink,
+  ) -> Result<(), String> {
     sink.set_volume(self.volume);
 
-    let parsed_chatsounds = parser::parse(text)?;
+    let parsed_chatsounds = parser::parse(text.as_ref())?;
     for parsed_chatsound in parsed_chatsounds {
       if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
         // TODO random hashed number passed in?
@@ -286,13 +325,12 @@ impl Chatsounds {
       }
     }
 
-    let sink = Arc::new(sink);
-    self.spatial_sinks.push_back(sink.clone());
-    if self.spatial_sinks.len() == self.max_sinks {
-      self.spatial_sinks.pop_front();
+    self.sinks.push_back(sink.clone());
+    if self.sinks.len() == self.max_sinks {
+      self.sinks.pop_front();
     }
 
-    Ok(sink)
+    Ok(())
   }
 
   async fn make_source<C: ChatsoundTrait>(
@@ -305,51 +343,9 @@ impl Chatsounds {
     Decoder::new(reader).unwrap()
   }
 
-  pub async fn play_chatsound<C: ChatsoundTrait>(&mut self, chatsound: &C) -> Arc<Sink> {
-    let source = self.make_source(chatsound).await;
-
-    let sink = Sink::new(&self.device);
-    sink.set_volume(self.volume);
-    sink.append(source);
-
-    let sink = Arc::new(sink);
-    self.sinks.push_back(sink.clone());
-    if self.sinks.len() == self.max_sinks {
-      self.sinks.pop_front();
-    }
-
-    sink
-  }
-
-  pub async fn play_chatsound_spatial<C: ChatsoundTrait>(
-    &mut self,
-    chatsound: &C,
-    emitter_pos: [f32; 3],
-    left_ear_pos: [f32; 3],
-    right_ear_pos: [f32; 3],
-  ) -> Arc<SpatialSink> {
-    let source = self.make_source(chatsound).await;
-
-    let sink = SpatialSink::new(&self.device, emitter_pos, left_ear_pos, right_ear_pos);
-    sink.set_volume(self.volume);
-    sink.append(source);
-
-    let sink = Arc::new(sink);
-    self.spatial_sinks.push_back(sink.clone());
-    if self.spatial_sinks.len() == self.max_sinks {
-      self.spatial_sinks.pop_front();
-    }
-
-    sink
-  }
-
   pub fn sleep_until_end(&mut self) {
-    for sink in self.sinks.drain(..) {
+    for mut sink in self.sinks.drain(..) {
       sink.sleep_until_end();
-    }
-
-    for spatial_sink in self.spatial_sinks.drain(..) {
-      spatial_sink.sleep_until_end();
     }
   }
 }
