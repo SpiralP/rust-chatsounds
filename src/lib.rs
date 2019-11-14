@@ -1,6 +1,6 @@
+mod modifiers;
 mod parser;
 
-use crate::parser::*;
 use async_std::{
   fs,
   fs::{File, OpenOptions},
@@ -18,7 +18,6 @@ use std::{
   collections::{HashMap, VecDeque},
   io::{BufReader, Cursor},
   path::{Component, Path, PathBuf},
-  time::Duration,
 };
 
 async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
@@ -291,11 +290,14 @@ impl Chatsounds {
         // TODO random hashed number passed in?
         let chatsound = chatsounds.get(0).unwrap();
 
-        sink.append(
-          self
-            .get_source_with_modifiers(chatsound, parsed_chatsound.modifiers)
-            .await,
-        );
+        let mut source: Box<dyn Source<Item = i16> + Send> =
+          Box::new(self.make_source(chatsound).await);
+
+        for modifier in parsed_chatsound.modifiers {
+          source = modifier.modify(source);
+        }
+
+        sink.append(source);
       }
     }
 
@@ -326,11 +328,14 @@ impl Chatsounds {
         // TODO random hashed number passed in?
         let chatsound = chatsounds.get(0).unwrap();
 
-        sink.append(
-          self
-            .get_source_with_modifiers(chatsound, parsed_chatsound.modifiers)
-            .await,
-        );
+        let mut source: Box<dyn Source<Item = i16> + Send> =
+          Box::new(self.make_source(chatsound).await);
+
+        for modifier in parsed_chatsound.modifiers {
+          source = modifier.modify(source);
+        }
+
+        sink.append(source);
       }
     }
 
@@ -341,29 +346,6 @@ impl Chatsounds {
     }
 
     Ok(sink)
-  }
-
-  async fn get_source_with_modifiers<C: ChatsoundTrait>(
-    &self,
-    chatsound: &C,
-    modifiers: Vec<Modifier>,
-  ) -> Box<dyn Source<Item = i16> + Send> {
-    let mut source: Box<dyn Source<Item = _> + Send> = Box::new(self.make_source(chatsound).await);
-
-    for modifier in modifiers {
-      source = match modifier {
-        Modifier::Pitch(pitch) => Box::new(source.speed(pitch)),
-
-        Modifier::Volume(volume) => Box::new(source.amplify(volume)),
-
-        Modifier::Echo(duration_secs, amplitude) => {
-          let duration = Duration::from_secs_f32(duration_secs);
-          Box::new(source.buffered().reverb(duration, amplitude))
-        }
-      }
-    }
-
-    source
   }
 
   async fn make_source<C: ChatsoundTrait>(
