@@ -363,10 +363,8 @@ mod tests {
 
   #[test]
   fn it_works() {
-    use async_std::fs;
-
     run_future(async {
-      fs::create_dir_all("cache").await.unwrap();
+      async_std::fs::create_dir_all("cache").await.unwrap();
 
       let mut chatsounds = Chatsounds::new("cache");
 
@@ -400,131 +398,138 @@ mod tests {
     });
   }
 
-  // #[test]
-  // fn test_autocomplete() {
-  //   run_future(async {
-  //     let chatsounds = {
-  //       fs::create_dir_all("cache").await.unwrap();
+  #[test]
+  fn test_autocomplete() {
+    run_future(async {
+      let chatsounds = {
+        async_std::fs::create_dir_all("cache").await.unwrap();
 
-  //       let mut chatsounds = Chatsounds::new("cache");
+        let mut chatsounds = Chatsounds::new("cache");
 
-  //       println!("Metastruct/garrysmod-chatsounds");
-  //       chatsounds
-  //         .load_github_api(
-  //           "Metastruct/garrysmod-chatsounds",
-  //           "sound/chatsounds/autoadd",
-  //         )
-  //         .await;
+        println!("Metastruct/garrysmod-chatsounds");
+        chatsounds
+          .load_github_api(
+            "Metastruct/garrysmod-chatsounds",
+            "sound/chatsounds/autoadd",
+          )
+          .await;
 
-  //       println!("PAC3-Server/chatsounds");
-  //       chatsounds
-  //         .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-  //         .await;
+        println!("PAC3-Server/chatsounds");
+        chatsounds
+          .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
+          .await;
 
-  //       for folder in &[
-  //         "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
-  //       ] {
-  //         println!("PAC3-Server/chatsounds-valve-games {}", folder);
-  //         chatsounds
-  //           .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-  //           .await;
-  //       }
+        for folder in &[
+          "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+        ] {
+          println!("PAC3-Server/chatsounds-valve-games {}", folder);
+          chatsounds
+            .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
+            .await;
+        }
 
-  //       chatsounds
-  //     };
+        chatsounds
+      };
 
-  //     println!("searching {} keys", chatsounds.map_store.keys().count());
-  //     let search = "and thats what";
+      println!("searching {} keys", chatsounds.map_store.keys().count());
+      let search = "and thats what";
 
-  //     let t0 = std::time::Instant::now();
-  //     let positions = chatsounds.search(search.to_string());
-  //     let t1 = std::time::Instant::now();
-  //     println!("took {:?}", t1 - t0);
+      let t0 = std::time::Instant::now();
+      let positions = chatsounds.search(search.to_string());
+      let t1 = std::time::Instant::now();
+      println!("took {:?}", t1 - t0);
 
-  //     println!(
-  //       "{:#?}",
-  //       positions.iter().rev().take(10).rev().collect::<Vec<_>>()
-  //     );
-  //   });
-  // }
+      println!(
+        "{:#?}",
+        positions.iter().rev().take(10).rev().collect::<Vec<_>>()
+      );
+    });
+  }
 
-  // #[test]
-  // fn test_spatial() {
-  //   run_future(async {
-  //     fs::create_dir_all("cache").await.unwrap();
+  #[test]
+  fn test_spatial() {
+    run_future(async {
+      async_std::fs::create_dir_all("cache").await.unwrap();
 
-  //     let mut chatsounds = Chatsounds::new("cache");
+      let mut chatsounds = Chatsounds::new("cache");
 
-  //     println!("fetch");
-  //     chatsounds
-  //       .load_github_api(
-  //         "Metastruct/garrysmod-chatsounds",
-  //         "sound/chatsounds/autoadd",
-  //       )
-  //       .await;
+      println!("fetch");
+      chatsounds
+        .load_github_api(
+          "Metastruct/garrysmod-chatsounds",
+          "sound/chatsounds/autoadd",
+        )
+        .await;
 
-  //     if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-  //       if let Some(chatsound) = sounds.get(0).cloned() {
-  //         // play near right ear
-  //         let emitter_pos = [2.0, 0.0, 0.0];
-  //         let left_ear_pos = [-1.0, 0.0, 0.0];
-  //         let right_ear_pos = [1.0, 0.0, 0.0];
+      let mut emitter_pos = [2.0, 0.0, 0.0];
+      let left_ear_pos = [-1.0, 0.0, 0.0];
+      let right_ear_pos = [1.0, 0.0, 0.0];
 
-  //         println!("play");
+      println!("play");
 
-  //         let sink = chatsounds
-  //           .play_spatial(&chatsound, emitter_pos, left_ear_pos, right_ear_pos)
-  //           .await;
+      let sink = chatsounds
+        .play_spatial(
+          "fuckbeesremastered",
+          emitter_pos,
+          left_ear_pos,
+          right_ear_pos,
+        )
+        .await
+        .unwrap();
 
-  //         while !sink.empty() {
-  //           std::thread::sleep(std::time::Duration::from_millis(10));
-  //           sink.set_left_ear_position(left_ear_pos);
-  //           sink.set_right_ear_position(right_ear_pos);
-  //           sink.set_emitter_position(emitter_pos);
-  //         }
+      // start in right headphone, move left
+      let mut i: f32 = 0.0;
+      while !sink.empty() {
+        emitter_pos[0] = i.cos() * 2.0;
 
-  //         sink.sleep_until_end();
-  //       }
-  //     }
+        sink.set_left_ear_position(left_ear_pos);
+        sink.set_right_ear_position(right_ear_pos);
+        sink.set_emitter_position(emitter_pos);
 
-  //     chatsounds.sleep_until_end();
-  //   });
-  // }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        i += 0.01;
+      }
 
-  // #[test]
-  // fn test_mono_bug() {
-  //   run_future(async {
-  //     fs::create_dir_all("cache").await.unwrap();
+      sink.sleep_until_end();
 
-  //     let mut chatsounds = Chatsounds::new("cache");
+      chatsounds.sleep_until_end();
+    });
+  }
 
-  //     println!("fetch");
-  //     chatsounds
-  //       .load_github_api(
-  //         "Metastruct/garrysmod-chatsounds",
-  //         "sound/chatsounds/autoadd",
-  //       )
-  //       .await;
+  #[test]
+  fn test_mono_bug() {
+    run_future(async {
+      async_std::fs::create_dir_all("cache").await.unwrap();
 
-  //     if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-  //       if let Some(chatsound) = sounds.get(0).cloned() {
-  //         println!("play");
+      let mut chatsounds = Chatsounds::new("cache");
 
-  //         let data = chatsound.get_bytes(&chatsounds.cache_path).await;
+      println!("fetch");
+      chatsounds
+        .load_github_api(
+          "Metastruct/garrysmod-chatsounds",
+          "sound/chatsounds/autoadd",
+        )
+        .await;
 
-  //         let reader = BufReader::new(Cursor::new(data));
-  //         let source = Decoder::new(reader).unwrap();
+      if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+        if let Some(chatsound) = sounds.get(0).cloned() {
+          println!("play");
 
-  //         let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
-  //         let sink = Sink::new(&chatsounds.device);
-  //         sink.set_volume(0.1);
-  //         sink.append(source);
+          let data = chatsound.get_bytes(&chatsounds.cache_path).await;
 
-  //         sink.sleep_until_end();
-  //       }
-  //     }
+          let reader = BufReader::new(Cursor::new(data));
+          let source = Decoder::new(reader).unwrap();
 
-  //     chatsounds.sleep_until_end();
-  //   });
-  // }
+          let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
+          let sink = Sink::new(&chatsounds.device);
+          sink.set_volume(0.1);
+          sink.append(source);
+
+          sink.sleep_until_end();
+        }
+      }
+
+      chatsounds.sleep_until_end();
+    });
+  }
 }
