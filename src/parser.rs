@@ -1,11 +1,9 @@
 #![allow(dead_code)]
 
-use crate::modifiers::*;
+use crate::modifiers::{parse_modifier, Modifier};
 use nom::{
-  branch::alt,
-  bytes::complete::{tag, take_while1},
+  bytes::complete::take_while1,
   character::{is_alphanumeric, is_space},
-  combinator::map,
   multi::{many0, many1},
   IResult,
 };
@@ -15,22 +13,7 @@ pub struct ParsedChatsound {
   pub modifiers: Vec<Box<dyn Modifier>>,
 }
 
-fn modifier(input: &str) -> IResult<&str, Box<dyn Modifier>> {
-  // input = ":pitch(2)"
-
-  let (input, _) = tag(":")(input)?;
-  // input = "pitch(2)"
-
-  let (input, modifier) = alt((
-    map(PitchModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-    map(VolumeModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-    map(EchoModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-  ))(input)?;
-
-  Ok((input, modifier))
-}
-
-fn chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
+fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
   // input = "hello:pitch(2)"
 
   let input = input.trim();
@@ -39,7 +22,7 @@ fn chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
   // input = ":pitch(2)"
   // sentence = "hello"
 
-  let (input, modifiers) = many0(modifier)(input)?;
+  let (input, modifiers) = many0(parse_modifier)(input)?;
 
   let chatsound = ParsedChatsound {
     sentence: sentence.to_string(),
@@ -50,7 +33,7 @@ fn chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
 }
 
 pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>, String> {
-  many1(chatsound)(input)
+  many1(parse_chatsound)(input)
     .map_err(|e| format!("{:?}", e))
     .map(|(_input, chatsounds)| chatsounds)
 }
