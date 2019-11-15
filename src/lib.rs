@@ -362,6 +362,7 @@ mod tests {
   }
 
   #[test]
+  #[ignore]
   fn it_works() {
     run_future(async {
       async_std::fs::create_dir_all("cache").await.unwrap();
@@ -447,6 +448,7 @@ mod tests {
   }
 
   #[test]
+  #[ignore]
   fn test_spatial() {
     run_future(async {
       async_std::fs::create_dir_all("cache").await.unwrap();
@@ -497,6 +499,7 @@ mod tests {
   }
 
   #[test]
+  #[ignore]
   fn test_mono_bug() {
     run_future(async {
       async_std::fs::create_dir_all("cache").await.unwrap();
