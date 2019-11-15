@@ -27,11 +27,22 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P
   }
 
   let file_path = dir_path.join(hex_filename);
-  if !fs::metadata(&file_path)
+  if fs::metadata(&file_path)
     .await
     .map(|meta| meta.is_file())
     .unwrap_or(false)
   {
+    let mut file = OpenOptions::new()
+      .read(true)
+      .open(&file_path)
+      .await
+      .unwrap();
+
+    let mut vec = Vec::new();
+    file.read_to_end(&mut vec).await.unwrap();
+
+    Bytes::from(vec)
+  } else {
     let mut file = File::create(&file_path).await.unwrap();
     let bytes = reqwest::get(url.as_ref())
       .await
@@ -43,16 +54,5 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P
     file.write_all(&bytes).await.unwrap();
 
     bytes
-  } else {
-    let mut file = OpenOptions::new()
-      .read(true)
-      .open(&file_path)
-      .await
-      .unwrap();
-
-    let mut vec = Vec::new();
-    file.read_to_end(&mut vec).await.unwrap();
-
-    Bytes::from(vec)
   }
 }
