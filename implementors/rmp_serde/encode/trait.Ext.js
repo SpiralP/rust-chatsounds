@@ -6,5 +6,4 @@ implementors["rmp_serde"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

@@ -6,5 +6,4 @@ implementors["nalgebra"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

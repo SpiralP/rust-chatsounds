@@ -456,68 +456,116 @@
 <span id="456">456</span>
 <span id="457">457</span>
 <span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="kw">mod</span> <span class="ident">helpers</span>;
+<span class="kw">mod</span> <span class="ident">modifiers</span>;
+<span class="kw">mod</span> <span class="ident">parser</span>;
+
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">helpers</span>::<span class="ident">cache_download</span>;
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
+<span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
 <span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
 <span class="kw">use</span> <span class="ident">rayon</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">Decoder</span>, <span class="ident">Device</span>, <span class="ident">Sink</span>, <span class="ident">SpatialSink</span>};
+<span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">Sample</span>, <span class="ident">Source</span>};
 <span class="kw">use</span> <span class="ident">serde</span>::<span class="ident">Deserialize</span>;
-<span class="kw">use</span> <span class="ident">sha2</span>::{<span class="ident">Digest</span>, <span class="ident">Sha256</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{
   <span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">VecDeque</span>},
-  <span class="ident">fs</span>,
-  <span class="ident">fs</span>::{<span class="ident">File</span>, <span class="ident">OpenOptions</span>},
-  <span class="ident">io</span>,
-  <span class="ident">io</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">BufReader</span>, <span class="ident">Cursor</span>},
+  <span class="ident">fmt</span>::<span class="ident">Debug</span>,
+  <span class="ident">io</span>::{<span class="ident">BufReader</span>, <span class="ident">Cursor</span>},
   <span class="ident">path</span>::{<span class="ident">Component</span>, <span class="ident">Path</span>, <span class="ident">PathBuf</span>},
-  <span class="ident">sync</span>::<span class="ident">Arc</span>,
 };
-
-<span class="kw">fn</span> <span class="ident">cache_download</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="ident">url</span>: <span class="ident">S</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-&gt;</span> <span class="kw">impl</span> <span class="ident">Read</span> {
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">Sha256</span>::<span class="ident">new</span>();
-  <span class="ident">hasher</span>.<span class="ident">input</span>(<span class="ident">url</span>.<span class="ident">as_ref</span>());
-
-  <span class="kw">let</span> <span class="ident">hex</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{:x}&quot;</span>, <span class="ident">hasher</span>.<span class="ident">result</span>());
-
-  <span class="kw">let</span> <span class="ident">hex_dir</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hex</span>[<span class="number">0</span>..<span class="number">2</span>];
-  <span class="kw">let</span> <span class="ident">hex_filename</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hex</span>[<span class="number">2</span>..];
-
-  <span class="kw">let</span> <span class="ident">dir_path</span> <span class="op">=</span> <span class="ident">cache_path</span>.<span class="ident">as_ref</span>().<span class="ident">join</span>(<span class="ident">hex_dir</span>);
-  <span class="kw">if</span> <span class="op">!</span><span class="ident">fs</span>::<span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="ident">dir_path</span>)
-    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">meta</span><span class="op">|</span> <span class="ident">meta</span>.<span class="ident">is_dir</span>())
-    .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>)
-  {
-    <span class="ident">fs</span>::<span class="ident">create_dir</span>(<span class="kw-2">&amp;</span><span class="ident">dir_path</span>).<span class="ident">unwrap</span>();
-  }
-
-  <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">dir_path</span>.<span class="ident">join</span>(<span class="ident">hex_filename</span>);
-  <span class="kw">if</span> <span class="op">!</span><span class="ident">fs</span>::<span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">meta</span><span class="op">|</span> <span class="ident">meta</span>.<span class="ident">is_file</span>())
-    .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>)
-  {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">reqwest</span>::<span class="ident">get</span>(<span class="ident">url</span>.<span class="ident">as_ref</span>()).<span class="ident">unwrap</span>();
-    <span class="ident">io</span>::<span class="ident">copy</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">response</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">file</span>).<span class="ident">unwrap</span>();
-  }
-
-  <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">OpenOptions</span>::<span class="ident">new</span>().<span class="ident">read</span>(<span class="bool-val">true</span>).<span class="ident">open</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">unwrap</span>();
-  <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">file</span>)
-}
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>)]</span>
 <span class="kw">struct</span> <span class="ident">GitHubApiTrees</span> {
   <span class="kw">pub</span> <span class="ident">tree</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">GitHubApiFileEntry</span><span class="op">&gt;</span>,
 }
 
-<span class="comment">/*
-    {
-      &quot;path&quot;: &quot;sound/chatsounds/autoadd/instagib/sex1.ogg&quot;,
-      &quot;mode&quot;: &quot;100644&quot;,
-      &quot;type&quot;: &quot;blob&quot;,
-      &quot;sha&quot;: &quot;035b008bbf3d63ede0fb49eee52734ffa94321ba&quot;,
-      &quot;size&quot;: 28324,
-      &quot;url&quot;: &quot;https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba&quot;
-    },
-*/</span>
+<span class="comment">// {</span>
+<span class="comment">// &quot;path&quot;: &quot;sound/chatsounds/autoadd/instagib/sex1.ogg&quot;,</span>
+<span class="comment">// &quot;mode&quot;: &quot;100644&quot;,</span>
+<span class="comment">// &quot;type&quot;: &quot;blob&quot;,</span>
+<span class="comment">// &quot;sha&quot;: &quot;035b008bbf3d63ede0fb49eee52734ffa94321ba&quot;,</span>
+<span class="comment">// &quot;size&quot;: 28324,</span>
+<span class="comment">// &quot;url&quot;: &quot;https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba&quot;</span>
+<span class="comment">// },</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>)]</span>
 <span class="kw">struct</span> <span class="ident">GitHubApiFileEntry</span> {
   <span class="kw">pub</span> <span class="ident">path</span>: <span class="ident">String</span>,
@@ -525,8 +573,9 @@
   <span class="kw">pub</span> <span class="ident">size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
 }
 
+<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ChatsoundTrait</span> {
-  <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-&gt;</span> <span class="ident">Bytes</span>;
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Bytes</span>;
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
@@ -542,17 +591,13 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Chatsound</span> {
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-&gt;</span> <span class="ident">LoadedChatsound</span> {
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LoadedChatsound</span> {
     <span class="kw">let</span> <span class="ident">url</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(
       <span class="string">&quot;https://raw.githubusercontent.com/{}/master/{}/{}&quot;</span>,
       <span class="self">self</span>.<span class="ident">repo</span>, <span class="self">self</span>.<span class="ident">repo_path</span>, <span class="self">self</span>.<span class="ident">sound_path</span>
     );
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">cache_path</span>);
-
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
-    <span class="ident">response</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">bytes</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="ident">bytes</span>);
+    <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">cache_path</span>).<span class="kw">await</span>;
 
     <span class="ident">LoadedChatsound</span> { <span class="ident">bytes</span> }
   }
@@ -562,16 +607,72 @@
   <span class="ident">bytes</span>: <span class="ident">Bytes</span>,
 }
 
+<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">ChatsoundTrait</span> <span class="kw">for</span> <span class="ident">LoadedChatsound</span> {
-  <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_cache_path</span>: <span class="ident">P</span>) <span class="op">-&gt;</span> <span class="ident">Bytes</span> {
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_cache_path</span>: <span class="ident">P</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Bytes</span> {
     <span class="self">self</span>.<span class="ident">bytes</span>.<span class="ident">clone</span>()
   }
 }
 
+<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">ChatsoundTrait</span> <span class="kw">for</span> <span class="ident">Chatsound</span> {
-  <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-&gt;</span> <span class="ident">Bytes</span> {
-    <span class="kw">let</span> <span class="ident">loaded_chatsound</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>);
-    <span class="ident">loaded_chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>)
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_bytes</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="ident">P</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Bytes</span> {
+    <span class="kw">let</span> <span class="ident">loaded_chatsound</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>).<span class="kw">await</span>;
+    <span class="ident">loaded_chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>).<span class="kw">await</span>
+  }
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
+<span class="kw">enum</span> <span class="ident">ChatsoundsSink</span> {
+  <span class="ident">Sink</span>(<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span>),
+  <span class="ident">Spatial</span>(<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">SpatialSink</span><span class="op">&gt;</span>),
+}
+
+<span class="kw">impl</span> <span class="ident">ChatsoundsSink</span> {
+  <span class="kw">fn</span> <span class="ident">append</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">source</span>: <span class="ident">S</span>)
+  <span class="kw">where</span>
+    <span class="ident">S</span>: <span class="ident">Source</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="ident">S</span>::<span class="ident">Item</span>: <span class="ident">Sample</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Debug</span>,
+  {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>),
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>),
+    }
+  }
+
+  <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>(),
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>(),
+    }
+  }
+
+  <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">stop</span>(),
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">stop</span>(),
+    }
+  }
+
+  <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">f32</span>) {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="ident">volume</span>),
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="ident">volume</span>),
+    }
+  }
+
+  <span class="kw">fn</span> <span class="ident">unwrap_sink</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span> {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>,
+      <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+    }
+  }
+
+  <span class="kw">fn</span> <span class="ident">unwrap_spatial</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">SpatialSink</span><span class="op">&gt;</span> {
+    <span class="kw">match</span> <span class="self">self</span> {
+      <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">sink</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">sink</span>,
+      <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+    }
   }
 }
 
@@ -581,15 +682,14 @@
   <span class="ident">volume</span>: <span class="ident">f32</span>,
 
   <span class="comment">// [sentence]: Chatsound[]</span>
-  <span class="ident">map_store</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Chatsound</span><span class="op">&gt;&gt;</span>,
+  <span class="ident">map_store</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Chatsound</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 
   <span class="ident">device</span>: <span class="ident">Device</span>,
-  <span class="ident">sinks</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;&gt;</span>,
-  <span class="ident">spatial_sinks</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">SpatialSink</span><span class="op">&gt;&gt;</span>,
+  <span class="ident">sinks</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">ChatsoundsSink</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Chatsounds</span> {
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;&gt;</span>(<span class="ident">cache_path</span>: <span class="ident">T</span>) <span class="op">-&gt;</span> <span class="self">Self</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">cache_path</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
     <span class="self">Self</span> {
       <span class="ident">cache_path</span>: <span class="ident">cache_path</span>.<span class="ident">as_ref</span>().<span class="ident">canonicalize</span>().<span class="ident">unwrap</span>(),
       <span class="ident">max_sinks</span>: <span class="number">8</span>,
@@ -597,21 +697,21 @@
       <span class="ident">map_store</span>: <span class="ident">HashMap</span>::<span class="ident">new</span>(),
       <span class="ident">device</span>: <span class="ident">rodio</span>::<span class="ident">default_output_device</span>().<span class="ident">unwrap</span>(),
       <span class="ident">sinks</span>: <span class="ident">VecDeque</span>::<span class="ident">new</span>(),
-      <span class="ident">spatial_sinks</span>: <span class="ident">VecDeque</span>::<span class="ident">new</span>(),
     }
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load_github_api</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">repo</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">repo_path</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>) {
+  <span class="comment">// TODO parse HEAD request</span>
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load_github_api</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">repo</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">repo_path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {
     <span class="kw">let</span> <span class="ident">api_url</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(
       <span class="string">&quot;https://api.github.com/repos/{}/git/trees/master?recursive=1&quot;</span>,
       <span class="ident">repo</span>
     );
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="ident">api_url</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">trees</span>: <span class="ident">GitHubApiTrees</span> <span class="op">=</span> <span class="ident">serde_json</span>::<span class="ident">from_reader</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">response</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="ident">api_url</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>).<span class="kw">await</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">trees</span>: <span class="ident">GitHubApiTrees</span> <span class="op">=</span> <span class="ident">serde_json</span>::<span class="ident">from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="ident">unwrap</span>();
 
     <span class="kw">for</span> <span class="ident">entry</span> <span class="kw">in</span> <span class="ident">trees</span>.<span class="ident">tree</span>.<span class="ident">iter_mut</span>() {
-      <span class="kw">if</span> <span class="ident">entry</span>.<span class="ident">r#type</span> <span class="op">!=</span> <span class="string">&quot;blob&quot;</span> <span class="op">||</span> <span class="op">!</span><span class="ident">entry</span>.<span class="ident">path</span>.<span class="ident">starts_with</span>(<span class="kw-2">&amp;</span><span class="ident">repo_path</span>) {
+      <span class="kw">if</span> <span class="ident">entry</span>.<span class="ident">r#type</span> <span class="op">!</span><span class="op">=</span> <span class="string">&quot;blob&quot;</span> <span class="op">|</span><span class="op">|</span> <span class="op">!</span><span class="ident">entry</span>.<span class="ident">path</span>.<span class="ident">starts_with</span>(<span class="kw-2">&amp;</span><span class="ident">repo_path</span>) {
         <span class="kw">continue</span>;
       }
 
@@ -621,7 +721,6 @@
       <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">Path</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">sound_path</span>);
       <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">Component</span>::<span class="ident">Normal</span>(<span class="ident">s</span>)) <span class="op">=</span> <span class="ident">path</span>.<span class="ident">components</span>().<span class="ident">nth</span>(<span class="number">1</span>) {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sentence</span>) <span class="op">=</span> <span class="ident">Path</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>).<span class="ident">file_stem</span>() {
-          <span class="comment">// TODO less cloning, maybe &quot;atom&quot;? or Cow or Rc?</span>
           <span class="kw">let</span> <span class="ident">sentence</span> <span class="op">=</span> <span class="ident">sentence</span>.<span class="ident">to_string_lossy</span>().<span class="ident">to_string</span>();
           <span class="kw">let</span> <span class="ident">vec</span> <span class="op">=</span> <span class="self">self</span>
             .<span class="ident">map_store</span>
@@ -638,14 +737,14 @@
     }
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load_github_msgpack</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">repo</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">repo_path</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>) {
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load_github_msgpack</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">repo</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">repo_path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {
     <span class="kw">let</span> <span class="ident">msgpack_url</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(
       <span class="string">&quot;https://raw.githubusercontent.com/{}/master/{}/list.msgpack&quot;</span>,
       <span class="ident">repo</span>, <span class="ident">repo_path</span>
     );
 
-    <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="ident">msgpack_url</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entries</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="ident">rmp_serde</span>::<span class="ident">decode</span>::<span class="ident">from_read</span>(<span class="ident">response</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">cache_download</span>(<span class="ident">msgpack_url</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>).<span class="kw">await</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entries</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">rmp_serde</span>::<span class="ident">decode</span>::<span class="ident">from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="ident">unwrap</span>();
 
     <span class="kw">for</span> <span class="ident">entry</span> <span class="kw">in</span> <span class="ident">entries</span>.<span class="ident">drain</span>(..) {
       <span class="comment">// e26/stop.ogg or e26/nestetrismusic/1.ogg</span>
@@ -665,11 +764,11 @@
     }
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">sentence</span>: <span class="ident">T</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Chatsound</span><span class="op">&gt;&gt;</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sentence</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Chatsound</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="self">self</span>.<span class="ident">map_store</span>.<span class="ident">get</span>(<span class="ident">sentence</span>.<span class="ident">as_ref</span>())
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">search</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">search</span>: <span class="ident">S</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">String</span>)<span class="op">&gt;</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">search</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">search</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>)<span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">search</span> <span class="op">=</span> <span class="ident">search</span>.<span class="ident">as_ref</span>();
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">positions</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>
@@ -683,17 +782,14 @@
       <span class="ident">pos1</span>
         .<span class="ident">partial_cmp</span>(<span class="ident">pos2</span>)
         .<span class="ident">unwrap</span>()
-        .<span class="ident">then_with</span>(<span class="op">||</span> <span class="ident">str1</span>.<span class="ident">len</span>().<span class="ident">partial_cmp</span>(<span class="kw-2">&amp;</span><span class="ident">str2</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>())
+        .<span class="ident">then_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">str1</span>.<span class="ident">len</span>().<span class="ident">partial_cmp</span>(<span class="kw-2">&amp;</span><span class="ident">str2</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>())
     });
 
     <span class="ident">positions</span>.<span class="ident">par_iter</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>()
   }
 
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stop_all</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
-    <span class="kw">for</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
-      <span class="ident">sink</span>.<span class="ident">stop</span>();
-    }
-    <span class="kw">for</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">spatial_sinks</span>.<span class="ident">drain</span>(..) {
+    <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
       <span class="ident">sink</span>.<span class="ident">stop</span>();
     }
   }
@@ -706,214 +802,272 @@
     }
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">f32</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">f32</span> {
     <span class="self">self</span>.<span class="ident">volume</span>
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cache_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">PathBuf</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cache_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">PathBuf</span> {
     <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">play</span><span class="op">&lt;</span><span class="ident">C</span>: <span class="ident">ChatsoundTrait</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">chatsound</span>: <span class="kw-2">&amp;</span><span class="ident">C</span>) <span class="op">-&gt;</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>);
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">text</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span>, <span class="ident">String</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Sink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">device</span>)));
 
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">data</span>));
-    <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">Decoder</span>::<span class="ident">new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">Sink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">device</span>);
-    <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="self">self</span>.<span class="ident">volume</span>);
-    <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">sink</span>);
-    <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">push_back</span>(<span class="ident">sink</span>.<span class="ident">clone</span>());
-    <span class="kw">if</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="self">self</span>.<span class="ident">max_sinks</span> {
-      <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">pop_front</span>();
-    }
-
-    <span class="ident">sink</span>
+    <span class="prelude-val">Ok</span>(<span class="ident">sink</span>.<span class="ident">unwrap_sink</span>())
   }
 
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">play_spatial</span><span class="op">&lt;</span><span class="ident">C</span>: <span class="ident">ChatsoundTrait</span><span class="op">&gt;</span>(
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_spatial</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(
     <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
-    <span class="ident">chatsound</span>: <span class="kw-2">&amp;</span><span class="ident">C</span>,
+    <span class="ident">text</span>: <span class="ident">S</span>,
     <span class="ident">emitter_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
     <span class="ident">left_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
     <span class="ident">right_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-  ) <span class="op">-&gt;</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">SpatialSink</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>);
+  ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">SpatialSink</span><span class="op">&gt;</span>, <span class="ident">String</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">ChatsoundsSink</span>::<span class="ident">Spatial</span>(<span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">SpatialSink</span>::<span class="ident">new</span>(
+      <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">device</span>,
+      <span class="ident">emitter_pos</span>,
+      <span class="ident">left_ear_pos</span>,
+      <span class="ident">right_ear_pos</span>,
+    )));
 
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">data</span>));
-    <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">Decoder</span>::<span class="ident">new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>();
+    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">SpatialSink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">device</span>, <span class="ident">emitter_pos</span>, <span class="ident">left_ear_pos</span>, <span class="ident">right_ear_pos</span>);
+    <span class="prelude-val">Ok</span>(<span class="ident">sink</span>.<span class="ident">unwrap_spatial</span>())
+  }
+
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_sink</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(
+    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
+    <span class="ident">text</span>: <span class="ident">S</span>,
+    <span class="ident">sink</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ChatsoundsSink</span>,
+  ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">String</span><span class="op">&gt;</span> {
     <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="self">self</span>.<span class="ident">volume</span>);
-    <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
 
-    <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">sink</span>);
-    <span class="self">self</span>.<span class="ident">spatial_sinks</span>.<span class="ident">push_back</span>(<span class="ident">sink</span>.<span class="ident">clone</span>());
-    <span class="kw">if</span> <span class="self">self</span>.<span class="ident">spatial_sinks</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="self">self</span>.<span class="ident">max_sinks</span> {
-      <span class="self">self</span>.<span class="ident">spatial_sinks</span>.<span class="ident">pop_front</span>();
+    <span class="kw">let</span> <span class="ident">parsed_chatsounds</span> <span class="op">=</span> <span class="ident">parser</span>::<span class="ident">parse</span>(<span class="ident">text</span>.<span class="ident">as_ref</span>())<span class="question-mark">?</span>;
+    <span class="kw">for</span> <span class="ident">parsed_chatsound</span> <span class="kw">in</span> <span class="ident">parsed_chatsounds</span> {
+      <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsounds</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">get</span>(<span class="ident">parsed_chatsound</span>.<span class="ident">sentence</span>) {
+        <span class="comment">// TODO random hashed number passed in?</span>
+        <span class="kw">let</span> <span class="ident">chatsound</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Source</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">i16</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span> <span class="op">=</span>
+          <span class="ident">Box</span>::<span class="ident">new</span>(<span class="self">self</span>.<span class="ident">make_source</span>(<span class="ident">chatsound</span>).<span class="kw">await</span>);
+
+        <span class="kw">for</span> <span class="ident">modifier</span> <span class="kw">in</span> <span class="ident">parsed_chatsound</span>.<span class="ident">modifiers</span> {
+          <span class="ident">source</span> <span class="op">=</span> <span class="ident">modifier</span>.<span class="ident">modify</span>(<span class="ident">source</span>);
+        }
+
+        <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+      }
     }
 
-    <span class="ident">sink</span>
+    <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">push_back</span>(<span class="ident">sink</span>.<span class="ident">clone</span>());
+    <span class="kw">if</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">max_sinks</span> {
+      <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">pop_front</span>();
+    }
+
+    <span class="prelude-val">Ok</span>(())
+  }
+
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">make_source</span><span class="op">&lt;</span><span class="ident">C</span>: <span class="ident">ChatsoundTrait</span><span class="op">&gt;</span>(
+    <span class="kw-2">&amp;</span><span class="self">self</span>,
+    <span class="ident">chatsound</span>: <span class="kw-2">&amp;</span><span class="ident">C</span>,
+  ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">BufReader</span><span class="op">&lt;</span><span class="ident">Cursor</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>).<span class="kw">await</span>;
+
+    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">bytes</span>));
+    <span class="ident">Decoder</span>::<span class="ident">new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>()
   }
 
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
-    <span class="kw">for</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
+    <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
       <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
     }
-
-    <span class="kw">for</span> <span class="ident">spatial_sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">spatial_sinks</span>.<span class="ident">drain</span>(..) {
-      <span class="ident">spatial_sink</span>.<span class="ident">sleep_until_end</span>();
-    }
   }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">it_works</span>() {
-  <span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="ident">unwrap</span>();
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">tests</span> {
 
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
+  <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+  <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">prelude</span>::<span class="ident">Future</span>;
 
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>);
-  <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(
-    <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
-    <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
-  );
-
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>);
-  <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>);
-
-  <span class="kw">for</span> <span class="ident">folder</span> <span class="kw">in</span> <span class="kw-2">&amp;</span>[
-    <span class="string">&quot;csgo&quot;</span>, <span class="string">&quot;css&quot;</span>, <span class="string">&quot;ep1&quot;</span>, <span class="string">&quot;ep2&quot;</span>, <span class="string">&quot;hl2&quot;</span>, <span class="string">&quot;l4d&quot;</span>, <span class="string">&quot;l4d2&quot;</span>, <span class="string">&quot;portal&quot;</span>, <span class="string">&quot;tf2&quot;</span>,
-  ] {
-    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games {}&quot;</span>, <span class="ident">folder</span>);
-    <span class="ident">chatsounds</span>.<span class="ident">load_github_msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="ident">folder</span>);
+  <span class="kw">fn</span> <span class="ident">run_future</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>) {
+    <span class="kw">let</span> <span class="ident">rt</span> <span class="op">=</span> <span class="ident">tokio</span>::<span class="ident">runtime</span>::<span class="ident">Runtime</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
+    <span class="ident">rt</span>.<span class="ident">block_on</span>(<span class="ident">f</span>);
   }
 
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">list</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;helloh&quot;</span>, <span class="string">&quot;im gay&quot;</span>, <span class="string">&quot;dad please&quot;</span>]
-    .<span class="ident">drain</span>(..)
-    .<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">sentence</span><span class="op">|</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="ident">sentence</span>).<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">sounds</span><span class="op">|</span> <span class="ident">sounds</span>.<span class="ident">get</span>(<span class="number">0</span>)))
-    .<span class="ident">collect</span>();
+  <span class="attribute">#[<span class="ident">test</span>]</span>
+  <span class="kw">fn</span> <span class="ident">it_works</span>() {
+    <span class="ident">run_future</span>(<span class="kw">async</span> {
+      <span class="ident">async_std</span>::<span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;load&quot;</span>);
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">loaded_list</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">list</span>
-    .<span class="ident">drain</span>(..)
-    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">chatsound</span><span class="op">|</span> <span class="ident">chatsound</span>.<span class="ident">load</span>(<span class="ident">chatsounds</span>.<span class="ident">cache_path</span>()))
-    .<span class="ident">collect</span>();
+      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
 
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;play&quot;</span>);
-  <span class="kw">for</span> <span class="ident">chatsound</span> <span class="kw">in</span> <span class="ident">loaded_list</span>.<span class="ident">drain</span>(..) {
-    <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">play</span>(<span class="kw-2">&amp;</span><span class="ident">chatsound</span>);
-    <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>);
+      <span class="ident">chatsounds</span>
+        .<span class="ident">load_github_api</span>(
+          <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
+          <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
+        )
+        .<span class="kw">await</span>;
+
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>);
+      <span class="ident">chatsounds</span>
+        .<span class="ident">load_github_api</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>)
+        .<span class="kw">await</span>;
+
+      <span class="kw">for</span> <span class="ident">folder</span> <span class="kw">in</span> <span class="kw-2">&amp;</span>[
+        <span class="string">&quot;csgo&quot;</span>, <span class="string">&quot;css&quot;</span>, <span class="string">&quot;ep1&quot;</span>, <span class="string">&quot;ep2&quot;</span>, <span class="string">&quot;hl2&quot;</span>, <span class="string">&quot;l4d&quot;</span>, <span class="string">&quot;l4d2&quot;</span>, <span class="string">&quot;portal&quot;</span>, <span class="string">&quot;tf2&quot;</span>,
+      ] {
+        <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games {}&quot;</span>, <span class="ident">folder</span>);
+        <span class="ident">chatsounds</span>
+          .<span class="ident">load_github_msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="ident">folder</span>)
+          .<span class="kw">await</span>;
+      }
+
+      <span class="ident">chatsounds</span>
+        .<span class="ident">play</span>(<span class="string">&quot;helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)&quot;</span>)
+        .<span class="kw">await</span>
+        .<span class="ident">unwrap</span>()
+        .<span class="ident">sleep_until_end</span>();
+    });
   }
-}
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_autocomplete</span>() {
-  <span class="kw">let</span> <span class="ident">chatsounds</span> <span class="op">=</span> {
-    <span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="ident">unwrap</span>();
+  <span class="attribute">#[<span class="ident">test</span>]</span>
+  <span class="kw">fn</span> <span class="ident">test_autocomplete</span>() {
+    <span class="ident">run_future</span>(<span class="kw">async</span> {
+      <span class="kw">let</span> <span class="ident">chatsounds</span> <span class="op">=</span> {
+        <span class="ident">async_std</span>::<span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
 
-    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>);
-    <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(
-      <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
-      <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
-    );
+        <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>);
+        <span class="ident">chatsounds</span>
+          .<span class="ident">load_github_api</span>(
+            <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
+            <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
+          )
+          .<span class="kw">await</span>;
 
-    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>);
-    <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>);
+        <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>);
+        <span class="ident">chatsounds</span>
+          .<span class="ident">load_github_api</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>)
+          .<span class="kw">await</span>;
 
-    <span class="kw">for</span> <span class="ident">folder</span> <span class="kw">in</span> <span class="kw-2">&amp;</span>[
-      <span class="string">&quot;csgo&quot;</span>, <span class="string">&quot;css&quot;</span>, <span class="string">&quot;ep1&quot;</span>, <span class="string">&quot;ep2&quot;</span>, <span class="string">&quot;hl2&quot;</span>, <span class="string">&quot;l4d&quot;</span>, <span class="string">&quot;l4d2&quot;</span>, <span class="string">&quot;portal&quot;</span>, <span class="string">&quot;tf2&quot;</span>,
-    ] {
-      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games {}&quot;</span>, <span class="ident">folder</span>);
-      <span class="ident">chatsounds</span>.<span class="ident">load_github_msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="ident">folder</span>);
-    }
+        <span class="kw">for</span> <span class="ident">folder</span> <span class="kw">in</span> <span class="kw-2">&amp;</span>[
+          <span class="string">&quot;csgo&quot;</span>, <span class="string">&quot;css&quot;</span>, <span class="string">&quot;ep1&quot;</span>, <span class="string">&quot;ep2&quot;</span>, <span class="string">&quot;hl2&quot;</span>, <span class="string">&quot;l4d&quot;</span>, <span class="string">&quot;l4d2&quot;</span>, <span class="string">&quot;portal&quot;</span>, <span class="string">&quot;tf2&quot;</span>,
+        ] {
+          <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games {}&quot;</span>, <span class="ident">folder</span>);
+          <span class="ident">chatsounds</span>
+            .<span class="ident">load_github_msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="ident">folder</span>)
+            .<span class="kw">await</span>;
+        }
 
-    <span class="ident">chatsounds</span>
-  };
+        <span class="ident">chatsounds</span>
+      };
 
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;searching {} keys&quot;</span>, <span class="ident">chatsounds</span>.<span class="ident">map_store</span>.<span class="ident">keys</span>().<span class="ident">count</span>());
-  <span class="kw">let</span> <span class="ident">search</span> <span class="op">=</span> <span class="string">&quot;and thats what&quot;</span>;
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;searching {} keys&quot;</span>, <span class="ident">chatsounds</span>.<span class="ident">map_store</span>.<span class="ident">keys</span>().<span class="ident">count</span>());
+      <span class="kw">let</span> <span class="ident">search</span> <span class="op">=</span> <span class="string">&quot;and thats what&quot;</span>;
 
-  <span class="kw">let</span> <span class="ident">t0</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Instant</span>::<span class="ident">now</span>();
-  <span class="kw">let</span> <span class="ident">positions</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">search</span>(<span class="ident">search</span>.<span class="ident">to_string</span>());
-  <span class="kw">let</span> <span class="ident">t1</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Instant</span>::<span class="ident">now</span>();
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;took {:?}&quot;</span>, <span class="ident">t1</span> <span class="op">-</span> <span class="ident">t0</span>);
+      <span class="kw">let</span> <span class="ident">t0</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Instant</span>::<span class="ident">now</span>();
+      <span class="kw">let</span> <span class="ident">positions</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">search</span>(<span class="ident">search</span>.<span class="ident">to_string</span>());
+      <span class="kw">let</span> <span class="ident">t1</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Instant</span>::<span class="ident">now</span>();
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;took {:?}&quot;</span>, <span class="ident">t1</span> <span class="op">-</span> <span class="ident">t0</span>);
 
-  <span class="macro">println</span><span class="macro">!</span>(
-    <span class="string">&quot;{:#?}&quot;</span>,
-    <span class="ident">positions</span>.<span class="ident">iter</span>().<span class="ident">rev</span>().<span class="ident">take</span>(<span class="number">10</span>).<span class="ident">rev</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;&gt;</span>()
-  );
-}
+      <span class="macro">println</span><span class="macro">!</span>(
+        <span class="string">&quot;{:#?}&quot;</span>,
+        <span class="ident">positions</span>.<span class="ident">iter</span>().<span class="ident">rev</span>().<span class="ident">take</span>(<span class="number">10</span>).<span class="ident">rev</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+      );
+    });
+  }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_spatial</span>() {
-  <span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="ident">unwrap</span>();
+  <span class="attribute">#[<span class="ident">test</span>]</span>
+  <span class="kw">fn</span> <span class="ident">test_spatial</span>() {
+    <span class="ident">run_future</span>(<span class="kw">async</span> {
+      <span class="ident">async_std</span>::<span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;fetch&quot;</span>);
-  <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(
-    <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
-    <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
-  );
+      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
 
-  <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sounds</span>) <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="string">&quot;fuckbeesremastered&quot;</span>) {
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsound</span>) <span class="op">=</span> <span class="ident">sounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">cloned</span>() {
-      <span class="comment">// play near right ear</span>
-      <span class="kw">let</span> <span class="ident">emitter_pos</span> <span class="op">=</span> [<span class="number">2.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;fetch&quot;</span>);
+      <span class="ident">chatsounds</span>
+        .<span class="ident">load_github_api</span>(
+          <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
+          <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
+        )
+        .<span class="kw">await</span>;
+
+      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">emitter_pos</span> <span class="op">=</span> [<span class="number">2.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
       <span class="kw">let</span> <span class="ident">left_ear_pos</span> <span class="op">=</span> [<span class="op">-</span><span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
       <span class="kw">let</span> <span class="ident">right_ear_pos</span> <span class="op">=</span> [<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
 
       <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;play&quot;</span>);
 
-      <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">play_spatial</span>(<span class="kw-2">&amp;</span><span class="ident">chatsound</span>, <span class="ident">emitter_pos</span>, <span class="ident">left_ear_pos</span>, <span class="ident">right_ear_pos</span>);
+      <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">chatsounds</span>
+        .<span class="ident">play_spatial</span>(
+          <span class="string">&quot;fuckbeesremastered&quot;</span>,
+          <span class="ident">emitter_pos</span>,
+          <span class="ident">left_ear_pos</span>,
+          <span class="ident">right_ear_pos</span>,
+        )
+        .<span class="kw">await</span>
+        .<span class="ident">unwrap</span>();
 
+      <span class="comment">// start in right headphone, move left</span>
+      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="number">0.0</span>;
       <span class="kw">while</span> <span class="op">!</span><span class="ident">sink</span>.<span class="ident">empty</span>() {
-        <span class="ident">std</span>::<span class="ident">thread</span>::<span class="ident">sleep</span>(<span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">10</span>));
+        <span class="ident">emitter_pos</span>[<span class="number">0</span>] <span class="op">=</span> <span class="ident">i</span>.<span class="ident">cos</span>() <span class="op">*</span> <span class="number">2.0</span>;
+
         <span class="ident">sink</span>.<span class="ident">set_left_ear_position</span>(<span class="ident">left_ear_pos</span>);
         <span class="ident">sink</span>.<span class="ident">set_right_ear_position</span>(<span class="ident">right_ear_pos</span>);
         <span class="ident">sink</span>.<span class="ident">set_emitter_position</span>(<span class="ident">emitter_pos</span>);
+
+        <span class="ident">std</span>::<span class="ident">thread</span>::<span class="ident">sleep</span>(<span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">10</span>));
+        <span class="ident">i</span> <span class="op">+</span><span class="op">=</span> <span class="number">0.01</span>;
       }
 
       <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
-    }
+
+      <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
+    });
   }
 
-  <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
-}
+  <span class="attribute">#[<span class="ident">test</span>]</span>
+  <span class="kw">fn</span> <span class="ident">test_mono_bug</span>() {
+    <span class="ident">run_future</span>(<span class="kw">async</span> {
+      <span class="ident">async_std</span>::<span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_mono_bug</span>() {
-  <span class="ident">fs</span>::<span class="ident">create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="ident">unwrap</span>();
+      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
 
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> <span class="op">=</span> <span class="ident">Chatsounds</span>::<span class="ident">new</span>(<span class="string">&quot;cache&quot;</span>);
-  <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;fetch&quot;</span>);
-  <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(
-    <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
-    <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
-  );
+      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;fetch&quot;</span>);
+      <span class="ident">chatsounds</span>
+        .<span class="ident">load_github_api</span>(
+          <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
+          <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
+        )
+        .<span class="kw">await</span>;
 
-  <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sounds</span>) <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="string">&quot;fuckbeesremastered&quot;</span>) {
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsound</span>) <span class="op">=</span> <span class="ident">sounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">cloned</span>() {
-      <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;play&quot;</span>);
+      <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sounds</span>) <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="string">&quot;fuckbeesremastered&quot;</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsound</span>) <span class="op">=</span> <span class="ident">sounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">cloned</span>() {
+          <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;play&quot;</span>);
 
-      <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">cache_path</span>);
+          <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">cache_path</span>).<span class="kw">await</span>;
 
-      <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">data</span>));
-      <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">Decoder</span>::<span class="ident">new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>();
+          <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="ident">data</span>));
+          <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">Decoder</span>::<span class="ident">new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>();
 
-      <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">rodio</span>::<span class="ident">source</span>::<span class="ident">ChannelVolume</span>::<span class="ident">new</span>(<span class="ident">source</span>, <span class="macro">vec</span><span class="macro">!</span>[<span class="number">0.5</span>, <span class="number">1.0</span>]);
-      <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">Sink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">device</span>);
-      <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="number">0.1</span>);
-      <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+          <span class="kw">let</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">rodio</span>::<span class="ident">source</span>::<span class="ident">ChannelVolume</span>::<span class="ident">new</span>(<span class="ident">source</span>, <span class="macro">vec</span><span class="macro">!</span>[<span class="number">0.2</span>, <span class="number">1.0</span>]);
+          <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">Sink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">device</span>);
+          <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="number">0.1</span>);
+          <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
 
-      <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
-    }
+          <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+        }
+      }
+
+      <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
+    });
   }
-
-  <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "chatsounds";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "chatsounds";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

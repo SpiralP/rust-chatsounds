@@ -6,5 +6,4 @@ implementors["cpal"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

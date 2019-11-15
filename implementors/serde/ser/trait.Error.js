@@ -9,5 +9,4 @@ implementors["serde_urlencoded"] = [{text:"impl <a class=\"trait\" href=\"serde/
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

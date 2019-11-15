@@ -6,5 +6,4 @@ implementors["claxon"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

@@ -6,5 +6,4 @@ implementors["lewton"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

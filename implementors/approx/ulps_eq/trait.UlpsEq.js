@@ -7,5 +7,4 @@ implementors["nalgebra"] = [{text:"impl&lt;N, R:&nbsp;<a class=\"trait\" href=\"
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

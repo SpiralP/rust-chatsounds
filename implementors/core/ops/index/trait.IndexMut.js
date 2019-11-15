@@ -13,5 +13,4 @@ implementors["unchecked_index"] = [{text:"impl&lt;T, I&gt; <a class=\"trait\" hr
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

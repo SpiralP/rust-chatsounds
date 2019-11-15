@@ -6,5 +6,4 @@ implementors["alga"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

@@ -6,5 +6,4 @@ implementors["chatsounds"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

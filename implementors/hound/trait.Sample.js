@@ -6,5 +6,4 @@ implementors["hound"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

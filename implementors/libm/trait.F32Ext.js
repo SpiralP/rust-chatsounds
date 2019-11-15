@@ -6,5 +6,4 @@ implementors["libm"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()
