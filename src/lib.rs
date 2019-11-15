@@ -6,6 +6,7 @@ use crate::helpers::cache_download;
 use async_std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
+use rand::prelude::*;
 use rayon::prelude::*;
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
 use rodio::{Sample, Source};
@@ -274,17 +275,22 @@ impl Chatsounds {
     &self.cache_path
   }
 
-  pub async fn play<S: AsRef<str>>(&mut self, text: S) -> Result<Arc<Sink>, String> {
+  pub async fn play<S: AsRef<str>, R: RngCore>(
+    &mut self,
+    text: S,
+    rng: R,
+  ) -> Result<Arc<Sink>, String> {
     let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::new(&self.device)));
 
-    self.play_sink(text, &mut sink).await?;
+    self.play_sink(text, &mut sink, rng).await?;
 
     Ok(sink.unwrap_sink())
   }
 
-  pub async fn play_spatial<S: AsRef<str>>(
+  pub async fn play_spatial<S: AsRef<str>, R: RngCore>(
     &mut self,
     text: S,
+    rng: R,
     emitter_pos: [f32; 3],
     left_ear_pos: [f32; 3],
     right_ear_pos: [f32; 3],
@@ -296,15 +302,16 @@ impl Chatsounds {
       right_ear_pos,
     )));
 
-    self.play_sink(text, &mut sink).await?;
+    self.play_sink(text, &mut sink, rng).await?;
 
     Ok(sink.unwrap_spatial())
   }
 
-  async fn play_sink<S: AsRef<str>>(
+  async fn play_sink<S: AsRef<str>, R: RngCore>(
     &mut self,
     text: S,
     sink: &mut ChatsoundsSink,
+    mut rng: R,
   ) -> Result<(), String> {
     sink.set_volume(self.volume);
 
@@ -312,7 +319,7 @@ impl Chatsounds {
     for parsed_chatsound in parsed_chatsounds {
       if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
         // TODO random hashed number passed in?
-        let chatsound = chatsounds.get(0).unwrap();
+        let chatsound = chatsounds.choose(&mut rng).unwrap();
 
         let mut source: Box<dyn Source<Item = i16> + Send> =
           Box::new(self.make_source(chatsound).await);
@@ -392,7 +399,10 @@ mod tests {
       }
 
       chatsounds
-        .play("helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)")
+        .play(
+          "helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
+          thread_rng(),
+        )
         .await
         .unwrap()
         .sleep_until_end();
@@ -472,6 +482,7 @@ mod tests {
       let sink = chatsounds
         .play_spatial(
           "fuckbeesremastered",
+          thread_rng(),
           emitter_pos,
           left_ear_pos,
           right_ear_pos,
