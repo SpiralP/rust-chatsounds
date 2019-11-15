@@ -3,24 +3,34 @@ name: Rust
 on: [push]
 
 jobs:
-  build:
-
+  build_linux:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v1
+      
     - name: Install deps
-      run: sudo apt-get -y install libasound2-dev
+      run: sudo apt-get -y update && sudo apt-get -y libasound2-dev
+      
+    - name: Install nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+
     - name: Build
       run: cargo build --verbose
+      
     - name: Generate docs
       run: cargo doc
+      
     - name: Deploy docs
       uses: peaceiris/actions-gh-pages@v2.5.0
       env:
         ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         PUBLISH_BRANCH: gh-pages
         PUBLISH_DIR: ./target/doc
+
     - name: Test
       run: cargo test --verbose
       env:
