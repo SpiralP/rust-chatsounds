@@ -13,7 +13,10 @@ use nom::{
 };
 use rodio::Source;
 
-pub trait Modifier {
+pub trait Modifier
+where
+  Self: Send,
+{
   fn parse(input: &str) -> IResult<&str, Self>
   where
     Self: Sized;
