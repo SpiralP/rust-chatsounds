@@ -536,6 +536,17 @@
 <span id="536">536</span>
 <span id="537">537</span>
 <span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">mod</span> <span class="ident">helpers</span>;
 <span class="kw">mod</span> <span class="ident">modifiers</span>;
@@ -545,6 +556,7 @@
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
 <span class="kw">use</span> <span class="ident">async_trait</span>::<span class="ident">async_trait</span>;
 <span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
+<span class="kw">use</span> <span class="ident">rand</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">rayon</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">Decoder</span>, <span class="ident">Device</span>, <span class="ident">Sink</span>, <span class="ident">SpatialSink</span>};
 <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">Sample</span>, <span class="ident">Source</span>};
@@ -813,17 +825,22 @@
     <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>
   }
 
-  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">text</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span>, <span class="ident">String</span><span class="op">&gt;</span> {
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">R</span>: <span class="ident">RngCore</span><span class="op">&gt;</span>(
+    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
+    <span class="ident">text</span>: <span class="ident">S</span>,
+    <span class="ident">rng</span>: <span class="ident">R</span>,
+  ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Sink</span><span class="op">&gt;</span>, <span class="ident">String</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">ChatsoundsSink</span>::<span class="ident">Sink</span>(<span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Sink</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">device</span>)));
 
-    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>, <span class="ident">rng</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="ident">sink</span>.<span class="ident">unwrap_sink</span>())
   }
 
-  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_spatial</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(
+  <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_spatial</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">R</span>: <span class="ident">RngCore</span><span class="op">&gt;</span>(
     <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
     <span class="ident">text</span>: <span class="ident">S</span>,
+    <span class="ident">rng</span>: <span class="ident">R</span>,
     <span class="ident">emitter_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
     <span class="ident">left_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
     <span class="ident">right_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
@@ -835,15 +852,16 @@
       <span class="ident">right_ear_pos</span>,
     )));
 
-    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="self">self</span>.<span class="ident">play_sink</span>(<span class="ident">text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">sink</span>, <span class="ident">rng</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="ident">sink</span>.<span class="ident">unwrap_spatial</span>())
   }
 
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_sink</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(
+  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_sink</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">R</span>: <span class="ident">RngCore</span><span class="op">&gt;</span>(
     <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
     <span class="ident">text</span>: <span class="ident">S</span>,
     <span class="ident">sink</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ChatsoundsSink</span>,
+    <span class="kw-2">mut</span> <span class="ident">rng</span>: <span class="ident">R</span>,
   ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">String</span><span class="op">&gt;</span> {
     <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="self">self</span>.<span class="ident">volume</span>);
 
@@ -851,7 +869,7 @@
     <span class="kw">for</span> <span class="ident">parsed_chatsound</span> <span class="kw">in</span> <span class="ident">parsed_chatsounds</span> {
       <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsounds</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">get</span>(<span class="ident">parsed_chatsound</span>.<span class="ident">sentence</span>) {
         <span class="comment">// TODO random hashed number passed in?</span>
-        <span class="kw">let</span> <span class="ident">chatsound</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">chatsound</span> <span class="op">=</span> <span class="ident">chatsounds</span>.<span class="ident">choose</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">rng</span>).<span class="ident">unwrap</span>();
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Source</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">i16</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span> <span class="op">=</span>
           <span class="ident">Box</span>::<span class="ident">new</span>(<span class="self">self</span>.<span class="ident">make_source</span>(<span class="ident">chatsound</span>).<span class="kw">await</span>);
@@ -931,7 +949,10 @@
       }
 
       <span class="ident">chatsounds</span>
-        .<span class="ident">play</span>(<span class="string">&quot;helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)&quot;</span>)
+        .<span class="ident">play</span>(
+          <span class="string">&quot;helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)&quot;</span>,
+          <span class="ident">thread_rng</span>(),
+        )
         .<span class="kw">await</span>
         .<span class="ident">unwrap</span>()
         .<span class="ident">sleep_until_end</span>();
@@ -1011,6 +1032,7 @@
       <span class="kw">let</span> <span class="ident">sink</span> <span class="op">=</span> <span class="ident">chatsounds</span>
         .<span class="ident">play_spatial</span>(
           <span class="string">&quot;fuckbeesremastered&quot;</span>,
+          <span class="ident">thread_rng</span>(),
           <span class="ident">emitter_pos</span>,
           <span class="ident">left_ear_pos</span>,
           <span class="ident">right_ear_pos</span>,
