@@ -28,11 +28,11 @@ impl Modifier for EchoModifier {
     let mut modifier = EchoModifier::default();
 
     if let Some(duration) = args.get(0).copied().unwrap_or(None) {
-      modifier.duration = duration;
+      modifier.duration = duration.max(0.0).min(1.5);
     }
 
     if let Some(amplitude) = args.get(1).copied().unwrap_or(None) {
-      modifier.amplitude = amplitude;
+      modifier.amplitude = amplitude.max(0.0).min(1.5);
     }
 
     Ok((input, modifier))

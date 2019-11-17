@@ -127,4 +127,9 @@ fn test_parse_args() {
     parse_args("( , 2 , ,)"),
     Ok(("", vec![None, Some(2.0), None, None]))
   );
+
+  assert_eq!(
+    parse_args("( , -2.1 , ,)"),
+    Ok(("", vec![None, Some(-2.1), None, None]))
+  );
 }

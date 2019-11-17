@@ -22,7 +22,7 @@ impl Modifier for VolumeModifier {
     let mut modifier = VolumeModifier::default();
 
     if let Some(volume) = args.get(0).copied().unwrap_or(None) {
-      modifier.volume = volume;
+      modifier.volume = volume.max(0.0).min(1.5);
     }
 
     Ok((input, modifier))
