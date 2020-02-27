@@ -260,6 +260,8 @@ impl Chatsounds {
   }
 
   pub fn set_volume(&mut self, volume: f32) {
+    let volume = volume.max(0.0);
+
     self.volume = volume;
 
     for sink in &mut self.sinks {
