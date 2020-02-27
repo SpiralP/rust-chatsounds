@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["split","`UnixStream` split support."]],"struct":[["UCred","Credentials of a process"],["UnixDatagram","An I/O object representing a Unix datagram socket."],["UnixListener","A Unix socket which can accept connections from other Unix sockets."],["UnixStream","A structure representing a connected Unix socket."]]});
+initSidebarItems({"struct":[["Incoming","Stream of listeners"],["ReadHalf","Read half of a `UnixStream`."],["UCred","Credentials of a process"],["WriteHalf","Write half of a `UnixStream`."]]});

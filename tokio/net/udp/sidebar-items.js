@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["split","`UdpSocket` split support."]],"struct":[["UdpFramed","A unified `Stream` and `Sink` interface to an underlying `UdpSocket`, using the `Encoder` and `Decoder` traits to encode and decode frames."],["UdpSocket","An I/O object representing a UDP socket."]]});
+initSidebarItems({"struct":[["RecvHalf","The recv half after `split`."],["ReuniteError","Error indicating two halves were not from the same socket, and thus could not be `reunite`d."],["SendHalf","The send half after `split`."]]});

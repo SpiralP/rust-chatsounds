@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["StructMapSerializer","Serializer wrapper, that overrides struct serialization by packing as a map with field names."],["StructTupleSerializer","Serializer wrapper, that overrides struct serialization by packing as a tuple without field names."]]});

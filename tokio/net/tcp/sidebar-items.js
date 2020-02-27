@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["split","`TcpStream` split support."]],"struct":[["TcpListener","An I/O object representing a TCP socket listening for incoming connections."],["TcpStream","An I/O object representing a TCP stream connected to a remote endpoint."]]});
+initSidebarItems({"struct":[["Incoming","Stream returned by the `TcpListener::incoming` function representing the stream of sockets received from a listener."],["ReadHalf","Read half of a `TcpStream`."],["WriteHalf","Write half of a `TcpStream`."]]});

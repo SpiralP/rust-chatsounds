@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/async-std-1.0.1/src/io/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css"><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="../../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../async_std/index.html'><div class='logo-container'><img src='https://async.rs/images/logo--hero.svg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/async-std-1.5.0/src/io/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css"><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="../../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../async_std/index.html'><div class='logo-container'><img src='https://async.rs/images/logo--hero.svg' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -323,6 +323,9 @@
 <span id="323">323</span>
 <span id="324">324</span>
 <span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Traits, helpers, and type definitions for core I/O functionality.</span>
 <span class="doccomment">//!</span>
@@ -431,8 +434,8 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```no_run</span>
 <span class="doccomment">//! use async_std::fs::File;</span>
-<span class="doccomment">//! use async_std::io::BufWriter;</span>
 <span class="doccomment">//! use async_std::io::prelude::*;</span>
+<span class="doccomment">//! use async_std::io::BufWriter;</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! # fn main() -&gt; std::io::Result&lt;()&gt; { async_std::task::block_on(async {</span>
 <span class="doccomment">//! #</span>
@@ -442,8 +445,8 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//!     // write a byte to the buffer</span>
 <span class="doccomment">//!     writer.write(&amp;[42]).await?;</span>
-<span class="doccomment">//!</span>
 <span class="doccomment">//! } // the buffer is flushed once writer goes out of scope</span>
+<span class="doccomment">//! //</span>
 <span class="doccomment">//! #</span>
 <span class="doccomment">//! # Ok(()) }) }</span>
 <span class="doccomment">//! ```</span>
@@ -595,17 +598,19 @@
 <span class="doccomment">//! [`Result`]: https://doc.rust-lang.org/std/result/enum.Result.html</span>
 <span class="doccomment">//! [`.unwrap()`]: https://doc.rust-lang.org/std/result/enum.Result.html#method.unwrap</span>
 
+<span class="kw">const</span> <span class="ident">DEFAULT_BUF_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">8</span> <span class="op">*</span> <span class="number">1024</span>;
+
 <span class="macro">cfg_std</span><span class="macro">!</span> {
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::{<span class="ident">Error</span>, <span class="ident">ErrorKind</span>, <span class="ident">IoSlice</span>, <span class="ident">IoSliceMut</span>, <span class="prelude-ty">Result</span>, <span class="ident">SeekFrom</span>};
 
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf_read</span>::{<span class="ident">BufRead</span>, <span class="ident">Lines</span>};
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf_reader</span>::<span class="ident">BufReader</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf_writer</span>::<span class="ident">BufWriter</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">buf_writer</span>::{<span class="ident">BufWriter</span>, <span class="ident">IntoInnerError</span>};
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">copy</span>::<span class="ident">copy</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">cursor</span>::<span class="ident">Cursor</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">empty</span>::{<span class="ident">empty</span>, <span class="ident">Empty</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">read</span>::<span class="ident">Read</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">read</span>::<span class="kw-2">*</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">repeat</span>::{<span class="ident">repeat</span>, <span class="ident">Repeat</span>};
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">seek</span>::<span class="ident">Seek</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sink</span>::{<span class="ident">sink</span>, <span class="ident">Sink</span>};
@@ -617,6 +622,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">read</span>;
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">seek</span>;
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">write</span>;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">utils</span>;
 
     <span class="kw">mod</span> <span class="ident">buf_reader</span>;
     <span class="kw">mod</span> <span class="ident">buf_writer</span>;
@@ -644,7 +650,7 @@
     <span class="kw">mod</span> <span class="ident">stdout</span>;
 }
 
-<span class="macro">cfg_unstable</span><span class="macro">!</span> {
+<span class="macro">cfg_unstable_default</span><span class="macro">!</span> {
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">stderr</span>::<span class="ident">StderrLock</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">stdin</span>::<span class="ident">StdinLock</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">stdout</span>::<span class="ident">StdoutLock</span>;
