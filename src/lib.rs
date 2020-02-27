@@ -363,17 +363,49 @@ impl Chatsounds {
 mod tests {
 
   use super::*;
-  use futures::prelude::Future;
 
-  fn run_future<F: Future<Output = ()>>(f: F) {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(f);
+  #[tokio::test]
+  #[ignore]
+  async fn it_works() {
+    async_std::fs::create_dir_all("cache").await.unwrap();
+
+    let mut chatsounds = Chatsounds::new("cache");
+
+    println!("Metastruct/garrysmod-chatsounds");
+    chatsounds
+      .load_github_api(
+        "Metastruct/garrysmod-chatsounds",
+        "sound/chatsounds/autoadd",
+      )
+      .await;
+
+    println!("PAC3-Server/chatsounds");
+    chatsounds
+      .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
+      .await;
+
+    for folder in &[
+      "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+    ] {
+      println!("PAC3-Server/chatsounds-valve-games {}", folder);
+      chatsounds
+        .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
+        .await;
+    }
+
+    chatsounds
+      .play(
+        "helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
+        thread_rng(),
+      )
+      .await
+      .unwrap()
+      .sleep_until_end();
   }
 
-  #[test]
-  #[ignore]
-  fn it_works() {
-    run_future(async {
+  #[tokio::test]
+  async fn test_autocomplete() {
+    let chatsounds = {
       async_std::fs::create_dir_all("cache").await.unwrap();
 
       let mut chatsounds = Chatsounds::new("cache");
@@ -401,151 +433,105 @@ mod tests {
       }
 
       chatsounds
-        .play(
-          "helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
-          thread_rng(),
-        )
-        .await
-        .unwrap()
-        .sleep_until_end();
-    });
+    };
+
+    println!("searching {} keys", chatsounds.map_store.keys().count());
+    let search = "and thats what";
+
+    let t0 = std::time::Instant::now();
+    let positions = chatsounds.search(search.to_string());
+    let t1 = std::time::Instant::now();
+    println!("took {:?}", t1 - t0);
+
+    println!(
+      "{:#?}",
+      positions.iter().rev().take(10).rev().collect::<Vec<_>>()
+    );
   }
 
-  #[test]
-  fn test_autocomplete() {
-    run_future(async {
-      let chatsounds = {
-        async_std::fs::create_dir_all("cache").await.unwrap();
-
-        let mut chatsounds = Chatsounds::new("cache");
-
-        println!("Metastruct/garrysmod-chatsounds");
-        chatsounds
-          .load_github_api(
-            "Metastruct/garrysmod-chatsounds",
-            "sound/chatsounds/autoadd",
-          )
-          .await;
-
-        println!("PAC3-Server/chatsounds");
-        chatsounds
-          .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-          .await;
-
-        for folder in &[
-          "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
-        ] {
-          println!("PAC3-Server/chatsounds-valve-games {}", folder);
-          chatsounds
-            .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-            .await;
-        }
-
-        chatsounds
-      };
-
-      println!("searching {} keys", chatsounds.map_store.keys().count());
-      let search = "and thats what";
-
-      let t0 = std::time::Instant::now();
-      let positions = chatsounds.search(search.to_string());
-      let t1 = std::time::Instant::now();
-      println!("took {:?}", t1 - t0);
-
-      println!(
-        "{:#?}",
-        positions.iter().rev().take(10).rev().collect::<Vec<_>>()
-      );
-    });
-  }
-
-  #[test]
+  #[tokio::test]
   #[ignore]
-  fn test_spatial() {
-    run_future(async {
-      async_std::fs::create_dir_all("cache").await.unwrap();
+  async fn test_spatial() {
+    async_std::fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache");
+    let mut chatsounds = Chatsounds::new("cache");
 
-      println!("fetch");
-      chatsounds
-        .load_github_api(
-          "Metastruct/garrysmod-chatsounds",
-          "sound/chatsounds/autoadd",
-        )
-        .await;
+    println!("fetch");
+    chatsounds
+      .load_github_api(
+        "Metastruct/garrysmod-chatsounds",
+        "sound/chatsounds/autoadd",
+      )
+      .await;
 
-      let mut emitter_pos = [2.0, 0.0, 0.0];
-      let left_ear_pos = [-1.0, 0.0, 0.0];
-      let right_ear_pos = [1.0, 0.0, 0.0];
+    let mut emitter_pos = [2.0, 0.0, 0.0];
+    let left_ear_pos = [-1.0, 0.0, 0.0];
+    let right_ear_pos = [1.0, 0.0, 0.0];
 
-      println!("play");
+    println!("play");
 
-      let sink = chatsounds
-        .play_spatial(
-          "fuckbeesremastered",
-          thread_rng(),
-          emitter_pos,
-          left_ear_pos,
-          right_ear_pos,
-        )
-        .await
-        .unwrap();
+    let sink = chatsounds
+      .play_spatial(
+        "fuckbeesremastered",
+        thread_rng(),
+        emitter_pos,
+        left_ear_pos,
+        right_ear_pos,
+      )
+      .await
+      .unwrap();
 
-      // start in right headphone, move left
-      let mut i: f32 = 0.0;
-      while !sink.empty() {
-        emitter_pos[0] = i.cos() * 2.0;
+    // start in right headphone, move left
+    let mut i: f32 = 0.0;
+    while !sink.empty() {
+      emitter_pos[0] = i.cos() * 2.0;
 
-        sink.set_left_ear_position(left_ear_pos);
-        sink.set_right_ear_position(right_ear_pos);
-        sink.set_emitter_position(emitter_pos);
+      sink.set_left_ear_position(left_ear_pos);
+      sink.set_right_ear_position(right_ear_pos);
+      sink.set_emitter_position(emitter_pos);
 
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        i += 0.01;
-      }
+      std::thread::sleep(std::time::Duration::from_millis(10));
+      i += 0.01;
+    }
 
-      sink.sleep_until_end();
+    sink.sleep_until_end();
 
-      chatsounds.sleep_until_end();
-    });
+    chatsounds.sleep_until_end();
   }
 
-  #[test]
+  #[tokio::test]
   #[ignore]
-  fn test_mono_bug() {
-    run_future(async {
-      async_std::fs::create_dir_all("cache").await.unwrap();
+  async fn test_mono_bug() {
+    async_std::fs::create_dir_all("cache").await.unwrap();
 
-      let mut chatsounds = Chatsounds::new("cache");
+    let mut chatsounds = Chatsounds::new("cache");
 
-      println!("fetch");
-      chatsounds
-        .load_github_api(
-          "Metastruct/garrysmod-chatsounds",
-          "sound/chatsounds/autoadd",
-        )
-        .await;
+    println!("fetch");
+    chatsounds
+      .load_github_api(
+        "Metastruct/garrysmod-chatsounds",
+        "sound/chatsounds/autoadd",
+      )
+      .await;
 
-      if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-        if let Some(chatsound) = sounds.get(0).cloned() {
-          println!("play");
+    if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
+      if let Some(chatsound) = sounds.get(0).cloned() {
+        println!("play");
 
-          let data = chatsound.get_bytes(&chatsounds.cache_path).await;
+        let data = chatsound.get_bytes(&chatsounds.cache_path).await;
 
-          let reader = BufReader::new(Cursor::new(data));
-          let source = Decoder::new(reader).unwrap();
+        let reader = BufReader::new(Cursor::new(data));
+        let source = Decoder::new(reader).unwrap();
 
-          let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
-          let sink = Sink::new(&chatsounds.device);
-          sink.set_volume(0.1);
-          sink.append(source);
+        let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
+        let sink = Sink::new(&chatsounds.device);
+        sink.set_volume(0.1);
+        sink.append(source);
 
-          sink.sleep_until_end();
-        }
+        sink.sleep_until_end();
       }
+    }
 
-      chatsounds.sleep_until_end();
-    });
+    chatsounds.sleep_until_end();
   }
 }
