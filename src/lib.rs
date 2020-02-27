@@ -155,12 +155,16 @@ pub struct Chatsounds {
 
 impl Chatsounds {
   pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
+    Self::with_device(cache_path, rodio::default_output_device().unwrap())
+  }
+
+  pub fn with_device<T: AsRef<Path>>(cache_path: T, device: Device) -> Self {
     Self {
       cache_path: cache_path.as_ref().canonicalize().unwrap(),
       max_sinks: 8,
       volume: 0.1,
       map_store: HashMap::new(),
-      device: rodio::default_output_device().unwrap(),
+      device,
       sinks: VecDeque::new(),
     }
   }
@@ -364,8 +368,8 @@ mod tests {
 
   use super::*;
 
-  #[tokio::test]
   #[ignore]
+  #[tokio::test]
   async fn it_works() {
     async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -395,7 +399,7 @@ mod tests {
 
     chatsounds
       .play(
-        "helloh:speed(1) im gay:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
+        "helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
         thread_rng(),
       )
       .await
@@ -449,8 +453,8 @@ mod tests {
     );
   }
 
-  #[tokio::test]
   #[ignore]
+  #[tokio::test]
   async fn test_spatial() {
     async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -499,8 +503,8 @@ mod tests {
     chatsounds.sleep_until_end();
   }
 
-  #[tokio::test]
   #[ignore]
+  #[tokio::test]
   async fn test_mono_bug() {
     async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -533,5 +537,51 @@ mod tests {
     }
 
     chatsounds.sleep_until_end();
+  }
+
+  #[ignore]
+  #[tokio::test]
+  async fn with_device() {
+    use rodio::*;
+
+    let device = rodio::output_devices()
+      .unwrap()
+      .find(|device| device.name().unwrap() == "pulse")
+      .unwrap();
+
+    async_std::fs::create_dir_all("cache").await.unwrap();
+
+    let mut chatsounds = Chatsounds::with_device("cache", device);
+
+    println!("Metastruct/garrysmod-chatsounds");
+    chatsounds
+      .load_github_api(
+        "Metastruct/garrysmod-chatsounds",
+        "sound/chatsounds/autoadd",
+      )
+      .await;
+
+    println!("PAC3-Server/chatsounds");
+    chatsounds
+      .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
+      .await;
+
+    for folder in &[
+      "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
+    ] {
+      println!("PAC3-Server/chatsounds-valve-games {}", folder);
+      chatsounds
+        .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
+        .await;
+    }
+
+    chatsounds
+      .play(
+        "helloh:speed(1) idubbbz cringe:speed(1.5):echo(0.5,0.2) dad please:speed(0.5)",
+        thread_rng(),
+      )
+      .await
+      .unwrap()
+      .sleep_until_end();
   }
 }
