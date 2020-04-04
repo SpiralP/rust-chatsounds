@@ -8,6 +8,9 @@ pub use rodio::{Decoder, Device, Sink, SpatialSink};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
+// Name your user agent after your app?
+static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+
 pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
   let mut hasher = Sha256::new();
   hasher.input(url.as_ref());
@@ -29,7 +32,7 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P
   let file_path = dir_path.join(hex_filename);
   if fs::metadata(&file_path)
     .await
-    .map(|meta| meta.is_file())
+    .map(|meta| meta.is_file() && meta.len() != 0)
     .unwrap_or(false)
   {
     let mut file = OpenOptions::new()
@@ -43,8 +46,15 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P
 
     Bytes::from(vec)
   } else {
+    let client = reqwest::Client::builder()
+      .user_agent(APP_USER_AGENT)
+      .build()
+      .unwrap();
+
     let mut file = File::create(&file_path).await.unwrap();
-    let bytes = reqwest::get(url.as_ref())
+    let bytes = client
+      .get(url.as_ref())
+      .send()
       .await
       .unwrap()
       .bytes()
