@@ -13,9 +13,9 @@ static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_P
 
 pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Bytes {
   let mut hasher = Sha256::new();
-  hasher.input(url.as_ref());
+  hasher.update(url.as_ref());
 
-  let hex = format!("{:x}", hasher.result());
+  let hex = format!("{:x}", hasher.finalize());
 
   let hex_dir = &hex[0..2];
   let hex_filename = &hex[2..];
