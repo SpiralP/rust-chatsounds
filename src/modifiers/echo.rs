@@ -4,45 +4,45 @@ use rodio::Source;
 use std::time::Duration;
 
 pub struct EchoModifier {
-  /// in seconds
-  pub duration: f32,
-  pub amplitude: f32,
+    /// in seconds
+    pub duration: f32,
+    pub amplitude: f32,
 }
 
 impl Default for EchoModifier {
-  fn default() -> Self {
-    Self {
-      duration: 0.25,
-      amplitude: 0.25,
+    fn default() -> Self {
+        Self {
+            duration: 0.25,
+            amplitude: 0.25,
+        }
     }
-  }
 }
 
 impl Modifier for EchoModifier {
-  fn parse(input: &str) -> IResult<&str, Self> {
-    // input = "echo(2)"
+    fn parse(input: &str) -> IResult<&str, Self> {
+        // input = "echo(2)"
 
-    let (input, _) = alt((tag("echo"), tag("reverb")))(input)?;
-    let (input, args) = parse_args(input)?;
+        let (input, _) = alt((tag("echo"), tag("reverb")))(input)?;
+        let (input, args) = parse_args(input)?;
 
-    let mut modifier = EchoModifier::default();
+        let mut modifier = EchoModifier::default();
 
-    if let Some(duration) = args.get(0).copied().unwrap_or(None) {
-      modifier.duration = duration.max(0.0).min(1.5);
+        if let Some(duration) = args.get(0).copied().unwrap_or(None) {
+            modifier.duration = duration.max(0.0).min(1.5);
+        }
+
+        if let Some(amplitude) = args.get(1).copied().unwrap_or(None) {
+            modifier.amplitude = amplitude.max(0.0).min(1.5);
+        }
+
+        Ok((input, modifier))
     }
 
-    if let Some(amplitude) = args.get(1).copied().unwrap_or(None) {
-      modifier.amplitude = amplitude.max(0.0).min(1.5);
+    fn modify(
+        &self,
+        source: Box<dyn Source<Item = i16> + Send>,
+    ) -> Box<dyn Source<Item = i16> + Send> {
+        let duration = Duration::from_secs_f32(self.duration);
+        Box::new(source.buffered().reverb(duration, self.amplitude))
     }
-
-    Ok((input, modifier))
-  }
-
-  fn modify(
-    &self,
-    source: Box<dyn Source<Item = i16> + Send>,
-  ) -> Box<dyn Source<Item = i16> + Send> {
-    let duration = Duration::from_secs_f32(self.duration);
-    Box::new(source.buffered().reverb(duration, self.amplitude))
-  }
 }
