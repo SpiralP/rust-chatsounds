@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use crate::modifiers::{parse_modifier, Modifier};
+use crate::{
+    error::*,
+    modifiers::{parse_modifier, Modifier},
+};
 use nom::{
     bytes::complete::take_while1,
     character::{is_alphanumeric, is_space},
@@ -32,10 +35,13 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
     Ok((input, chatsound))
 }
 
-pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>, String> {
-    many1(parse_chatsound)(input)
-        .map_err(|e| format!("{:?}", e))
-        .map(|(_input, chatsounds)| chatsounds)
+pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
+    match many1(parse_chatsound)(input) {
+        Ok((_input, chatsounds)) => Ok(chatsounds),
+        Err(e) => {
+            bail!("{:?}", e);
+        }
+    }
 }
 
 #[test]

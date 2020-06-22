@@ -1,8 +1,10 @@
+mod error;
 mod helpers;
 mod modifiers;
 mod parser;
 
-use crate::helpers::cache_download;
+pub use self::error::{Error, ErrorKind};
+use self::{error::*, helpers::cache_download};
 use async_std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -40,7 +42,7 @@ struct GitHubApiFileEntry {
 
 #[async_trait]
 pub trait ChatsoundTrait {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Bytes;
+    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Result<Bytes>;
 }
 
 #[derive(Clone)]
@@ -56,15 +58,15 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
-    pub async fn load<P: AsRef<Path>>(&self, cache_path: P) -> LoadedChatsound {
+    pub async fn load<P: AsRef<Path>>(&self, cache_path: P) -> Result<LoadedChatsound> {
         let url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/{}",
             self.repo, self.repo_path, self.sound_path
         );
 
-        let bytes = cache_download(&url, cache_path).await;
+        let bytes = cache_download(&url, cache_path).await?;
 
-        LoadedChatsound { bytes }
+        Ok(LoadedChatsound { bytes })
     }
 }
 
@@ -74,16 +76,16 @@ pub struct LoadedChatsound {
 
 #[async_trait]
 impl ChatsoundTrait for LoadedChatsound {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, _cache_path: P) -> Bytes {
-        self.bytes.clone()
+    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, _cache_path: P) -> Result<Bytes> {
+        Ok(self.bytes.clone())
     }
 }
 
 #[async_trait]
 impl ChatsoundTrait for Chatsound {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Bytes {
-        let loaded_chatsound = self.load(&cache_path).await;
-        loaded_chatsound.get_bytes(&cache_path).await
+    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Result<Bytes> {
+        let loaded_chatsound = self.load(&cache_path).await?;
+        Ok(loaded_chatsound.get_bytes(&cache_path).await?)
     }
 }
 
@@ -154,8 +156,12 @@ pub struct Chatsounds {
 }
 
 impl Chatsounds {
-    pub fn new<T: AsRef<Path>>(cache_path: T) -> Self {
-        Self::with_device(cache_path, rodio::default_output_device().unwrap())
+    pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
+        if let Some(device) = rodio::default_output_device() {
+            Ok(Self::with_device(cache_path, device))
+        } else {
+            bail!("no default output device found");
+        }
     }
 
     pub fn with_device<T: AsRef<Path>>(cache_path: T, device: Device) -> Self {
@@ -170,14 +176,14 @@ impl Chatsounds {
     }
 
     // TODO parse HEAD request
-    pub async fn load_github_api(&mut self, repo: &str, repo_path: &str) {
+    pub async fn load_github_api(&mut self, repo: &str, repo_path: &str) -> Result<()> {
         let api_url = format!(
             "https://api.github.com/repos/{}/git/trees/master?recursive=1",
             repo
         );
 
-        let bytes = cache_download(api_url, &self.cache_path).await;
-        let mut trees: GitHubApiTrees = serde_json::from_slice(&bytes).unwrap();
+        let bytes = cache_download(api_url, &self.cache_path).await?;
+        let mut trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
 
         for entry in trees.tree.iter_mut() {
             if entry.r#type != "blob" || !entry.path.starts_with(&repo_path) {
@@ -204,16 +210,18 @@ impl Chatsounds {
                 }
             }
         }
+
+        Ok(())
     }
 
-    pub async fn load_github_msgpack(&mut self, repo: &str, repo_path: &str) {
+    pub async fn load_github_msgpack(&mut self, repo: &str, repo_path: &str) -> Result<()> {
         let msgpack_url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
             repo, repo_path
         );
 
-        let bytes = cache_download(msgpack_url, &self.cache_path).await;
-        let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_slice(&bytes).unwrap();
+        let bytes = cache_download(msgpack_url, &self.cache_path).await?;
+        let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_slice(&bytes)?;
 
         for entry in entries.drain(..) {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
@@ -231,6 +239,8 @@ impl Chatsounds {
                 sentence,
             });
         }
+
+        Ok(())
     }
 
     pub fn get<T: AsRef<str>>(&self, sentence: T) -> Option<&Vec<Chatsound>> {
@@ -280,11 +290,7 @@ impl Chatsounds {
         &self.cache_path
     }
 
-    pub async fn play<S: AsRef<str>, R: RngCore>(
-        &mut self,
-        text: S,
-        rng: R,
-    ) -> Result<Arc<Sink>, String> {
+    pub async fn play<S: AsRef<str>, R: RngCore>(&mut self, text: S, rng: R) -> Result<Arc<Sink>> {
         let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::new(&self.device)));
 
         self.play_sink(text, &mut sink, rng).await?;
@@ -299,7 +305,7 @@ impl Chatsounds {
         emitter_pos: [f32; 3],
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
-    ) -> Result<Arc<SpatialSink>, String> {
+    ) -> Result<Arc<SpatialSink>> {
         let mut sink = ChatsoundsSink::Spatial(Arc::new(SpatialSink::new(
             &self.device,
             emitter_pos,
@@ -317,7 +323,7 @@ impl Chatsounds {
         text: S,
         sink: &mut ChatsoundsSink,
         mut rng: R,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         sink.set_volume(self.volume);
 
         let parsed_chatsounds = parser::parse(text.as_ref())?;
@@ -327,7 +333,7 @@ impl Chatsounds {
                 let chatsound = chatsounds.choose(&mut rng).unwrap();
 
                 let mut source: Box<dyn Source<Item = i16> + Send> =
-                    Box::new(self.make_source(chatsound).await);
+                    Box::new(self.make_source(chatsound).await?);
 
                 for modifier in parsed_chatsound.modifiers {
                     source = modifier.modify(source);
@@ -348,11 +354,11 @@ impl Chatsounds {
     async fn make_source<C: ChatsoundTrait>(
         &self,
         chatsound: &C,
-    ) -> Decoder<BufReader<Cursor<Bytes>>> {
-        let bytes = chatsound.get_bytes(&self.cache_path).await;
+    ) -> Result<Decoder<BufReader<Cursor<Bytes>>>> {
+        let bytes = chatsound.get_bytes(&self.cache_path).await?;
 
         let reader = BufReader::new(Cursor::new(bytes));
-        Decoder::new(reader).unwrap()
+        Ok(Decoder::new(reader)?)
     }
 
     pub fn sleep_until_end(&mut self) {
@@ -372,7 +378,7 @@ mod tests {
     async fn it_works() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new("cache");
+        let mut chatsounds = Chatsounds::new("cache").unwrap();
 
         println!("Metastruct/garrysmod-chatsounds");
         chatsounds
@@ -380,12 +386,14 @@ mod tests {
                 "Metastruct/garrysmod-chatsounds",
                 "sound/chatsounds/autoadd",
             )
-            .await;
+            .await
+            .unwrap();
 
         println!("PAC3-Server/chatsounds");
         chatsounds
             .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-            .await;
+            .await
+            .unwrap();
 
         for folder in &[
             "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
@@ -393,7 +401,8 @@ mod tests {
             println!("PAC3-Server/chatsounds-valve-games {}", folder);
             chatsounds
                 .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-                .await;
+                .await
+                .unwrap();
         }
 
         chatsounds
@@ -411,7 +420,7 @@ mod tests {
         let chatsounds = {
             async_std::fs::create_dir_all("cache").await.unwrap();
 
-            let mut chatsounds = Chatsounds::new("cache");
+            let mut chatsounds = Chatsounds::new("cache").unwrap();
 
             println!("Metastruct/garrysmod-chatsounds");
             chatsounds
@@ -419,12 +428,14 @@ mod tests {
                     "Metastruct/garrysmod-chatsounds",
                     "sound/chatsounds/autoadd",
                 )
-                .await;
+                .await
+                .unwrap();
 
             println!("PAC3-Server/chatsounds");
             chatsounds
                 .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-                .await;
+                .await
+                .unwrap();
 
             for folder in &[
                 "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
@@ -432,7 +443,8 @@ mod tests {
                 println!("PAC3-Server/chatsounds-valve-games {}", folder);
                 chatsounds
                     .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-                    .await;
+                    .await
+                    .unwrap();
             }
 
             chatsounds
@@ -457,7 +469,7 @@ mod tests {
     async fn test_spatial() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new("cache");
+        let mut chatsounds = Chatsounds::new("cache").unwrap();
 
         println!("fetch");
         chatsounds
@@ -465,7 +477,8 @@ mod tests {
                 "Metastruct/garrysmod-chatsounds",
                 "sound/chatsounds/autoadd",
             )
-            .await;
+            .await
+            .unwrap();
 
         let mut emitter_pos = [2.0, 0.0, 0.0];
         let left_ear_pos = [-1.0, 0.0, 0.0];
@@ -507,7 +520,7 @@ mod tests {
     async fn test_mono_bug() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new("cache");
+        let mut chatsounds = Chatsounds::new("cache").unwrap();
 
         println!("fetch");
         chatsounds
@@ -515,13 +528,14 @@ mod tests {
                 "Metastruct/garrysmod-chatsounds",
                 "sound/chatsounds/autoadd",
             )
-            .await;
+            .await
+            .unwrap();
 
         if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
             if let Some(chatsound) = sounds.get(0).cloned() {
                 println!("play");
 
-                let data = chatsound.get_bytes(&chatsounds.cache_path).await;
+                let data = chatsound.get_bytes(&chatsounds.cache_path).await.unwrap();
 
                 let reader = BufReader::new(Cursor::new(data));
                 let source = Decoder::new(reader).unwrap();
@@ -558,12 +572,14 @@ mod tests {
                 "Metastruct/garrysmod-chatsounds",
                 "sound/chatsounds/autoadd",
             )
-            .await;
+            .await
+            .unwrap();
 
         println!("PAC3-Server/chatsounds");
         chatsounds
             .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-            .await;
+            .await
+            .unwrap();
 
         for folder in &[
             "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
@@ -571,7 +587,8 @@ mod tests {
             println!("PAC3-Server/chatsounds-valve-games {}", folder);
             chatsounds
                 .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-                .await;
+                .await
+                .unwrap();
         }
 
         chatsounds
