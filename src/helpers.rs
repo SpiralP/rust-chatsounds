@@ -1,12 +1,12 @@
 use crate::error::*;
-use async_std::{
-    fs,
-    fs::{File, OpenOptions},
-    io::prelude::*,
-};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
 use std::path::Path;
+use tokio::{
+    fs,
+    fs::{File, OpenOptions},
+    io::{AsyncReadExt, AsyncWriteExt},
+};
 
 // Name your user agent after your app?
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));

@@ -5,7 +5,6 @@ mod parser;
 
 pub use self::error::{Error, ErrorKind};
 use self::{error::*, helpers::cache_download};
-use async_std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
@@ -18,6 +17,7 @@ use std::{
     fmt::Debug,
     io::{BufReader, Cursor},
     path::{Component, Path, PathBuf},
+    sync::Arc,
 };
 
 #[derive(Deserialize)]
@@ -372,11 +372,12 @@ impl Chatsounds {
 mod tests {
 
     use super::*;
+    use tokio::fs;
 
     #[ignore]
-    #[async_std::test]
+    #[tokio::test]
     async fn it_works() {
-        async_std::fs::create_dir_all("cache").await.unwrap();
+        fs::create_dir_all("cache").await.unwrap();
 
         let mut chatsounds = Chatsounds::new("cache").unwrap();
 
@@ -415,10 +416,10 @@ mod tests {
             .sleep_until_end();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn test_autocomplete() {
         let chatsounds = {
-            async_std::fs::create_dir_all("cache").await.unwrap();
+            fs::create_dir_all("cache").await.unwrap();
 
             let mut chatsounds = Chatsounds::new("cache").unwrap();
 
@@ -465,9 +466,9 @@ mod tests {
     }
 
     #[ignore]
-    #[async_std::test]
+    #[tokio::test]
     async fn test_spatial() {
-        async_std::fs::create_dir_all("cache").await.unwrap();
+        fs::create_dir_all("cache").await.unwrap();
 
         let mut chatsounds = Chatsounds::new("cache").unwrap();
 
@@ -516,9 +517,9 @@ mod tests {
     }
 
     #[ignore]
-    #[async_std::test]
+    #[tokio::test]
     async fn test_mono_bug() {
-        async_std::fs::create_dir_all("cache").await.unwrap();
+        fs::create_dir_all("cache").await.unwrap();
 
         let mut chatsounds = Chatsounds::new("cache").unwrap();
 
@@ -553,7 +554,7 @@ mod tests {
     }
 
     #[ignore]
-    #[async_std::test]
+    #[tokio::test]
     async fn with_device() {
         use rodio::*;
 
@@ -562,7 +563,7 @@ mod tests {
             .find(|device| device.name().unwrap() == "pulse")
             .unwrap();
 
-        async_std::fs::create_dir_all("cache").await.unwrap();
+        fs::create_dir_all("cache").await.unwrap();
 
         let mut chatsounds = Chatsounds::with_device("cache", device);
 
