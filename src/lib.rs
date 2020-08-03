@@ -374,7 +374,7 @@ mod tests {
     use super::*;
 
     #[ignore]
-    #[tokio::test]
+    #[async_std::test]
     async fn it_works() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -415,7 +415,7 @@ mod tests {
             .sleep_until_end();
     }
 
-    #[tokio::test]
+    #[async_std::test]
     async fn test_autocomplete() {
         let chatsounds = {
             async_std::fs::create_dir_all("cache").await.unwrap();
@@ -465,7 +465,7 @@ mod tests {
     }
 
     #[ignore]
-    #[tokio::test]
+    #[async_std::test]
     async fn test_spatial() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -516,7 +516,7 @@ mod tests {
     }
 
     #[ignore]
-    #[tokio::test]
+    #[async_std::test]
     async fn test_mono_bug() {
         async_std::fs::create_dir_all("cache").await.unwrap();
 
@@ -553,7 +553,7 @@ mod tests {
     }
 
     #[ignore]
-    #[tokio::test]
+    #[async_std::test]
     async fn with_device() {
         use rodio::*;
 
