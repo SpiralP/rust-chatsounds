@@ -44,7 +44,7 @@ impl Modifier for PitchModifier {
             let mut samples: Vec<_> = source.collect();
             samples.reverse();
 
-            Box::new(SamplesBuffer::new(channels, sample_rate, samples))
+            Box::new(SamplesBuffer::new(channels, sample_rate, samples).speed(self.pitch.abs()))
         }
     }
 }
