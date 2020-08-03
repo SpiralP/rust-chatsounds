@@ -1,4 +1,5 @@
 use super::{parse_args, Modifier};
+use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
 
@@ -28,10 +29,7 @@ impl Modifier for VolumeModifier {
         Ok((input, modifier))
     }
 
-    fn modify(
-        &self,
-        source: Box<dyn Source<Item = i16> + Send>,
-    ) -> Box<dyn Source<Item = i16> + Send> {
+    fn modify(&self, source: BoxSource) -> BoxSource {
         Box::new(source.amplify(self.volume))
     }
 }

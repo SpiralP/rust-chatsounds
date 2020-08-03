@@ -1,6 +1,7 @@
 use super::{parse_args, Modifier};
+use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
-use rodio::Source;
+use rodio::{buffer::SamplesBuffer, Source};
 
 pub struct PitchModifier {
     pub pitch: f32,
@@ -22,16 +23,28 @@ impl Modifier for PitchModifier {
         let mut modifier = PitchModifier::default();
 
         if let Some(pitch) = args.get(0).copied().unwrap_or(None) {
-            modifier.pitch = pitch;
+            modifier.pitch = if pitch > 0.0 && pitch < 0.1 {
+                0.1
+            } else if pitch < 0.0 && pitch > -0.1 {
+                -0.1
+            } else {
+                pitch
+            };
         }
 
         Ok((input, modifier))
     }
 
-    fn modify(
-        &self,
-        source: Box<dyn Source<Item = i16> + Send>,
-    ) -> Box<dyn Source<Item = i16> + Send> {
-        Box::new(source.speed(self.pitch))
+    fn modify(&self, source: BoxSource) -> BoxSource {
+        if self.pitch > 0.0 {
+            Box::new(source.speed(self.pitch))
+        } else {
+            let channels = source.channels();
+            let sample_rate = source.sample_rate();
+            let mut samples: Vec<_> = source.collect();
+            samples.reverse();
+
+            Box::new(SamplesBuffer::new(channels, sample_rate, samples))
+        }
     }
 }

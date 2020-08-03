@@ -20,6 +20,8 @@ use std::{
     sync::Arc,
 };
 
+pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
+
 #[derive(Deserialize)]
 struct GitHubApiTrees {
     pub tree: Vec<GitHubApiFileEntry>,
@@ -167,7 +169,7 @@ impl Chatsounds {
     pub fn with_device<T: AsRef<Path>>(cache_path: T, device: Device) -> Self {
         Self {
             cache_path: cache_path.as_ref().canonicalize().unwrap(),
-            max_sinks: 8,
+            max_sinks: 16,
             volume: 0.1,
             map_store: HashMap::new(),
             device,
@@ -332,9 +334,11 @@ impl Chatsounds {
                 // TODO random hashed number passed in?
                 let chatsound = chatsounds.choose(&mut rng).unwrap();
 
-                let mut source: Box<dyn Source<Item = i16> + Send> =
-                    Box::new(self.make_source(chatsound).await?);
-
+                let mut source: BoxSource = {
+                    let bytes = chatsound.get_bytes(&self.cache_path).await?;
+                    let reader = BufReader::new(Cursor::new(bytes));
+                    Box::new(Decoder::new(reader)?)
+                };
                 for modifier in parsed_chatsound.modifiers {
                     source = modifier.modify(source);
                 }
@@ -351,16 +355,6 @@ impl Chatsounds {
         Ok(())
     }
 
-    async fn make_source<C: ChatsoundTrait>(
-        &self,
-        chatsound: &C,
-    ) -> Result<Decoder<BufReader<Cursor<Bytes>>>> {
-        let bytes = chatsound.get_bytes(&self.cache_path).await?;
-
-        let reader = BufReader::new(Cursor::new(bytes));
-        Ok(Decoder::new(reader)?)
-    }
-
     pub fn sleep_until_end(&mut self) {
         for mut sink in self.sinks.drain(..) {
             sink.sleep_until_end();
@@ -370,9 +364,31 @@ impl Chatsounds {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use tokio::fs;
+
+    #[ignore]
+    #[tokio::test]
+    async fn negative_pitch() {
+        fs::create_dir_all("cache").await.unwrap();
+
+        let mut chatsounds = Chatsounds::new("cache").unwrap();
+
+        println!("Metastruct/garrysmod-chatsounds");
+        chatsounds
+            .load_github_api(
+                "Metastruct/garrysmod-chatsounds",
+                "sound/chatsounds/autoadd",
+            )
+            .await
+            .unwrap();
+
+        chatsounds
+            .play("helloh:speed(1) musicbox:pitch(-1)", thread_rng())
+            .await
+            .unwrap()
+            .sleep_until_end();
+    }
 
     #[ignore]
     #[tokio::test]

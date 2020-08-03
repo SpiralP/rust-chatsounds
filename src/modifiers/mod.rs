@@ -3,6 +3,7 @@ mod pitch;
 mod volume;
 
 pub use self::{echo::EchoModifier, pitch::PitchModifier, volume::VolumeModifier};
+use crate::BoxSource;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -11,7 +12,6 @@ use nom::{
     number::complete::float,
     IResult,
 };
-use rodio::Source;
 
 pub trait Modifier
 where
@@ -21,10 +21,7 @@ where
     where
         Self: Sized;
 
-    fn modify(
-        &self,
-        source: Box<dyn Source<Item = i16> + Send>,
-    ) -> Box<dyn Source<Item = i16> + Send>;
+    fn modify(&self, source: BoxSource) -> BoxSource;
 }
 
 pub fn parse_modifier(input: &str) -> IResult<&str, Box<dyn Modifier>> {

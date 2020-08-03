@@ -1,4 +1,5 @@
 use super::{parse_args, Modifier};
+use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
 use std::time::Duration;
@@ -38,10 +39,7 @@ impl Modifier for EchoModifier {
         Ok((input, modifier))
     }
 
-    fn modify(
-        &self,
-        source: Box<dyn Source<Item = i16> + Send>,
-    ) -> Box<dyn Source<Item = i16> + Send> {
+    fn modify(&self, source: BoxSource) -> BoxSource {
         let duration = Duration::from_secs_f32(self.duration);
         Box::new(source.buffered().reverb(duration, self.amplitude))
     }
