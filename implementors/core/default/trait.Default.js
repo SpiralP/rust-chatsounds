@@ -8,8 +8,8 @@ implementors["block_buffer"] = [{"text":"impl&lt;BlockSize:&nbsp;Default + Array
 implementors["byteorder"] = [{"text":"impl Default for BigEndian","synthetic":false,"types":[]},{"text":"impl Default for LittleEndian","synthetic":false,"types":[]}];
 implementors["bytes"] = [{"text":"impl Default for Bytes","synthetic":false,"types":[]},{"text":"impl Default for BytesMut","synthetic":false,"types":[]}];
 implementors["claxon"] = [{"text":"impl Default for FlacReaderOptions","synthetic":false,"types":[]}];
+implementors["crossbeam_channel"] = [{"text":"impl&lt;'a&gt; Default for Select&lt;'a&gt;","synthetic":false,"types":[]}];
 implementors["crossbeam_epoch"] = [{"text":"impl&lt;T&gt; Default for Atomic&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'g, T&gt; Default for Shared&lt;'g, T&gt;","synthetic":false,"types":[]}];
-implementors["crossbeam_queue"] = [{"text":"impl&lt;T&gt; Default for SegQueue&lt;T&gt;","synthetic":false,"types":[]}];
 implementors["crossbeam_utils"] = [{"text":"impl&lt;T:&nbsp;Default&gt; Default for AtomicCell&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;T:&nbsp;Default&gt; Default for CachePadded&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl Default for Backoff","synthetic":false,"types":[]},{"text":"impl&lt;T:&nbsp;Default&gt; Default for ShardedLock&lt;T&gt;","synthetic":false,"types":[]}];
 implementors["digest"] = [{"text":"impl Default for InvalidOutputSize","synthetic":false,"types":[]}];
 implementors["fnv"] = [{"text":"impl Default for FnvHasher","synthetic":false,"types":[]}];
@@ -24,7 +24,7 @@ implementors["http_body"] = [{"text":"impl Default for SizeHint","synthetic":fal
 implementors["hyper"] = [{"text":"impl Default for Body","synthetic":false,"types":[]},{"text":"impl Default for Client&lt;HttpConnector, Body&gt;","synthetic":false,"types":[]},{"text":"impl Default for Builder","synthetic":false,"types":[]}];
 implementors["hyper_tls"] = [{"text":"impl&lt;T:&nbsp;Default&gt; Default for HttpsConnector&lt;T&gt;","synthetic":false,"types":[]}];
 implementors["idna"] = [{"text":"impl Default for Config","synthetic":false,"types":[]}];
-implementors["indexmap"] = [{"text":"impl&lt;K, V, S&gt; Default for IndexMap&lt;K, V, S&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: BuildHasher + Default,&nbsp;</span>","synthetic":false,"types":[]},{"text":"impl&lt;T, S&gt; Default for IndexSet&lt;T, S&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: BuildHasher + Default,&nbsp;</span>","synthetic":false,"types":[]}];
+implementors["indexmap"] = [{"text":"impl&lt;K, V, S&gt; Default for IndexMap&lt;K, V, S&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: Default,&nbsp;</span>","synthetic":false,"types":[]},{"text":"impl&lt;T, S&gt; Default for IndexSet&lt;T, S&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: Default,&nbsp;</span>","synthetic":false,"types":[]}];
 implementors["ipnet"] = [{"text":"impl Default for IpNet","synthetic":false,"types":[]},{"text":"impl Default for Ipv4Net","synthetic":false,"types":[]},{"text":"impl Default for Ipv6Net","synthetic":false,"types":[]}];
 implementors["itoa"] = [{"text":"impl Default for Buffer","synthetic":false,"types":[]}];
 implementors["miniz_oxide"] = [{"text":"impl Default for CompressorOxide","synthetic":false,"types":[]},{"text":"impl Default for DecompressorOxide","synthetic":false,"types":[]},{"text":"impl Default for InflateState","synthetic":false,"types":[]}];
