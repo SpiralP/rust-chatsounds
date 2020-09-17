@@ -11,6 +11,16 @@ use tokio::{
 // Name your user agent after your app?
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
+pub async fn download<S: AsRef<str>>(url: S) -> Result<Bytes> {
+    let client = reqwest::Client::builder()
+        .user_agent(APP_USER_AGENT)
+        .build()?;
+
+    let bytes = client.get(url.as_ref()).send().await?.bytes().await?;
+
+    Ok(bytes)
+}
+
 pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P) -> Result<Bytes> {
     let mut hasher = Sha256::new();
     hasher.update(url.as_ref());
