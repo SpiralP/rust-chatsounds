@@ -52,13 +52,9 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(url: S, cache_path: P
 
         Bytes::from(vec)
     } else {
-        let client = reqwest::Client::builder()
-            .user_agent(APP_USER_AGENT)
-            .build()?;
+        let bytes = download(url).await?;
 
         let mut file = File::create(&file_path).await?;
-        let bytes = client.get(url.as_ref()).send().await?.bytes().await?;
-
         file.write_all(&bytes).await?;
 
         bytes
