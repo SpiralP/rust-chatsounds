@@ -1,13 +1,35 @@
 name: Rust
-
 on: [push]
 
 jobs:
-  build_linux:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -- --nocapture
+
+  linux:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
       - name: Install deps
         run: |
@@ -25,19 +47,37 @@ jobs:
         with:
           command: build
 
-      - name: Build docs
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
-          command: doc
+          command: test
+          args: -- --nocapture
 
       - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@v2.5.0
-        env:
-          ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: ./target/doc
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+
+  mac:
+    runs-on: macOS-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
 
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: -- --nocapture
