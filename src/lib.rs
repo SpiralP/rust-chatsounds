@@ -161,6 +161,8 @@ pub struct Chatsounds {
     sinks: VecDeque<ChatsoundsSink>,
 }
 
+unsafe impl Send for Chatsounds {}
+
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
         let (output_stream, output_stream_handle) =
