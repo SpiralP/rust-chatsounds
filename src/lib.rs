@@ -162,6 +162,7 @@ pub struct Chatsounds {
 }
 
 unsafe impl Send for Chatsounds {}
+unsafe impl Sync for Chatsounds {}
 
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
