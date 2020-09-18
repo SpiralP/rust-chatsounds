@@ -1,7 +1,6 @@
 (function() {var implementors = {};
 implementors["arrayvec"] = [{"text":"impl&lt;A&gt; DerefMut for ArrayString&lt;A&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;A: Array&lt;Item = u8&gt; + Copy,&nbsp;</span>","synthetic":false,"types":[]},{"text":"impl&lt;A:&nbsp;Array&gt; DerefMut for ArrayVec&lt;A&gt;","synthetic":false,"types":[]}];
 implementors["bytes"] = [{"text":"impl DerefMut for BytesMut","synthetic":false,"types":[]}];
-implementors["cpal"] = [{"text":"impl&lt;'a, T&gt; DerefMut for OutputBuffer&lt;'a, T&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;T: Sample,&nbsp;</span>","synthetic":false,"types":[]}];
 implementors["crossbeam_epoch"] = [{"text":"impl&lt;T&gt; DerefMut for Owned&lt;T&gt;","synthetic":false,"types":[]}];
 implementors["crossbeam_utils"] = [{"text":"impl&lt;T&gt; DerefMut for CachePadded&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a, T:&nbsp;?Sized&gt; DerefMut for ShardedLockWriteGuard&lt;'a, T&gt;","synthetic":false,"types":[]}];
 implementors["either"] = [{"text":"impl&lt;L, R&gt; DerefMut for Either&lt;L, R&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;L: DerefMut,<br>&nbsp;&nbsp;&nbsp;&nbsp;R: DerefMut&lt;Target = L::Target&gt;,&nbsp;</span>","synthetic":false,"types":[]}];

@@ -1,4 +1,5 @@
 (function() {var implementors = {};
+implementors["alsa"] = [{"text":"impl&lt;'a, S:&nbsp;Copy&gt; Read for IO&lt;'a, S&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; Read for IO&lt;'a&gt;","synthetic":false,"types":[]}];
 implementors["base64"] = [{"text":"impl&lt;'a, R:&nbsp;Read&gt; Read for DecoderReader&lt;'a, R&gt;","synthetic":false,"types":[]}];
 implementors["bytes"] = [{"text":"impl&lt;B:&nbsp;Buf + Sized&gt; Read for Reader&lt;B&gt;","synthetic":false,"types":[]}];
 implementors["futures_util"] = [{"text":"impl&lt;T&gt; Read for AllowStdIo&lt;T&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;T: Read,&nbsp;</span>","synthetic":false,"types":[]}];

@@ -1,4 +1,5 @@
 (function() {var implementors = {};
+implementors["alsa"] = [{"text":"impl&lt;'a, S:&nbsp;Copy&gt; Write for IO&lt;'a, S&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; Write for IO&lt;'a&gt;","synthetic":false,"types":[]}];
 implementors["arrayvec"] = [{"text":"impl&lt;A:&nbsp;Array&lt;Item = u8&gt;&gt; Write for ArrayVec&lt;A&gt;","synthetic":false,"types":[]}];
 implementors["base64"] = [{"text":"impl&lt;'a, W:&nbsp;Write&gt; Write for EncoderWriter&lt;'a, W&gt;","synthetic":false,"types":[]}];
 implementors["bytes"] = [{"text":"impl&lt;B:&nbsp;BufMut + Sized&gt; Write for Writer&lt;B&gt;","synthetic":false,"types":[]}];

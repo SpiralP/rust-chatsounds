@@ -1,4 +1,6 @@
 (function() {var implementors = {};
+implementors["alsa"] = [{"text":"impl Add&lt;MilliBel&gt; for MilliBel","synthetic":false,"types":[]}];
+implementors["nix"] = [{"text":"impl Add&lt;TimeSpec&gt; for TimeSpec","synthetic":false,"types":[]},{"text":"impl Add&lt;TimeVal&gt; for TimeVal","synthetic":false,"types":[]}];
 implementors["openssl"] = [{"text":"impl&lt;'a, 'b&gt; Add&lt;&amp;'b BigNumRef&gt; for &amp;'a BigNumRef","synthetic":false,"types":[]},{"text":"impl&lt;'a, 'b&gt; Add&lt;&amp;'b BigNum&gt; for &amp;'a BigNumRef","synthetic":false,"types":[]},{"text":"impl&lt;'a, 'b&gt; Add&lt;&amp;'b BigNumRef&gt; for &amp;'a BigNum","synthetic":false,"types":[]},{"text":"impl&lt;'a, 'b&gt; Add&lt;&amp;'b BigNum&gt; for &amp;'a BigNum","synthetic":false,"types":[]}];
 implementors["time"] = [{"text":"impl Add&lt;Duration&gt; for Duration","synthetic":false,"types":[]},{"text":"impl Add&lt;Duration&gt; for Timespec","synthetic":false,"types":[]},{"text":"impl Add&lt;Duration&gt; for SteadyTime","synthetic":false,"types":[]},{"text":"impl Add&lt;Duration&gt; for Tm","synthetic":false,"types":[]}];
 implementors["tokio"] = [{"text":"impl Add&lt;Duration&gt; for Instant","synthetic":false,"types":[]}];
