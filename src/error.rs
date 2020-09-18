@@ -1,5 +1,5 @@
-pub use error_chain::bail;
 use error_chain::error_chain;
+pub use error_chain::{bail, ensure};
 
 error_chain! {
     foreign_links {
@@ -12,5 +12,12 @@ error_chain! {
         RmpSerdeDecode(rmp_serde::decode::Error);
         Reqwest(reqwest::Error);
         RodioDecoder(rodio::decoder::DecoderError);
+    }
+
+    errors {
+        RodioPlay(e: rodio::PlayError) {
+            description("Rodio PlayError")
+            display("Rodio PlayError: '{:#?}'", e)
+        }
     }
 }

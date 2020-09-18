@@ -13,7 +13,7 @@ use bytes::Bytes;
 use rand::prelude::*;
 use rayon::prelude::*;
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
-use rodio::{Sample, Source};
+use rodio::{OutputStream, OutputStreamHandle, Sample, Source};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, VecDeque},
@@ -156,28 +156,24 @@ pub struct Chatsounds {
     // [sentence]: Chatsound[]
     map_store: HashMap<String, Vec<Chatsound>>,
 
-    device: Device,
+    _output_stream: OutputStream,
+    output_stream_handle: OutputStreamHandle,
     sinks: VecDeque<ChatsoundsSink>,
 }
 
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
-        if let Some(device) = rodio::default_output_device() {
-            Ok(Self::with_device(cache_path, device))
-        } else {
-            bail!("no default output device found");
-        }
-    }
-
-    pub fn with_device<T: AsRef<Path>>(cache_path: T, device: Device) -> Self {
-        Self {
+        let (output_stream, output_stream_handle) =
+            OutputStream::try_default().chain_err(|| "OutputStream::try_default")?;
+        Ok(Self {
             cache_path: cache_path.as_ref().canonicalize().unwrap(),
             max_sinks: 16,
             volume: 0.1,
             map_store: HashMap::new(),
-            device,
+            _output_stream: output_stream,
+            output_stream_handle,
             sinks: VecDeque::new(),
-        }
+        })
     }
 
     // TODO parse HEAD request
@@ -296,7 +292,9 @@ impl Chatsounds {
     }
 
     pub async fn play<S: AsRef<str>, R: RngCore>(&mut self, text: S, rng: R) -> Result<Arc<Sink>> {
-        let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::new(&self.device)));
+        let mut sink = ChatsoundsSink::Sink(Arc::new(
+            Sink::try_new(&self.output_stream_handle).map_err(ErrorKind::RodioPlay)?,
+        ));
 
         self.play_sink(text, &mut sink, rng).await?;
 
@@ -311,12 +309,15 @@ impl Chatsounds {
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<Arc<SpatialSink>> {
-        let mut sink = ChatsoundsSink::Spatial(Arc::new(SpatialSink::new(
-            &self.device,
-            emitter_pos,
-            left_ear_pos,
-            right_ear_pos,
-        )));
+        let mut sink = ChatsoundsSink::Spatial(Arc::new(
+            SpatialSink::try_new(
+                &self.output_stream_handle,
+                emitter_pos,
+                left_ear_pos,
+                right_ear_pos,
+            )
+            .map_err(ErrorKind::RodioPlay)?,
+        ));
 
         self.play_sink(text, &mut sink, rng).await?;
 
@@ -551,73 +552,23 @@ mod tests {
             .await
             .unwrap();
 
-        if let Some(sounds) = chatsounds.get("fuckbeesremastered") {
-            if let Some(chatsound) = sounds.get(0).cloned() {
-                println!("play");
+        let sounds = chatsounds.get("mktheme").unwrap();
+        if let Some(chatsound) = sounds.get(0).cloned() {
+            println!("play");
 
-                let data = chatsound.get_bytes(&chatsounds.cache_path).await.unwrap();
+            let data = chatsound.get_bytes(&chatsounds.cache_path).await.unwrap();
 
-                let reader = BufReader::new(Cursor::new(data));
-                let source = Decoder::new(reader).unwrap();
+            let reader = BufReader::new(Cursor::new(data));
+            let source = Decoder::new(reader).unwrap();
 
-                let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
-                let sink = Sink::new(&chatsounds.device);
-                sink.set_volume(0.1);
-                sink.append(source);
+            let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
+            let sink = Sink::try_new(&chatsounds.output_stream_handle).unwrap();
+            sink.set_volume(0.1);
+            sink.append(source);
 
-                sink.sleep_until_end();
-            }
+            sink.sleep_until_end();
         }
 
         chatsounds.sleep_until_end();
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn with_device() {
-        use rodio::*;
-
-        let device = rodio::output_devices()
-            .unwrap()
-            .find(|device| device.name().unwrap() == "pulse")
-            .unwrap();
-
-        fs::create_dir_all("cache").await.unwrap();
-
-        let mut chatsounds = Chatsounds::with_device("cache", device);
-
-        println!("Metastruct/garrysmod-chatsounds");
-        chatsounds
-            .load_github_api(
-                "Metastruct/garrysmod-chatsounds",
-                "sound/chatsounds/autoadd",
-            )
-            .await
-            .unwrap();
-
-        println!("PAC3-Server/chatsounds");
-        chatsounds
-            .load_github_api("PAC3-Server/chatsounds", "sounds/chatsounds")
-            .await
-            .unwrap();
-
-        for folder in &[
-            "csgo", "css", "ep1", "ep2", "hl2", "l4d", "l4d2", "portal", "tf2",
-        ] {
-            println!("PAC3-Server/chatsounds-valve-games {}", folder);
-            chatsounds
-                .load_github_msgpack("PAC3-Server/chatsounds-valve-games", folder)
-                .await
-                .unwrap();
-        }
-
-        chatsounds
-            .play(
-                "helloh:speed(1) idubbbz cringe:speed(1.5):echo(0.5,0.2) dad please:speed(0.5)",
-                thread_rng(),
-            )
-            .await
-            .unwrap()
-            .sleep_until_end();
     }
 }
