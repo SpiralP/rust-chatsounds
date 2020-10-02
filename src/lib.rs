@@ -4,10 +4,7 @@ mod modifiers;
 mod parser;
 
 pub use self::error::{Error, ErrorKind};
-use self::{
-    error::*,
-    helpers::{cache_download, download},
-};
+use self::{error::*, helpers::cache_download};
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
@@ -70,7 +67,7 @@ impl Chatsound {
             self.repo, self.repo_path, self.sound_path
         );
 
-        let bytes = cache_download(&url, cache_path).await?;
+        let bytes = cache_download(&url, cache_path, false).await?;
 
         Ok(LoadedChatsound { bytes })
     }
@@ -203,7 +200,7 @@ impl Chatsounds {
             repo
         );
 
-        let bytes = download(api_url).await?;
+        let bytes = cache_download(api_url, &self.cache_path(), true).await?;
         let mut trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
 
         for entry in trees.tree.iter_mut() {
@@ -241,7 +238,7 @@ impl Chatsounds {
             repo, repo_path
         );
 
-        let bytes = download(msgpack_url).await?;
+        let bytes = cache_download(msgpack_url, &self.cache_path(), true).await?;
         let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_slice(&bytes)?;
 
         for entry in entries.drain(..) {
