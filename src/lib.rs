@@ -12,10 +12,9 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
 use rayon::prelude::*;
-use rodio::{queue::SourcesQueueOutput, Source};
-pub use rodio::{Decoder, Device, Sink, SpatialSink};
+pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 #[cfg(feature = "playback")]
-use rodio::{OutputStream, OutputStreamHandle, Sample};
+use rodio::{OutputStream, OutputStreamHandle};
 use serde::Deserialize;
 use std::{
     collections::HashMap,
