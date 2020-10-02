@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
 use rayon::prelude::*;
-use rodio::Source;
+use rodio::{queue::SourcesQueueOutput, Source};
 pub use rodio::{Decoder, Device, Sink, SpatialSink};
 #[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle, Sample};
@@ -386,11 +386,11 @@ impl Chatsounds {
         Ok(())
     }
 
-    pub async fn get_samples<S: AsRef<str>, R: RngCore>(
+    pub async fn get_sources_queue<S: AsRef<str>, R: RngCore>(
         &mut self,
         text: S,
         mut rng: R,
-    ) -> Result<Vec<i16>> {
+    ) -> Result<SourcesQueueOutput<i16>> {
         let (sink, queue) = rodio::queue::queue(false);
 
         let parsed_chatsounds = parser::parse(text.as_ref())?;
@@ -412,9 +412,7 @@ impl Chatsounds {
             }
         }
 
-        let samples = queue.collect();
-
-        Ok(samples)
+        Ok(queue)
     }
 
     #[cfg(feature = "playback")]
@@ -603,10 +601,11 @@ mod tests {
         let mut chatsounds = setup().await;
 
         println!("get_samples");
-        let samples = chatsounds
-            .get_samples("mktheme", thread_rng())
+        let queue = chatsounds
+            .get_sources_queue("mktheme", thread_rng())
             .await
             .unwrap();
-        println!("{}", samples.len());
+        let samples: Vec<_> = queue.collect();
+        println!("{} samples", samples.len());
     }
 }
