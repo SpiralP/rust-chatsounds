@@ -1,6 +1,7 @@
 (function() {var implementors = {};
 implementors["arrayvec"] = [{"text":"impl&lt;A&gt; FromStr for ArrayString&lt;A&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;A: Array&lt;Item = u8&gt; + Copy,&nbsp;</span>","synthetic":false,"types":[]}];
 implementors["http"] = [{"text":"impl FromStr for HeaderName","synthetic":false,"types":[]},{"text":"impl FromStr for HeaderValue","synthetic":false,"types":[]},{"text":"impl FromStr for Method","synthetic":false,"types":[]},{"text":"impl FromStr for StatusCode","synthetic":false,"types":[]},{"text":"impl FromStr for Authority","synthetic":false,"types":[]},{"text":"impl FromStr for PathAndQuery","synthetic":false,"types":[]},{"text":"impl FromStr for Scheme","synthetic":false,"types":[]},{"text":"impl FromStr for Uri","synthetic":false,"types":[]}];
+implementors["httpdate"] = [{"text":"impl FromStr for HttpDate","synthetic":false,"types":[]}];
 implementors["hyper"] = [{"text":"impl FromStr for Name","synthetic":false,"types":[]}];
 implementors["ipnet"] = [{"text":"impl FromStr for IpNet","synthetic":false,"types":[]},{"text":"impl FromStr for Ipv4Net","synthetic":false,"types":[]},{"text":"impl FromStr for Ipv6Net","synthetic":false,"types":[]}];
 implementors["log"] = [{"text":"impl FromStr for Level","synthetic":false,"types":[]},{"text":"impl FromStr for LevelFilter","synthetic":false,"types":[]}];
