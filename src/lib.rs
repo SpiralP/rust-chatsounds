@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
 use rayon::prelude::*;
+use rodio::source::UniformSourceIterator;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 #[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
@@ -406,11 +407,12 @@ impl Chatsounds {
         Ok(())
     }
 
+    /// outputs samples at 44100 Hz, 2 channels
     pub async fn get_sources_queue<S: AsRef<str>, R: RngCore>(
         &mut self,
         text: S,
         mut rng: R,
-    ) -> Result<SourcesQueueOutput<i16>> {
+    ) -> Result<UniformSourceIterator<SourcesQueueOutput<i16>, i16>> {
         let (sink, queue) = rodio::queue::queue(false);
 
         let parsed_chatsounds = parser::parse(text.as_ref())?;
@@ -432,7 +434,7 @@ impl Chatsounds {
             }
         }
 
-        Ok(queue)
+        Ok(UniformSourceIterator::new(queue, 2, 44100))
     }
 
     #[cfg(feature = "playback")]
