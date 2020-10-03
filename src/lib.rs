@@ -67,7 +67,7 @@ impl Chatsound {
             self.repo, self.repo_path, self.sound_path
         );
 
-        let bytes = cache_download(&url, cache_path, false).await?;
+        let (bytes, _file_path) = cache_download(&url, cache_path, false).await?;
 
         Ok(LoadedChatsound { bytes })
     }
@@ -193,14 +193,32 @@ impl Chatsounds {
         })
     }
 
-    // TODO parse HEAD request
-    pub async fn load_github_api(&mut self, repo: &str, repo_path: &str) -> Result<()> {
+    pub async fn load_github_api(
+        &mut self,
+        repo: &str,
+        repo_path: &str,
+        use_etag: bool,
+    ) -> Result<()> {
         let api_url = format!(
             "https://api.github.com/repos/{}/git/trees/master?recursive=1",
             repo
         );
 
-        let bytes = cache_download(api_url, &self.cache_path(), true).await?;
+        let (bytes, cached_file_path) =
+            cache_download(api_url, &self.cache_path(), use_etag).await?;
+
+        #[derive(Deserialize)]
+        struct GitHubError {
+            message: String,
+        }
+
+        if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
+            // remove the cached file of the bad response
+            tokio::fs::remove_file(cached_file_path).await?;
+
+            bail!("GitHub Error: {}", err.message);
+        }
+
         let mut trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
 
         for entry in trees.tree.iter_mut() {
@@ -232,13 +250,19 @@ impl Chatsounds {
         Ok(())
     }
 
-    pub async fn load_github_msgpack(&mut self, repo: &str, repo_path: &str) -> Result<()> {
+    pub async fn load_github_msgpack(
+        &mut self,
+        repo: &str,
+        repo_path: &str,
+        use_etag: bool,
+    ) -> Result<()> {
         let msgpack_url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
             repo, repo_path
         );
 
-        let bytes = cache_download(msgpack_url, &self.cache_path(), true).await?;
+        // these raw links don't have a rate limit so we won't cache bad results
+        let (bytes, _file_path) = cache_download(msgpack_url, &self.cache_path(), use_etag).await?;
         let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_slice(&bytes)?;
 
         for entry in entries.drain(..) {
@@ -470,11 +494,12 @@ mod tests {
             );
 
             match source {
-                Source::Api(repo, repo_path) => {
-                    chatsounds.load_github_api(repo, repo_path).await.unwrap()
-                }
+                Source::Api(repo, repo_path) => chatsounds
+                    .load_github_api(repo, repo_path, false)
+                    .await
+                    .unwrap(),
                 Source::Msgpack(repo, repo_path) => chatsounds
-                    .load_github_msgpack(repo, repo_path)
+                    .load_github_msgpack(repo, repo_path, false)
                     .await
                     .unwrap(),
             }

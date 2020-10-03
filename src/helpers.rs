@@ -1,7 +1,7 @@
 use crate::error::*;
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::{
     fs,
     fs::{File, OpenOptions},
@@ -48,7 +48,7 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(
     url: S,
     cache_path: P,
     use_etag: bool,
-) -> Result<Bytes> {
+) -> Result<(Bytes, PathBuf)> {
     let mut hasher = Sha256::new();
     hasher.update(url.as_ref());
 
@@ -135,5 +135,5 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(
         bytes
     };
 
-    Ok(bytes)
+    Ok((bytes, file_path))
 }
