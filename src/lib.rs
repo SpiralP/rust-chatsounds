@@ -503,12 +503,12 @@ mod tests {
 
         let mut chatsounds = Chatsounds::new("cache").unwrap();
 
-        enum FetchedSource {
-            Api(GitHubApiTrees),
-            Msgpack(GitHubMsgpackEntries),
-        }
-
         {
+            enum FetchedSource {
+                Api(GitHubApiTrees),
+                Msgpack(GitHubMsgpackEntries),
+            }
+
             println!("fetching sources");
             let fetched = futures::stream::iter(SOURCES)
                 .map(|source| {
@@ -516,12 +516,12 @@ mod tests {
                         Source::Api(repo, repo_path) => chatsounds
                             .fetch_github_api(repo, repo_path, false)
                             .map_ok(FetchedSource::Api)
-                            .boxed_local(),
+                            .boxed(),
 
                         Source::Msgpack(repo, repo_path) => chatsounds
                             .fetch_github_msgpack(repo, repo_path, false)
                             .map_ok(FetchedSource::Msgpack)
-                            .boxed_local(),
+                            .boxed(),
                     };
 
                     async move { f.await.map(|fetched_source| (source, fetched_source)) }
