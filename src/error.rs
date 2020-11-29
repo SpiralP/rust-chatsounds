@@ -21,3 +21,9 @@ error_chain! {
         }
     }
 }
+
+impl PartialEq for Error {
+    fn eq(&self, _: &Self) -> bool {
+        false
+    }
+}

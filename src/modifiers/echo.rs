@@ -1,9 +1,10 @@
-use super::{parse_args, Modifier};
+use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
 use std::time::Duration;
 
+#[derive(Debug, PartialEq)]
 pub struct EchoModifier {
     /// in seconds
     pub duration: f32,
@@ -19,7 +20,7 @@ impl Default for EchoModifier {
     }
 }
 
-impl Modifier for EchoModifier {
+impl ModifierTrait for EchoModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "echo(2)"
 

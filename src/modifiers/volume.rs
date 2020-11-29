@@ -1,8 +1,9 @@
-use super::{parse_args, Modifier};
+use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
 
+#[derive(Debug, PartialEq)]
 pub struct VolumeModifier {
     pub volume: f32,
 }
@@ -13,7 +14,7 @@ impl Default for VolumeModifier {
     }
 }
 
-impl Modifier for VolumeModifier {
+impl ModifierTrait for VolumeModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "volume(2)"
 

@@ -8,15 +8,12 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::{map, opt},
-    multi::separated_list,
+    multi::separated_list0,
     number::complete::float,
     IResult,
 };
 
-pub trait Modifier
-where
-    Self: Send,
-{
+pub trait ModifierTrait: Send + std::fmt::Debug + PartialEq {
     fn parse(input: &str) -> IResult<&str, Self>
     where
         Self: Sized;
@@ -24,17 +21,38 @@ where
     fn modify(&self, source: BoxSource) -> BoxSource;
 }
 
-pub fn parse_modifier(input: &str) -> IResult<&str, Box<dyn Modifier>> {
+#[derive(Debug, PartialEq)]
+pub enum Modifier {
+    Pitch(PitchModifier),
+    Volume(VolumeModifier),
+    Echo(EchoModifier),
+}
+
+impl ModifierTrait for Modifier {
+    fn parse(input: &str) -> IResult<&str, Self> {
+        alt((
+            map(PitchModifier::parse, Modifier::Pitch),
+            map(VolumeModifier::parse, Modifier::Volume),
+            map(EchoModifier::parse, Modifier::Echo),
+        ))(input)
+    }
+
+    fn modify(&self, source: BoxSource) -> BoxSource {
+        match self {
+            Modifier::Pitch(modifier) => modifier.modify(source),
+            Modifier::Volume(modifier) => modifier.modify(source),
+            Modifier::Echo(modifier) => modifier.modify(source),
+        }
+    }
+}
+
+pub fn parse_modifier(input: &str) -> IResult<&str, Modifier> {
     // input = ":pitch(2)"
 
     let (input, _) = tag(":")(input)?;
     // input = "pitch(2)"
 
-    let (input, modifier) = alt((
-        map(PitchModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-        map(VolumeModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-        map(EchoModifier::parse, |a| Box::new(a) as Box<dyn Modifier>),
-    ))(input)?;
+    let (input, modifier) = Modifier::parse(input)?;
 
     Ok((input, modifier))
 }
@@ -60,7 +78,7 @@ fn parse_arg_list(s: &str) -> IResult<&str, Args> {
 
     let mut list = Vec::new();
 
-    // fix separated_list not working if you start with a separator
+    // fix separated_list0 not working if you start with a separator
     let mut s = s;
     loop {
         let (s2, maybe_first) = opt(&sep)(s)?;
@@ -73,7 +91,7 @@ fn parse_arg_list(s: &str) -> IResult<&str, Args> {
         }
     }
 
-    let (s, mut items) = separated_list(&sep, parse_arg)(s)?;
+    let (s, mut items) = separated_list0(&sep, parse_arg)(s)?;
     list.append(&mut items);
 
     Ok((s, list))
@@ -95,8 +113,8 @@ pub fn parse_args(input: &str) -> IResult<&str, Args> {
 
 #[test]
 fn test_parse_args() {
-    assert_eq!(parse_args("()"), Ok(("", vec![])));
-    assert_eq!(parse_args("(    )"), Ok(("", vec![])));
+    assert_eq!(parse_args("()"), Ok(("", vec![None])));
+    assert_eq!(parse_args("(    )"), Ok(("", vec![None])));
 
     assert_eq!(parse_args("(1)"), Ok(("", vec![Some(1.0)])));
     assert_eq!(parse_args("(1, 3)"), Ok(("", vec![Some(1.0), Some(3.0)])));
@@ -109,6 +127,8 @@ fn test_parse_args() {
         parse_args("( 1 , 3 , 5 )"),
         Ok(("", vec![Some(1.0), Some(3.0), Some(5.0)]))
     );
+
+    assert_eq!(parse_args("( , )"), Ok(("", vec![None, None])));
 
     assert_eq!(parse_args("( , 2 )"), Ok(("", vec![None, Some(2.0)])));
     assert_eq!(

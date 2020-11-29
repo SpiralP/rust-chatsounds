@@ -1,8 +1,9 @@
-use super::{parse_args, Modifier};
+use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::{buffer::SamplesBuffer, Source};
 
+#[derive(Debug, PartialEq)]
 pub struct PitchModifier {
     pub pitch: f32,
 }
@@ -13,7 +14,7 @@ impl Default for PitchModifier {
     }
 }
 
-impl Modifier for PitchModifier {
+impl ModifierTrait for PitchModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "pitch(2)"
 

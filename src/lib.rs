@@ -4,7 +4,7 @@ mod modifiers;
 mod parser;
 
 pub use self::error::{Error, ErrorKind};
-use self::{error::*, helpers::cache_download};
+use self::{error::*, helpers::cache_download, modifiers::ModifierTrait};
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;

@@ -11,9 +11,10 @@ use nom::{
     IResult,
 };
 
+#[derive(Debug, PartialEq)]
 pub struct ParsedChatsound {
     pub sentence: String,
-    pub modifiers: Vec<Box<dyn Modifier>>,
+    pub modifiers: Vec<Modifier>,
 }
 
 fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
@@ -46,67 +47,69 @@ pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
 
 #[test]
 fn test_parser() {
-    // assert_eq!(
-    //   parse("hello:pitch(2)"),
-    //   Ok(vec![ParsedChatsound {
-    //     sentence: "hello".to_string(),
-    //     modifiers: vec![Box::new(PitchModifier { pitch: 2.0 })]
-    //   }])
-    // );
-    // assert_eq!(
-    //   parse("hello:volume(4):pitch(2)"),
-    //   Ok(vec![ParsedChatsound {
-    //     sentence: "hello".to_string(),
-    //     modifiers: vec![
-    //       Box::new(VolumeModifier { volume: 4.0 }),
-    //       Box::new(PitchModifier { pitch: 2.0 })
-    //     ]
-    //   }])
-    // );
-    // assert_eq!(
-    //   parse("hello:pitch(2) more stuff"),
-    //   Ok(vec![
-    //     ParsedChatsound {
-    //       sentence: "hello".to_string(),
-    //       modifiers: vec![Box::new(PitchModifier { pitch: 2.0 })]
-    //     },
-    //     ParsedChatsound {
-    //       sentence: "more stuff".to_string(),
-    //       modifiers: vec![]
-    //     }
-    //   ])
-    // );
-    // assert_eq!(
-    //   parse("hello"),
-    //   Ok(vec![ParsedChatsound {
-    //     sentence: "hello".to_string(),
-    //     modifiers: vec![]
-    //   }])
-    // );
+    use crate::modifiers::*;
 
-    // assert_eq!(
-    //   parse("hello world:pitch(123) another one:volume(22):pitch(33) "),
-    //   Ok(vec![
-    //     ParsedChatsound {
-    //       sentence: "hello world".to_string(),
-    //       modifiers: vec![Box::new(PitchModifier { pitch: 123.0 })]
-    //     },
-    //     ParsedChatsound {
-    //       sentence: "another one".to_string(),
-    //       modifiers: vec![
-    //         Box::new(VolumeModifier { volume: 22.0 }),
-    //         Box::new(PitchModifier { pitch: 33.0 })
-    //       ]
-    //     }
-    //   ])
-    // );
+    assert_eq!(
+        parse("hello:pitch(2)"),
+        Ok(vec![ParsedChatsound {
+            sentence: "hello".to_string(),
+            modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })],
+        }])
+    );
+    assert_eq!(
+        parse("hello:volume(4):pitch(2)"),
+        Ok(vec![ParsedChatsound {
+            sentence: "hello".to_string(),
+            modifiers: vec![
+                Modifier::Volume(VolumeModifier { volume: 4.0 }),
+                Modifier::Pitch(PitchModifier { pitch: 2.0 })
+            ]
+        }])
+    );
+    assert_eq!(
+        parse("hello:pitch(2) more stuff"),
+        Ok(vec![
+            ParsedChatsound {
+                sentence: "hello".to_string(),
+                modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })]
+            },
+            ParsedChatsound {
+                sentence: "more stuff".to_string(),
+                modifiers: vec![]
+            }
+        ])
+    );
+    assert_eq!(
+        parse("hello"),
+        Ok(vec![ParsedChatsound {
+            sentence: "hello".to_string(),
+            modifiers: vec![]
+        }])
+    );
 
-    // println!(
-    //   "partial success: {:#?}",
-    //   parse("helloh:pitch(2) bad:pitch(bad)")
-    // );
-    // println!("partial success: {:#?}", parse("bad pitch:pitch(asdf)"));
+    assert_eq!(
+        parse("hello world:pitch(123) another one:volume(22):pitch(33) "),
+        Ok(vec![
+            ParsedChatsound {
+                sentence: "hello world".to_string(),
+                modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 123.0 })]
+            },
+            ParsedChatsound {
+                sentence: "another one".to_string(),
+                modifiers: vec![
+                    Modifier::Volume(VolumeModifier { volume: 22.0 }),
+                    Modifier::Pitch(PitchModifier { pitch: 33.0 })
+                ]
+            }
+        ])
+    );
 
-    // println!("error: {:#?}", parse(""));
-    // println!("error: {:#?}", parse("😂"));
+    println!(
+        "partial success: {:#?}",
+        parse("helloh:pitch(2) bad:pitch(bad)")
+    );
+    println!("partial success: {:#?}", parse("bad pitch:pitch(asdf)"));
+
+    println!("error: {:#?}", parse(""));
+    println!("error: {:#?}", parse("😂"));
 }
