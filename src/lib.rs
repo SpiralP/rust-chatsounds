@@ -25,9 +25,11 @@ use std::{collections::VecDeque, fmt::Debug, sync::Arc};
 pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
 
 #[derive(Deserialize)]
-struct GitHubApiTrees {
+pub struct GitHubApiTrees {
     pub tree: Vec<GitHubApiFileEntry>,
 }
+
+pub type GitHubMsgpackEntries = Vec<Vec<String>>;
 
 // {
 // "path": "sound/chatsounds/autoadd/instagib/sex1.ogg",
@@ -38,7 +40,7 @@ struct GitHubApiTrees {
 // "url": "https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba"
 // },
 #[derive(Deserialize)]
-struct GitHubApiFileEntry {
+pub struct GitHubApiFileEntry {
     pub path: String,
     pub r#type: String,
     pub size: Option<usize>,
@@ -194,12 +196,12 @@ impl Chatsounds {
         })
     }
 
-    pub async fn load_github_api(
-        &mut self,
+    pub async fn fetch_github_api(
+        &self,
         repo: &str,
-        repo_path: &str,
+        _repo_path: &str,
         use_etag: bool,
-    ) -> Result<()> {
+    ) -> Result<GitHubApiTrees> {
         let api_url = format!(
             "https://api.github.com/repos/{}/git/trees/master?recursive=1",
             repo
@@ -220,8 +222,17 @@ impl Chatsounds {
             bail!("GitHub Error: {}", err.message);
         }
 
-        let mut trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
+        let trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
 
+        Ok(trees)
+    }
+
+    pub fn load_github_api(
+        &mut self,
+        repo: &str,
+        repo_path: &str,
+        mut trees: GitHubApiTrees,
+    ) -> Result<()> {
         for entry in trees.tree.iter_mut() {
             if entry.r#type != "blob" || !entry.path.starts_with(&repo_path) {
                 continue;
@@ -251,12 +262,12 @@ impl Chatsounds {
         Ok(())
     }
 
-    pub async fn load_github_msgpack(
-        &mut self,
+    pub async fn fetch_github_msgpack(
+        &self,
         repo: &str,
         repo_path: &str,
         use_etag: bool,
-    ) -> Result<()> {
+    ) -> Result<GitHubMsgpackEntries> {
         let msgpack_url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
             repo, repo_path
@@ -264,8 +275,17 @@ impl Chatsounds {
 
         // these raw links don't have a rate limit so we won't cache bad results
         let (bytes, _file_path) = cache_download(msgpack_url, &self.cache_path(), use_etag).await?;
-        let mut entries: Vec<Vec<String>> = rmp_serde::decode::from_slice(&bytes)?;
+        let entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(&bytes)?;
 
+        Ok(entries)
+    }
+
+    pub fn load_github_msgpack(
+        &mut self,
+        repo: &str,
+        repo_path: &str,
+        mut entries: GitHubMsgpackEntries,
+    ) -> Result<()> {
         for entry in entries.drain(..) {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
             let sentence = entry[1].clone();
@@ -448,6 +468,10 @@ impl Chatsounds {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::{
+        future::{FutureExt, TryFutureExt},
+        stream::{StreamExt, TryStreamExt},
+    };
     use tokio::fs;
 
     enum Source {
@@ -479,34 +503,54 @@ mod tests {
 
         let mut chatsounds = Chatsounds::new("cache").unwrap();
 
-        let sources_len = SOURCES.len();
-        for (i, source) in SOURCES.iter().enumerate() {
-            let (repo, repo_path) = match source {
-                Source::Api(repo, repo_path) | Source::Msgpack(repo, repo_path) => {
-                    (repo, repo_path)
-                }
-            };
-
-            println!(
-                "[{}/{}] fetching {} {}",
-                i + 1,
-                sources_len,
-                repo,
-                repo_path
-            );
-
-            match source {
-                Source::Api(repo, repo_path) => chatsounds
-                    .load_github_api(repo, repo_path, false)
-                    .await
-                    .unwrap(),
-                Source::Msgpack(repo, repo_path) => chatsounds
-                    .load_github_msgpack(repo, repo_path, false)
-                    .await
-                    .unwrap(),
-            }
+        enum FetchedSource {
+            Api(GitHubApiTrees),
+            Msgpack(GitHubMsgpackEntries),
         }
 
+        {
+            println!("fetching sources");
+            let fetched = futures::stream::iter(SOURCES)
+                .map(|source| {
+                    let f = match source {
+                        Source::Api(repo, repo_path) => chatsounds
+                            .fetch_github_api(repo, repo_path, false)
+                            .map_ok(FetchedSource::Api)
+                            .boxed_local(),
+
+                        Source::Msgpack(repo, repo_path) => chatsounds
+                            .fetch_github_msgpack(repo, repo_path, false)
+                            .map_ok(FetchedSource::Msgpack)
+                            .boxed_local(),
+                    };
+
+                    async move { f.await.map(|fetched_source| (source, fetched_source)) }
+                })
+                .buffered(5)
+                .try_collect::<Vec<_>>()
+                .await
+                .unwrap();
+
+            println!("done");
+
+            for (source, fetched_source) in fetched {
+                match source {
+                    Source::Api(repo, repo_path) => {
+                        if let FetchedSource::Api(data) = fetched_source {
+                            chatsounds.load_github_api(repo, repo_path, data).unwrap();
+                        }
+                    }
+
+                    Source::Msgpack(repo, repo_path) => {
+                        if let FetchedSource::Msgpack(data) = fetched_source {
+                            chatsounds
+                                .load_github_msgpack(repo, repo_path, data)
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+        }
         chatsounds
     }
 
