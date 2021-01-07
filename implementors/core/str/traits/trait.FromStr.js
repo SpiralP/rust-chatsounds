@@ -11,6 +11,5 @@ implementors["nix"] = [{"text":"impl FromStr for Signal","synthetic":false,"type
 implementors["proc_macro2"] = [{"text":"impl FromStr for TokenStream","synthetic":false,"types":[]}];
 implementors["serde_json"] = [{"text":"impl FromStr for Number","synthetic":false,"types":[]},{"text":"impl FromStr for Value","synthetic":false,"types":[]}];
 implementors["tracing_core"] = [{"text":"impl FromStr for Level","synthetic":false,"types":[]},{"text":"impl FromStr for LevelFilter","synthetic":false,"types":[]}];
-implementors["unicase"] = [{"text":"impl&lt;S:&nbsp;FromStr&gt; FromStr for Ascii&lt;S&gt;","synthetic":false,"types":[]},{"text":"impl&lt;S:&nbsp;FromStr + AsRef&lt;str&gt;&gt; FromStr for UniCase&lt;S&gt;","synthetic":false,"types":[]}];
 implementors["url"] = [{"text":"impl FromStr for Url","synthetic":false,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
