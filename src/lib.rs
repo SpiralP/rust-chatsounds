@@ -1,10 +1,9 @@
-mod error;
 mod helpers;
 mod modifiers;
 mod parser;
 
-pub use self::error::{Error, ErrorKind};
-use self::{error::*, helpers::cache_download, modifiers::ModifierTrait};
+use self::{helpers::cache_download, modifiers::ModifierTrait};
+use anyhow::*;
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
@@ -16,6 +15,7 @@ use rodio::{OutputStream, OutputStreamHandle};
 use serde::Deserialize;
 use std::{
     collections::HashMap,
+    fs,
     io::{BufReader, Cursor},
     path::{Component, Path, PathBuf},
 };
@@ -48,7 +48,7 @@ pub struct GitHubApiFileEntry {
 
 #[async_trait]
 pub trait ChatsoundTrait {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Result<Bytes>;
+    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes>;
 }
 
 #[derive(Clone)]
@@ -64,13 +64,13 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
-    pub async fn load<P: AsRef<Path>>(&self, cache_path: P) -> Result<LoadedChatsound> {
+    pub async fn load(&self, cache_path: &Path) -> Result<LoadedChatsound> {
         let url = format!(
             "https://raw.githubusercontent.com/{}/master/{}/{}",
             self.repo, self.repo_path, self.sound_path
         );
 
-        let (bytes, _file_path) = cache_download(&url, cache_path, false).await?;
+        let bytes = cache_download(&url, cache_path, false, |bytes| Ok(Ok(bytes))).await?;
 
         Ok(LoadedChatsound { bytes })
     }
@@ -82,14 +82,14 @@ pub struct LoadedChatsound {
 
 #[async_trait]
 impl ChatsoundTrait for LoadedChatsound {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, _cache_path: P) -> Result<Bytes> {
+    async fn get_bytes(&self, _cache_path: &Path) -> Result<Bytes> {
         Ok(self.bytes.clone())
     }
 }
 
 #[async_trait]
 impl ChatsoundTrait for Chatsound {
-    async fn get_bytes<P: AsRef<Path> + Send + Sync>(&self, cache_path: P) -> Result<Bytes> {
+    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes> {
         let loaded_chatsound = self.load(&cache_path).await?;
         Ok(loaded_chatsound.get_bytes(&cache_path).await?)
     }
@@ -174,12 +174,19 @@ unsafe impl Sync for Chatsounds {}
 
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
+        if !fs::metadata(&cache_path)
+            .map(|meta| meta.is_dir())
+            .unwrap_or(false)
+        {
+            bail!("cache_path doesn't exist!");
+        }
+
         #[cfg(feature = "playback")]
         let (output_stream, output_stream_handle) =
-            OutputStream::try_default().chain_err(|| "OutputStream::try_default")?;
+            OutputStream::try_default().context("OutputStream::try_default")?;
 
         Ok(Self {
-            cache_path: cache_path.as_ref().canonicalize().unwrap(),
+            cache_path: cache_path.as_ref().canonicalize()?,
             map_store: HashMap::new(),
 
             #[cfg(feature = "playback")]
@@ -207,20 +214,26 @@ impl Chatsounds {
             repo
         );
 
-        let (bytes, cached_file_path) =
-            cache_download(api_url, &self.cache_path(), use_etag).await?;
+        let bytes = cache_download(&api_url, &self.cache_path(), use_etag, |bytes| {
+            #[derive(Deserialize)]
+            struct GitHubError {
+                message: String,
+            }
 
-        #[derive(Deserialize)]
-        struct GitHubError {
-            message: String,
-        }
-
-        if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
-            // remove the cached file of the bad response
-            tokio::fs::remove_file(cached_file_path).await?;
-
-            bail!("GitHub Error: {}", err.message);
-        }
+            Ok(
+                if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
+                    let error = anyhow!("GitHub Error: {}", err.message);
+                    if err.message.starts_with("API rate limit exceeded") {
+                        Err(error)
+                    } else {
+                        bail!(error);
+                    }
+                } else {
+                    Ok(bytes)
+                },
+            )
+        })
+        .await?;
 
         let trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
 
@@ -274,7 +287,10 @@ impl Chatsounds {
         );
 
         // these raw links don't have a rate limit so we won't cache bad results
-        let (bytes, _file_path) = cache_download(msgpack_url, &self.cache_path(), use_etag).await?;
+        let bytes = cache_download(&msgpack_url, &self.cache_path(), use_etag, |bytes| {
+            Ok(Ok(bytes))
+        })
+        .await?;
         let entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(&bytes)?;
 
         Ok(entries)
@@ -358,9 +374,7 @@ impl Chatsounds {
 
     #[cfg(feature = "playback")]
     pub async fn play<S: AsRef<str>, R: RngCore>(&mut self, text: S, rng: R) -> Result<Arc<Sink>> {
-        let mut sink = ChatsoundsSink::Sink(Arc::new(
-            Sink::try_new(&self.output_stream_handle).map_err(ErrorKind::RodioPlay)?,
-        ));
+        let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::try_new(&self.output_stream_handle)?));
 
         self.play_sink(text, &mut sink, rng).await?;
 
@@ -376,15 +390,12 @@ impl Chatsounds {
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<Arc<SpatialSink>> {
-        let mut sink = ChatsoundsSink::Spatial(Arc::new(
-            SpatialSink::try_new(
-                &self.output_stream_handle,
-                emitter_pos,
-                left_ear_pos,
-                right_ear_pos,
-            )
-            .map_err(ErrorKind::RodioPlay)?,
-        ));
+        let mut sink = ChatsoundsSink::Spatial(Arc::new(SpatialSink::try_new(
+            &self.output_stream_handle,
+            emitter_pos,
+            left_ear_pos,
+            right_ear_pos,
+        )?));
 
         self.play_sink(text, &mut sink, rng).await?;
 
@@ -514,12 +525,12 @@ mod tests {
                 .map(|source| {
                     let f = match source {
                         Source::Api(repo, repo_path) => chatsounds
-                            .fetch_github_api(repo, repo_path, false)
+                            .fetch_github_api(repo, repo_path, true)
                             .map_ok(FetchedSource::Api)
                             .boxed(),
 
                         Source::Msgpack(repo, repo_path) => chatsounds
-                            .fetch_github_msgpack(repo, repo_path, false)
+                            .fetch_github_msgpack(repo, repo_path, true)
                             .map_ok(FetchedSource::Msgpack)
                             .boxed(),
                     };

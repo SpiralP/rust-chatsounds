@@ -1,9 +1,7 @@
 #![allow(dead_code)]
 
-use crate::{
-    error::*,
-    modifiers::{parse_modifier, Modifier},
-};
+use crate::modifiers::{parse_modifier, Modifier};
+use anyhow::*;
 use nom::{
     bytes::complete::take_while1,
     character::{is_alphanumeric, is_space},
@@ -50,25 +48,25 @@ fn test_parser() {
     use crate::modifiers::*;
 
     assert_eq!(
-        parse("hello:pitch(2)"),
-        Ok(vec![ParsedChatsound {
+        parse("hello:pitch(2)").unwrap(),
+        vec![ParsedChatsound {
             sentence: "hello".to_string(),
             modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })],
-        }])
+        }]
     );
     assert_eq!(
-        parse("hello:volume(4):pitch(2)"),
-        Ok(vec![ParsedChatsound {
+        parse("hello:volume(4):pitch(2)").unwrap(),
+        vec![ParsedChatsound {
             sentence: "hello".to_string(),
             modifiers: vec![
                 Modifier::Volume(VolumeModifier { volume: 4.0 }),
                 Modifier::Pitch(PitchModifier { pitch: 2.0 })
             ]
-        }])
+        }]
     );
     assert_eq!(
-        parse("hello:pitch(2) more stuff"),
-        Ok(vec![
+        parse("hello:pitch(2) more stuff").unwrap(),
+        vec![
             ParsedChatsound {
                 sentence: "hello".to_string(),
                 modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })]
@@ -77,19 +75,19 @@ fn test_parser() {
                 sentence: "more stuff".to_string(),
                 modifiers: vec![]
             }
-        ])
+        ]
     );
     assert_eq!(
-        parse("hello"),
-        Ok(vec![ParsedChatsound {
+        parse("hello").unwrap(),
+        vec![ParsedChatsound {
             sentence: "hello".to_string(),
             modifiers: vec![]
-        }])
+        }]
     );
 
     assert_eq!(
-        parse("hello world:pitch(123) another one:volume(22):pitch(33) "),
-        Ok(vec![
+        parse("hello world:pitch(123) another one:volume(22):pitch(33) ").unwrap(),
+        vec![
             ParsedChatsound {
                 sentence: "hello world".to_string(),
                 modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 123.0 })]
@@ -101,7 +99,7 @@ fn test_parser() {
                     Modifier::Pitch(PitchModifier { pitch: 33.0 })
                 ]
             }
-        ])
+        ]
     );
 
     println!(

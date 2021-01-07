@@ -1,4 +1,4 @@
-use crate::error::*;
+use anyhow::*;
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -44,30 +44,33 @@ async fn get_head_etag<S: AsRef<str>>(url: S) -> Result<Option<String>> {
     Ok(etag)
 }
 
-pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(
-    url: S,
-    cache_path: P,
-    use_etag: bool,
-) -> Result<(Bytes, PathBuf)> {
+fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
     let mut hasher = Sha256::new();
-    hasher.update(url.as_ref());
-
+    hasher.update(url);
     let hex = format!("{:x}", hasher.finalize());
 
     let hex_dir = &hex[0..2];
     let hex_filename = &hex[2..];
 
-    let dir_path = cache_path.as_ref().join(hex_dir);
-    if !fs::metadata(&dir_path)
-        .await
-        .map(|meta| meta.is_dir())
-        .unwrap_or(false)
-    {
-        fs::create_dir(&dir_path).await?;
-    }
+    let dir_path = cache_path.join(hex_dir);
 
     let file_path = dir_path.join(hex_filename);
     let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
+
+    (file_path, etag_file_path)
+}
+
+/// if `use_etag` is false, always used cached file if it exists
+pub async fn cache_download<F>(
+    url: &str,
+    cache_path: &Path,
+    use_etag: bool,
+    validator: F,
+) -> Result<Bytes>
+where
+    F: FnOnce(Bytes) -> Result<Result<Bytes>>,
+{
+    let (file_path, etag_file_path) = cache_file_path(url, cache_path);
 
     let file_cached = fs::metadata(&file_path)
         .await
@@ -86,7 +89,7 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(
                 .read(true)
                 .open(&etag_file_path)
                 .await
-                .chain_err(|| "open etag_file_path")?;
+                .context("open etag_file_path")?;
 
             let mut s = String::new();
             etag_file.read_to_string(&mut s).await?;
@@ -111,29 +114,41 @@ pub async fn cache_download<S: AsRef<str>, P: AsRef<Path>>(
 
     let use_cached = file_cached && etag_matches;
 
-    let bytes = if use_cached {
-        let mut file = OpenOptions::new().read(true).open(&file_path).await?;
-
-        let mut vec = Vec::new();
-        file.read_to_end(&mut vec).await?;
-
-        Bytes::from(vec)
+    Ok(if use_cached {
+        read_file(&file_path).await?
     } else {
         let (bytes, maybe_etag) = get(&url).await?;
 
-        let mut file = File::create(&file_path).await?;
-        file.write_all(&bytes).await?;
+        let maybe_bytes = validator(bytes)?;
 
-        if use_etag {
-            if let Some(etag) = maybe_etag {
-                let mut file = File::create(&etag_file_path).await?;
-                file.write_all(etag.as_bytes()).await?;
+        if let Ok(bytes) = maybe_bytes {
+            let mut file = File::create(&file_path).await?;
+            file.write_all(&bytes).await?;
+
+            if use_etag {
+                if let Some(etag) = maybe_etag {
+                    let mut file = File::create(&etag_file_path).await?;
+                    file.write_all(etag.as_bytes()).await?;
+                }
+            }
+
+            bytes
+        } else {
+            // light error, try using cache if it exists
+            if let Ok(cached_bytes) = read_file(&file_path).await {
+                cached_bytes
             } else {
+                maybe_bytes?
             }
         }
+    })
+}
 
-        bytes
-    };
+async fn read_file(file_path: &Path) -> Result<Bytes> {
+    let mut file = OpenOptions::new().read(true).open(&file_path).await?;
 
-    Ok((bytes, file_path))
+    let mut vec = Vec::new();
+    file.read_to_end(&mut vec).await?;
+
+    Ok(Bytes::from(vec))
 }
