@@ -174,6 +174,7 @@ unsafe impl Sync for Chatsounds {}
 
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
+        let cache_path = cache_path.as_ref().canonicalize()?;
         if !fs::metadata(&cache_path)
             .map(|meta| meta.is_dir())
             .unwrap_or(false)
@@ -186,7 +187,7 @@ impl Chatsounds {
             OutputStream::try_default().context("OutputStream::try_default")?;
 
         Ok(Self {
-            cache_path: cache_path.as_ref().canonicalize()?,
+            cache_path,
             map_store: HashMap::new(),
 
             #[cfg(feature = "playback")]

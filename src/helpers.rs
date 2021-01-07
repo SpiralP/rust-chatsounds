@@ -44,7 +44,7 @@ async fn get_head_etag<S: AsRef<str>>(url: S) -> Result<Option<String>> {
     Ok(etag)
 }
 
-fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
+async fn cache_file_path(url: &str, cache_path: &Path) -> Result<(PathBuf, PathBuf)> {
     let mut hasher = Sha256::new();
     hasher.update(url);
     let hex = format!("{:x}", hasher.finalize());
@@ -54,10 +54,18 @@ fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
 
     let dir_path = cache_path.join(hex_dir);
 
+    if !fs::metadata(&dir_path)
+        .await
+        .map(|meta| meta.is_dir())
+        .unwrap_or(false)
+    {
+        fs::create_dir(&dir_path).await?;
+    }
+
     let file_path = dir_path.join(hex_filename);
     let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
 
-    (file_path, etag_file_path)
+    Ok((file_path, etag_file_path))
 }
 
 /// if `use_etag` is false, always used cached file if it exists
@@ -70,7 +78,7 @@ pub async fn cache_download<F>(
 where
     F: FnOnce(Bytes) -> Result<Result<Bytes>>,
 {
-    let (file_path, etag_file_path) = cache_file_path(url, cache_path);
+    let (file_path, etag_file_path) = cache_file_path(url, cache_path).await?;
 
     let file_cached = fs::metadata(&file_path)
         .await
@@ -94,7 +102,7 @@ where
             let mut s = String::new();
             etag_file.read_to_string(&mut s).await?;
 
-            let maybe_etag = get_head_etag(&url).await?;
+            let maybe_etag = get_head_etag(&url).await.context("get_head_etag")?;
 
             if let Some(etag) = maybe_etag {
                 // check if old matches current
@@ -115,19 +123,25 @@ where
     let use_cached = file_cached && etag_matches;
 
     Ok(if use_cached {
-        read_file(&file_path).await?
+        read_file(&file_path)
+            .await
+            .with_context(|| format!("read_file {:?}", file_path))?
     } else {
-        let (bytes, maybe_etag) = get(&url).await?;
+        let (bytes, maybe_etag) = get(&url).await.with_context(|| format!("get {:?}", url))?;
 
         let maybe_bytes = validator(bytes)?;
 
         if let Ok(bytes) = maybe_bytes {
-            let mut file = File::create(&file_path).await?;
+            let mut file = File::create(&file_path)
+                .await
+                .with_context(|| format!("File::create {:?}", file_path))?;
             file.write_all(&bytes).await?;
 
             if use_etag {
                 if let Some(etag) = maybe_etag {
-                    let mut file = File::create(&etag_file_path).await?;
+                    let mut file = File::create(&etag_file_path)
+                        .await
+                        .with_context(|| format!("File::create {:?}", etag_file_path))?;
                     file.write_all(etag.as_bytes()).await?;
                 }
             }
