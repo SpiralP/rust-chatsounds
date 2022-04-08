@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::modifiers::{parse_modifier, Modifier};
-use anyhow::*;
+use anyhow::{bail, Result};
 use nom::{
     bytes::complete::take_while1,
     character::{is_alphanumeric, is_space},

@@ -3,7 +3,7 @@ mod modifiers;
 mod parser;
 
 use self::{helpers::cache_download, modifiers::ModifierTrait};
-use anyhow::*;
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
@@ -59,8 +59,6 @@ pub struct Chatsound {
     repo_path: String,
     // 26e/nestetrismusic/1.ogg
     sound_path: String,
-    // nestetrismusic
-    sentence: String,
 }
 
 impl Chatsound {
@@ -90,8 +88,8 @@ impl ChatsoundTrait for LoadedChatsound {
 #[async_trait]
 impl ChatsoundTrait for Chatsound {
     async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes> {
-        let loaded_chatsound = self.load(&cache_path).await?;
-        Ok(loaded_chatsound.get_bytes(&cache_path).await?)
+        let loaded_chatsound = self.load(cache_path).await?;
+        loaded_chatsound.get_bytes(cache_path).await
     }
 }
 
@@ -215,7 +213,7 @@ impl Chatsounds {
             repo
         );
 
-        let bytes = cache_download(&api_url, &self.cache_path(), use_etag, |bytes| {
+        let bytes = cache_download(&api_url, self.cache_path(), use_etag, |bytes| {
             #[derive(Deserialize)]
             struct GitHubError {
                 message: String,
@@ -267,7 +265,6 @@ impl Chatsounds {
                         repo: repo.to_string(),
                         repo_path: repo_path.to_string(),
                         sound_path,
-                        sentence,
                     });
                 }
             }
@@ -288,7 +285,7 @@ impl Chatsounds {
         );
 
         // these raw links don't have a rate limit so we won't cache bad results
-        let bytes = cache_download(&msgpack_url, &self.cache_path(), use_etag, |bytes| {
+        let bytes = cache_download(&msgpack_url, self.cache_path(), use_etag, |bytes| {
             Ok(Ok(bytes))
         })
         .await?;
@@ -316,7 +313,6 @@ impl Chatsounds {
                 repo: repo.to_string(),
                 repo_path: repo_path.to_string(),
                 sound_path,
-                sentence,
             });
         }
 
@@ -601,7 +597,7 @@ mod tests {
         let search = "and thats what";
 
         let t0 = std::time::Instant::now();
-        let positions = chatsounds.search(search.to_string());
+        let positions = chatsounds.search(search);
         let t1 = std::time::Instant::now();
         println!("took {:?}", t1 - t0);
 
@@ -684,7 +680,7 @@ mod tests {
             .get_sources_queue("mktheme", thread_rng())
             .await
             .unwrap();
-        let samples: Vec<_> = queue.collect();
-        println!("{} samples", samples.len());
+
+        println!("{} samples", queue.count());
     }
 }

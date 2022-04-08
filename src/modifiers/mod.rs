@@ -108,7 +108,7 @@ pub fn parse_args(input: &str) -> IResult<&str, Args> {
     let (input, args) = opt(parse_arg_list)(input)?;
     let (input, _) = tag(")")(input)?;
 
-    Ok((input, args.unwrap_or_else(Vec::new)))
+    Ok((input, args.unwrap_or_default()))
 }
 
 #[test]

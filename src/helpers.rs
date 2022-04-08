@@ -1,4 +1,4 @@
-use anyhow::*;
+use anyhow::{Context, Result};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
