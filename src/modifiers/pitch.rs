@@ -37,6 +37,11 @@ impl ModifierTrait for PitchModifier {
     }
 
     fn modify(&self, source: BoxSource) -> BoxSource {
+        // panics if 0
+        if self.pitch.abs() < 0.0000001 {
+            return Box::new(source);
+        }
+
         if self.pitch > 0.0 {
             Box::new(source.speed(self.pitch))
         } else {
