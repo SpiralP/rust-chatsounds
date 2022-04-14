@@ -64,7 +64,7 @@ pub struct Chatsound {
 impl Chatsound {
     pub async fn load(&self, cache_path: &Path) -> Result<LoadedChatsound> {
         let url = format!(
-            "https://raw.githubusercontent.com/{}/master/{}/{}",
+            "https://raw.githubusercontent.com/{}/HEAD/{}/{}",
             self.repo, self.repo_path, self.sound_path
         );
 
@@ -209,7 +209,7 @@ impl Chatsounds {
         use_etag: bool,
     ) -> Result<GitHubApiTrees> {
         let api_url = format!(
-            "https://api.github.com/repos/{}/git/trees/master?recursive=1",
+            "https://api.github.com/repos/{}/git/trees/HEAD?recursive=1",
             repo
         );
 
@@ -280,7 +280,7 @@ impl Chatsounds {
         use_etag: bool,
     ) -> Result<GitHubMsgpackEntries> {
         let msgpack_url = format!(
-            "https://raw.githubusercontent.com/{}/master/{}/list.msgpack",
+            "https://raw.githubusercontent.com/{}/HEAD/{}/list.msgpack",
             repo, repo_path
         );
 
