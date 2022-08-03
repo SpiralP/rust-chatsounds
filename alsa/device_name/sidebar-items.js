@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Hint","snd_device_name_get_hint wrapper"],["HintIter","snd_device_name_hint wrapper"]]});
+window.SIDEBAR_ITEMS = {"struct":[["Hint","snd_device_name_get_hint wrapper"],["HintIter","snd_device_name_hint wrapper"]]};

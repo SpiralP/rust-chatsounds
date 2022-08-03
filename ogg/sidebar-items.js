@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["reading","Reading logic"],["writing","Writing logic"]],"struct":[["Packet","Ogg packet representation."]]});
+window.SIDEBAR_ITEMS = {"mod":[["reading","Reading logic"],["writing","Writing logic"]],"struct":[["Packet","Ogg packet representation."]]};

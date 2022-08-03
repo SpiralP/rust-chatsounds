@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["SamplesBuffer","A buffer of samples treated as a source."]]});
+window.SIDEBAR_ITEMS = {"struct":[["SamplesBuffer","A buffer of samples treated as a source."]]};
