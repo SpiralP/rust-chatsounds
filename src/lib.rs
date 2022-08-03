@@ -131,14 +131,16 @@ pub struct Chatsounds {
     // [sentence]: Chatsound[]
     map_store: HashMap<String, Vec<Chatsound>>,
 
+    #[cfg(feature = "playback")]
     max_sinks: usize,
-
+    #[cfg(feature = "playback")]
     volume: f32,
 
+    #[cfg(feature = "playback")]
     _output_stream: OutputStream,
-
+    #[cfg(feature = "playback")]
     output_stream_handle: OutputStreamHandle,
-
+    #[cfg(feature = "playback")]
     sinks: VecDeque<Box<dyn ChatsoundsSink>>,
 }
 
@@ -155,6 +157,7 @@ impl Chatsounds {
             bail!("cache_path doesn't exist!");
         }
 
+        #[cfg(feature = "playback")]
         let (output_stream, output_stream_handle) =
             OutputStream::try_default().context("OutputStream::try_default")?;
 
@@ -162,14 +165,16 @@ impl Chatsounds {
             cache_path,
             map_store: HashMap::new(),
 
+            #[cfg(feature = "playback")]
             max_sinks: 16,
-
+            #[cfg(feature = "playback")]
             volume: 0.1,
 
+            #[cfg(feature = "playback")]
             _output_stream: output_stream,
-
+            #[cfg(feature = "playback")]
             output_stream_handle,
-
+            #[cfg(feature = "playback")]
             sinks: VecDeque::new(),
         })
     }
@@ -314,12 +319,14 @@ impl Chatsounds {
         positions.par_iter().cloned().collect()
     }
 
+    #[cfg(feature = "playback")]
     pub fn stop_all(&mut self) {
         for mut sink in self.sinks.drain(..) {
             sink.stop();
         }
     }
 
+    #[cfg(feature = "playback")]
     pub fn set_volume(&mut self, volume: f32) {
         let volume = volume.max(0.0);
 
@@ -330,6 +337,7 @@ impl Chatsounds {
         }
     }
 
+    #[cfg(feature = "playback")]
     pub fn volume(&self) -> f32 {
         self.volume
     }
@@ -338,6 +346,7 @@ impl Chatsounds {
         &self.cache_path
     }
 
+    #[cfg(feature = "playback")]
     pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
         let mut sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
 
@@ -355,6 +364,7 @@ impl Chatsounds {
         Ok(sink)
     }
 
+    #[cfg(feature = "playback")]
     pub async fn play_spatial<R: RngCore>(
         &mut self,
         text: &str,
@@ -412,6 +422,7 @@ impl Chatsounds {
         Ok(sources)
     }
 
+    #[cfg(feature = "playback")]
     pub fn sleep_until_end(&mut self) {
         for mut sink in self.sinks.drain(..) {
             sink.sleep_until_end();
