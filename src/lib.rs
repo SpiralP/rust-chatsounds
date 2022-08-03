@@ -2,25 +2,24 @@ mod helpers;
 mod modifiers;
 mod parser;
 
-use self::{helpers::cache_download, modifiers::ModifierTrait};
+use std::{
+    collections::{HashMap, VecDeque},
+    fs,
+    io::{BufReader, Cursor},
+    path::{Component, Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
 use rayon::prelude::*;
-use rodio::source::UniformSourceIterator;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
-#[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
 use serde::Deserialize;
-use std::{
-    collections::HashMap,
-    fs,
-    io::{BufReader, Cursor},
-    path::{Component, Path, PathBuf},
-};
-#[cfg(feature = "playback")]
-use std::{collections::VecDeque, fmt::Debug, sync::Arc};
+
+use self::{helpers::cache_download, modifiers::ModifierTrait};
 
 pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
 
@@ -93,59 +92,37 @@ impl ChatsoundTrait for Chatsound {
     }
 }
 
-#[cfg(feature = "playback")]
-#[derive(Clone)]
-enum ChatsoundsSink {
-    Sink(Arc<Sink>),
-    Spatial(Arc<SpatialSink>),
+pub trait ChatsoundsSink {
+    fn sleep_until_end(&mut self);
+    fn stop(&mut self);
+    fn set_volume(&mut self, volume: f32);
 }
 
-#[cfg(feature = "playback")]
-impl ChatsoundsSink {
-    fn append<S>(&mut self, source: S)
-    where
-        S: Source + Send + 'static,
-        S::Item: Sample + Send + Debug,
-    {
-        match self {
-            ChatsoundsSink::Sink(sink) => sink.append(source),
-            ChatsoundsSink::Spatial(sink) => sink.append(source),
-        }
-    }
-
+impl ChatsoundsSink for Arc<Sink> {
     fn sleep_until_end(&mut self) {
-        match self {
-            ChatsoundsSink::Sink(sink) => sink.sleep_until_end(),
-            ChatsoundsSink::Spatial(sink) => sink.sleep_until_end(),
-        }
+        Sink::sleep_until_end(self)
     }
 
     fn stop(&mut self) {
-        match self {
-            ChatsoundsSink::Sink(sink) => sink.stop(),
-            ChatsoundsSink::Spatial(sink) => sink.stop(),
-        }
+        Sink::stop(self)
     }
 
     fn set_volume(&mut self, volume: f32) {
-        match self {
-            ChatsoundsSink::Sink(sink) => sink.set_volume(volume),
-            ChatsoundsSink::Spatial(sink) => sink.set_volume(volume),
-        }
+        Sink::set_volume(self, volume)
+    }
+}
+
+impl ChatsoundsSink for Arc<SpatialSink> {
+    fn sleep_until_end(&mut self) {
+        SpatialSink::sleep_until_end(self)
     }
 
-    fn unwrap_sink(self) -> Arc<Sink> {
-        match self {
-            ChatsoundsSink::Sink(sink) => sink,
-            _ => unreachable!(),
-        }
+    fn stop(&mut self) {
+        SpatialSink::stop(self)
     }
 
-    fn unwrap_spatial(self) -> Arc<SpatialSink> {
-        match self {
-            ChatsoundsSink::Spatial(sink) => sink,
-            _ => unreachable!(),
-        }
+    fn set_volume(&mut self, volume: f32) {
+        SpatialSink::set_volume(self, volume)
     }
 }
 
@@ -154,17 +131,15 @@ pub struct Chatsounds {
     // [sentence]: Chatsound[]
     map_store: HashMap<String, Vec<Chatsound>>,
 
-    #[cfg(feature = "playback")]
     max_sinks: usize,
-    #[cfg(feature = "playback")]
+
     volume: f32,
 
-    #[cfg(feature = "playback")]
     _output_stream: OutputStream,
-    #[cfg(feature = "playback")]
+
     output_stream_handle: OutputStreamHandle,
-    #[cfg(feature = "playback")]
-    sinks: VecDeque<ChatsoundsSink>,
+
+    sinks: VecDeque<Box<dyn ChatsoundsSink>>,
 }
 
 unsafe impl Send for Chatsounds {}
@@ -180,7 +155,6 @@ impl Chatsounds {
             bail!("cache_path doesn't exist!");
         }
 
-        #[cfg(feature = "playback")]
         let (output_stream, output_stream_handle) =
             OutputStream::try_default().context("OutputStream::try_default")?;
 
@@ -188,16 +162,14 @@ impl Chatsounds {
             cache_path,
             map_store: HashMap::new(),
 
-            #[cfg(feature = "playback")]
             max_sinks: 16,
-            #[cfg(feature = "playback")]
+
             volume: 0.1,
 
-            #[cfg(feature = "playback")]
             _output_stream: output_stream,
-            #[cfg(feature = "playback")]
+
             output_stream_handle,
-            #[cfg(feature = "playback")]
+
             sinks: VecDeque::new(),
         })
     }
@@ -342,14 +314,12 @@ impl Chatsounds {
         positions.par_iter().cloned().collect()
     }
 
-    #[cfg(feature = "playback")]
     pub fn stop_all(&mut self) {
         for mut sink in self.sinks.drain(..) {
             sink.stop();
         }
     }
 
-    #[cfg(feature = "playback")]
     pub fn set_volume(&mut self, volume: f32) {
         let volume = volume.max(0.0);
 
@@ -360,7 +330,6 @@ impl Chatsounds {
         }
     }
 
-    #[cfg(feature = "playback")]
     pub fn volume(&self) -> f32 {
         self.volume
     }
@@ -369,81 +338,59 @@ impl Chatsounds {
         &self.cache_path
     }
 
-    #[cfg(feature = "playback")]
-    pub async fn play<S: AsRef<str>, R: RngCore>(&mut self, text: S, rng: R) -> Result<Arc<Sink>> {
-        let mut sink = ChatsoundsSink::Sink(Arc::new(Sink::try_new(&self.output_stream_handle)?));
+    pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
+        let mut sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
 
-        self.play_sink(text, &mut sink, rng).await?;
+        sink.set_volume(self.volume);
 
-        Ok(sink.unwrap_sink())
+        for source in self.get_sources(text, rng).await? {
+            sink.append(source);
+        }
+
+        self.sinks.push_back(Box::new(sink.clone()));
+        if self.sinks.len() == self.max_sinks {
+            self.sinks.pop_front();
+        }
+
+        Ok(sink)
     }
 
-    #[cfg(feature = "playback")]
-    pub async fn play_spatial<S: AsRef<str>, R: RngCore>(
+    pub async fn play_spatial<R: RngCore>(
         &mut self,
-        text: S,
+        text: &str,
         rng: R,
         emitter_pos: [f32; 3],
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<Arc<SpatialSink>> {
-        let mut sink = ChatsoundsSink::Spatial(Arc::new(SpatialSink::try_new(
+        let mut sink = Arc::new(SpatialSink::try_new(
             &self.output_stream_handle,
             emitter_pos,
             left_ear_pos,
             right_ear_pos,
-        )?));
+        )?);
 
-        self.play_sink(text, &mut sink, rng).await?;
-
-        Ok(sink.unwrap_spatial())
-    }
-
-    #[cfg(feature = "playback")]
-    async fn play_sink<S: AsRef<str>, R: RngCore>(
-        &mut self,
-        text: S,
-        sink: &mut ChatsoundsSink,
-        mut rng: R,
-    ) -> Result<()> {
         sink.set_volume(self.volume);
 
-        let parsed_chatsounds = parser::parse(text.as_ref())?;
-        for parsed_chatsound in parsed_chatsounds {
-            if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
-                // TODO random hashed number passed in?
-                let chatsound = chatsounds.choose(&mut rng).unwrap();
-
-                let mut source: BoxSource = {
-                    let bytes = chatsound.get_bytes(&self.cache_path).await?;
-                    let reader = BufReader::new(Cursor::new(bytes));
-                    Box::new(Decoder::new(reader)?)
-                };
-                for modifier in parsed_chatsound.modifiers {
-                    source = modifier.modify(source);
-                }
-
-                sink.append(source);
-            }
+        for source in self.get_sources(text, rng).await? {
+            sink.append(source);
         }
 
-        self.sinks.push_back(sink.clone());
+        self.sinks.push_back(Box::new(sink.clone()));
         if self.sinks.len() == self.max_sinks {
             self.sinks.pop_front();
         }
 
-        Ok(())
+        Ok(sink)
     }
 
-    /// outputs samples at 44100 Hz, 2 channels
-    pub async fn get_sources_queue<S: AsRef<str>, R: RngCore>(
-        &mut self,
-        text: S,
-        mut rng: R,
-    ) -> Result<UniformSourceIterator<SourcesQueueOutput<i16>, i16>> {
-        let (sink, queue) = rodio::queue::queue(false);
+    pub async fn get_sources<R>(&mut self, text: &str, mut rng: R) -> Result<Vec<BoxSource>>
+    where
+        R: RngCore,
+    {
+        let mut sources = Vec::new();
 
-        let parsed_chatsounds = parser::parse(text.as_ref())?;
+        let parsed_chatsounds = parser::parse(text)?;
         for parsed_chatsound in parsed_chatsounds {
             if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
                 // TODO random hashed number passed in?
@@ -458,14 +405,13 @@ impl Chatsounds {
                     source = modifier.modify(source);
                 }
 
-                sink.append(source);
+                sources.push(source);
             }
         }
 
-        Ok(UniformSourceIterator::new(queue, 2, 44100))
+        Ok(sources)
     }
 
-    #[cfg(feature = "playback")]
     pub fn sleep_until_end(&mut self) {
         for mut sink in self.sinks.drain(..) {
             sink.sleep_until_end();
@@ -475,12 +421,13 @@ impl Chatsounds {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use futures::{
         future::{FutureExt, TryFutureExt},
         stream::{StreamExt, TryStreamExt},
     };
     use tokio::fs;
+
+    use super::*;
 
     enum Source {
         Api(&'static str, &'static str),
@@ -617,7 +564,7 @@ mod tests {
         let right_ear_pos = [1.0, 0.0, 0.0];
 
         println!("play");
-        let sink = chatsounds
+        let mut sink = chatsounds
             .play_spatial(
                 "fuckbeesremastered",
                 thread_rng(),
@@ -675,11 +622,18 @@ mod tests {
     async fn test_get_samples() {
         let mut chatsounds = setup().await;
 
-        println!("get_samples");
-        let queue = chatsounds
-            .get_sources_queue("mktheme", thread_rng())
+        let mut sources = chatsounds
+            .get_sources("mktheme", thread_rng())
             .await
             .unwrap();
+
+        let (sink, queue) = rodio::queue::queue(false);
+        for source in sources.drain(..) {
+            sink.append(source);
+        }
+
+        let queue: rodio::source::UniformSourceIterator<SourcesQueueOutput<i16>, i16> =
+            rodio::source::UniformSourceIterator::new(queue, 2, 44100);
 
         println!("{} samples", queue.count());
     }
