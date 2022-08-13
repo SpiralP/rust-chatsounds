@@ -4,13 +4,12 @@ mod parser;
 
 use std::{
     collections::{HashMap, VecDeque},
-    fs,
     io::{BufReader, Cursor},
     path::{Component, Path, PathBuf},
     sync::Arc,
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, ensure, Context, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use rand::prelude::*;
@@ -46,7 +45,7 @@ pub struct GitHubApiFileEntry {
 }
 
 #[async_trait]
-pub trait ChatsoundTrait {
+pub trait GetBytes {
     async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes>;
 }
 
@@ -78,14 +77,14 @@ pub struct LoadedChatsound {
 }
 
 #[async_trait]
-impl ChatsoundTrait for LoadedChatsound {
+impl GetBytes for LoadedChatsound {
     async fn get_bytes(&self, _cache_path: &Path) -> Result<Bytes> {
         Ok(self.bytes.clone())
     }
 }
 
 #[async_trait]
-impl ChatsoundTrait for Chatsound {
+impl GetBytes for Chatsound {
     async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes> {
         let loaded_chatsound = self.load(cache_path).await?;
         loaded_chatsound.get_bytes(cache_path).await
@@ -150,12 +149,7 @@ unsafe impl Sync for Chatsounds {}
 impl Chatsounds {
     pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
         let cache_path = cache_path.as_ref().canonicalize()?;
-        if !fs::metadata(&cache_path)
-            .map(|meta| meta.is_dir())
-            .unwrap_or(false)
-        {
-            bail!("cache_path doesn't exist!");
-        }
+        ensure!(cache_path.is_dir(), "cache_path doesn't exist!");
 
         #[cfg(feature = "playback")]
         let (output_stream, output_stream_handle) =
@@ -190,7 +184,7 @@ impl Chatsounds {
             repo
         );
 
-        let bytes = cache_download(&api_url, self.cache_path(), use_etag, |bytes| {
+        let bytes = cache_download(&api_url, &self.cache_path, use_etag, |bytes| {
             #[derive(Deserialize)]
             struct GitHubError {
                 message: String,
@@ -199,6 +193,7 @@ impl Chatsounds {
             Ok(
                 if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
                     let error = anyhow!("GitHub Error: {}", err.message);
+                    // TODO what is this even doing???
                     if err.message.starts_with("API rate limit exceeded") {
                         Err(error)
                     } else {
@@ -262,7 +257,7 @@ impl Chatsounds {
         );
 
         // these raw links don't have a rate limit so we won't cache bad results
-        let bytes = cache_download(&msgpack_url, self.cache_path(), use_etag, |bytes| {
+        let bytes = cache_download(&msgpack_url, &self.cache_path, use_etag, |bytes| {
             Ok(Ok(bytes))
         })
         .await?;
