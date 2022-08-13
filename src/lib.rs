@@ -1,129 +1,25 @@
-mod helpers;
-mod modifiers;
-mod parser;
+mod cache;
+mod fetching;
+mod parsing;
+mod types;
 
 use std::{
     collections::{HashMap, VecDeque},
     io::{BufReader, Cursor},
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
-use async_trait::async_trait;
-use bytes::Bytes;
+use anyhow::{ensure, Context, Result};
 use rand::prelude::*;
-use rayon::prelude::*;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
+#[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
-use serde::Deserialize;
 
-use self::{helpers::cache_download, modifiers::ModifierTrait};
-
-pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
-
-#[derive(Deserialize)]
-pub struct GitHubApiTrees {
-    pub tree: Vec<GitHubApiFileEntry>,
-}
-
-pub type GitHubMsgpackEntries = Vec<Vec<String>>;
-
-// {
-// "path": "sound/chatsounds/autoadd/instagib/sex1.ogg",
-// "mode": "100644",
-// "type": "blob",
-// "sha": "035b008bbf3d63ede0fb49eee52734ffa94321ba",
-// "size": 28324,
-// "url": "https://api.github.com/repos/Metastruct/garrysmod-chatsounds/git/blobs/035b008bbf3d63ede0fb49eee52734ffa94321ba"
-// },
-#[derive(Deserialize)]
-pub struct GitHubApiFileEntry {
-    pub path: String,
-    pub r#type: String,
-    pub size: Option<usize>,
-}
-
-#[async_trait]
-pub trait GetBytes {
-    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes>;
-}
-
-#[derive(Clone)]
-pub struct Chatsound {
-    // Metastruct/garrysmod-chatsounds
-    repo: String,
-    // sound/chatsounds/autoadd
-    repo_path: String,
-    // 26e/nestetrismusic/1.ogg
-    sound_path: String,
-}
-
-impl Chatsound {
-    pub async fn load(&self, cache_path: &Path) -> Result<LoadedChatsound> {
-        let url = format!(
-            "https://raw.githubusercontent.com/{}/HEAD/{}/{}",
-            self.repo, self.repo_path, self.sound_path
-        );
-
-        let bytes = cache_download(&url, cache_path, false, |bytes| Ok(Ok(bytes))).await?;
-
-        Ok(LoadedChatsound { bytes })
-    }
-}
-
-pub struct LoadedChatsound {
-    bytes: Bytes,
-}
-
-#[async_trait]
-impl GetBytes for LoadedChatsound {
-    async fn get_bytes(&self, _cache_path: &Path) -> Result<Bytes> {
-        Ok(self.bytes.clone())
-    }
-}
-
-#[async_trait]
-impl GetBytes for Chatsound {
-    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes> {
-        let loaded_chatsound = self.load(cache_path).await?;
-        loaded_chatsound.get_bytes(cache_path).await
-    }
-}
-
-pub trait ChatsoundsSink {
-    fn sleep_until_end(&mut self);
-    fn stop(&mut self);
-    fn set_volume(&mut self, volume: f32);
-}
-
-impl ChatsoundsSink for Arc<Sink> {
-    fn sleep_until_end(&mut self) {
-        Sink::sleep_until_end(self)
-    }
-
-    fn stop(&mut self) {
-        Sink::stop(self)
-    }
-
-    fn set_volume(&mut self, volume: f32) {
-        Sink::set_volume(self, volume)
-    }
-}
-
-impl ChatsoundsSink for Arc<SpatialSink> {
-    fn sleep_until_end(&mut self) {
-        SpatialSink::sleep_until_end(self)
-    }
-
-    fn stop(&mut self) {
-        SpatialSink::stop(self)
-    }
-
-    fn set_volume(&mut self, volume: f32) {
-        SpatialSink::set_volume(self, volume)
-    }
-}
+use self::{
+    parsing::{parse, ModifierTrait},
+    types::{BoxSource, Chatsound, ChatsoundsSink, GetBytes},
+};
 
 pub struct Chatsounds {
     cache_path: PathBuf,
@@ -141,14 +37,18 @@ pub struct Chatsounds {
     output_stream_handle: OutputStreamHandle,
     #[cfg(feature = "playback")]
     sinks: VecDeque<Box<dyn ChatsoundsSink>>,
+
+    #[cfg(not(feature = "fs"))]
+    fs_memory: HashMap<String, bytes::Bytes>,
 }
 
+// TODO ???
 unsafe impl Send for Chatsounds {}
 unsafe impl Sync for Chatsounds {}
 
 impl Chatsounds {
-    pub fn new<T: AsRef<Path>>(cache_path: T) -> Result<Self> {
-        let cache_path = cache_path.as_ref().canonicalize()?;
+    pub fn new(cache_path: &Path) -> Result<Self> {
+        let cache_path = cache_path.canonicalize()?;
         ensure!(cache_path.is_dir(), "cache_path doesn't exist!");
 
         #[cfg(feature = "playback")]
@@ -170,148 +70,45 @@ impl Chatsounds {
             output_stream_handle,
             #[cfg(feature = "playback")]
             sinks: VecDeque::new(),
+
+            #[cfg(not(feature = "fs"))]
+            fs_memory: HashMap::new(),
         })
     }
 
-    pub async fn fetch_github_api(
-        &self,
-        repo: &str,
-        _repo_path: &str,
-        use_etag: bool,
-    ) -> Result<GitHubApiTrees> {
-        let api_url = format!(
-            "https://api.github.com/repos/{}/git/trees/HEAD?recursive=1",
-            repo
-        );
-
-        let bytes = cache_download(&api_url, &self.cache_path, use_etag, |bytes| {
-            #[derive(Deserialize)]
-            struct GitHubError {
-                message: String,
-            }
-
-            Ok(
-                if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
-                    let error = anyhow!("GitHub Error: {}", err.message);
-                    // TODO what is this even doing???
-                    if err.message.starts_with("API rate limit exceeded") {
-                        Err(error)
-                    } else {
-                        bail!(error);
-                    }
-                } else {
-                    Ok(bytes)
-                },
-            )
-        })
-        .await?;
-
-        let trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
-
-        Ok(trees)
+    pub fn get(&self, sentence: &str) -> Option<&Vec<Chatsound>> {
+        self.map_store.get(sentence)
     }
 
-    pub fn load_github_api(
-        &mut self,
-        repo: &str,
-        repo_path: &str,
-        mut trees: GitHubApiTrees,
-    ) -> Result<()> {
-        for entry in trees.tree.iter_mut() {
-            if entry.r#type != "blob" || !entry.path.starts_with(&repo_path) {
-                continue;
-            }
+    pub fn search(&self, search: &str) -> Vec<(usize, &String)> {
+        #[cfg(feature = "rayon")]
+        use rayon::prelude::*;
 
-            // e26/stop.ogg or e26/nestetrismusic/1.ogg
-            let sound_path = entry.path.split_off(repo_path.len() + 1);
+        #[cfg(feature = "rayon")]
+        let iter = HashMap::par_iter;
+        #[cfg(not(feature = "rayon"))]
+        let iter = HashMap::iter;
 
-            let path = Path::new(&sound_path);
-            if let Some(Component::Normal(s)) = path.components().nth(1) {
-                if let Some(sentence) = Path::new(&s).file_stem() {
-                    let sentence = sentence.to_string_lossy().to_string();
-                    let vec = self
-                        .map_store
-                        .entry(sentence.to_string())
-                        .or_insert_with(Vec::new);
-                    vec.push(Chatsound {
-                        repo: repo.to_string(),
-                        repo_path: repo_path.to_string(),
-                        sound_path,
-                    });
-                }
-            }
-        }
+        #[cfg(feature = "rayon")]
+        let sort_by = <[(usize, &String)]>::par_sort_unstable_by;
+        #[cfg(not(feature = "rayon"))]
+        let sort_by = <[(usize, &String)]>::sort_unstable_by;
 
-        Ok(())
-    }
-
-    pub async fn fetch_github_msgpack(
-        &self,
-        repo: &str,
-        repo_path: &str,
-        use_etag: bool,
-    ) -> Result<GitHubMsgpackEntries> {
-        let msgpack_url = format!(
-            "https://raw.githubusercontent.com/{}/HEAD/{}/list.msgpack",
-            repo, repo_path
-        );
-
-        // these raw links don't have a rate limit so we won't cache bad results
-        let bytes = cache_download(&msgpack_url, &self.cache_path, use_etag, |bytes| {
-            Ok(Ok(bytes))
-        })
-        .await?;
-        let entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(&bytes)?;
-
-        Ok(entries)
-    }
-
-    pub fn load_github_msgpack(
-        &mut self,
-        repo: &str,
-        repo_path: &str,
-        mut entries: GitHubMsgpackEntries,
-    ) -> Result<()> {
-        for entry in entries.drain(..) {
-            // e26/stop.ogg or e26/nestetrismusic/1.ogg
-            let sentence = entry[1].clone();
-            let sound_path = entry[2].clone();
-            let vec = self
-                .map_store
-                .entry(sentence.to_string())
-                .or_insert_with(Vec::new);
-
-            vec.push(Chatsound {
-                repo: repo.to_string(),
-                repo_path: repo_path.to_string(),
-                sound_path,
-            });
-        }
-
-        Ok(())
-    }
-
-    pub fn get<T: AsRef<str>>(&self, sentence: T) -> Option<&Vec<Chatsound>> {
-        self.map_store.get(sentence.as_ref())
-    }
-
-    pub fn search<S: AsRef<str>>(&self, search: S) -> Vec<(usize, &String)> {
-        let search = search.as_ref();
-
-        let mut positions: Vec<_> = self
-            .map_store
-            .par_iter()
+        let mut positions: Vec<_> = iter(&self.map_store)
             .map(|(key, _value)| key)
             .filter_map(|sentence| twoway::find_str(sentence, search).map(|pos| (pos, sentence)))
             .collect();
 
-        positions.par_sort_unstable_by(|(pos1, str1), (pos2, str2)| {
-            pos1.partial_cmp(pos2)
-                .unwrap()
-                .then_with(|| str1.len().partial_cmp(&str2.len()).unwrap())
-        });
+        sort_by(
+            positions.as_mut_slice(),
+            |(pos1, str1): &(usize, &String), (pos2, str2): &(usize, &String)| {
+                pos1.partial_cmp(pos2)
+                    .unwrap()
+                    .then_with(|| str1.len().partial_cmp(&str2.len()).unwrap())
+            },
+        );
 
-        positions.par_iter().cloned().collect()
+        positions
     }
 
     #[cfg(feature = "playback")]
@@ -389,15 +186,16 @@ impl Chatsounds {
         Ok(sink)
     }
 
-    pub async fn get_sources<R>(&mut self, text: &str, mut rng: R) -> Result<Vec<BoxSource>>
-    where
-        R: RngCore,
-    {
+    pub async fn get_sources<R: RngCore>(
+        &mut self,
+        text: &str,
+        mut rng: R,
+    ) -> Result<Vec<BoxSource>> {
         let mut sources = Vec::new();
 
-        let parsed_chatsounds = parser::parse(text)?;
+        let parsed_chatsounds = parse(text)?;
         for parsed_chatsound in parsed_chatsounds {
-            if let Some(chatsounds) = self.get(parsed_chatsound.sentence) {
+            if let Some(chatsounds) = self.get(&parsed_chatsound.sentence) {
                 // TODO random hashed number passed in?
                 let chatsound = chatsounds.choose(&mut rng).unwrap();
 
@@ -425,7 +223,7 @@ impl Chatsounds {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "wasm")))]
 mod tests {
     use futures::{
         future::{FutureExt, TryFutureExt},
@@ -434,6 +232,7 @@ mod tests {
     use tokio::fs;
 
     use super::*;
+    use crate::fetching::{GitHubApiTrees, GitHubMsgpackEntries};
 
     enum Source {
         Api(&'static str, &'static str),
@@ -462,7 +261,7 @@ mod tests {
     async fn setup() -> Chatsounds {
         fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new("cache").unwrap();
+        let mut chatsounds = Chatsounds::new(&PathBuf::from("cache")).unwrap();
 
         {
             enum FetchedSource {

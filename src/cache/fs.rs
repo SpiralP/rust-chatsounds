@@ -1,75 +1,19 @@
+use std::path::{Path, PathBuf};
+
 use anyhow::{Context, Result};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
+#[cfg(feature = "fs")]
 use tokio::{
     fs,
     fs::{File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
-
-async fn get<S: AsRef<str>>(url: S) -> Result<(Bytes, Option<String>)> {
-    let client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()?;
-
-    let response = client.get(url.as_ref()).send().await?;
-
-    let etag = response
-        .headers()
-        .get(reqwest::header::ETAG)
-        .and_then(|value| value.to_str().ok())
-        .map(|value| value.to_string());
-
-    let bytes = response.bytes().await?;
-
-    Ok((bytes, etag))
-}
-
-async fn get_head_etag<S: AsRef<str>>(url: S) -> Result<Option<String>> {
-    let client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()?;
-
-    let response = client.head(url.as_ref()).send().await?;
-
-    let etag = response
-        .headers()
-        .get(reqwest::header::ETAG)
-        .and_then(|value| value.to_str().ok())
-        .map(|value| value.to_string());
-
-    Ok(etag)
-}
-
-async fn cache_file_path(url: &str, cache_path: &Path) -> Result<(PathBuf, PathBuf)> {
-    let mut hasher = Sha256::new();
-    hasher.update(url);
-    let hex = format!("{:x}", hasher.finalize());
-
-    let hex_dir = &hex[0..2];
-    let hex_filename = &hex[2..];
-
-    let dir_path = cache_path.join(hex_dir);
-
-    if !fs::metadata(&dir_path)
-        .await
-        .map(|meta| meta.is_dir())
-        .unwrap_or(false)
-    {
-        fs::create_dir(&dir_path).await?;
-    }
-
-    let file_path = dir_path.join(hex_filename);
-    let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
-
-    Ok((file_path, etag_file_path))
-}
+use super::utils::{get, head_etag};
 
 /// if `use_etag` is false, always used cached file if it exists
-pub async fn cache_download<F>(
+pub async fn download<F>(
     url: &str,
     cache_path: &Path,
     use_etag: bool,
@@ -102,7 +46,7 @@ where
             let mut s = String::new();
             etag_file.read_to_string(&mut s).await?;
 
-            let maybe_etag = get_head_etag(&url).await.context("get_head_etag")?;
+            let maybe_etag = head_etag(&url).await.context("get_head_etag")?;
 
             if let Some(etag) = maybe_etag {
                 // check if old matches current
@@ -156,6 +100,30 @@ where
             }
         }
     })
+}
+
+async fn cache_file_path(url: &str, cache_path: &Path) -> Result<(PathBuf, PathBuf)> {
+    let mut hasher = Sha256::new();
+    hasher.update(url);
+    let hex = format!("{:x}", hasher.finalize());
+
+    let hex_dir = &hex[0..2];
+    let hex_filename = &hex[2..];
+
+    let dir_path = cache_path.join(hex_dir);
+
+    if !fs::metadata(&dir_path)
+        .await
+        .map(|meta| meta.is_dir())
+        .unwrap_or(false)
+    {
+        fs::create_dir(&dir_path).await?;
+    }
+
+    let file_path = dir_path.join(hex_filename);
+    let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
+
+    Ok((file_path, etag_file_path))
 }
 
 async fn read_file(file_path: &Path) -> Result<Bytes> {

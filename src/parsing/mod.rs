@@ -1,6 +1,5 @@
-#![allow(dead_code)]
+mod modifiers;
 
-use crate::modifiers::{parse_modifier, Modifier};
 use anyhow::{bail, Result};
 use nom::{
     bytes::complete::take_while1,
@@ -8,6 +7,9 @@ use nom::{
     multi::{many0, many1},
     IResult,
 };
+
+pub use self::modifiers::ModifierTrait;
+use self::modifiers::{parse_modifier, Modifier};
 
 #[derive(Debug, PartialEq)]
 pub struct ParsedChatsound {
@@ -45,7 +47,7 @@ pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
 
 #[test]
 fn test_parser() {
-    use crate::modifiers::*;
+    use self::modifiers::*;
 
     assert_eq!(
         parse("hello:pitch(2)").unwrap(),
