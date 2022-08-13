@@ -22,7 +22,7 @@ pub type GitHubMsgpackEntries = Vec<Vec<String>>;
 
 impl Chatsounds {
     pub async fn fetch_github_api(
-        &self,
+        &mut self,
         repo: &str,
         _repo_path: &str,
         use_etag: bool,
@@ -32,7 +32,12 @@ impl Chatsounds {
             repo
         );
 
-        let bytes = download(&api_url, &self.cache_path, use_etag, |bytes| {
+        #[cfg(feature = "fs")]
+        let cache = &self.cache_path;
+        #[cfg(not(feature = "fs"))]
+        let cache = &mut self.fs_memory;
+
+        let bytes = download(&api_url, cache, use_etag, |bytes| {
             #[derive(Deserialize)]
             struct GitHubError {
                 message: String,
@@ -92,7 +97,7 @@ impl Chatsounds {
     }
 
     pub async fn fetch_github_msgpack(
-        &self,
+        &mut self,
         repo: &str,
         repo_path: &str,
         use_etag: bool,
@@ -102,11 +107,13 @@ impl Chatsounds {
             repo, repo_path
         );
 
+        #[cfg(feature = "fs")]
+        let cache = &self.cache_path;
+        #[cfg(not(feature = "fs"))]
+        let cache = &mut self.fs_memory;
+
         // these raw links don't have a rate limit so we won't cache bad results
-        let bytes = download(&msgpack_url, &self.cache_path, use_etag, |bytes| {
-            Ok(Ok(bytes))
-        })
-        .await?;
+        let bytes = download(&msgpack_url, cache, use_etag, |bytes| Ok(Ok(bytes))).await?;
         let entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(&bytes)?;
 
         Ok(entries)

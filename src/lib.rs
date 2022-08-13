@@ -18,10 +18,11 @@ use rodio::{OutputStream, OutputStreamHandle};
 
 use self::{
     parsing::{parse, ModifierTrait},
-    types::{BoxSource, Chatsound, ChatsoundsSink, GetBytes},
+    types::{BoxSource, Chatsound, ChatsoundsSink},
 };
 
 pub struct Chatsounds {
+    #[cfg(feature = "fs")]
     cache_path: PathBuf,
     // [sentence]: Chatsound[]
     map_store: HashMap<String, Vec<Chatsound>>,
@@ -47,8 +48,10 @@ unsafe impl Send for Chatsounds {}
 unsafe impl Sync for Chatsounds {}
 
 impl Chatsounds {
-    pub fn new(cache_path: &Path) -> Result<Self> {
+    pub fn new(#[cfg(feature = "fs")] cache_path: &Path) -> Result<Self> {
+        #[cfg(feature = "fs")]
         let cache_path = cache_path.canonicalize()?;
+        #[cfg(feature = "fs")]
         ensure!(cache_path.is_dir(), "cache_path doesn't exist!");
 
         #[cfg(feature = "playback")]
@@ -56,6 +59,7 @@ impl Chatsounds {
             OutputStream::try_default().context("OutputStream::try_default")?;
 
         Ok(Self {
+            #[cfg(feature = "fs")]
             cache_path,
             map_store: HashMap::new(),
 
@@ -134,10 +138,6 @@ impl Chatsounds {
         self.volume
     }
 
-    pub fn cache_path(&self) -> &PathBuf {
-        &self.cache_path
-    }
-
     #[cfg(feature = "playback")]
     pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
         let mut sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
@@ -195,21 +195,32 @@ impl Chatsounds {
 
         let parsed_chatsounds = parse(text)?;
         for parsed_chatsound in parsed_chatsounds {
-            if let Some(chatsounds) = self.get(&parsed_chatsound.sentence) {
+            let chatsound = if let Some(chatsounds) = self.get(&parsed_chatsound.sentence) {
                 // TODO random hashed number passed in?
-                let chatsound = chatsounds.choose(&mut rng).unwrap();
+                chatsounds
+                    .choose(&mut rng)
+                    .context("choose(rng)")?
+                    .to_owned()
+            } else {
+                continue;
+            };
 
-                let mut source: BoxSource = {
-                    let bytes = chatsound.get_bytes(&self.cache_path).await?;
-                    let reader = BufReader::new(Cursor::new(bytes));
-                    Box::new(Decoder::new(reader)?)
-                };
-                for modifier in parsed_chatsound.modifiers {
-                    source = modifier.modify(source);
-                }
+            let mut source: BoxSource = {
+                #[cfg(feature = "fs")]
+                let cache = &self.cache_path;
+                #[cfg(not(feature = "fs"))]
+                let cache = &mut self.fs_memory;
 
-                sources.push(source);
+                let bytes = chatsound.load(cache).await?;
+
+                let reader = BufReader::new(Cursor::new(bytes));
+                Box::new(Decoder::new(reader)?)
+            };
+            for modifier in parsed_chatsound.modifiers {
+                source = modifier.modify(source);
             }
+
+            sources.push(source);
         }
 
         Ok(sources)
@@ -225,15 +236,12 @@ impl Chatsounds {
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
-    use futures::{
-        future::{FutureExt, TryFutureExt},
-        stream::{StreamExt, TryStreamExt},
-    };
+    use futures::stream::{StreamExt, TryStreamExt};
     use tokio::fs;
 
     use super::*;
-    use crate::fetching::{GitHubApiTrees, GitHubMsgpackEntries};
 
+    #[derive(Debug, Clone)]
     enum Source {
         Api(&'static str, &'static str),
         Msgpack(&'static str, &'static str),
@@ -261,57 +269,45 @@ mod tests {
     async fn setup() -> Chatsounds {
         fs::create_dir_all("cache").await.unwrap();
 
-        let mut chatsounds = Chatsounds::new(&PathBuf::from("cache")).unwrap();
+        let chatsounds = Arc::new(futures::lock::Mutex::new(
+            Chatsounds::new(&PathBuf::from("cache")).unwrap(),
+        ));
 
         {
-            enum FetchedSource {
-                Api(GitHubApiTrees),
-                Msgpack(GitHubMsgpackEntries),
-            }
-
             println!("fetching sources");
-            let fetched = futures::stream::iter(SOURCES)
-                .map(|source| {
-                    let f = match source {
-                        Source::Api(repo, repo_path) => chatsounds
-                            .fetch_github_api(repo, repo_path, true)
-                            .map_ok(FetchedSource::Api)
-                            .boxed(),
+            let chatsounds = chatsounds.clone();
+            futures::stream::iter(SOURCES)
+                .map(Ok)
+                .try_for_each_concurrent(4, move |source| {
+                    let source = source.to_owned();
+                    let chatsounds = chatsounds.clone();
+                    async move {
+                        let mut chatsounds = chatsounds.lock().await;
+                        match source {
+                            Source::Api(repo, repo_path) => {
+                                let data =
+                                    chatsounds.fetch_github_api(repo, repo_path, true).await?;
+                                chatsounds.load_github_api(repo, repo_path, data).unwrap();
+                            }
 
-                        Source::Msgpack(repo, repo_path) => chatsounds
-                            .fetch_github_msgpack(repo, repo_path, true)
-                            .map_ok(FetchedSource::Msgpack)
-                            .boxed(),
-                    };
-
-                    async move { f.await.map(|fetched_source| (source, fetched_source)) }
+                            Source::Msgpack(repo, repo_path) => {
+                                let data = chatsounds
+                                    .fetch_github_msgpack(repo, repo_path, true)
+                                    .await?;
+                                chatsounds
+                                    .load_github_msgpack(repo, repo_path, data)
+                                    .unwrap();
+                            }
+                        }
+                        Ok::<_, anyhow::Error>(())
+                    }
                 })
-                .buffered(5)
-                .try_collect::<Vec<_>>()
                 .await
                 .unwrap();
 
             println!("done");
-
-            for (source, fetched_source) in fetched {
-                match source {
-                    Source::Api(repo, repo_path) => {
-                        if let FetchedSource::Api(data) = fetched_source {
-                            chatsounds.load_github_api(repo, repo_path, data).unwrap();
-                        }
-                    }
-
-                    Source::Msgpack(repo, repo_path) => {
-                        if let FetchedSource::Msgpack(data) = fetched_source {
-                            chatsounds
-                                .load_github_msgpack(repo, repo_path, data)
-                                .unwrap();
-                        }
-                    }
-                }
-            }
         }
-        chatsounds
+        Arc::try_unwrap(chatsounds).unwrap().into_inner()
     }
 
     #[ignore]
@@ -407,7 +403,7 @@ mod tests {
         if let Some(chatsound) = sounds.get(0).cloned() {
             println!("play");
 
-            let data = chatsound.get_bytes(&chatsounds.cache_path).await.unwrap();
+            let data = chatsound.load(&chatsounds.cache_path).await.unwrap();
 
             let reader = BufReader::new(Cursor::new(data));
             let source = Decoder::new(reader).unwrap();

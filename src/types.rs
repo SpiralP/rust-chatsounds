@@ -1,18 +1,12 @@
 use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use async_trait::async_trait;
 use bytes::Bytes;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 
 use crate::cache::download;
 
 pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
-
-#[async_trait]
-pub trait GetBytes {
-    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes>;
-}
 
 #[derive(Clone)]
 pub struct Chatsound {
@@ -25,34 +19,26 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
-    pub async fn load(&self, cache_path: &Path) -> Result<LoadedChatsound> {
-        let url = format!(
+    fn get_url(&self) -> String {
+        format!(
             "https://raw.githubusercontent.com/{}/HEAD/{}/{}",
             self.repo, self.repo_path, self.sound_path
-        );
-
-        let bytes = download(&url, cache_path, false, |bytes| Ok(Ok(bytes))).await?;
-
-        Ok(LoadedChatsound { bytes })
+        )
     }
-}
 
-pub struct LoadedChatsound {
-    bytes: Bytes,
-}
-
-#[async_trait]
-impl GetBytes for LoadedChatsound {
-    async fn get_bytes(&self, _cache_path: &Path) -> Result<Bytes> {
-        Ok(self.bytes.clone())
+    #[cfg(feature = "fs")]
+    pub async fn load(&self, cache_path: &Path) -> Result<Bytes> {
+        let url = self.get_url();
+        download(&url, cache_path, false, |bytes| Ok(Ok(bytes))).await
     }
-}
 
-#[async_trait]
-impl GetBytes for Chatsound {
-    async fn get_bytes(&self, cache_path: &Path) -> Result<Bytes> {
-        let loaded_chatsound = self.load(cache_path).await?;
-        loaded_chatsound.get_bytes(cache_path).await
+    #[cfg(not(feature = "fs"))]
+    pub async fn load(
+        &self,
+        fs_memory: &mut std::collections::HashMap<String, Bytes>,
+    ) -> Result<Bytes> {
+        let url = self.get_url();
+        Ok(download(&url, fs_memory, false, |bytes| Ok(Ok(bytes))).await?)
     }
 }
 
