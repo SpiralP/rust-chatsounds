@@ -75,35 +75,15 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
-<span id="88">88</span>
-<span id="89">89</span>
-<span id="90">90</span>
-<span id="91">91</span>
-<span id="92">92</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">path::Path</span>, <span class="ident">sync::Arc</span>};
 
 <span class="kw">use</span> <span class="ident">anyhow::Result</span>;
 <span class="kw">use</span> <span class="ident">bytes::Bytes</span>;
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future::LocalBoxFuture</span>, <span class="ident">FutureExt</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">queue::SourcesQueueOutput</span>, <span class="ident">Decoder</span>, <span class="ident">Device</span>, <span class="ident">Sample</span>, <span class="ident">Sink</span>, <span class="ident">Source</span>, <span class="ident">SpatialSink</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::cache::download</span>;
 
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BoxSource</span> = <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">i16</span>&gt; + <span class="ident">Send</span>&gt;;
-
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">GetBytes</span> {
-    <span class="kw">fn</span> <span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">LocalBoxFuture</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt;&gt;;
-}
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Chatsound</span> {
@@ -116,36 +96,26 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Chatsound</span> {
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">LoadedChatsound</span>&gt; {
-        <span class="kw">let</span> <span class="ident">url</span> = <span class="macro">format!</span>(
+    <span class="kw">fn</span> <span class="ident">get_url</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
+        <span class="macro">format!</span>(
             <span class="string">&quot;https://raw.githubusercontent.com/{}/HEAD/{}/{}&quot;</span>,
             <span class="self">self</span>.<span class="ident">repo</span>, <span class="self">self</span>.<span class="ident">repo_path</span>, <span class="self">self</span>.<span class="ident">sound_path</span>
-        );
-
-        <span class="kw">let</span> <span class="ident">bytes</span> = <span class="ident">download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">cache_path</span>, <span class="bool-val">false</span>, |<span class="ident">bytes</span>| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))).<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(<span class="ident">LoadedChatsound</span> { <span class="ident">bytes</span> })
+        )
     }
-}
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LoadedChatsound</span> {
-    <span class="ident">bytes</span>: <span class="ident">Bytes</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">GetBytes</span> <span class="kw">for</span> <span class="ident">LoadedChatsound</span> {
-    <span class="kw">fn</span> <span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">LocalBoxFuture</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt;&gt; {
-        <span class="kw">async</span> <span class="kw">move</span> { <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">bytes</span>.<span class="ident">clone</span>()) }.<span class="ident">boxed_local</span>()
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt; {
+        <span class="kw">let</span> <span class="ident">url</span> = <span class="self">self</span>.<span class="ident">get_url</span>();
+        <span class="ident">download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">cache_path</span>, <span class="bool-val">false</span>, |<span class="ident">bytes</span>| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))).<span class="kw">await</span>
     }
-}
 
-<span class="kw">impl</span> <span class="ident">GetBytes</span> <span class="kw">for</span> <span class="ident">Chatsound</span> {
-    <span class="kw">fn</span> <span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">LocalBoxFuture</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">cache_path</span> = <span class="ident">cache_path</span>.<span class="ident">to_owned</span>();
-        <span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">let</span> <span class="ident">loaded_chatsound</span> = <span class="self">self</span>.<span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="ident">loaded_chatsound</span>.<span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">cache_path</span>).<span class="kw">await</span>
-        }
-        .<span class="ident">boxed_local</span>()
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>))]</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">fs_memory</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::collections::HashMap</span>&lt;<span class="ident">String</span>, <span class="ident">Bytes</span>&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt; {
+        <span class="kw">let</span> <span class="ident">url</span> = <span class="self">self</span>.<span class="ident">get_url</span>();
+        <span class="prelude-val">Ok</span>(<span class="ident">download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">fs_memory</span>, <span class="bool-val">false</span>, |<span class="ident">bytes</span>| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }
 
