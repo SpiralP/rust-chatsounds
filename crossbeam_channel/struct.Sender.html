@@ -3,16 +3,16 @@
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::thread</span>;
 <span class="kw">use</span> <span class="ident">crossbeam_channel::unbounded</span>;
 
-<span class="kw">let</span> (<span class="ident">s1</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">unbounded</span>();
-<span class="kw">let</span> <span class="ident">s2</span> <span class="op">=</span> <span class="ident">s1</span>.<span class="ident">clone</span>();
+<span class="kw">let</span> (<span class="ident">s1</span>, <span class="ident">r</span>) = <span class="ident">unbounded</span>();
+<span class="kw">let</span> <span class="ident">s2</span> = <span class="ident">s1</span>.<span class="ident">clone</span>();
 
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> <span class="ident">s1</span>.<span class="ident">send</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> <span class="ident">s2</span>.<span class="ident">send</span>(<span class="number">2</span>).<span class="ident">unwrap</span>());
+<span class="ident">thread::spawn</span>(<span class="kw">move</span> || <span class="ident">s1</span>.<span class="ident">send</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
+<span class="ident">thread::spawn</span>(<span class="kw">move</span> || <span class="ident">s2</span>.<span class="ident">send</span>(<span class="number">2</span>).<span class="ident">unwrap</span>());
 
-<span class="kw">let</span> <span class="ident">msg1</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">recv</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">msg2</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">recv</span>().<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="ident">msg1</span> = <span class="ident">r</span>.<span class="ident">recv</span>().<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="ident">msg2</span> = <span class="ident">r</span>.<span class="ident">recv</span>().<span class="ident">unwrap</span>();
 
-<span class="macro">assert_eq!</span>(<span class="ident">msg1</span> <span class="op">+</span> <span class="ident">msg2</span>, <span class="number">3</span>);</code></pre></div>
+<span class="macro">assert_eq!</span>(<span class="ident">msg1</span> + <span class="ident">msg2</span>, <span class="number">3</span>);</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#369-642">source</a></span><a href="#impl-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="struct" href="struct.Sender.html" title="struct crossbeam_channel::Sender">Sender</a>&lt;T&gt;</h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#391-397">source</a></span><h4 class="code-header">pub fn <a href="#method.try_send" class="fnname">try_send</a>(&amp;self, msg: T) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="enum.TrySendError.html" title="enum crossbeam_channel::TrySendError">TrySendError</a>&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to send a message into the channel without blocking.</p>
 <p>This method will either send a message into the channel immediately or return an error if
 the channel is full or disconnected. The returned error contains the original message.</p>
@@ -21,7 +21,7 @@ happens to be a receive operation on the other side of the channel at the same t
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel</span>::{<span class="ident">bounded</span>, <span class="ident">TrySendError</span>};
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">1</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">bounded</span>(<span class="number">1</span>);
 
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">try_send</span>(<span class="number">1</span>), <span class="prelude-val">Ok</span>(()));
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">try_send</span>(<span class="number">2</span>), <span class="prelude-val">Err</span>(<span class="ident">TrySendError::Full</span>(<span class="number">2</span>)));
@@ -39,10 +39,10 @@ appear on the other side of the channel.</p>
 <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 <span class="kw">use</span> <span class="ident">crossbeam_channel</span>::{<span class="ident">bounded</span>, <span class="ident">SendError</span>};
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">1</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">bounded</span>(<span class="number">1</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">send</span>(<span class="number">1</span>), <span class="prelude-val">Ok</span>(()));
 
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+<span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
     <span class="macro">assert_eq!</span>(<span class="ident">r</span>.<span class="ident">recv</span>(), <span class="prelude-val">Ok</span>(<span class="number">1</span>));
     <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>));
     <span class="ident">drop</span>(<span class="ident">r</span>);
@@ -61,9 +61,9 @@ appear on the other side of the channel.</p>
 <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 <span class="kw">use</span> <span class="ident">crossbeam_channel</span>::{<span class="ident">bounded</span>, <span class="ident">SendTimeoutError</span>};
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">0</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">bounded</span>(<span class="number">0</span>);
 
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+<span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
     <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>));
     <span class="macro">assert_eq!</span>(<span class="ident">r</span>.<span class="ident">recv</span>(), <span class="prelude-val">Ok</span>(<span class="number">2</span>));
     <span class="ident">drop</span>(<span class="ident">r</span>);
@@ -92,26 +92,26 @@ appear on the other side of the channel.</p>
 <span class="kw">use</span> <span class="ident">std::time</span>::{<span class="ident">Duration</span>, <span class="ident">Instant</span>};
 <span class="kw">use</span> <span class="ident">crossbeam_channel</span>::{<span class="ident">bounded</span>, <span class="ident">SendTimeoutError</span>};
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">0</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">bounded</span>(<span class="number">0</span>);
 
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+<span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
     <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>));
     <span class="macro">assert_eq!</span>(<span class="ident">r</span>.<span class="ident">recv</span>(), <span class="prelude-val">Ok</span>(<span class="number">2</span>));
     <span class="ident">drop</span>(<span class="ident">r</span>);
 });
 
-<span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
+<span class="kw">let</span> <span class="ident">now</span> = <span class="ident">Instant::now</span>();
 
 <span class="macro">assert_eq!</span>(
-    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">1</span>, <span class="ident">now</span> <span class="op">+</span> <span class="ident">Duration::from_millis</span>(<span class="number">500</span>)),
+    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">1</span>, <span class="ident">now</span> + <span class="ident">Duration::from_millis</span>(<span class="number">500</span>)),
     <span class="prelude-val">Err</span>(<span class="ident">SendTimeoutError::Timeout</span>(<span class="number">1</span>)),
 );
 <span class="macro">assert_eq!</span>(
-    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">2</span>, <span class="ident">now</span> <span class="op">+</span> <span class="ident">Duration::from_millis</span>(<span class="number">1500</span>)),
+    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">2</span>, <span class="ident">now</span> + <span class="ident">Duration::from_millis</span>(<span class="number">1500</span>)),
     <span class="prelude-val">Ok</span>(()),
 );
 <span class="macro">assert_eq!</span>(
-    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">3</span>, <span class="ident">now</span> <span class="op">+</span> <span class="ident">Duration::from_millis</span>(<span class="number">2000</span>)),
+    <span class="ident">s</span>.<span class="ident">send_deadline</span>(<span class="number">3</span>, <span class="ident">now</span> + <span class="ident">Duration::from_millis</span>(<span class="number">2000</span>)),
     <span class="prelude-val">Err</span>(<span class="ident">SendTimeoutError::Disconnected</span>(<span class="number">3</span>)),
 );</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_empty" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#542-548">source</a></span><h4 class="code-header">pub fn <a href="#method.is_empty" class="fnname">is_empty</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if the channel is empty.</p>
@@ -119,26 +119,26 @@ appear on the other side of the channel.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel::unbounded</span>;
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">unbounded</span>();
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">unbounded</span>();
 <span class="macro">assert!</span>(<span class="ident">s</span>.<span class="ident">is_empty</span>());
 
 <span class="ident">s</span>.<span class="ident">send</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">s</span>.<span class="ident">is_empty</span>());</code></pre></div>
+<span class="macro">assert!</span>(!<span class="ident">s</span>.<span class="ident">is_empty</span>());</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_full" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#565-571">source</a></span><h4 class="code-header">pub fn <a href="#method.is_full" class="fnname">is_full</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if the channel is full.</p>
 <p>Note: Zero-capacity channels are always full.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel::bounded</span>;
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">1</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">bounded</span>(<span class="number">1</span>);
 
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">s</span>.<span class="ident">is_full</span>());
+<span class="macro">assert!</span>(!<span class="ident">s</span>.<span class="ident">is_full</span>());
 <span class="ident">s</span>.<span class="ident">send</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
 <span class="macro">assert!</span>(<span class="ident">s</span>.<span class="ident">is_full</span>());</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.len" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#587-593">source</a></span><h4 class="code-header">pub fn <a href="#method.len" class="fnname">len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Returns the number of messages in the channel.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel::unbounded</span>;
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) <span class="op">=</span> <span class="ident">unbounded</span>();
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="ident">r</span>) = <span class="ident">unbounded</span>();
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">len</span>(), <span class="number">0</span>);
 
 <span class="ident">s</span>.<span class="ident">send</span>(<span class="number">1</span>).<span class="ident">unwrap</span>();
@@ -148,25 +148,25 @@ appear on the other side of the channel.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel</span>::{<span class="ident">bounded</span>, <span class="ident">unbounded</span>};
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">unbounded</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>();
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) = <span class="ident">unbounded</span>::&lt;<span class="ident">i32</span>&gt;();
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">capacity</span>(), <span class="prelude-val">None</span>);
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">bounded</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>(<span class="number">5</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) = <span class="ident">bounded</span>::&lt;<span class="ident">i32</span>&gt;(<span class="number">5</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">capacity</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">bounded</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>(<span class="number">0</span>);
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) = <span class="ident">bounded</span>::&lt;<span class="ident">i32</span>&gt;(<span class="number">0</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">s</span>.<span class="ident">capacity</span>(), <span class="prelude-val">Some</span>(<span class="number">0</span>));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.same_channel" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#634-641">source</a></span><h4 class="code-header">pub fn <a href="#method.same_channel" class="fnname">same_channel</a>(&amp;self, other: &amp;<a class="struct" href="struct.Sender.html" title="struct crossbeam_channel::Sender">Sender</a>&lt;T&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if senders belong to the same channel.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_channel::unbounded</span>;
 
-<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">unbounded</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>();
+<span class="kw">let</span> (<span class="ident">s</span>, <span class="kw">_</span>) = <span class="ident">unbounded</span>::&lt;<span class="ident">usize</span>&gt;();
 
-<span class="kw">let</span> <span class="ident">s2</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">clone</span>();
+<span class="kw">let</span> <span class="ident">s2</span> = <span class="ident">s</span>.<span class="ident">clone</span>();
 <span class="macro">assert!</span>(<span class="ident">s</span>.<span class="ident">same_channel</span>(<span class="kw-2">&amp;</span><span class="ident">s2</span>));
 
-<span class="kw">let</span> (<span class="ident">s3</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">unbounded</span>();
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">s</span>.<span class="ident">same_channel</span>(<span class="kw-2">&amp;</span><span class="ident">s3</span>));</code></pre></div>
+<span class="kw">let</span> (<span class="ident">s3</span>, <span class="kw">_</span>) = <span class="ident">unbounded</span>();
+<span class="macro">assert!</span>(!<span class="ident">s</span>.<span class="ident">same_channel</span>(<span class="kw-2">&amp;</span><span class="ident">s3</span>));</code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Clone-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#656-666">source</a></span><a href="#impl-Clone-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.Sender.html" title="struct crossbeam_channel::Sender">Sender</a>&lt;T&gt;</h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#657-665">source</a></span><a href="#method.clone" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fnname">clone</a>(&amp;self) -&gt; Self</h4></section></summary><div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/clone.rs.html#132-134">source</a></span><a href="#method.clone_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from" class="fnname">clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</h4></section></summary><div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#668-672">source</a></span><a href="#impl-Debug-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Sender.html" title="struct crossbeam_channel::Sender">Sender</a>&lt;T&gt;</h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_channel/channel.rs.html#669-671">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
@@ -185,4 +185,4 @@ appear on the other side of the channel.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="crossbeam_channel" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="crossbeam_channel" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

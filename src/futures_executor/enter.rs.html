@@ -81,7 +81,7 @@
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cell::Cell</span>;
 <span class="kw">use</span> <span class="ident">std::fmt</span>;
 
-<span class="macro">thread_local!</span>(<span class="kw">static</span> <span class="ident">ENTERED</span>: <span class="ident">Cell</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Cell::new</span>(<span class="bool-val">false</span>));
+<span class="macro">thread_local!</span>(<span class="kw">static</span> <span class="ident">ENTERED</span>: <span class="ident">Cell</span>&lt;<span class="ident">bool</span>&gt; = <span class="ident">Cell::new</span>(<span class="bool-val">false</span>));
 
 <span class="doccomment">/// Represents an executor context.</span>
 <span class="doccomment">///</span>
@@ -97,13 +97,13 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">EnterError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;EnterError&quot;</span>).<span class="ident">finish</span>()
     }
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">EnterError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;an execution scope has already been entered&quot;</span>)
     }
 }
@@ -132,8 +132,8 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// Returns an error if the current thread is already marked, in which case the</span>
 <span class="doccomment">/// caller should panic with a tailored error message.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">enter</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Enter</span>, <span class="ident">EnterError</span><span class="op">&gt;</span> {
-    <span class="ident">ENTERED</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">enter</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Enter</span>, <span class="ident">EnterError</span>&gt; {
+    <span class="ident">ENTERED</span>.<span class="ident">with</span>(|<span class="ident">c</span>| {
         <span class="kw">if</span> <span class="ident">c</span>.<span class="ident">get</span>() {
             <span class="prelude-val">Err</span>(<span class="ident">EnterError</span> { <span class="ident">_priv</span>: () })
         } <span class="kw">else</span> {
@@ -145,18 +145,18 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Enter</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Enter&quot;</span>).<span class="ident">finish</span>()
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Enter</span> {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="ident">ENTERED</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> {
+        <span class="ident">ENTERED</span>.<span class="ident">with</span>(|<span class="ident">c</span>| {
             <span class="macro">assert!</span>(<span class="ident">c</span>.<span class="ident">get</span>());
             <span class="ident">c</span>.<span class="ident">set</span>(<span class="bool-val">false</span>);
         });
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="futures_executor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="futures_executor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

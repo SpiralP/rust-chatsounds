@@ -146,13 +146,13 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`flatten()`]: trait.ParallelIterator.html#method.flatten</span>
 <span class="doccomment">/// [`ParallelIterator`]: trait.ParallelIterator.html</span>
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;iterator adaptors are lazy and do nothing unless consumed&quot;</span>]</span>
+<span class="attribute">#[<span class="ident">must_use</span> = <span class="string">&quot;iterator adaptors are lazy and do nothing unless consumed&quot;</span>]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Flatten</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">ParallelIterator</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Flatten</span>&lt;<span class="ident">I</span>: <span class="ident">ParallelIterator</span>&gt; {
     <span class="ident">base</span>: <span class="ident">I</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">Flatten</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Flatten</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">ParallelIterator</span>,
     <span class="ident">I::Item</span>: <span class="ident">IntoParallelIterator</span>,
@@ -163,18 +163,18 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">ParallelIterator</span> <span class="kw">for</span> <span class="ident">Flatten</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">ParallelIterator</span> <span class="kw">for</span> <span class="ident">Flatten</span>&lt;<span class="ident">I</span>&gt;
 <span class="kw">where</span>
     <span class="ident">I</span>: <span class="ident">ParallelIterator</span>,
     <span class="ident">I::Item</span>: <span class="ident">IntoParallelIterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">I::Item</span> <span class="kw">as</span> <span class="ident">IntoParallelIterator</span><span class="op">&gt;</span><span class="ident">::Item</span>;
+    <span class="kw">type</span> <span class="ident">Item</span> = &lt;<span class="ident">I::Item</span> <span class="kw">as</span> <span class="ident">IntoParallelIterator</span>&gt;<span class="ident">::Item</span>;
 
-    <span class="kw">fn</span> <span class="ident">drive_unindexed</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">consumer</span>: <span class="ident">C</span>) -&gt; <span class="ident">C::Result</span>
+    <span class="kw">fn</span> <span class="ident">drive_unindexed</span>&lt;<span class="ident">C</span>&gt;(<span class="self">self</span>, <span class="ident">consumer</span>: <span class="ident">C</span>) -&gt; <span class="ident">C::Result</span>
     <span class="kw">where</span>
-        <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>,
+        <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">consumer</span> <span class="op">=</span> <span class="ident">FlattenConsumer::new</span>(<span class="ident">consumer</span>);
+        <span class="kw">let</span> <span class="ident">consumer</span> = <span class="ident">FlattenConsumer::new</span>(<span class="ident">consumer</span>);
         <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">drive_unindexed</span>(<span class="ident">consumer</span>)
     }
 }
@@ -182,27 +182,27 @@
 <span class="doccomment">/// ////////////////////////////////////////////////////////////////////////</span>
 <span class="doccomment">/// Consumer implementation</span>
 
-<span class="kw">struct</span> <span class="ident">FlattenConsumer</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">FlattenConsumer</span>&lt;<span class="ident">C</span>&gt; {
     <span class="ident">base</span>: <span class="ident">C</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span> <span class="ident">FlattenConsumer</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">C</span>&gt; <span class="ident">FlattenConsumer</span>&lt;<span class="ident">C</span>&gt; {
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">base</span>: <span class="ident">C</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">FlattenConsumer</span> { <span class="ident">base</span> }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Consumer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FlattenConsumer</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">C</span>&gt; <span class="ident">Consumer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">FlattenConsumer</span>&lt;<span class="ident">C</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span><span class="op">&lt;</span><span class="ident">T::Item</span><span class="op">&gt;</span>,
+    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span>&lt;<span class="ident">T::Item</span>&gt;,
     <span class="ident">T</span>: <span class="ident">IntoParallelIterator</span>,
 {
-    <span class="kw">type</span> <span class="ident">Folder</span> <span class="op">=</span> <span class="ident">FlattenFolder</span><span class="op">&lt;</span><span class="ident">C</span>, <span class="ident">C::Result</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Reducer</span> <span class="op">=</span> <span class="ident">C::Reducer</span>;
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="ident">C::Result</span>;
+    <span class="kw">type</span> <span class="ident">Folder</span> = <span class="ident">FlattenFolder</span>&lt;<span class="ident">C</span>, <span class="ident">C::Result</span>&gt;;
+    <span class="kw">type</span> <span class="ident">Reducer</span> = <span class="ident">C::Reducer</span>;
+    <span class="kw">type</span> <span class="prelude-ty">Result</span> = <span class="ident">C::Result</span>;
 
     <span class="kw">fn</span> <span class="ident">split_at</span>(<span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) -&gt; (<span class="self">Self</span>, <span class="self">Self</span>, <span class="ident">C::Reducer</span>) {
-        <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">right</span>, <span class="ident">reducer</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">split_at</span>(<span class="ident">index</span>);
+        <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">right</span>, <span class="ident">reducer</span>) = <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">split_at</span>(<span class="ident">index</span>);
         (
             <span class="ident">FlattenConsumer::new</span>(<span class="ident">left</span>),
             <span class="ident">FlattenConsumer::new</span>(<span class="ident">right</span>),
@@ -222,9 +222,9 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">UnindexedConsumer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FlattenConsumer</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">C</span>&gt; <span class="ident">UnindexedConsumer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">FlattenConsumer</span>&lt;<span class="ident">C</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span><span class="op">&lt;</span><span class="ident">T::Item</span><span class="op">&gt;</span>,
+    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span>&lt;<span class="ident">T::Item</span>&gt;,
     <span class="ident">T</span>: <span class="ident">IntoParallelIterator</span>,
 {
     <span class="kw">fn</span> <span class="ident">split_off_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
@@ -236,27 +236,27 @@
     }
 }
 
-<span class="kw">struct</span> <span class="ident">FlattenFolder</span><span class="op">&lt;</span><span class="ident">C</span>, <span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">FlattenFolder</span>&lt;<span class="ident">C</span>, <span class="ident">R</span>&gt; {
     <span class="ident">base</span>: <span class="ident">C</span>,
-    <span class="ident">previous</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>,
+    <span class="ident">previous</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">R</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Folder</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FlattenFolder</span><span class="op">&lt;</span><span class="ident">C</span>, <span class="ident">C::Result</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">C</span>&gt; <span class="ident">Folder</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">FlattenFolder</span>&lt;<span class="ident">C</span>, <span class="ident">C::Result</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span><span class="op">&lt;</span><span class="ident">T::Item</span><span class="op">&gt;</span>,
+    <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span>&lt;<span class="ident">T::Item</span>&gt;,
     <span class="ident">T</span>: <span class="ident">IntoParallelIterator</span>,
 {
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="ident">C::Result</span>;
+    <span class="kw">type</span> <span class="prelude-ty">Result</span> = <span class="ident">C::Result</span>;
 
     <span class="kw">fn</span> <span class="ident">consume</span>(<span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">par_iter</span> <span class="op">=</span> <span class="ident">item</span>.<span class="ident">into_par_iter</span>();
-        <span class="kw">let</span> <span class="ident">consumer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">split_off_left</span>();
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">par_iter</span>.<span class="ident">drive_unindexed</span>(<span class="ident">consumer</span>);
+        <span class="kw">let</span> <span class="ident">par_iter</span> = <span class="ident">item</span>.<span class="ident">into_par_iter</span>();
+        <span class="kw">let</span> <span class="ident">consumer</span> = <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">split_off_left</span>();
+        <span class="kw">let</span> <span class="ident">result</span> = <span class="ident">par_iter</span>.<span class="ident">drive_unindexed</span>(<span class="ident">consumer</span>);
 
-        <span class="kw">let</span> <span class="ident">previous</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">previous</span> {
+        <span class="kw">let</span> <span class="ident">previous</span> = <span class="kw">match</span> <span class="self">self</span>.<span class="ident">previous</span> {
             <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">result</span>),
             <span class="prelude-val">Some</span>(<span class="ident">previous</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">reducer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">to_reducer</span>();
+                <span class="kw">let</span> <span class="ident">reducer</span> = <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">to_reducer</span>();
                 <span class="prelude-val">Some</span>(<span class="ident">reducer</span>.<span class="ident">reduce</span>(<span class="ident">previous</span>, <span class="ident">result</span>))
             }
         };
@@ -279,4 +279,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

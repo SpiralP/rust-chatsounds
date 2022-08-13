@@ -11,13 +11,13 @@ is a datagram protocol.</p>
 <span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">Events</span>, <span class="ident">Interest</span>, <span class="ident">Poll</span>, <span class="ident">Token</span>};
 <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 
-<span class="kw">const</span> <span class="ident">SENDER</span>: <span class="ident">Token</span> <span class="op">=</span> <span class="ident">Token</span>(<span class="number">0</span>);
-<span class="kw">const</span> <span class="ident">ECHOER</span>: <span class="ident">Token</span> <span class="op">=</span> <span class="ident">Token</span>(<span class="number">1</span>);
+<span class="kw">const</span> <span class="ident">SENDER</span>: <span class="ident">Token</span> = <span class="ident">Token</span>(<span class="number">0</span>);
+<span class="kw">const</span> <span class="ident">ECHOER</span>: <span class="ident">Token</span> = <span class="ident">Token</span>(<span class="number">1</span>);
 
 <span class="comment">// This operation will fail if the address is in use, so we select different ports for each</span>
 <span class="comment">// socket.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sender_socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">echoer_socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sender_socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">echoer_socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
 <span class="comment">// If we do not use connect here, SENDER and ECHOER would need to call send_to and recv_from</span>
 <span class="comment">// respectively.</span>
@@ -25,31 +25,31 @@ is a datagram protocol.</p>
 
 <span class="comment">// We need a Poll to check if SENDER is ready to be written into, and if ECHOER is ready to be</span>
 <span class="comment">// read from.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">poll</span> <span class="op">=</span> <span class="ident">Poll::new</span>()<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">poll</span> = <span class="ident">Poll::new</span>()<span class="question-mark">?</span>;
 
 <span class="comment">// We register our sockets here so that we can check if they are ready to be written/read.</span>
 <span class="ident">poll</span>.<span class="ident">registry</span>().<span class="ident">register</span>(<span class="kw-2">&amp;mut</span> <span class="ident">sender_socket</span>, <span class="ident">SENDER</span>, <span class="ident">Interest::WRITABLE</span>)<span class="question-mark">?</span>;
 <span class="ident">poll</span>.<span class="ident">registry</span>().<span class="ident">register</span>(<span class="kw-2">&amp;mut</span> <span class="ident">echoer_socket</span>, <span class="ident">ECHOER</span>, <span class="ident">Interest::READABLE</span>)<span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">msg_to_send</span> <span class="op">=</span> [<span class="number">9</span>; <span class="number">9</span>];
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">9</span>];
+<span class="kw">let</span> <span class="ident">msg_to_send</span> = [<span class="number">9</span>; <span class="number">9</span>];
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> = [<span class="number">0</span>; <span class="number">9</span>];
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">events</span> <span class="op">=</span> <span class="ident">Events::with_capacity</span>(<span class="number">128</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">events</span> = <span class="ident">Events::with_capacity</span>(<span class="number">128</span>);
 <span class="kw">loop</span> {
     <span class="ident">poll</span>.<span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="ident">events</span>, <span class="prelude-val">Some</span>(<span class="ident">Duration::from_millis</span>(<span class="number">100</span>)))<span class="question-mark">?</span>;
     <span class="kw">for</span> <span class="ident">event</span> <span class="kw">in</span> <span class="ident">events</span>.<span class="ident">iter</span>() {
         <span class="kw">match</span> <span class="ident">event</span>.<span class="ident">token</span>() {
             <span class="comment">// Our SENDER is ready to be written into.</span>
             <span class="ident">SENDER</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">bytes_sent</span> <span class="op">=</span> <span class="ident">sender_socket</span>.<span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="ident">msg_to_send</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">bytes_sent</span> = <span class="ident">sender_socket</span>.<span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="ident">msg_to_send</span>)<span class="question-mark">?</span>;
                 <span class="macro">assert_eq!</span>(<span class="ident">bytes_sent</span>, <span class="number">9</span>);
                 <span class="macro">println!</span>(<span class="string">&quot;sent {:?} -&gt; {:?} bytes&quot;</span>, <span class="ident">msg_to_send</span>, <span class="ident">bytes_sent</span>);
             },
             <span class="comment">// Our ECHOER is ready to be read from.</span>
             <span class="ident">ECHOER</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">num_recv</span> <span class="op">=</span> <span class="ident">echoer_socket</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">num_recv</span> = <span class="ident">echoer_socket</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>)<span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">&quot;echo {:?} -&gt; {:?}&quot;</span>, <span class="ident">buffer</span>, <span class="ident">num_recv</span>);
-                <span class="ident">buffer</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">9</span>];
+                <span class="ident">buffer</span> = [<span class="number">0</span>; <span class="number">9</span>];
             }
             <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>()
         }
@@ -60,7 +60,7 @@ is a datagram protocol.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
 <span class="comment">// We must bind it to an open address.</span>
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>) {
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="kw">match</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>) {
     <span class="prelude-val">Ok</span>(<span class="ident">new_socket</span>) =&gt; <span class="ident">new_socket</span>,
     <span class="prelude-val">Err</span>(<span class="ident">fail</span>) =&gt; {
         <span class="comment">// We panic! here, but you could try to bind it again on another address.</span>
@@ -78,16 +78,16 @@ non-blocking mode.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">addr</span> = <span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(<span class="ident">socket</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>.<span class="ident">ip</span>(), <span class="ident">addr</span>.<span class="ident">ip</span>());</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peer_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#183-185">source</a></span><h4 class="code-header">pub fn <a href="#method.peer_addr" class="fnname">peer_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the socket address of the remote peer this socket was connected to.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">peer_addr</span> <span class="op">=</span> <span class="string">&quot;127.0.0.1:11100&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">addr</span> = <span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">peer_addr</span> = <span class="string">&quot;127.0.0.1:11100&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>)<span class="question-mark">?</span>;
 <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="ident">peer_addr</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(<span class="ident">socket</span>.<span class="ident">peer_addr</span>()<span class="question-mark">?</span>.<span class="ident">ip</span>(), <span class="ident">peer_addr</span>.<span class="ident">ip</span>());</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send_to" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#211-213">source</a></span><h4 class="code-header">pub fn <a href="#method.send_to" class="fnname">send_to</a>(&amp;self, buf: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>], target: <a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Sends data on the socket to the given address. On success, returns the
@@ -97,12 +97,12 @@ documentation for concrete examples.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
 <span class="comment">// We must check if the socket is writable before calling send_to,</span>
 <span class="comment">// or we could run into a WouldBlock error.</span>
 
-<span class="kw">let</span> <span class="ident">bytes_sent</span> <span class="op">=</span> <span class="ident">socket</span>.<span class="ident">send_to</span>(<span class="kw-2">&amp;</span>[<span class="number">9</span>; <span class="number">9</span>], <span class="string">&quot;127.0.0.1:11100&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">bytes_sent</span> = <span class="ident">socket</span>.<span class="ident">send_to</span>(<span class="kw-2">&amp;</span>[<span class="number">9</span>; <span class="number">9</span>], <span class="string">&quot;127.0.0.1:11100&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(<span class="ident">bytes_sent</span>, <span class="number">9</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.recv_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#246-248">source</a></span><h4 class="code-header">pub fn <a href="#method.recv_from" class="fnname">recv_from</a>(&amp;self, buf: &amp;mut [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>)&gt;</h4></section></summary><div class="docblock"><p>Receives data from the socket. On success, returns the number of bytes
 read and the address from whence the data came.</p>
@@ -115,13 +115,13 @@ maximum UDP packet size, which can be up to 65536 bytes in size.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
 <span class="comment">// We must check if the socket is readable before calling recv_from,</span>
 <span class="comment">// or we could run into a WouldBlock error.</span>
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">9</span>];
-<span class="kw">let</span> (<span class="ident">num_recv</span>, <span class="ident">from_addr</span>) <span class="op">=</span> <span class="ident">socket</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">9</span>];
+<span class="kw">let</span> (<span class="ident">num_recv</span>, <span class="ident">from_addr</span>) = <span class="ident">socket</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
 <span class="macro">println!</span>(<span class="string">&quot;Received {:?} -&gt; {:?} bytes from {:?}&quot;</span>, <span class="ident">buf</span>, <span class="ident">num_recv</span>, <span class="ident">from_addr</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peek_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#282-284">source</a></span><h4 class="code-header">pub fn <a href="#method.peek_from" class="fnname">peek_from</a>(&amp;self, buf: &amp;mut [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>)&gt;</h4></section></summary><div class="docblock"><p>Receives data from the socket, without removing it from the input queue.
 On success, returns the number of bytes read and the address from whence
@@ -135,13 +135,13 @@ maximum UDP packet size, which can be up to 65536 bytes in size.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
 <span class="comment">// We must check if the socket is readable before calling recv_from,</span>
 <span class="comment">// or we could run into a WouldBlock error.</span>
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">9</span>];
-<span class="kw">let</span> (<span class="ident">num_recv</span>, <span class="ident">from_addr</span>) <span class="op">=</span> <span class="ident">socket</span>.<span class="ident">peek_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">9</span>];
+<span class="kw">let</span> (<span class="ident">num_recv</span>, <span class="ident">from_addr</span>) = <span class="ident">socket</span>.<span class="ident">peek_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
 <span class="macro">println!</span>(<span class="string">&quot;Received {:?} -&gt; {:?} bytes from {:?}&quot;</span>, <span class="ident">buf</span>, <span class="ident">num_recv</span>, <span class="ident">from_addr</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#288-290">source</a></span><h4 class="code-header">pub fn <a href="#method.send" class="fnname">send</a>(&amp;self, buf: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Sends data on the socket to the address previously bound via connect(). On success,
 returns the number of bytes written.</p>
@@ -173,8 +173,8 @@ address.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">broadcast_socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-<span class="kw">if</span> <span class="ident">broadcast_socket</span>.<span class="ident">broadcast</span>()<span class="question-mark">?</span> <span class="op">==</span> <span class="bool-val">false</span> {
+<span class="kw">let</span> <span class="ident">broadcast_socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">if</span> <span class="ident">broadcast_socket</span>.<span class="ident">broadcast</span>()<span class="question-mark">?</span> == <span class="bool-val">false</span> {
     <span class="ident">broadcast_socket</span>.<span class="ident">set_broadcast</span>(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 }
 
@@ -185,7 +185,7 @@ address.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">broadcast_socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">broadcast_socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 <span class="macro">assert_eq!</span>(<span class="ident">broadcast_socket</span>.<span class="ident">broadcast</span>()<span class="question-mark">?</span>, <span class="bool-val">false</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.set_multicast_loop_v4" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/mio/net/udp.rs.html#389-391">source</a></span><h4 class="code-header">pub fn <a href="#method.set_multicast_loop_v4" class="fnname">set_multicast_loop_v4</a>(&amp;self, on: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Sets the value of the <code>IP_MULTICAST_LOOP</code> option for this socket.</p>
 <p>If enabled, multicast packets will be looped back to the local socket.
@@ -213,8 +213,8 @@ from this socket.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-<span class="kw">if</span> <span class="ident">socket</span>.<span class="ident">ttl</span>()<span class="question-mark">?</span> <span class="op">&lt;</span> <span class="number">255</span> {
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">if</span> <span class="ident">socket</span>.<span class="ident">ttl</span>()<span class="question-mark">?</span> &lt; <span class="number">255</span> {
     <span class="ident">socket</span>.<span class="ident">set_ttl</span>(<span class="number">255</span>)<span class="question-mark">?</span>;
 }
 
@@ -224,7 +224,7 @@ from this socket.</p>
 <h5 id="examples-10"><a href="#examples-10">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">socket</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 <span class="ident">socket</span>.<span class="ident">set_ttl</span>(<span class="number">255</span>)<span class="question-mark">?</span>;
 
 <span class="macro">assert_eq!</span>(<span class="ident">socket</span>.<span class="ident">ttl</span>()<span class="question-mark">?</span>, <span class="number">255</span>);</code></pre></div>
@@ -263,21 +263,21 @@ returning a <a href="https://doc.rust-lang.org/nightly/std/io/error/enum.ErrorKi
 <span class="kw">use</span> <span class="ident">std::os::windows::io::AsRawSocket</span>;
 <span class="kw">use</span> <span class="ident">mio::net::UdpSocket</span>;
 
-<span class="kw">let</span> <span class="ident">address</span> <span class="op">=</span> <span class="string">&quot;127.0.0.1:8080&quot;</span>.<span class="ident">parse</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">dgram</span> <span class="op">=</span> <span class="ident">UdpSocket::bind</span>(<span class="ident">address</span>)<span class="question-mark">?</span>;
+<span class="kw">let</span> <span class="ident">address</span> = <span class="string">&quot;127.0.0.1:8080&quot;</span>.<span class="ident">parse</span>().<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="ident">dgram</span> = <span class="ident">UdpSocket::bind</span>(<span class="ident">address</span>)<span class="question-mark">?</span>;
 
 <span class="comment">// Wait until the dgram is readable...</span>
 
 <span class="comment">// Read from the dgram using a direct libc call, of course the</span>
 <span class="comment">// `io::Read` implementation would be easier to use.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">512</span>];
-<span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">dgram</span>.<span class="ident">try_io</span>(<span class="op">|</span><span class="op">|</span> {
-    <span class="kw">let</span> <span class="ident">buf_ptr</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">buf</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">512</span>];
+<span class="kw">let</span> <span class="ident">n</span> = <span class="ident">dgram</span>.<span class="ident">try_io</span>(|| {
+    <span class="kw">let</span> <span class="ident">buf_ptr</span> = <span class="kw-2">&amp;mut</span> <span class="ident">buf</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span>;
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">unix</span>)]</span>
-    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">libc::recv</span>(<span class="ident">dgram</span>.<span class="ident">as_raw_fd</span>(), <span class="ident">buf_ptr</span>, <span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>) };
+    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> { <span class="ident">libc::recv</span>(<span class="ident">dgram</span>.<span class="ident">as_raw_fd</span>(), <span class="ident">buf_ptr</span>, <span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>) };
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">windows</span>)]</span>
-    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">libc::recvfrom</span>(<span class="ident">dgram</span>.<span class="ident">as_raw_socket</span>() <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">buf_ptr</span>, <span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i32</span>, <span class="number">0</span>, <span class="ident">std::ptr::null_mut</span>(), <span class="ident">std::ptr::null_mut</span>()) };
-    <span class="kw">if</span> <span class="ident">res</span> <span class="op">!</span><span class="op">=</span> <span class="op">-</span><span class="number">1</span> {
+    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> { <span class="ident">libc::recvfrom</span>(<span class="ident">dgram</span>.<span class="ident">as_raw_socket</span>() <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">buf_ptr</span>, <span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i32</span>, <span class="number">0</span>, <span class="ident">std::ptr::null_mut</span>(), <span class="ident">std::ptr::null_mut</span>()) };
+    <span class="kw">if</span> <span class="ident">res</span> != -<span class="number">1</span> {
         <span class="prelude-val">Ok</span>(<span class="ident">res</span> <span class="kw">as</span> <span class="ident">usize</span>)
     } <span class="kw">else</span> {
         <span class="comment">// If EAGAIN or EWOULDBLOCK is set by libc::recv, the closure</span>
@@ -307,4 +307,4 @@ non-blocking mode.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-UdpSocket" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-UdpSocket" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

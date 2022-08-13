@@ -960,7 +960,7 @@
 <span class="comment">// When this module is compiled with `sync` enabled we will warn on</span>
 <span class="comment">// this lint. When `rt` is enabled we use `pub(crate)` which</span>
 <span class="comment">// triggers this warning but it is safe to ignore in this case.</span>
-<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;sync&quot;</span>), <span class="ident">allow</span>(<span class="ident">unreachable_pub</span>, <span class="ident">dead_code</span>))]</span>
+<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;sync&quot;</span>), <span class="ident">allow</span>(<span class="ident">unreachable_pub</span>, <span class="ident">dead_code</span>))]</span>
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::loom::sync::atomic::AtomicUsize</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::loom::sync::Mutex</span>;
@@ -975,7 +975,7 @@
 <span class="kw">use</span> <span class="ident">std::sync::atomic::Ordering::SeqCst</span>;
 <span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>, <span class="ident">Waker</span>};
 
-<span class="kw">type</span> <span class="ident">WaitList</span> <span class="op">=</span> <span class="ident">LinkedList</span><span class="op">&lt;</span><span class="ident">Waiter</span>, <span class="op">&lt;</span><span class="ident">Waiter</span> <span class="kw">as</span> <span class="ident">linked_list::Link</span><span class="op">&gt;</span><span class="ident">::Target</span><span class="op">&gt;</span>;
+<span class="kw">type</span> <span class="ident">WaitList</span> = <span class="ident">LinkedList</span>&lt;<span class="ident">Waiter</span>, &lt;<span class="ident">Waiter</span> <span class="kw">as</span> <span class="ident">linked_list::Link</span>&gt;<span class="ident">::Target</span>&gt;;
 
 <span class="doccomment">/// Notifies a single task to wake up.</span>
 <span class="doccomment">///</span>
@@ -1159,7 +1159,7 @@
     <span class="comment">// are used to store the number of times `notify_waiters`</span>
     <span class="comment">// was called.</span>
     <span class="ident">state</span>: <span class="ident">AtomicUsize</span>,
-    <span class="ident">waiters</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">WaitList</span><span class="op">&gt;</span>,
+    <span class="ident">waiters</span>: <span class="ident">Mutex</span>&lt;<span class="ident">WaitList</span>&gt;,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
@@ -1174,13 +1174,13 @@
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span> <span class="comment">// required by `linked_list::Link` impl</span>
 <span class="kw">struct</span> <span class="ident">Waiter</span> {
     <span class="doccomment">/// Intrusive linked-list pointers.</span>
-    <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>,
+    <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers</span>&lt;<span class="ident">Waiter</span>&gt;,
 
     <span class="doccomment">/// Waiting task&#39;s waker.</span>
-    <span class="ident">waker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span>,
+    <span class="ident">waker</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">Waker</span>&gt;,
 
     <span class="doccomment">/// `true` if the notification has been assigned to this waiter.</span>
-    <span class="ident">notified</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NotificationType</span><span class="op">&gt;</span>,
+    <span class="ident">notified</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">NotificationType</span>&gt;,
 
     <span class="doccomment">/// Should not be `Unpin`.</span>
     <span class="ident">_p</span>: <span class="ident">PhantomPinned</span>,
@@ -1191,7 +1191,7 @@
 <span class="doccomment">/// This future is fused, so once it has completed, any future calls to poll</span>
 <span class="doccomment">/// will immediately return `Poll::Ready`.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// The `Notify` being received on.</span>
     <span class="ident">notify</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Notify</span>,
 
@@ -1199,11 +1199,11 @@
     <span class="ident">state</span>: <span class="ident">State</span>,
 
     <span class="doccomment">/// Entry in the waiter `LinkedList`.</span>
-    <span class="ident">waiter</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>,
+    <span class="ident">waiter</span>: <span class="ident">UnsafeCell</span>&lt;<span class="ident">Waiter</span>&gt;,
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;a</span>&gt; {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;a</span>&gt; {}
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">enum</span> <span class="ident">State</span> {
@@ -1212,37 +1212,37 @@
     <span class="ident">Done</span>,
 }
 
-<span class="kw">const</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">2</span>;
-<span class="kw">const</span> <span class="ident">STATE_MASK</span>: <span class="ident">usize</span> <span class="op">=</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>) <span class="op">-</span> <span class="number">1</span>;
-<span class="kw">const</span> <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="op">!</span><span class="ident">STATE_MASK</span>;
+<span class="kw">const</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>: <span class="ident">usize</span> = <span class="number">2</span>;
+<span class="kw">const</span> <span class="ident">STATE_MASK</span>: <span class="ident">usize</span> = (<span class="number">1</span> &lt;&lt; <span class="ident">NOTIFY_WAITERS_SHIFT</span>) - <span class="number">1</span>;
+<span class="kw">const</span> <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>: <span class="ident">usize</span> = !<span class="ident">STATE_MASK</span>;
 
 <span class="doccomment">/// Initial &quot;idle&quot; state.</span>
-<span class="kw">const</span> <span class="ident">EMPTY</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">0</span>;
+<span class="kw">const</span> <span class="ident">EMPTY</span>: <span class="ident">usize</span> = <span class="number">0</span>;
 
 <span class="doccomment">/// One or more threads are currently waiting to be notified.</span>
-<span class="kw">const</span> <span class="ident">WAITING</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">1</span>;
+<span class="kw">const</span> <span class="ident">WAITING</span>: <span class="ident">usize</span> = <span class="number">1</span>;
 
 <span class="doccomment">/// Pending notification.</span>
-<span class="kw">const</span> <span class="ident">NOTIFIED</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">2</span>;
+<span class="kw">const</span> <span class="ident">NOTIFIED</span>: <span class="ident">usize</span> = <span class="number">2</span>;
 
 <span class="kw">fn</span> <span class="ident">set_state</span>(<span class="ident">data</span>: <span class="ident">usize</span>, <span class="ident">state</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    (<span class="ident">data</span> <span class="op">&amp;</span> <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>) <span class="op">|</span> (<span class="ident">state</span> <span class="op">&amp;</span> <span class="ident">STATE_MASK</span>)
+    (<span class="ident">data</span> &amp; <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>) | (<span class="ident">state</span> &amp; <span class="ident">STATE_MASK</span>)
 }
 
 <span class="kw">fn</span> <span class="ident">get_state</span>(<span class="ident">data</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    <span class="ident">data</span> <span class="op">&amp;</span> <span class="ident">STATE_MASK</span>
+    <span class="ident">data</span> &amp; <span class="ident">STATE_MASK</span>
 }
 
 <span class="kw">fn</span> <span class="ident">get_num_notify_waiters_calls</span>(<span class="ident">data</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    (<span class="ident">data</span> <span class="op">&amp;</span> <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>) <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>
+    (<span class="ident">data</span> &amp; <span class="ident">NOTIFY_WAITERS_CALLS_MASK</span>) &gt;&gt; <span class="ident">NOTIFY_WAITERS_SHIFT</span>
 }
 
 <span class="kw">fn</span> <span class="ident">inc_num_notify_waiters_calls</span>(<span class="ident">data</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    <span class="ident">data</span> <span class="op">+</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>)
+    <span class="ident">data</span> + (<span class="number">1</span> &lt;&lt; <span class="ident">NOTIFY_WAITERS_SHIFT</span>)
 }
 
 <span class="kw">fn</span> <span class="ident">atomic_inc_num_notify_waiters_calls</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">AtomicUsize</span>) {
-    <span class="ident">data</span>.<span class="ident">fetch_add</span>(<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>, <span class="ident">SeqCst</span>);
+    <span class="ident">data</span>.<span class="ident">fetch_add</span>(<span class="number">1</span> &lt;&lt; <span class="ident">NOTIFY_WAITERS_SHIFT</span>, <span class="ident">SeqCst</span>);
 }
 
 <span class="kw">impl</span> <span class="ident">Notify</span> {
@@ -1271,8 +1271,8 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// static NOTIFY: Notify = Notify::const_new();</span>
     <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parking_lot&quot;</span>, <span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">loom</span>, <span class="ident">test</span>))))]</span>
-    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parking_lot&quot;</span>)))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;parking_lot&quot;</span>, <span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">loom</span>, <span class="ident">test</span>))))]</span>
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;parking_lot&quot;</span>)))]</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">const_new</span>() -&gt; <span class="ident">Notify</span> {
         <span class="ident">Notify</span> {
             <span class="ident">state</span>: <span class="ident">AtomicUsize::new</span>(<span class="number">0</span>),
@@ -1330,13 +1330,13 @@
     <span class="doccomment">///     notify.notify_one();</span>
     <span class="doccomment">/// }</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">notified</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">notified</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="comment">// we load the number of times notify_waiters</span>
         <span class="comment">// was called and store that in our initial state</span>
-        <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+        <span class="kw">let</span> <span class="ident">state</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
         <span class="ident">Notified</span> {
             <span class="ident">notify</span>: <span class="self">self</span>,
-            <span class="ident">state</span>: <span class="ident">State::Init</span>(<span class="ident">state</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">NOTIFY_WAITERS_SHIFT</span>),
+            <span class="ident">state</span>: <span class="ident">State::Init</span>(<span class="ident">state</span> &gt;&gt; <span class="ident">NOTIFY_WAITERS_SHIFT</span>),
             <span class="ident">waiter</span>: <span class="ident">UnsafeCell::new</span>(<span class="ident">Waiter</span> {
                 <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers::new</span>(),
                 <span class="ident">waker</span>: <span class="prelude-val">None</span>,
@@ -1381,36 +1381,36 @@
     <span class="doccomment">/// }</span>
     <span class="doccomment">/// ```</span>
     <span class="comment">// Alias for old name in 0.x</span>
-    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">alias</span> <span class="op">=</span> <span class="string">&quot;notify&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">alias</span> = <span class="string">&quot;notify&quot;</span>))]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">notify_one</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="comment">// Load the current state</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
         <span class="comment">// If the state is `EMPTY`, transition to `NOTIFIED` and return.</span>
-        <span class="kw">while</span> <span class="kw">let</span> <span class="ident">EMPTY</span> <span class="op">|</span> <span class="ident">NOTIFIED</span> <span class="op">=</span> <span class="ident">get_state</span>(<span class="ident">curr</span>) {
+        <span class="kw">while</span> <span class="kw">let</span> <span class="ident">EMPTY</span> | <span class="ident">NOTIFIED</span> = <span class="ident">get_state</span>(<span class="ident">curr</span>) {
             <span class="comment">// The compare-exchange from `NOTIFIED` -&gt; `NOTIFIED` is intended. A</span>
             <span class="comment">// happens-before synchronization must happen between this atomic</span>
             <span class="comment">// operation and a task calling `notified().await`.</span>
-            <span class="kw">let</span> <span class="ident">new</span> <span class="op">=</span> <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>);
-            <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">new</span>, <span class="ident">SeqCst</span>, <span class="ident">SeqCst</span>);
+            <span class="kw">let</span> <span class="ident">new</span> = <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>);
+            <span class="kw">let</span> <span class="ident">res</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">new</span>, <span class="ident">SeqCst</span>, <span class="ident">SeqCst</span>);
 
             <span class="kw">match</span> <span class="ident">res</span> {
                 <span class="comment">// No waiters, no further work to do</span>
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; {
-                    <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
+                    <span class="ident">curr</span> = <span class="ident">actual</span>;
                 }
             }
         }
 
         <span class="comment">// There are waiters, the lock must be acquired to notify.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
 
         <span class="comment">// The state must be reloaded while the lock is held. The state may only</span>
         <span class="comment">// transition out of WAITING while the lock is held.</span>
-        <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+        <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span> <span class="ident">notify_locked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">waiters</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">state</span>, <span class="ident">curr</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) = <span class="ident">notify_locked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">waiters</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">state</span>, <span class="ident">curr</span>) {
             <span class="ident">drop</span>(<span class="ident">waiters</span>);
             <span class="ident">waker</span>.<span class="ident">wake</span>();
         }
@@ -1449,16 +1449,16 @@
     <span class="doccomment">/// }</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">notify_waiters</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">wakers</span> <span class="op">=</span> <span class="ident">WakeList::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">wakers</span> = <span class="ident">WakeList::new</span>();
 
         <span class="comment">// There are waiters, the lock must be acquired to notify.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
 
         <span class="comment">// The state must be reloaded while the lock is held. The state may only</span>
         <span class="comment">// transition out of WAITING while the lock is held.</span>
-        <span class="kw">let</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+        <span class="kw">let</span> <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
-        <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">get_state</span>(<span class="ident">curr</span>), <span class="ident">EMPTY</span> <span class="op">|</span> <span class="ident">NOTIFIED</span>) {
+        <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">get_state</span>(<span class="ident">curr</span>), <span class="ident">EMPTY</span> | <span class="ident">NOTIFIED</span>) {
             <span class="comment">// There are no waiting tasks. All we need to do is increment the</span>
             <span class="comment">// number of times this method was called.</span>
             <span class="ident">atomic_inc_num_notify_waiters_calls</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">state</span>);
@@ -1473,13 +1473,13 @@
                 <span class="kw">match</span> <span class="ident">waiters</span>.<span class="ident">pop_back</span>() {
                     <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">waiter</span>) =&gt; {
                         <span class="comment">// Safety: `waiters` lock is still held.</span>
-                        <span class="kw">let</span> <span class="ident">waiter</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>() };
+                        <span class="kw">let</span> <span class="ident">waiter</span> = <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>() };
 
                         <span class="macro">assert!</span>(<span class="ident">waiter</span>.<span class="ident">notified</span>.<span class="ident">is_none</span>());
 
-                        <span class="ident">waiter</span>.<span class="ident">notified</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">NotificationType::AllWaiters</span>);
+                        <span class="ident">waiter</span>.<span class="ident">notified</span> = <span class="prelude-val">Some</span>(<span class="ident">NotificationType::AllWaiters</span>);
 
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span> <span class="ident">waiter</span>.<span class="ident">waker</span>.<span class="ident">take</span>() {
+                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) = <span class="ident">waiter</span>.<span class="ident">waker</span>.<span class="ident">take</span>() {
                             <span class="ident">wakers</span>.<span class="ident">push</span>(<span class="ident">waker</span>);
                         }
                     }
@@ -1494,13 +1494,13 @@
             <span class="ident">wakers</span>.<span class="ident">wake_all</span>();
 
             <span class="comment">// Acquire the lock again.</span>
-            <span class="ident">waiters</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+            <span class="ident">waiters</span> = <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
         }
 
         <span class="comment">// All waiters will be notified, the state must be transitioned to</span>
         <span class="comment">// `EMPTY`. As transitioning **from** `WAITING` requires the lock to be</span>
         <span class="comment">// held, a `store` is sufficient.</span>
-        <span class="kw">let</span> <span class="ident">new</span> <span class="op">=</span> <span class="ident">set_state</span>(<span class="ident">inc_num_notify_waiters_calls</span>(<span class="ident">curr</span>), <span class="ident">EMPTY</span>);
+        <span class="kw">let</span> <span class="ident">new</span> = <span class="ident">set_state</span>(<span class="ident">inc_num_notify_waiters_calls</span>(<span class="ident">curr</span>), <span class="ident">EMPTY</span>);
         <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">store</span>(<span class="ident">new</span>, <span class="ident">SeqCst</span>);
 
         <span class="comment">// Release the lock before notifying</span>
@@ -1516,17 +1516,17 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">notify_locked</span>(<span class="ident">waiters</span>: <span class="kw-2">&amp;mut</span> <span class="ident">WaitList</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">AtomicUsize</span>, <span class="ident">curr</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">notify_locked</span>(<span class="ident">waiters</span>: <span class="kw-2">&amp;mut</span> <span class="ident">WaitList</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">AtomicUsize</span>, <span class="ident">curr</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Waker</span>&gt; {
     <span class="kw">loop</span> {
         <span class="kw">match</span> <span class="ident">get_state</span>(<span class="ident">curr</span>) {
-            <span class="ident">EMPTY</span> <span class="op">|</span> <span class="ident">NOTIFIED</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>), <span class="ident">SeqCst</span>, <span class="ident">SeqCst</span>);
+            <span class="ident">EMPTY</span> | <span class="ident">NOTIFIED</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">state</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>), <span class="ident">SeqCst</span>, <span class="ident">SeqCst</span>);
 
                 <span class="kw">match</span> <span class="ident">res</span> {
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
                     <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; {
-                        <span class="kw">let</span> <span class="ident">actual_state</span> <span class="op">=</span> <span class="ident">get_state</span>(<span class="ident">actual</span>);
-                        <span class="macro">assert!</span>(<span class="ident">actual_state</span> <span class="op">==</span> <span class="ident">EMPTY</span> <span class="op">|</span><span class="op">|</span> <span class="ident">actual_state</span> <span class="op">==</span> <span class="ident">NOTIFIED</span>);
+                        <span class="kw">let</span> <span class="ident">actual_state</span> = <span class="ident">get_state</span>(<span class="ident">actual</span>);
+                        <span class="macro">assert!</span>(<span class="ident">actual_state</span> == <span class="ident">EMPTY</span> || <span class="ident">actual_state</span> == <span class="ident">NOTIFIED</span>);
                         <span class="ident">state</span>.<span class="ident">store</span>(<span class="ident">set_state</span>(<span class="ident">actual</span>, <span class="ident">NOTIFIED</span>), <span class="ident">SeqCst</span>);
                         <span class="kw">return</span> <span class="prelude-val">None</span>;
                     }
@@ -1538,15 +1538,15 @@
                 <span class="comment">// transition **out** of `WAITING`.</span>
                 <span class="comment">//</span>
                 <span class="comment">// Get a pending waiter</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiter</span> <span class="op">=</span> <span class="ident">waiters</span>.<span class="ident">pop_back</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiter</span> = <span class="ident">waiters</span>.<span class="ident">pop_back</span>().<span class="ident">unwrap</span>();
 
                 <span class="comment">// Safety: `waiters` lock is still held.</span>
-                <span class="kw">let</span> <span class="ident">waiter</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>() };
+                <span class="kw">let</span> <span class="ident">waiter</span> = <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>() };
 
                 <span class="macro">assert!</span>(<span class="ident">waiter</span>.<span class="ident">notified</span>.<span class="ident">is_none</span>());
 
-                <span class="ident">waiter</span>.<span class="ident">notified</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">NotificationType::OneWaiter</span>);
-                <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="ident">waiter</span>.<span class="ident">waker</span>.<span class="ident">take</span>();
+                <span class="ident">waiter</span>.<span class="ident">notified</span> = <span class="prelude-val">Some</span>(<span class="ident">NotificationType::OneWaiter</span>);
+                <span class="kw">let</span> <span class="ident">waker</span> = <span class="ident">waiter</span>.<span class="ident">waker</span>.<span class="ident">take</span>();
 
                 <span class="kw">if</span> <span class="ident">waiters</span>.<span class="ident">is_empty</span>() {
                     <span class="comment">// As this the **final** waiter in the list, the state</span>
@@ -1565,7 +1565,7 @@
 
 <span class="comment">// ===== impl Notified =====</span>
 
-<span class="kw">impl</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
     <span class="doccomment">/// Adds this future to the list of futures that are ready to receive</span>
     <span class="doccomment">/// wakeups from calls to [`notify_one`].</span>
     <span class="doccomment">///</span>
@@ -1670,36 +1670,36 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`notify_one`]: Notify::notify_one()</span>
     <span class="doccomment">/// [`notify_waiters`]: Notify::notify_waiters()</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">enable</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">enable</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">poll_notified</span>(<span class="prelude-val">None</span>).<span class="ident">is_ready</span>()
     }
 
     <span class="doccomment">/// A custom `project` implementation is used in place of `pin-project-lite`</span>
     <span class="doccomment">/// as a custom drop implementation is needed.</span>
-    <span class="kw">fn</span> <span class="ident">project</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>) -&gt; (<span class="kw-2">&amp;</span><span class="ident">Notify</span>, <span class="kw-2">&amp;mut</span> <span class="ident">State</span>, <span class="kw-2">&amp;</span><span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) {
+    <span class="kw">fn</span> <span class="ident">project</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;) -&gt; (<span class="kw-2">&amp;</span><span class="ident">Notify</span>, <span class="kw-2">&amp;mut</span> <span class="ident">State</span>, <span class="kw-2">&amp;</span><span class="ident">UnsafeCell</span>&lt;<span class="ident">Waiter</span>&gt;) {
         <span class="kw">unsafe</span> {
             <span class="comment">// Safety: both `notify` and `state` are `Unpin`.</span>
 
-            <span class="ident">is_unpin</span>::<span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Notify</span><span class="op">&gt;</span>();
-            <span class="ident">is_unpin</span>::<span class="op">&lt;</span><span class="ident">AtomicUsize</span><span class="op">&gt;</span>();
+            <span class="ident">is_unpin</span>::&lt;<span class="kw-2">&amp;</span><span class="ident">Notify</span>&gt;();
+            <span class="ident">is_unpin</span>::&lt;<span class="ident">AtomicUsize</span>&gt;();
 
-            <span class="kw">let</span> <span class="ident">me</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_unchecked_mut</span>();
+            <span class="kw">let</span> <span class="ident">me</span> = <span class="self">self</span>.<span class="ident">get_unchecked_mut</span>();
             (<span class="ident">me</span>.<span class="ident">notify</span>, <span class="kw-2">&amp;mut</span> <span class="ident">me</span>.<span class="ident">state</span>, <span class="kw-2">&amp;</span><span class="ident">me</span>.<span class="ident">waiter</span>)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">poll_notified</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">waker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Waker</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">poll_notified</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;, <span class="ident">waker</span>: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">Waker</span>&gt;) -&gt; <span class="ident">Poll</span>&lt;()&gt; {
         <span class="kw">use</span> <span class="ident">State</span>::<span class="kw-2">*</span>;
 
-        <span class="kw">let</span> (<span class="ident">notify</span>, <span class="ident">state</span>, <span class="ident">waiter</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+        <span class="kw">let</span> (<span class="ident">notify</span>, <span class="ident">state</span>, <span class="ident">waiter</span>) = <span class="self">self</span>.<span class="ident">project</span>();
 
         <span class="kw">loop</span> {
             <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">state</span> {
                 <span class="ident">Init</span>(<span class="ident">initial_notify_waiters_calls</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">curr</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+                    <span class="kw">let</span> <span class="ident">curr</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
                     <span class="comment">// Optimistically try acquiring a pending notification</span>
-                    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
+                    <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
                         <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>),
                         <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">EMPTY</span>),
                         <span class="ident">SeqCst</span>,
@@ -1708,25 +1708,25 @@
 
                     <span class="kw">if</span> <span class="ident">res</span>.<span class="ident">is_ok</span>() {
                         <span class="comment">// Acquired the notification</span>
-                        <span class="kw-2">*</span><span class="ident">state</span> <span class="op">=</span> <span class="ident">Done</span>;
+                        <span class="kw-2">*</span><span class="ident">state</span> = <span class="ident">Done</span>;
                         <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
                     }
 
                     <span class="comment">// Clone the waker before locking, a waker clone can be</span>
                     <span class="comment">// triggering arbitrary code.</span>
-                    <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="ident">waker</span>.<span class="ident">cloned</span>();
+                    <span class="kw">let</span> <span class="ident">waker</span> = <span class="ident">waker</span>.<span class="ident">cloned</span>();
 
                     <span class="comment">// Acquire the lock and attempt to transition to the waiting</span>
                     <span class="comment">// state.</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
 
                     <span class="comment">// Reload the state with the lock held</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
                     <span class="comment">// if notify_waiters has been called after the future</span>
                     <span class="comment">// was created, then we are done</span>
-                    <span class="kw">if</span> <span class="ident">get_num_notify_waiters_calls</span>(<span class="ident">curr</span>) <span class="op">!</span><span class="op">=</span> <span class="ident">initial_notify_waiters_calls</span> {
-                        <span class="kw-2">*</span><span class="ident">state</span> <span class="op">=</span> <span class="ident">Done</span>;
+                    <span class="kw">if</span> <span class="ident">get_num_notify_waiters_calls</span>(<span class="ident">curr</span>) != <span class="ident">initial_notify_waiters_calls</span> {
+                        <span class="kw-2">*</span><span class="ident">state</span> = <span class="ident">Done</span>;
                         <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
                     }
 
@@ -1735,16 +1735,16 @@
                         <span class="kw">match</span> <span class="ident">get_state</span>(<span class="ident">curr</span>) {
                             <span class="ident">EMPTY</span> =&gt; {
                                 <span class="comment">// Transition to WAITING</span>
-                                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
+                                <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
                                     <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">EMPTY</span>),
                                     <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">WAITING</span>),
                                     <span class="ident">SeqCst</span>,
                                     <span class="ident">SeqCst</span>,
                                 );
 
-                                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">actual</span>) <span class="op">=</span> <span class="ident">res</span> {
+                                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">actual</span>) = <span class="ident">res</span> {
                                     <span class="macro">assert_eq!</span>(<span class="ident">get_state</span>(<span class="ident">actual</span>), <span class="ident">NOTIFIED</span>);
-                                    <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
+                                    <span class="ident">curr</span> = <span class="ident">actual</span>;
                                 } <span class="kw">else</span> {
                                     <span class="kw">break</span>;
                                 }
@@ -1752,7 +1752,7 @@
                             <span class="ident">WAITING</span> =&gt; <span class="kw">break</span>,
                             <span class="ident">NOTIFIED</span> =&gt; {
                                 <span class="comment">// Try consuming the notification</span>
-                                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
+                                <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(
                                     <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">NOTIFIED</span>),
                                     <span class="ident">set_state</span>(<span class="ident">curr</span>, <span class="ident">EMPTY</span>),
                                     <span class="ident">SeqCst</span>,
@@ -1762,12 +1762,12 @@
                                 <span class="kw">match</span> <span class="ident">res</span> {
                                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
                                         <span class="comment">// Acquired the notification</span>
-                                        <span class="kw-2">*</span><span class="ident">state</span> <span class="op">=</span> <span class="ident">Done</span>;
+                                        <span class="kw-2">*</span><span class="ident">state</span> = <span class="ident">Done</span>;
                                         <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
                                     }
                                     <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; {
                                         <span class="macro">assert_eq!</span>(<span class="ident">get_state</span>(<span class="ident">actual</span>), <span class="ident">EMPTY</span>);
-                                        <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
+                                        <span class="ident">curr</span> = <span class="ident">actual</span>;
                                     }
                                 }
                             }
@@ -1778,7 +1778,7 @@
                     <span class="kw">if</span> <span class="ident">waker</span>.<span class="ident">is_some</span>() {
                         <span class="comment">// Safety: called while locked.</span>
                         <span class="kw">unsafe</span> {
-                            (<span class="kw-2">*</span><span class="ident">waiter</span>.<span class="ident">get</span>()).<span class="ident">waker</span> <span class="op">=</span> <span class="ident">waker</span>;
+                            (<span class="kw-2">*</span><span class="ident">waiter</span>.<span class="ident">get</span>()).<span class="ident">waker</span> = <span class="ident">waker</span>;
                         }
                     }
 
@@ -1787,7 +1787,7 @@
                     <span class="comment">// safety: pointers from `UnsafeCell` are never null.</span>
                     <span class="ident">waiters</span>.<span class="ident">push_front</span>(<span class="kw">unsafe</span> { <span class="ident">NonNull::new_unchecked</span>(<span class="ident">waiter</span>.<span class="ident">get</span>()) });
 
-                    <span class="kw-2">*</span><span class="ident">state</span> <span class="op">=</span> <span class="ident">Waiting</span>;
+                    <span class="kw-2">*</span><span class="ident">state</span> = <span class="ident">Waiting</span>;
 
                     <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
                 }
@@ -1797,27 +1797,27 @@
                     <span class="comment">// `notify.waiters`). In order to access the waker fields,</span>
                     <span class="comment">// we must hold the lock.</span>
 
-                    <span class="kw">let</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+                    <span class="kw">let</span> <span class="ident">waiters</span> = <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
 
                     <span class="comment">// Safety: called while locked</span>
-                    <span class="kw">let</span> <span class="ident">w</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">waiter</span>.<span class="ident">get</span>() };
+                    <span class="kw">let</span> <span class="ident">w</span> = <span class="kw">unsafe</span> { <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">waiter</span>.<span class="ident">get</span>() };
 
                     <span class="kw">if</span> <span class="ident">w</span>.<span class="ident">notified</span>.<span class="ident">is_some</span>() {
                         <span class="comment">// Our waker has been notified. Reset the fields and</span>
                         <span class="comment">// remove it from the list.</span>
-                        <span class="ident">w</span>.<span class="ident">waker</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-                        <span class="ident">w</span>.<span class="ident">notified</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+                        <span class="ident">w</span>.<span class="ident">waker</span> = <span class="prelude-val">None</span>;
+                        <span class="ident">w</span>.<span class="ident">notified</span> = <span class="prelude-val">None</span>;
 
-                        <span class="kw-2">*</span><span class="ident">state</span> <span class="op">=</span> <span class="ident">Done</span>;
+                        <span class="kw-2">*</span><span class="ident">state</span> = <span class="ident">Done</span>;
                     } <span class="kw">else</span> {
                         <span class="comment">// Update the waker, if necessary.</span>
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span> <span class="ident">waker</span> {
-                            <span class="kw">let</span> <span class="ident">should_update</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">w</span>.<span class="ident">waker</span>.<span class="ident">as_ref</span>() {
-                                <span class="prelude-val">Some</span>(<span class="ident">current_waker</span>) =&gt; <span class="op">!</span><span class="ident">current_waker</span>.<span class="ident">will_wake</span>(<span class="ident">waker</span>),
+                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) = <span class="ident">waker</span> {
+                            <span class="kw">let</span> <span class="ident">should_update</span> = <span class="kw">match</span> <span class="ident">w</span>.<span class="ident">waker</span>.<span class="ident">as_ref</span>() {
+                                <span class="prelude-val">Some</span>(<span class="ident">current_waker</span>) =&gt; !<span class="ident">current_waker</span>.<span class="ident">will_wake</span>(<span class="ident">waker</span>),
                                 <span class="prelude-val">None</span> =&gt; <span class="bool-val">true</span>,
                             };
                             <span class="kw">if</span> <span class="ident">should_update</span> {
-                                <span class="ident">w</span>.<span class="ident">waker</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>.<span class="ident">clone</span>());
+                                <span class="ident">w</span>.<span class="ident">waker</span> = <span class="prelude-val">Some</span>(<span class="ident">waker</span>.<span class="ident">clone</span>());
                             }
                         }
 
@@ -1839,27 +1839,27 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+<span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Output</span> = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Poll</span>&lt;()&gt; {
         <span class="self">self</span>.<span class="ident">poll_notified</span>(<span class="prelude-val">Some</span>(<span class="ident">cx</span>.<span class="ident">waker</span>()))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Notified</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Notified</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="kw">use</span> <span class="ident">State</span>::<span class="kw-2">*</span>;
 
         <span class="comment">// Safety: The type only transitions to a &quot;Waiting&quot; state when pinned.</span>
-        <span class="kw">let</span> (<span class="ident">notify</span>, <span class="ident">state</span>, <span class="ident">waiter</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Pin::new_unchecked</span>(<span class="self">self</span>).<span class="ident">project</span>() };
+        <span class="kw">let</span> (<span class="ident">notify</span>, <span class="ident">state</span>, <span class="ident">waiter</span>) = <span class="kw">unsafe</span> { <span class="ident">Pin::new_unchecked</span>(<span class="self">self</span>).<span class="ident">project</span>() };
 
         <span class="comment">// This is where we ensure safety. The `Notified` value is being</span>
         <span class="comment">// dropped, which means we must ensure that the waiter entry is no</span>
         <span class="comment">// longer stored in the linked list.</span>
         <span class="kw">if</span> <span class="macro">matches!</span>(<span class="kw-2">*</span><span class="ident">state</span>, <span class="ident">Waiting</span>) {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">notify_state</span> <span class="op">=</span> <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="ident">notify</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">notify_state</span> = <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
 
             <span class="comment">// remove the entry from the list (if not already removed)</span>
             <span class="comment">//</span>
@@ -1867,8 +1867,8 @@
             <span class="comment">// being the only `LinkedList` available to the type.</span>
             <span class="kw">unsafe</span> { <span class="ident">waiters</span>.<span class="ident">remove</span>(<span class="ident">NonNull::new_unchecked</span>(<span class="ident">waiter</span>.<span class="ident">get</span>())) };
 
-            <span class="kw">if</span> <span class="ident">waiters</span>.<span class="ident">is_empty</span>() <span class="op">&amp;&amp;</span> <span class="ident">get_state</span>(<span class="ident">notify_state</span>) <span class="op">==</span> <span class="ident">WAITING</span> {
-                <span class="ident">notify_state</span> <span class="op">=</span> <span class="ident">set_state</span>(<span class="ident">notify_state</span>, <span class="ident">EMPTY</span>);
+            <span class="kw">if</span> <span class="ident">waiters</span>.<span class="ident">is_empty</span>() &amp;&amp; <span class="ident">get_state</span>(<span class="ident">notify_state</span>) == <span class="ident">WAITING</span> {
+                <span class="ident">notify_state</span> = <span class="ident">set_state</span>(<span class="ident">notify_state</span>, <span class="ident">EMPTY</span>);
                 <span class="ident">notify</span>.<span class="ident">state</span>.<span class="ident">store</span>(<span class="ident">notify_state</span>, <span class="ident">SeqCst</span>);
             }
 
@@ -1882,7 +1882,7 @@
                 <span class="kw">unsafe</span> { (<span class="kw-2">*</span><span class="ident">waiter</span>.<span class="ident">get</span>()).<span class="ident">notified</span> },
                 <span class="prelude-val">Some</span>(<span class="ident">NotificationType::OneWaiter</span>)
             ) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span> <span class="ident">notify_locked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">waiters</span>, <span class="kw-2">&amp;</span><span class="ident">notify</span>.<span class="ident">state</span>, <span class="ident">notify_state</span>) {
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) = <span class="ident">notify_locked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">waiters</span>, <span class="kw-2">&amp;</span><span class="ident">notify</span>.<span class="ident">state</span>, <span class="ident">notify_state</span>) {
                     <span class="ident">drop</span>(<span class="ident">waiters</span>);
                     <span class="ident">waker</span>.<span class="ident">wake</span>();
                 }
@@ -1895,22 +1895,22 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// `Waiter` is forced to be !Unpin.</span>
 <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">linked_list::Link</span> <span class="kw">for</span> <span class="ident">Waiter</span> {
-    <span class="kw">type</span> <span class="ident">Handle</span> <span class="op">=</span> <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="ident">Waiter</span>;
+    <span class="kw">type</span> <span class="ident">Handle</span> = <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;;
+    <span class="kw">type</span> <span class="ident">Target</span> = <span class="ident">Waiter</span>;
 
-    <span class="kw">fn</span> <span class="ident">as_raw</span>(<span class="ident">handle</span>: <span class="kw-2">&amp;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">as_raw</span>(<span class="ident">handle</span>: <span class="kw-2">&amp;</span><span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt; {
         <span class="kw-2">*</span><span class="ident">handle</span>
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_raw</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span> {
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_raw</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt; {
         <span class="ident">ptr</span>
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pointers</span>(<span class="ident">target</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">linked_list::Pointers</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pointers</span>(<span class="ident">target</span>: <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">linked_list::Pointers</span>&lt;<span class="ident">Waiter</span>&gt;&gt; {
         <span class="ident">target</span>.<span class="ident">cast</span>()
     }
 }
 
-<span class="kw">fn</span> <span class="ident">is_unpin</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Unpin</span><span class="op">&gt;</span>() {}
+<span class="kw">fn</span> <span class="ident">is_unpin</span>&lt;<span class="ident">T</span>: <span class="ident">Unpin</span>&gt;() {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -745,7 +745,7 @@
 
 <span class="macro">include!</span>(<span class="string">&quot;uts46_mapping_table.rs&quot;</span>);
 
-<span class="kw">const</span> <span class="ident">PUNYCODE_PREFIX</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;xn--&quot;</span>;
+<span class="kw">const</span> <span class="ident">PUNYCODE_PREFIX</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> = <span class="string">&quot;xn--&quot;</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">struct</span> <span class="ident">StringTableSlice</span> {
@@ -757,11 +757,11 @@
 }
 
 <span class="kw">fn</span> <span class="ident">decode_slice</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="ident">StringTableSlice</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> {
-    <span class="kw">let</span> <span class="ident">lo</span> <span class="op">=</span> <span class="ident">slice</span>.<span class="ident">byte_start_lo</span> <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">hi</span> <span class="op">=</span> <span class="ident">slice</span>.<span class="ident">byte_start_hi</span> <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">start</span> <span class="op">=</span> (<span class="ident">hi</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">8</span>) <span class="op">|</span> <span class="ident">lo</span>;
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">slice</span>.<span class="ident">byte_len</span> <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw-2">&amp;</span><span class="ident">STRING_TABLE</span>[<span class="ident">start</span>..(<span class="ident">start</span> <span class="op">+</span> <span class="ident">len</span>)]
+    <span class="kw">let</span> <span class="ident">lo</span> = <span class="ident">slice</span>.<span class="ident">byte_start_lo</span> <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="kw">let</span> <span class="ident">hi</span> = <span class="ident">slice</span>.<span class="ident">byte_start_hi</span> <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="kw">let</span> <span class="ident">start</span> = (<span class="ident">hi</span> &lt;&lt; <span class="number">8</span>) | <span class="ident">lo</span>;
+    <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">slice</span>.<span class="ident">byte_len</span> <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="kw-2">&amp;</span><span class="ident">STRING_TABLE</span>[<span class="ident">start</span>..(<span class="ident">start</span> + <span class="ident">len</span>)]
 }
 
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">u8</span>)]</span>
@@ -778,47 +778,47 @@
 }
 
 <span class="kw">fn</span> <span class="ident">find_char</span>(<span class="ident">codepoint</span>: <span class="ident">char</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">Mapping</span> {
-    <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">TABLE</span>.<span class="ident">binary_search_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">codepoint</span>, <span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">val</span><span class="op">|</span> <span class="ident">val</span>.<span class="number">0</span>) {
+    <span class="kw">let</span> <span class="ident">idx</span> = <span class="kw">match</span> <span class="ident">TABLE</span>.<span class="ident">binary_search_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">codepoint</span>, |<span class="kw-2">&amp;</span><span class="ident">val</span>| <span class="ident">val</span>.<span class="number">0</span>) {
         <span class="prelude-val">Ok</span>(<span class="ident">idx</span>) =&gt; <span class="ident">idx</span>,
-        <span class="prelude-val">Err</span>(<span class="ident">idx</span>) =&gt; <span class="ident">idx</span> <span class="op">-</span> <span class="number">1</span>,
+        <span class="prelude-val">Err</span>(<span class="ident">idx</span>) =&gt; <span class="ident">idx</span> - <span class="number">1</span>,
     };
 
-    <span class="kw">const</span> <span class="ident">SINGLE_MARKER</span>: <span class="ident">u16</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">15</span>;
+    <span class="kw">const</span> <span class="ident">SINGLE_MARKER</span>: <span class="ident">u16</span> = <span class="number">1</span> &lt;&lt; <span class="number">15</span>;
 
-    <span class="kw">let</span> (<span class="ident">base</span>, <span class="ident">x</span>) <span class="op">=</span> <span class="ident">TABLE</span>[<span class="ident">idx</span>];
-    <span class="kw">let</span> <span class="ident">single</span> <span class="op">=</span> (<span class="ident">x</span> <span class="op">&amp;</span> <span class="ident">SINGLE_MARKER</span>) <span class="op">!</span><span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="op">!</span><span class="ident">SINGLE_MARKER</span> <span class="op">&amp;</span> <span class="ident">x</span>;
+    <span class="kw">let</span> (<span class="ident">base</span>, <span class="ident">x</span>) = <span class="ident">TABLE</span>[<span class="ident">idx</span>];
+    <span class="kw">let</span> <span class="ident">single</span> = (<span class="ident">x</span> &amp; <span class="ident">SINGLE_MARKER</span>) != <span class="number">0</span>;
+    <span class="kw">let</span> <span class="ident">offset</span> = !<span class="ident">SINGLE_MARKER</span> &amp; <span class="ident">x</span>;
 
     <span class="kw">if</span> <span class="ident">single</span> {
         <span class="kw-2">&amp;</span><span class="ident">MAPPING_TABLE</span>[<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span>]
     } <span class="kw">else</span> {
-        <span class="kw-2">&amp;</span><span class="ident">MAPPING_TABLE</span>[(<span class="ident">offset</span> <span class="op">+</span> (<span class="ident">codepoint</span> <span class="kw">as</span> <span class="ident">u16</span> <span class="op">-</span> <span class="ident">base</span> <span class="kw">as</span> <span class="ident">u16</span>)) <span class="kw">as</span> <span class="ident">usize</span>]
+        <span class="kw-2">&amp;</span><span class="ident">MAPPING_TABLE</span>[(<span class="ident">offset</span> + (<span class="ident">codepoint</span> <span class="kw">as</span> <span class="ident">u16</span> - <span class="ident">base</span> <span class="kw">as</span> <span class="ident">u16</span>)) <span class="kw">as</span> <span class="ident">usize</span>]
     }
 }
 
-<span class="kw">struct</span> <span class="ident">Mapper</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">chars</span>: <span class="ident">std::str::Chars</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
+<span class="kw">struct</span> <span class="ident">Mapper</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="ident">chars</span>: <span class="ident">std::str::Chars</span>&lt;<span class="lifetime">&#39;a</span>&gt;,
     <span class="ident">config</span>: <span class="ident">Config</span>,
     <span class="ident">errors</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Errors</span>,
-    <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">std::str::Chars</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">slice</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">std::str::Chars</span>&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Mapper</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">char</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Mapper</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">char</span>;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
         <span class="kw">loop</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">slice</span> {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">s</span>) = <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">slice</span> {
                 <span class="kw">match</span> <span class="ident">s</span>.<span class="ident">next</span>() {
                     <span class="prelude-val">Some</span>(<span class="ident">c</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">c</span>),
                     <span class="prelude-val">None</span> =&gt; {
-                        <span class="self">self</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+                        <span class="self">self</span>.<span class="ident">slice</span> = <span class="prelude-val">None</span>;
                     }
                 }
             }
 
-            <span class="kw">let</span> <span class="ident">codepoint</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">chars</span>.<span class="ident">next</span>()<span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="kw">let</span> <span class="string">&#39;.&#39;</span> <span class="op">|</span> <span class="string">&#39;-&#39;</span> <span class="op">|</span> <span class="string">&#39;a&#39;</span>..<span class="op">=</span><span class="string">&#39;z&#39;</span> <span class="op">|</span> <span class="string">&#39;0&#39;</span>..<span class="op">=</span><span class="string">&#39;9&#39;</span> <span class="op">=</span> <span class="ident">codepoint</span> {
+            <span class="kw">let</span> <span class="ident">codepoint</span> = <span class="self">self</span>.<span class="ident">chars</span>.<span class="ident">next</span>()<span class="question-mark">?</span>;
+            <span class="kw">if</span> <span class="kw">let</span> <span class="string">&#39;.&#39;</span> | <span class="string">&#39;-&#39;</span> | <span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39;</span> | <span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span> = <span class="ident">codepoint</span> {
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">codepoint</span>);
             }
 
@@ -826,37 +826,37 @@
                 <span class="ident">Mapping::Valid</span> =&gt; <span class="ident">codepoint</span>,
                 <span class="ident">Mapping::Ignored</span> =&gt; <span class="kw">continue</span>,
                 <span class="ident">Mapping::Mapped</span>(<span class="kw-2">ref</span> <span class="ident">slice</span>) =&gt; {
-                    <span class="self">self</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
+                    <span class="self">self</span>.<span class="ident">slice</span> = <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
                     <span class="kw">continue</span>;
                 }
                 <span class="ident">Mapping::Deviation</span>(<span class="kw-2">ref</span> <span class="ident">slice</span>) =&gt; {
                     <span class="kw">if</span> <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">transitional_processing</span> {
-                        <span class="self">self</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
+                        <span class="self">self</span>.<span class="ident">slice</span> = <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
                         <span class="kw">continue</span>;
                     } <span class="kw">else</span> {
                         <span class="ident">codepoint</span>
                     }
                 }
                 <span class="ident">Mapping::Disallowed</span> =&gt; {
-                    <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_character</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_character</span> = <span class="bool-val">true</span>;
                     <span class="ident">codepoint</span>
                 }
                 <span class="ident">Mapping::DisallowedStd3Valid</span> =&gt; {
                     <span class="kw">if</span> <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">use_std3_ascii_rules</span> {
-                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_by_std3_ascii_rules</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_by_std3_ascii_rules</span> = <span class="bool-val">true</span>;
                     };
                     <span class="ident">codepoint</span>
                 }
                 <span class="ident">Mapping::DisallowedStd3Mapped</span>(<span class="kw-2">ref</span> <span class="ident">slice</span>) =&gt; {
                     <span class="kw">if</span> <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">use_std3_ascii_rules</span> {
-                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_mapped_in_std3</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_mapped_in_std3</span> = <span class="bool-val">true</span>;
                     };
-                    <span class="self">self</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
+                    <span class="self">self</span>.<span class="ident">slice</span> = <span class="prelude-val">Some</span>(<span class="ident">decode_slice</span>(<span class="ident">slice</span>).<span class="ident">chars</span>());
                     <span class="kw">continue</span>;
                 }
                 <span class="ident">Mapping::DisallowedIdna2008</span> =&gt; {
                     <span class="kw">if</span> <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">use_idna_2008_rules</span> {
-                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_in_idna_2008</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="self">self</span>.<span class="ident">errors</span>.<span class="ident">disallowed_in_idna_2008</span> = <span class="bool-val">true</span>;
                     }
                     <span class="ident">codepoint</span>
                 }
@@ -869,12 +869,12 @@
 <span class="kw">fn</span> <span class="ident">passes_bidi</span>(<span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">is_bidi_domain</span>: <span class="ident">bool</span>) -&gt; <span class="ident">bool</span> {
     <span class="comment">// Rule 0: Bidi Rules apply to Bidi Domain Names: a name with at least one RTL label.  A label</span>
     <span class="comment">// is RTL if it contains at least one character of bidi class R, AL or AN.</span>
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">is_bidi_domain</span> {
+    <span class="kw">if</span> !<span class="ident">is_bidi_domain</span> {
         <span class="kw">return</span> <span class="bool-val">true</span>;
     }
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chars</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">chars</span>();
-    <span class="kw">let</span> <span class="ident">first_char_class</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">chars</span>.<span class="ident">next</span>() {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chars</span> = <span class="ident">label</span>.<span class="ident">chars</span>();
+    <span class="kw">let</span> <span class="ident">first_char_class</span> = <span class="kw">match</span> <span class="ident">chars</span>.<span class="ident">next</span>() {
         <span class="prelude-val">Some</span>(<span class="ident">c</span>) =&gt; <span class="ident">bidi_class</span>(<span class="ident">c</span>),
         <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="bool-val">true</span>, <span class="comment">// empty string</span>
     };
@@ -883,17 +883,17 @@
         <span class="comment">// LTR label</span>
         <span class="ident">BidiClass::L</span> =&gt; {
             <span class="comment">// Rule 5</span>
-            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="op">=</span> <span class="ident">chars</span>.<span class="ident">next</span>() {
-                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(
+            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">c</span>) = <span class="ident">chars</span>.<span class="ident">next</span>() {
+                <span class="kw">if</span> !<span class="macro">matches!</span>(
                     <span class="ident">bidi_class</span>(<span class="ident">c</span>),
                     <span class="ident">BidiClass::L</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::EN</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ES</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::CS</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ET</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ON</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::BN</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::NSM</span>
+                        | <span class="ident">BidiClass::EN</span>
+                        | <span class="ident">BidiClass::ES</span>
+                        | <span class="ident">BidiClass::CS</span>
+                        | <span class="ident">BidiClass::ET</span>
+                        | <span class="ident">BidiClass::ON</span>
+                        | <span class="ident">BidiClass::BN</span>
+                        | <span class="ident">BidiClass::NSM</span>
                 ) {
                     <span class="kw">return</span> <span class="bool-val">false</span>;
                 }
@@ -901,12 +901,12 @@
 
             <span class="comment">// Rule 6</span>
             <span class="comment">// must end in L or EN followed by 0 or more NSM</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev_chars</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">rev</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_non_nsm</span> <span class="op">=</span> <span class="ident">rev_chars</span>.<span class="ident">next</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev_chars</span> = <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">rev</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_non_nsm</span> = <span class="ident">rev_chars</span>.<span class="ident">next</span>();
             <span class="kw">loop</span> {
                 <span class="kw">match</span> <span class="ident">last_non_nsm</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) <span class="op">==</span> <span class="ident">BidiClass::NSM</span> =&gt; {
-                        <span class="ident">last_non_nsm</span> <span class="op">=</span> <span class="ident">rev_chars</span>.<span class="ident">next</span>();
+                    <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) == <span class="ident">BidiClass::NSM</span> =&gt; {
+                        <span class="ident">last_non_nsm</span> = <span class="ident">rev_chars</span>.<span class="ident">next</span>();
                         <span class="kw">continue</span>;
                     }
                     <span class="kw">_</span> =&gt; {
@@ -915,7 +915,7 @@
                 }
             }
             <span class="kw">match</span> <span class="ident">last_non_nsm</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) <span class="op">==</span> <span class="ident">BidiClass::L</span> <span class="op">|</span><span class="op">|</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) <span class="op">==</span> <span class="ident">BidiClass::EN</span> =&gt; {}
+                <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) == <span class="ident">BidiClass::L</span> || <span class="ident">bidi_class</span>(<span class="ident">c</span>) == <span class="ident">BidiClass::EN</span> =&gt; {}
                 <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
                     <span class="kw">return</span> <span class="bool-val">false</span>;
                 }
@@ -924,43 +924,43 @@
         }
 
         <span class="comment">// RTL label</span>
-        <span class="ident">BidiClass::R</span> <span class="op">|</span> <span class="ident">BidiClass::AL</span> =&gt; {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">found_en</span> <span class="op">=</span> <span class="bool-val">false</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">found_an</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="ident">BidiClass::R</span> | <span class="ident">BidiClass::AL</span> =&gt; {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">found_en</span> = <span class="bool-val">false</span>;
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">found_an</span> = <span class="bool-val">false</span>;
 
             <span class="comment">// Rule 2</span>
             <span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">chars</span> {
-                <span class="kw">let</span> <span class="ident">char_class</span> <span class="op">=</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>);
-                <span class="kw">if</span> <span class="ident">char_class</span> <span class="op">==</span> <span class="ident">BidiClass::EN</span> {
-                    <span class="ident">found_en</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">char_class</span> <span class="op">==</span> <span class="ident">BidiClass::AN</span> {
-                    <span class="ident">found_an</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                <span class="kw">let</span> <span class="ident">char_class</span> = <span class="ident">bidi_class</span>(<span class="ident">c</span>);
+                <span class="kw">if</span> <span class="ident">char_class</span> == <span class="ident">BidiClass::EN</span> {
+                    <span class="ident">found_en</span> = <span class="bool-val">true</span>;
+                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">char_class</span> == <span class="ident">BidiClass::AN</span> {
+                    <span class="ident">found_an</span> = <span class="bool-val">true</span>;
                 }
 
-                <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(
+                <span class="kw">if</span> !<span class="macro">matches!</span>(
                     <span class="ident">char_class</span>,
                     <span class="ident">BidiClass::R</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::AL</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::AN</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::EN</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ES</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::CS</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ET</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::ON</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::BN</span>
-                        <span class="op">|</span> <span class="ident">BidiClass::NSM</span>
+                        | <span class="ident">BidiClass::AL</span>
+                        | <span class="ident">BidiClass::AN</span>
+                        | <span class="ident">BidiClass::EN</span>
+                        | <span class="ident">BidiClass::ES</span>
+                        | <span class="ident">BidiClass::CS</span>
+                        | <span class="ident">BidiClass::ET</span>
+                        | <span class="ident">BidiClass::ON</span>
+                        | <span class="ident">BidiClass::BN</span>
+                        | <span class="ident">BidiClass::NSM</span>
                 ) {
                     <span class="kw">return</span> <span class="bool-val">false</span>;
                 }
             }
             <span class="comment">// Rule 3</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev_chars</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">rev</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> <span class="op">=</span> <span class="ident">rev_chars</span>.<span class="ident">next</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev_chars</span> = <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">rev</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> = <span class="ident">rev_chars</span>.<span class="ident">next</span>();
             <span class="kw">loop</span> {
                 <span class="comment">// must end in L or EN followed by 0 or more NSM</span>
                 <span class="kw">match</span> <span class="ident">last</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) <span class="op">==</span> <span class="ident">BidiClass::NSM</span> =&gt; {
-                        <span class="ident">last</span> <span class="op">=</span> <span class="ident">rev_chars</span>.<span class="ident">next</span>();
+                    <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="kw">if</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) == <span class="ident">BidiClass::NSM</span> =&gt; {
+                        <span class="ident">last</span> = <span class="ident">rev_chars</span>.<span class="ident">next</span>();
                         <span class="kw">continue</span>;
                     }
                     <span class="kw">_</span> =&gt; {
@@ -972,7 +972,7 @@
                 <span class="prelude-val">Some</span>(<span class="ident">c</span>)
                     <span class="kw">if</span> <span class="macro">matches!</span>(
                         <span class="ident">bidi_class</span>(<span class="ident">c</span>),
-                        <span class="ident">BidiClass::R</span> <span class="op">|</span> <span class="ident">BidiClass::AL</span> <span class="op">|</span> <span class="ident">BidiClass::EN</span> <span class="op">|</span> <span class="ident">BidiClass::AN</span>
+                        <span class="ident">BidiClass::R</span> | <span class="ident">BidiClass::AL</span> | <span class="ident">BidiClass::EN</span> | <span class="ident">BidiClass::AN</span>
                     ) =&gt; {}
                 <span class="kw">_</span> =&gt; {
                     <span class="kw">return</span> <span class="bool-val">false</span>;
@@ -980,7 +980,7 @@
             }
 
             <span class="comment">// Rule 4</span>
-            <span class="kw">if</span> <span class="ident">found_an</span> <span class="op">&amp;&amp;</span> <span class="ident">found_en</span> {
+            <span class="kw">if</span> <span class="ident">found_an</span> &amp;&amp; <span class="ident">found_en</span> {
                 <span class="kw">return</span> <span class="bool-val">false</span>;
             }
         }
@@ -1000,8 +1000,8 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// http://www.unicode.org/reports/tr46/#Validity_Criteria</span>
 <span class="kw">fn</span> <span class="ident">check_validity</span>(<span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">config</span>: <span class="ident">Config</span>, <span class="ident">errors</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Errors</span>) {
-    <span class="kw">let</span> <span class="ident">first_char</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">next</span>();
-    <span class="kw">if</span> <span class="ident">first_char</span> <span class="op">==</span> <span class="prelude-val">None</span> {
+    <span class="kw">let</span> <span class="ident">first_char</span> = <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">next</span>();
+    <span class="kw">if</span> <span class="ident">first_char</span> == <span class="prelude-val">None</span> {
         <span class="comment">// Empty string, pass</span>
         <span class="kw">return</span>;
     }
@@ -1013,8 +1013,8 @@
     <span class="comment">// https://github.com/whatwg/url/issues/53</span>
 
     <span class="comment">// V3: neither begin nor end with a U+002D HYPHEN-MINUS</span>
-    <span class="kw">if</span> <span class="ident">config</span>.<span class="ident">check_hyphens</span> <span class="op">&amp;&amp;</span> (<span class="ident">label</span>.<span class="ident">starts_with</span>(<span class="string">&#39;-&#39;</span>) <span class="op">|</span><span class="op">|</span> <span class="ident">label</span>.<span class="ident">ends_with</span>(<span class="string">&#39;-&#39;</span>)) {
-        <span class="ident">errors</span>.<span class="ident">check_hyphens</span> <span class="op">=</span> <span class="bool-val">true</span>;
+    <span class="kw">if</span> <span class="ident">config</span>.<span class="ident">check_hyphens</span> &amp;&amp; (<span class="ident">label</span>.<span class="ident">starts_with</span>(<span class="string">&#39;-&#39;</span>) || <span class="ident">label</span>.<span class="ident">ends_with</span>(<span class="string">&#39;-&#39;</span>)) {
+        <span class="ident">errors</span>.<span class="ident">check_hyphens</span> = <span class="bool-val">true</span>;
         <span class="kw">return</span>;
     }
 
@@ -1024,18 +1024,18 @@
 
     <span class="comment">// V5: not begin with a GC=Mark</span>
     <span class="kw">if</span> <span class="ident">is_combining_mark</span>(<span class="ident">first_char</span>.<span class="ident">unwrap</span>()) {
-        <span class="ident">errors</span>.<span class="ident">start_combining_mark</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="ident">errors</span>.<span class="ident">start_combining_mark</span> = <span class="bool-val">true</span>;
         <span class="kw">return</span>;
     }
 
     <span class="comment">// V6: Check against Mapping Table</span>
-    <span class="kw">if</span> <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">find_char</span>(<span class="ident">c</span>) {
-        <span class="ident">Mapping::Valid</span> <span class="op">|</span> <span class="ident">Mapping::DisallowedIdna2008</span> =&gt; <span class="bool-val">false</span>,
+    <span class="kw">if</span> <span class="ident">label</span>.<span class="ident">chars</span>().<span class="ident">any</span>(|<span class="ident">c</span>| <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">find_char</span>(<span class="ident">c</span>) {
+        <span class="ident">Mapping::Valid</span> | <span class="ident">Mapping::DisallowedIdna2008</span> =&gt; <span class="bool-val">false</span>,
         <span class="ident">Mapping::Deviation</span>(<span class="kw">_</span>) =&gt; <span class="ident">config</span>.<span class="ident">transitional_processing</span>,
         <span class="ident">Mapping::DisallowedStd3Valid</span> =&gt; <span class="ident">config</span>.<span class="ident">use_std3_ascii_rules</span>,
         <span class="kw">_</span> =&gt; <span class="bool-val">true</span>,
     }) {
-        <span class="ident">errors</span>.<span class="ident">invalid_mapping</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="ident">errors</span>.<span class="ident">invalid_mapping</span> = <span class="bool-val">true</span>;
     }
 
     <span class="comment">// V7: ContextJ rules</span>
@@ -1055,34 +1055,34 @@
 ) -&gt; <span class="ident">Errors</span> {
     <span class="comment">// Weed out the simple cases: only allow all lowercase ASCII characters and digits where none</span>
     <span class="comment">// of the labels start with PUNYCODE_PREFIX and labels don&#39;t start or end with hyphen.</span>
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">prev</span>, <span class="kw-2">mut</span> <span class="ident">simple</span>, <span class="kw-2">mut</span> <span class="ident">puny_prefix</span>) <span class="op">=</span> (<span class="string">&#39;?&#39;</span>, <span class="op">!</span><span class="ident">domain</span>.<span class="ident">is_empty</span>(), <span class="number">0</span>);
+    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">prev</span>, <span class="kw-2">mut</span> <span class="ident">simple</span>, <span class="kw-2">mut</span> <span class="ident">puny_prefix</span>) = (<span class="string">&#39;?&#39;</span>, !<span class="ident">domain</span>.<span class="ident">is_empty</span>(), <span class="number">0</span>);
     <span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">domain</span>.<span class="ident">chars</span>() {
-        <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;.&#39;</span> {
-            <span class="kw">if</span> <span class="ident">prev</span> <span class="op">==</span> <span class="string">&#39;-&#39;</span> {
-                <span class="ident">simple</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">if</span> <span class="ident">c</span> == <span class="string">&#39;.&#39;</span> {
+            <span class="kw">if</span> <span class="ident">prev</span> == <span class="string">&#39;-&#39;</span> {
+                <span class="ident">simple</span> = <span class="bool-val">false</span>;
                 <span class="kw">break</span>;
             }
-            <span class="ident">puny_prefix</span> <span class="op">=</span> <span class="number">0</span>;
+            <span class="ident">puny_prefix</span> = <span class="number">0</span>;
             <span class="kw">continue</span>;
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">puny_prefix</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;-&#39;</span> {
-            <span class="ident">simple</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">puny_prefix</span> == <span class="number">0</span> &amp;&amp; <span class="ident">c</span> == <span class="string">&#39;-&#39;</span> {
+            <span class="ident">simple</span> = <span class="bool-val">false</span>;
             <span class="kw">break</span>;
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">puny_prefix</span> <span class="op">&lt;</span> <span class="number">5</span> {
-            <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> [<span class="string">&#39;x&#39;</span>, <span class="string">&#39;n&#39;</span>, <span class="string">&#39;-&#39;</span>, <span class="string">&#39;-&#39;</span>][<span class="ident">puny_prefix</span>] {
-                <span class="ident">puny_prefix</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                <span class="kw">if</span> <span class="ident">puny_prefix</span> <span class="op">==</span> <span class="number">4</span> {
-                    <span class="ident">simple</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">puny_prefix</span> &lt; <span class="number">5</span> {
+            <span class="kw">if</span> <span class="ident">c</span> == [<span class="string">&#39;x&#39;</span>, <span class="string">&#39;n&#39;</span>, <span class="string">&#39;-&#39;</span>, <span class="string">&#39;-&#39;</span>][<span class="ident">puny_prefix</span>] {
+                <span class="ident">puny_prefix</span> += <span class="number">1</span>;
+                <span class="kw">if</span> <span class="ident">puny_prefix</span> == <span class="number">4</span> {
+                    <span class="ident">simple</span> = <span class="bool-val">false</span>;
                     <span class="kw">break</span>;
                 }
             } <span class="kw">else</span> {
-                <span class="ident">puny_prefix</span> <span class="op">=</span> <span class="number">5</span>;
+                <span class="ident">puny_prefix</span> = <span class="number">5</span>;
             }
         }
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">c</span>.<span class="ident">is_ascii_lowercase</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">c</span>.<span class="ident">is_ascii_digit</span>() {
-            <span class="ident">simple</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">if</span> !<span class="ident">c</span>.<span class="ident">is_ascii_lowercase</span>() &amp;&amp; !<span class="ident">c</span>.<span class="ident">is_ascii_digit</span>() {
+            <span class="ident">simple</span> = <span class="bool-val">false</span>;
             <span class="kw">break</span>;
         }
-        <span class="ident">prev</span> <span class="op">=</span> <span class="ident">c</span>;
+        <span class="ident">prev</span> = <span class="ident">c</span>;
     }
 
     <span class="kw">if</span> <span class="ident">simple</span> {
@@ -1091,10 +1091,10 @@
     }
 
     <span class="ident">normalized</span>.<span class="ident">clear</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errors</span> <span class="op">=</span> <span class="ident">Errors::default</span>();
-    <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">len</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errors</span> = <span class="ident">Errors::default</span>();
+    <span class="kw">let</span> <span class="ident">offset</span> = <span class="ident">output</span>.<span class="ident">len</span>();
 
-    <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">Mapper</span> {
+    <span class="kw">let</span> <span class="ident">iter</span> = <span class="ident">Mapper</span> {
         <span class="ident">chars</span>: <span class="ident">domain</span>.<span class="ident">chars</span>(),
         <span class="ident">config</span>,
         <span class="ident">errors</span>: <span class="kw-2">&amp;mut</span> <span class="ident">errors</span>,
@@ -1103,41 +1103,41 @@
 
     <span class="ident">normalized</span>.<span class="ident">extend</span>(<span class="ident">iter</span>.<span class="ident">nfc</span>());
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decoder</span> <span class="op">=</span> <span class="ident">punycode::Decoder::default</span>();
-    <span class="kw">let</span> <span class="ident">non_transitional</span> <span class="op">=</span> <span class="ident">config</span>.<span class="ident">transitional_processing</span>(<span class="bool-val">false</span>);
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">first</span>, <span class="kw-2">mut</span> <span class="ident">has_bidi_labels</span>) <span class="op">=</span> (<span class="bool-val">true</span>, <span class="bool-val">false</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decoder</span> = <span class="ident">punycode::Decoder::default</span>();
+    <span class="kw">let</span> <span class="ident">non_transitional</span> = <span class="ident">config</span>.<span class="ident">transitional_processing</span>(<span class="bool-val">false</span>);
+    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">first</span>, <span class="kw-2">mut</span> <span class="ident">has_bidi_labels</span>) = (<span class="bool-val">true</span>, <span class="bool-val">false</span>);
     <span class="kw">for</span> <span class="ident">label</span> <span class="kw">in</span> <span class="ident">normalized</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>) {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">first</span> {
+        <span class="kw">if</span> !<span class="ident">first</span> {
             <span class="ident">output</span>.<span class="ident">push</span>(<span class="string">&#39;.&#39;</span>);
         }
-        <span class="ident">first</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="ident">first</span> = <span class="bool-val">false</span>;
         <span class="kw">if</span> <span class="ident">label</span>.<span class="ident">starts_with</span>(<span class="ident">PUNYCODE_PREFIX</span>) {
             <span class="kw">match</span> <span class="ident">decoder</span>.<span class="ident">decode</span>(<span class="kw-2">&amp;</span><span class="ident">label</span>[<span class="ident">PUNYCODE_PREFIX</span>.<span class="ident">len</span>()..]) {
                 <span class="prelude-val">Ok</span>(<span class="ident">decode</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">len</span>();
+                    <span class="kw">let</span> <span class="ident">start</span> = <span class="ident">output</span>.<span class="ident">len</span>();
                     <span class="ident">output</span>.<span class="ident">extend</span>(<span class="ident">decode</span>);
-                    <span class="kw">let</span> <span class="ident">decoded_label</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">output</span>[<span class="ident">start</span>..];
+                    <span class="kw">let</span> <span class="ident">decoded_label</span> = <span class="kw-2">&amp;</span><span class="ident">output</span>[<span class="ident">start</span>..];
 
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">has_bidi_labels</span> {
-                        <span class="ident">has_bidi_labels</span> <span class="op">|</span><span class="op">=</span> <span class="ident">is_bidi_domain</span>(<span class="ident">decoded_label</span>);
+                    <span class="kw">if</span> !<span class="ident">has_bidi_labels</span> {
+                        <span class="ident">has_bidi_labels</span> |= <span class="ident">is_bidi_domain</span>(<span class="ident">decoded_label</span>);
                     }
 
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">errors</span>.<span class="ident">is_err</span>() {
-                        <span class="kw">if</span> <span class="op">!</span><span class="ident">is_nfc</span>(<span class="kw-2">&amp;</span><span class="ident">decoded_label</span>) {
-                            <span class="ident">errors</span>.<span class="ident">nfc</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="kw">if</span> !<span class="ident">errors</span>.<span class="ident">is_err</span>() {
+                        <span class="kw">if</span> !<span class="ident">is_nfc</span>(<span class="kw-2">&amp;</span><span class="ident">decoded_label</span>) {
+                            <span class="ident">errors</span>.<span class="ident">nfc</span> = <span class="bool-val">true</span>;
                         } <span class="kw">else</span> {
                             <span class="ident">check_validity</span>(<span class="ident">decoded_label</span>, <span class="ident">non_transitional</span>, <span class="kw-2">&amp;mut</span> <span class="ident">errors</span>);
                         }
                     }
                 }
                 <span class="prelude-val">Err</span>(()) =&gt; {
-                    <span class="ident">has_bidi_labels</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                    <span class="ident">errors</span>.<span class="ident">punycode</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="ident">has_bidi_labels</span> = <span class="bool-val">true</span>;
+                    <span class="ident">errors</span>.<span class="ident">punycode</span> = <span class="bool-val">true</span>;
                 }
             }
         } <span class="kw">else</span> {
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">has_bidi_labels</span> {
-                <span class="ident">has_bidi_labels</span> <span class="op">|</span><span class="op">=</span> <span class="ident">is_bidi_domain</span>(<span class="ident">label</span>);
+            <span class="kw">if</span> !<span class="ident">has_bidi_labels</span> {
+                <span class="ident">has_bidi_labels</span> |= <span class="ident">is_bidi_domain</span>(<span class="ident">label</span>);
             }
 
             <span class="comment">// `normalized` is already `NFC` so we can skip that check</span>
@@ -1150,8 +1150,8 @@
         <span class="comment">// V8: Bidi rules</span>
         <span class="comment">//</span>
         <span class="comment">// TODO: Add *CheckBidi* flag</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">passes_bidi</span>(<span class="ident">label</span>, <span class="ident">has_bidi_labels</span>) {
-            <span class="ident">errors</span>.<span class="ident">check_bidi</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="kw">if</span> !<span class="ident">passes_bidi</span>(<span class="ident">label</span>, <span class="ident">has_bidi_labels</span>) {
+            <span class="ident">errors</span>.<span class="ident">check_bidi</span> = <span class="bool-val">true</span>;
             <span class="kw">break</span>;
         }
     }
@@ -1177,39 +1177,39 @@
 
     <span class="doccomment">/// http://www.unicode.org/reports/tr46/#ToASCII</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::wrong_self_convention</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ascii</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">out</span>: <span class="kw-2">&amp;mut</span> <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Errors</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errors</span> <span class="op">=</span> <span class="ident">processing</span>(<span class="ident">domain</span>, <span class="self">self</span>.<span class="ident">config</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">normalized</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ascii</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">out</span>: <span class="kw-2">&amp;mut</span> <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Errors</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errors</span> = <span class="ident">processing</span>(<span class="ident">domain</span>, <span class="self">self</span>.<span class="ident">config</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">normalized</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first</span> = <span class="bool-val">true</span>;
         <span class="kw">for</span> <span class="ident">label</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">output</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>) {
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">first</span> {
+            <span class="kw">if</span> !<span class="ident">first</span> {
                 <span class="ident">out</span>.<span class="ident">push</span>(<span class="string">&#39;.&#39;</span>);
             }
-            <span class="ident">first</span> <span class="op">=</span> <span class="bool-val">false</span>;
+            <span class="ident">first</span> = <span class="bool-val">false</span>;
 
             <span class="kw">if</span> <span class="ident">label</span>.<span class="ident">is_ascii</span>() {
                 <span class="ident">out</span>.<span class="ident">push_str</span>(<span class="ident">label</span>);
             } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">len</span>();
+                <span class="kw">let</span> <span class="ident">offset</span> = <span class="ident">out</span>.<span class="ident">len</span>();
                 <span class="ident">out</span>.<span class="ident">push_str</span>(<span class="ident">PUNYCODE_PREFIX</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(()) <span class="op">=</span> <span class="ident">punycode::encode_into</span>(<span class="ident">label</span>.<span class="ident">chars</span>(), <span class="ident">out</span>) {
-                    <span class="ident">errors</span>.<span class="ident">punycode</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(()) = <span class="ident">punycode::encode_into</span>(<span class="ident">label</span>.<span class="ident">chars</span>(), <span class="ident">out</span>) {
+                    <span class="ident">errors</span>.<span class="ident">punycode</span> = <span class="bool-val">true</span>;
                     <span class="ident">out</span>.<span class="ident">truncate</span>(<span class="ident">offset</span>);
                 }
             }
         }
 
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">verify_dns_length</span> {
-            <span class="kw">let</span> <span class="ident">domain</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">ends_with</span>(<span class="string">&#39;.&#39;</span>) {
-                <span class="kw-2">&amp;</span><span class="ident">out</span>[..<span class="ident">out</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>]
+            <span class="kw">let</span> <span class="ident">domain</span> = <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">ends_with</span>(<span class="string">&#39;.&#39;</span>) {
+                <span class="kw-2">&amp;</span><span class="ident">out</span>[..<span class="ident">out</span>.<span class="ident">len</span>() - <span class="number">1</span>]
             } <span class="kw">else</span> {
                 <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">out</span>
             };
-            <span class="kw">if</span> <span class="ident">domain</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">domain</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>).<span class="ident">any</span>(<span class="op">|</span><span class="ident">label</span><span class="op">|</span> <span class="ident">label</span>.<span class="ident">is_empty</span>()) {
-                <span class="ident">errors</span>.<span class="ident">too_short_for_dns</span> <span class="op">=</span> <span class="bool-val">true</span>;
+            <span class="kw">if</span> <span class="ident">domain</span>.<span class="ident">is_empty</span>() || <span class="ident">domain</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>).<span class="ident">any</span>(|<span class="ident">label</span>| <span class="ident">label</span>.<span class="ident">is_empty</span>()) {
+                <span class="ident">errors</span>.<span class="ident">too_short_for_dns</span> = <span class="bool-val">true</span>;
             }
-            <span class="kw">if</span> <span class="ident">domain</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">253</span> <span class="op">|</span><span class="op">|</span> <span class="ident">domain</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>).<span class="ident">any</span>(<span class="op">|</span><span class="ident">label</span><span class="op">|</span> <span class="ident">label</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">63</span>) {
-                <span class="ident">errors</span>.<span class="ident">too_long_for_dns</span> <span class="op">=</span> <span class="bool-val">true</span>;
+            <span class="kw">if</span> <span class="ident">domain</span>.<span class="ident">len</span>() &gt; <span class="number">253</span> || <span class="ident">domain</span>.<span class="ident">split</span>(<span class="string">&#39;.&#39;</span>).<span class="ident">any</span>(|<span class="ident">label</span>| <span class="ident">label</span>.<span class="ident">len</span>() &gt; <span class="number">63</span>) {
+                <span class="ident">errors</span>.<span class="ident">too_long_for_dns</span> = <span class="bool-val">true</span>;
             }
         }
 
@@ -1218,7 +1218,7 @@
 
     <span class="doccomment">/// http://www.unicode.org/reports/tr46/#ToUnicode</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::wrong_self_convention</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_unicode</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">out</span>: <span class="kw-2">&amp;mut</span> <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Errors</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_unicode</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">out</span>: <span class="kw-2">&amp;mut</span> <span class="ident">String</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Errors</span>&gt; {
         <span class="ident">processing</span>(<span class="ident">domain</span>, <span class="self">self</span>.<span class="ident">config</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">normalized</span>, <span class="ident">out</span>).<span class="ident">into</span>()
     }
 }
@@ -1252,46 +1252,46 @@
 <span class="kw">impl</span> <span class="ident">Config</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">use_std3_ascii_rules</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">use_std3_ascii_rules</span> <span class="op">=</span> <span class="ident">value</span>;
+        <span class="self">self</span>.<span class="ident">use_std3_ascii_rules</span> = <span class="ident">value</span>;
         <span class="self">self</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transitional_processing</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">transitional_processing</span> <span class="op">=</span> <span class="ident">value</span>;
+        <span class="self">self</span>.<span class="ident">transitional_processing</span> = <span class="ident">value</span>;
         <span class="self">self</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_dns_length</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">verify_dns_length</span> <span class="op">=</span> <span class="ident">value</span>;
+        <span class="self">self</span>.<span class="ident">verify_dns_length</span> = <span class="ident">value</span>;
         <span class="self">self</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_hyphens</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">check_hyphens</span> <span class="op">=</span> <span class="ident">value</span>;
+        <span class="self">self</span>.<span class="ident">check_hyphens</span> = <span class="ident">value</span>;
         <span class="self">self</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">use_idna_2008_rules</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">use_idna_2008_rules</span> <span class="op">=</span> <span class="ident">value</span>;
+        <span class="self">self</span>.<span class="ident">use_idna_2008_rules</span> = <span class="ident">value</span>;
         <span class="self">self</span>
     }
 
     <span class="doccomment">/// http://www.unicode.org/reports/tr46/#ToASCII</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ascii</span>(<span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Errors</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">String::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">Idna::new</span>(<span class="self">self</span>);
-        <span class="ident">codec</span>.<span class="ident">to_ascii</span>(<span class="ident">domain</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>).<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">result</span>)
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ascii</span>(<span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident">Errors</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> = <span class="ident">String::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codec</span> = <span class="ident">Idna::new</span>(<span class="self">self</span>);
+        <span class="ident">codec</span>.<span class="ident">to_ascii</span>(<span class="ident">domain</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>).<span class="ident">map</span>(|()| <span class="ident">result</span>)
     }
 
     <span class="doccomment">/// http://www.unicode.org/reports/tr46/#ToUnicode</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_unicode</span>(<span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; (<span class="ident">String</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Errors</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">Idna::new</span>(<span class="self">self</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">String::with_capacity</span>(<span class="ident">domain</span>.<span class="ident">len</span>());
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">codec</span>.<span class="ident">to_unicode</span>(<span class="ident">domain</span>, <span class="kw-2">&amp;mut</span> <span class="ident">out</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_unicode</span>(<span class="self">self</span>, <span class="ident">domain</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; (<span class="ident">String</span>, <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Errors</span>&gt;) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codec</span> = <span class="ident">Idna::new</span>(<span class="self">self</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> = <span class="ident">String::with_capacity</span>(<span class="ident">domain</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="ident">result</span> = <span class="ident">codec</span>.<span class="ident">to_unicode</span>(<span class="ident">domain</span>, <span class="kw-2">&amp;mut</span> <span class="ident">out</span>);
         (<span class="ident">out</span>, <span class="ident">result</span>)
     }
 }
@@ -1302,7 +1302,7 @@
             <span class="kw">continue</span>;
         }
         <span class="kw">match</span> <span class="ident">bidi_class</span>(<span class="ident">c</span>) {
-            <span class="ident">BidiClass::R</span> <span class="op">|</span> <span class="ident">BidiClass::AL</span> <span class="op">|</span> <span class="ident">BidiClass::AN</span> =&gt; <span class="kw">return</span> <span class="bool-val">true</span>,
+            <span class="ident">BidiClass::R</span> | <span class="ident">BidiClass::AL</span> | <span class="ident">BidiClass::AN</span> =&gt; <span class="kw">return</span> <span class="bool-val">true</span>,
             <span class="kw">_</span> =&gt; {}
         }
     }
@@ -1344,24 +1344,24 @@
             <span class="ident">too_long_for_dns</span>,
             <span class="ident">too_short_for_dns</span>,
             <span class="ident">disallowed_in_idna_2008</span>,
-        } <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>;
+        } = <span class="kw-2">*</span><span class="self">self</span>;
         <span class="ident">punycode</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">check_hyphens</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">check_bidi</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">start_combining_mark</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">invalid_mapping</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">nfc</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">disallowed_by_std3_ascii_rules</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">disallowed_mapped_in_std3</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">disallowed_character</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">too_long_for_dns</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">too_short_for_dns</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">disallowed_in_idna_2008</span>
+            || <span class="ident">check_hyphens</span>
+            || <span class="ident">check_bidi</span>
+            || <span class="ident">start_combining_mark</span>
+            || <span class="ident">invalid_mapping</span>
+            || <span class="ident">nfc</span>
+            || <span class="ident">disallowed_by_std3_ascii_rules</span>
+            || <span class="ident">disallowed_mapped_in_std3</span>
+            || <span class="ident">disallowed_character</span>
+            || <span class="ident">too_long_for_dns</span>
+            || <span class="ident">too_short_for_dns</span>
+            || <span class="ident">disallowed_in_idna_2008</span>
     }
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Errors</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="kw">let</span> <span class="ident">Errors</span> {
             <span class="ident">punycode</span>,
             <span class="ident">check_hyphens</span>,
@@ -1375,9 +1375,9 @@
             <span class="ident">too_long_for_dns</span>,
             <span class="ident">too_short_for_dns</span>,
             <span class="ident">disallowed_in_idna_2008</span>,
-        } <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>;
+        } = <span class="kw-2">*</span><span class="self">self</span>;
 
-        <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> [
+        <span class="kw">let</span> <span class="ident">fields</span> = [
             (<span class="string">&quot;punycode&quot;</span>, <span class="ident">punycode</span>),
             (<span class="string">&quot;check_hyphens&quot;</span>, <span class="ident">check_hyphens</span>),
             (<span class="string">&quot;check_bidi&quot;</span>, <span class="ident">check_bidi</span>),
@@ -1395,19 +1395,19 @@
             (<span class="string">&quot;disallowed_in_idna_2008&quot;</span>, <span class="ident">disallowed_in_idna_2008</span>),
         ];
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">empty</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">empty</span> = <span class="bool-val">true</span>;
         <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="string">&quot;Errors { &quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">for</span> (<span class="ident">name</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">fields</span> {
             <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">val</span> {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">empty</span> {
+                <span class="kw">if</span> !<span class="ident">empty</span> {
                     <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="string">&quot;, &quot;</span>)<span class="question-mark">?</span>;
                 }
                 <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="kw-2">*</span><span class="ident">name</span>)<span class="question-mark">?</span>;
-                <span class="ident">empty</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                <span class="ident">empty</span> = <span class="bool-val">false</span>;
             }
         }
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">empty</span> {
+        <span class="kw">if</span> !<span class="ident">empty</span> {
             <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="string">&quot; }&quot;</span>)
         } <span class="kw">else</span> {
             <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="string">&quot;}&quot;</span>)
@@ -1415,9 +1415,9 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Errors</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Errors</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">e</span>: <span class="ident">Errors</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Errors</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">e</span>.<span class="ident">is_err</span>() {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">Errors</span>&gt; <span class="kw">for</span> <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Errors</span>&gt; {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">e</span>: <span class="ident">Errors</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Errors</span>&gt; {
+        <span class="kw">if</span> !<span class="ident">e</span>.<span class="ident">is_err</span>() {
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else</span> {
             <span class="prelude-val">Err</span>(<span class="ident">e</span>)
@@ -1428,7 +1428,7 @@
 <span class="kw">impl</span> <span class="ident">StdError</span> <span class="kw">for</span> <span class="ident">Errors</span> {}
 
 <span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">Errors</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="ident">fmt::Debug::fmt</span>(<span class="self">self</span>, <span class="ident">f</span>)
     }
 }
@@ -1453,4 +1453,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="idna" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="idna" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -151,18 +151,18 @@
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Join</span> {
-    <span class="ident">fut_exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>,
+    <span class="ident">fut_exprs</span>: <span class="ident">Vec</span>&lt;<span class="ident">Expr</span>&gt;,
 }
 
 <span class="kw">impl</span> <span class="ident">Parse</span> <span class="kw">for</span> <span class="ident">Join</span> {
-    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">ParseStream</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">join</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::default</span>();
+    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">ParseStream</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">syn::Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">join</span> = <span class="ident"><span class="self">Self</span>::default</span>();
 
-        <span class="kw">while</span> <span class="op">!</span><span class="ident">input</span>.<span class="ident">is_empty</span>() {
-            <span class="ident">join</span>.<span class="ident">fut_exprs</span>.<span class="ident">push</span>(<span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>()<span class="question-mark">?</span>);
+        <span class="kw">while</span> !<span class="ident">input</span>.<span class="ident">is_empty</span>() {
+            <span class="ident">join</span>.<span class="ident">fut_exprs</span>.<span class="ident">push</span>(<span class="ident">input</span>.<span class="ident">parse</span>::&lt;<span class="ident">Expr</span>&gt;()<span class="question-mark">?</span>);
 
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">input</span>.<span class="ident">is_empty</span>() {
-                <span class="ident">input</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="macro">Token!</span>[,]<span class="op">&gt;</span>()<span class="question-mark">?</span>;
+            <span class="kw">if</span> !<span class="ident">input</span>.<span class="ident">is_empty</span>() {
+                <span class="ident">input</span>.<span class="ident">parse</span>::&lt;<span class="macro">Token!</span>[,]&gt;()<span class="question-mark">?</span>;
             }
         }
 
@@ -170,17 +170,17 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">bind_futures</span>(<span class="ident">fut_exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">span</span>: <span class="ident">Span</span>) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TokenStream2</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">future_let_bindings</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">fut_exprs</span>.<span class="ident">len</span>());
-    <span class="kw">let</span> <span class="ident">future_names</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">fut_exprs</span>
+<span class="kw">fn</span> <span class="ident">bind_futures</span>(<span class="ident">fut_exprs</span>: <span class="ident">Vec</span>&lt;<span class="ident">Expr</span>&gt;, <span class="ident">span</span>: <span class="ident">Span</span>) -&gt; (<span class="ident">Vec</span>&lt;<span class="ident">TokenStream2</span>&gt;, <span class="ident">Vec</span>&lt;<span class="ident">Ident</span>&gt;) {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">future_let_bindings</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">fut_exprs</span>.<span class="ident">len</span>());
+    <span class="kw">let</span> <span class="ident">future_names</span>: <span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt; = <span class="ident">fut_exprs</span>
         .<span class="ident">into_iter</span>()
         .<span class="ident">enumerate</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">expr</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format_ident!</span>(<span class="string">&quot;_fut{}&quot;</span>, <span class="ident">i</span>, <span class="ident">span</span> <span class="op">=</span> <span class="ident">span</span>);
+        .<span class="ident">map</span>(|(<span class="ident">i</span>, <span class="ident">expr</span>)| {
+            <span class="kw">let</span> <span class="ident">name</span> = <span class="macro">format_ident!</span>(<span class="string">&quot;_fut{}&quot;</span>, <span class="ident">i</span>, <span class="ident">span</span> = <span class="ident">span</span>);
             <span class="ident">future_let_bindings</span>.<span class="ident">push</span>(<span class="macro">quote!</span> {
                 <span class="comment">// Move future into a local so that it is pinned in one place and</span>
                 <span class="comment">// is no longer accessible by the end user.</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> #<span class="ident">name</span> <span class="op">=</span> <span class="ident">__futures_crate::future::maybe_done</span>(#<span class="ident">expr</span>);
+                <span class="kw">let</span> <span class="kw-2">mut</span> #<span class="ident">name</span> = <span class="ident">__futures_crate::future::maybe_done</span>(#<span class="ident">expr</span>);
             });
             <span class="ident">name</span>
         })
@@ -191,34 +191,34 @@
 
 <span class="doccomment">/// The `join!` macro.</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">join</span>(<span class="ident">input</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="macro">syn::parse_macro_input!</span>(<span class="ident">input</span> <span class="kw">as</span> <span class="ident">Join</span>);
+    <span class="kw">let</span> <span class="ident">parsed</span> = <span class="macro">syn::parse_macro_input!</span>(<span class="ident">input</span> <span class="kw">as</span> <span class="ident">Join</span>);
 
     <span class="comment">// should be def_site, but that&#39;s unstable</span>
-    <span class="kw">let</span> <span class="ident">span</span> <span class="op">=</span> <span class="ident">Span::call_site</span>();
+    <span class="kw">let</span> <span class="ident">span</span> = <span class="ident">Span::call_site</span>();
 
-    <span class="kw">let</span> (<span class="ident">future_let_bindings</span>, <span class="ident">future_names</span>) <span class="op">=</span> <span class="ident">bind_futures</span>(<span class="ident">parsed</span>.<span class="ident">fut_exprs</span>, <span class="ident">span</span>);
+    <span class="kw">let</span> (<span class="ident">future_let_bindings</span>, <span class="ident">future_names</span>) = <span class="ident">bind_futures</span>(<span class="ident">parsed</span>.<span class="ident">fut_exprs</span>, <span class="ident">span</span>);
 
-    <span class="kw">let</span> <span class="ident">poll_futures</span> <span class="op">=</span> <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">fut</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">poll_futures</span> = <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">fut</span>| {
         <span class="macro">quote!</span> {
-            <span class="ident">__all_done</span> <span class="op">&amp;=</span> <span class="ident">__futures_crate::future::Future::poll</span>(
+            <span class="ident">__all_done</span> &amp;= <span class="ident">__futures_crate::future::Future::poll</span>(
                 <span class="kw">unsafe</span> { <span class="ident">__futures_crate::Pin::new_unchecked</span>(<span class="kw-2">&amp;mut</span> #<span class="ident">fut</span>) }, <span class="ident">__cx</span>).<span class="ident">is_ready</span>();
         }
     });
-    <span class="kw">let</span> <span class="ident">take_outputs</span> <span class="op">=</span> <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">fut</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">take_outputs</span> = <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">fut</span>| {
         <span class="macro">quote!</span> {
             <span class="kw">unsafe</span> { <span class="ident">__futures_crate::Pin::new_unchecked</span>(<span class="kw-2">&amp;mut</span> #<span class="ident">fut</span>) }.<span class="ident">take_output</span>().<span class="ident">unwrap</span>(),
         }
     });
 
     <span class="ident">TokenStream::from</span>(<span class="macro">quote!</span> { {
-        #( #<span class="ident">future_let_bindings</span> )<span class="op">*</span>
+        #( #<span class="ident">future_let_bindings</span> )*
 
-        <span class="ident">__futures_crate::future::poll_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">__cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">__futures_crate::task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">__all_done</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            #( #<span class="ident">poll_futures</span> )<span class="op">*</span>
+        <span class="ident">__futures_crate::future::poll_fn</span>(<span class="kw">move</span> |<span class="ident">__cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">__futures_crate::task::Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;| {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">__all_done</span> = <span class="bool-val">true</span>;
+            #( #<span class="ident">poll_futures</span> )*
             <span class="kw">if</span> <span class="ident">__all_done</span> {
                 <span class="ident">__futures_crate::task::Poll::Ready</span>((
-                    #( #<span class="ident">take_outputs</span> )<span class="op">*</span>
+                    #( #<span class="ident">take_outputs</span> )*
                 ))
             } <span class="kw">else</span> {
                 <span class="ident">__futures_crate::task::Poll::Pending</span>
@@ -229,19 +229,19 @@
 
 <span class="doccomment">/// The `try_join!` macro.</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">try_join</span>(<span class="ident">input</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="macro">syn::parse_macro_input!</span>(<span class="ident">input</span> <span class="kw">as</span> <span class="ident">Join</span>);
+    <span class="kw">let</span> <span class="ident">parsed</span> = <span class="macro">syn::parse_macro_input!</span>(<span class="ident">input</span> <span class="kw">as</span> <span class="ident">Join</span>);
 
     <span class="comment">// should be def_site, but that&#39;s unstable</span>
-    <span class="kw">let</span> <span class="ident">span</span> <span class="op">=</span> <span class="ident">Span::call_site</span>();
+    <span class="kw">let</span> <span class="ident">span</span> = <span class="ident">Span::call_site</span>();
 
-    <span class="kw">let</span> (<span class="ident">future_let_bindings</span>, <span class="ident">future_names</span>) <span class="op">=</span> <span class="ident">bind_futures</span>(<span class="ident">parsed</span>.<span class="ident">fut_exprs</span>, <span class="ident">span</span>);
+    <span class="kw">let</span> (<span class="ident">future_let_bindings</span>, <span class="ident">future_names</span>) = <span class="ident">bind_futures</span>(<span class="ident">parsed</span>.<span class="ident">fut_exprs</span>, <span class="ident">span</span>);
 
-    <span class="kw">let</span> <span class="ident">poll_futures</span> <span class="op">=</span> <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">fut</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">poll_futures</span> = <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">fut</span>| {
         <span class="macro">quote!</span> {
             <span class="kw">if</span> <span class="ident">__futures_crate::future::Future::poll</span>(
                 <span class="kw">unsafe</span> { <span class="ident">__futures_crate::Pin::new_unchecked</span>(<span class="kw-2">&amp;mut</span> #<span class="ident">fut</span>) }, <span class="ident">__cx</span>).<span class="ident">is_pending</span>()
             {
-                <span class="ident">__all_done</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                <span class="ident">__all_done</span> = <span class="bool-val">false</span>;
             } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">__futures_crate::Pin::new_unchecked</span>(<span class="kw-2">&amp;mut</span> #<span class="ident">fut</span>) }.<span class="ident">output_mut</span>().<span class="ident">unwrap</span>().<span class="ident">is_err</span>() {
                 <span class="comment">// `.err().unwrap()` rather than `.unwrap_err()` so that we don&#39;t introduce</span>
                 <span class="comment">// a `T: Debug` bound.</span>
@@ -255,7 +255,7 @@
             }
         }
     });
-    <span class="kw">let</span> <span class="ident">take_outputs</span> <span class="op">=</span> <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">fut</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">take_outputs</span> = <span class="ident">future_names</span>.<span class="ident">iter</span>().<span class="ident">map</span>(|<span class="ident">fut</span>| {
         <span class="macro">quote!</span> {
             <span class="comment">// `.ok().unwrap()` rather than `.unwrap()` so that we don&#39;t introduce</span>
             <span class="comment">// an `E: Debug` bound.</span>
@@ -266,16 +266,16 @@
     });
 
     <span class="ident">TokenStream::from</span>(<span class="macro">quote!</span> { {
-        #( #<span class="ident">future_let_bindings</span> )<span class="op">*</span>
+        #( #<span class="ident">future_let_bindings</span> )*
 
         <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::diverging_sub_expression</span>)]</span>
-        <span class="ident">__futures_crate::future::poll_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">__cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">__futures_crate::task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">__all_done</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            #( #<span class="ident">poll_futures</span> )<span class="op">*</span>
+        <span class="ident">__futures_crate::future::poll_fn</span>(<span class="kw">move</span> |<span class="ident">__cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">__futures_crate::task::Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;| {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">__all_done</span> = <span class="bool-val">true</span>;
+            #( #<span class="ident">poll_futures</span> )*
             <span class="kw">if</span> <span class="ident">__all_done</span> {
                 <span class="ident">__futures_crate::task::Poll::Ready</span>(
                     <span class="ident">__futures_crate::Ok</span>((
-                        #( #<span class="ident">take_outputs</span> )<span class="op">*</span>
+                        #( #<span class="ident">take_outputs</span> )*
                     ))
                 )
             } <span class="kw">else</span> {
@@ -285,4 +285,4 @@
     } })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="futures_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="futures_macro" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

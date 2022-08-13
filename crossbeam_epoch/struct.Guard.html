@@ -6,7 +6,7 @@
 
 <span class="comment">// It is often convenient to prefix a call to `pin` with a `&amp;` in order to create a reference.</span>
 <span class="comment">// This is not really necessary, but makes passing references to the guard a bit easier.</span>
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();</code></pre></div>
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();</code></pre></div>
 <p>When a guard gets dropped, the current thread is automatically unpinned.</p>
 <h2 id="pointers-on-the-stack"><a href="#pointers-on-the-stack">Pointers on the stack</a></h2>
 <p>Having a guard allows us to create pointers on the stack to heap-allocated objects.
@@ -16,16 +16,16 @@ For example:</p>
 <span class="kw">use</span> <span class="ident">std::sync::atomic::Ordering::SeqCst</span>;
 
 <span class="comment">// Create a heap-allocated number.</span>
-<span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Atomic::new</span>(<span class="number">777</span>);
+<span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Atomic::new</span>(<span class="number">777</span>);
 
 <span class="comment">// Pin the current thread.</span>
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
 
 <span class="comment">// Load the heap-allocated object and create pointer `p` on the stack.</span>
-<span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="ident">guard</span>);
+<span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="ident">guard</span>);
 
 <span class="comment">// Dereference the pointer and print the value:</span>
-<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">num</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() } {
+<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">num</span>) = <span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() } {
     <span class="macro">println!</span>(<span class="string">&quot;The number is {}.&quot;</span>, <span class="ident">num</span>);
 }</code></pre></div>
 <h2 id="multiple-guards"><a href="#multiple-guards">Multiple guards</a></h2>
@@ -35,13 +35,13 @@ one is dropped:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span> <span class="kw">as</span> <span class="ident">epoch</span>;
 
-<span class="kw">let</span> <span class="ident">guard1</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
-<span class="kw">let</span> <span class="ident">guard2</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard1</span> = <span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard2</span> = <span class="ident">epoch::pin</span>();
 <span class="macro">assert!</span>(<span class="ident">epoch::is_pinned</span>());
 <span class="ident">drop</span>(<span class="ident">guard1</span>);
 <span class="macro">assert!</span>(<span class="ident">epoch::is_pinned</span>());
 <span class="ident">drop</span>(<span class="ident">guard2</span>);
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">epoch::is_pinned</span>());</code></pre></div>
+<span class="macro">assert!</span>(!<span class="ident">epoch::is_pinned</span>());</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Guard" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#75-406">source</a></span><a href="#impl-Guard" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.defer" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#91-99">source</a></span><h4 class="code-header">pub fn <a href="#method.defer" class="fnname">defer</a>&lt;F, R&gt;(&amp;self, f: F) <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>() -&gt; R,<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'static,&nbsp;</span></h4></section></summary><div class="docblock"><p>Stores a function so that it can be executed at some point after all currently pinned
 threads get unpinned.</p>
 <p>This method first stores <code>f</code> into the thread-local (or handle-local) cache. If this cache
@@ -73,11 +73,11 @@ borrows.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span> <span class="kw">as</span> <span class="ident">epoch</span>;
 
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
-<span class="kw">let</span> <span class="ident">message</span> <span class="op">=</span> <span class="string">&quot;Hello!&quot;</span>;
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">message</span> = <span class="string">&quot;Hello!&quot;</span>;
 <span class="kw">unsafe</span> {
     <span class="comment">// ALWAYS use `move` when sending a closure into `defer_unchecked`.</span>
-    <span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+    <span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> || {
         <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">message</span>);
     });
 }</code></pre></div>
@@ -87,8 +87,8 @@ the closure must be <code>Send</code>.</p>
 <code>F: Send</code> for typical use cases. For example, consider the following code snippet, which
 exemplifies the typical use case of deferring the deallocation of a shared reference:</p>
 
-<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">let</span> <span class="ident">shared</span> <span class="op">=</span> <span class="ident">Owned::new</span>(<span class="number">7i32</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>);
-<span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> <span class="ident">shared</span>.<span class="ident">into_owned</span>()); <span class="comment">// `Shared` is not `Send`!</span></code></pre></div>
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">let</span> <span class="ident">shared</span> = <span class="ident">Owned::new</span>(<span class="number">7i32</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>);
+<span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> || <span class="ident">shared</span>.<span class="ident">into_owned</span>()); <span class="comment">// `Shared` is not `Send`!</span></code></pre></div>
 <p>While <code>Shared</code> is not <code>Send</code>, it’s safe for another thread to call the deferred function,
 because it’s called only after the grace period and <code>shared</code> is no longer shared with other
 threads. But we don’t expect type systems to prove this.</p>
@@ -102,23 +102,23 @@ consequently drop all their references on the stack.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span>::{<span class="self">self</span> <span class="kw">as</span> <span class="ident">epoch</span>, <span class="ident">Atomic</span>, <span class="ident">Owned</span>};
 <span class="kw">use</span> <span class="ident">std::sync::atomic::Ordering::SeqCst</span>;
 
-<span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Atomic::new</span>(<span class="string">&quot;foo&quot;</span>);
+<span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Atomic::new</span>(<span class="string">&quot;foo&quot;</span>);
 
 <span class="comment">// Now suppose that `a` is shared among multiple threads and concurrently</span>
 <span class="comment">// accessed and modified...</span>
 
 <span class="comment">// Pin the current thread.</span>
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
 
 <span class="comment">// Steal the object currently stored in `a` and swap it with another one.</span>
-<span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">swap</span>(<span class="ident">Owned::new</span>(<span class="string">&quot;bar&quot;</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>), <span class="ident">SeqCst</span>, <span class="ident">guard</span>);
+<span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">swap</span>(<span class="ident">Owned::new</span>(<span class="string">&quot;bar&quot;</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>), <span class="ident">SeqCst</span>, <span class="ident">guard</span>);
 
-<span class="kw">if</span> <span class="op">!</span><span class="ident">p</span>.<span class="ident">is_null</span>() {
+<span class="kw">if</span> !<span class="ident">p</span>.<span class="ident">is_null</span>() {
     <span class="comment">// The object `p` is pointing to is now unreachable.</span>
     <span class="comment">// Defer its deallocation until all currently pinned threads get unpinned.</span>
     <span class="kw">unsafe</span> {
         <span class="comment">// ALWAYS use `move` when sending a closure into `defer_unchecked`.</span>
-        <span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+        <span class="ident">guard</span>.<span class="ident">defer_unchecked</span>(<span class="kw">move</span> || {
             <span class="macro">println!</span>(<span class="string">&quot;{} is now being deallocated.&quot;</span>, <span class="ident">p</span>.<span class="ident">deref</span>());
             <span class="comment">// Now we have unique access to the object pointed to by `p` and can turn it</span>
             <span class="comment">// into an `Owned`. Dropping the `Owned` will deallocate the object.</span>
@@ -147,7 +147,7 @@ must be sendable to other threads.</p>
 <code>T: Send</code> for typical use cases. For example, consider the following code snippet, which
 exemplifies the typical use case of deferring the deallocation of a shared reference:</p>
 
-<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">let</span> <span class="ident">shared</span> <span class="op">=</span> <span class="ident">Owned::new</span>(<span class="number">7i32</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>);
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">let</span> <span class="ident">shared</span> = <span class="ident">Owned::new</span>(<span class="number">7i32</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>);
 <span class="ident">guard</span>.<span class="ident">defer_destroy</span>(<span class="ident">shared</span>); <span class="comment">// `Shared` is not `Send`!</span></code></pre></div>
 <p>While <code>Shared</code> is not <code>Send</code>, it’s safe for another thread to call the destructor, because
 it’s called only after the grace period and <code>shared</code> is no longer shared with other
@@ -162,18 +162,18 @@ consequently drop all their references on the stack.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span>::{<span class="self">self</span> <span class="kw">as</span> <span class="ident">epoch</span>, <span class="ident">Atomic</span>, <span class="ident">Owned</span>};
 <span class="kw">use</span> <span class="ident">std::sync::atomic::Ordering::SeqCst</span>;
 
-<span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Atomic::new</span>(<span class="string">&quot;foo&quot;</span>);
+<span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Atomic::new</span>(<span class="string">&quot;foo&quot;</span>);
 
 <span class="comment">// Now suppose that `a` is shared among multiple threads and concurrently</span>
 <span class="comment">// accessed and modified...</span>
 
 <span class="comment">// Pin the current thread.</span>
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
 
 <span class="comment">// Steal the object currently stored in `a` and swap it with another one.</span>
-<span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">swap</span>(<span class="ident">Owned::new</span>(<span class="string">&quot;bar&quot;</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>), <span class="ident">SeqCst</span>, <span class="ident">guard</span>);
+<span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">swap</span>(<span class="ident">Owned::new</span>(<span class="string">&quot;bar&quot;</span>).<span class="ident">into_shared</span>(<span class="ident">guard</span>), <span class="ident">SeqCst</span>, <span class="ident">guard</span>);
 
-<span class="kw">if</span> <span class="op">!</span><span class="ident">p</span>.<span class="ident">is_null</span>() {
+<span class="kw">if</span> !<span class="ident">p</span>.<span class="ident">is_null</span>() {
     <span class="comment">// The object `p` is pointing to is now unreachable.</span>
     <span class="comment">// Defer its deallocation until all currently pinned threads get unpinned.</span>
     <span class="kw">unsafe</span> {
@@ -189,8 +189,8 @@ any thread has a chance of taking the function and executing it.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span> <span class="kw">as</span> <span class="ident">epoch</span>;
 
-<span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
-<span class="ident">guard</span>.<span class="ident">defer</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+<span class="kw">let</span> <span class="ident">guard</span> = <span class="kw-2">&amp;</span><span class="ident">epoch::pin</span>();
+<span class="ident">guard</span>.<span class="ident">defer</span>(<span class="kw">move</span> || {
     <span class="macro">println!</span>(<span class="string">&quot;This better be printed as soon as possible!&quot;</span>);
 });
 <span class="ident">guard</span>.<span class="ident">flush</span>();</code></pre></div>
@@ -204,15 +204,15 @@ is the only active guard for the current thread.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span>::{<span class="self">self</span> <span class="kw">as</span> <span class="ident">epoch</span>, <span class="ident">Atomic</span>};
 <span class="kw">use</span> <span class="ident">std::sync::atomic::Ordering::SeqCst</span>;
 
-<span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Atomic::new</span>(<span class="number">777</span>);
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">guard</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Atomic::new</span>(<span class="number">777</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">guard</span> = <span class="ident">epoch::pin</span>();
 {
-    <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
+    <span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
     <span class="macro">assert_eq!</span>(<span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() }, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">777</span>));
 }
 <span class="ident">guard</span>.<span class="ident">repin</span>();
 {
-    <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
+    <span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
     <span class="macro">assert_eq!</span>(<span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() }, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">777</span>));
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.repin_after" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#365-385">source</a></span><h4 class="code-header">pub fn <a href="#method.repin_after" class="fnname">repin_after</a>&lt;F, R&gt;(&amp;mut self, f: F) -&gt; R <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>() -&gt; R,&nbsp;</span></h4></section></summary><div class="docblock"><p>Temporarily unpins the thread, executes the given function and then re-pins the thread.</p>
@@ -228,15 +228,15 @@ directly without unpinning the thread.</p>
 <span class="kw">use</span> <span class="ident">std::thread</span>;
 <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 
-<span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Atomic::new</span>(<span class="number">777</span>);
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">guard</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Atomic::new</span>(<span class="number">777</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">guard</span> = <span class="ident">epoch::pin</span>();
 {
-    <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
+    <span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
     <span class="macro">assert_eq!</span>(<span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() }, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">777</span>));
 }
-<span class="ident">guard</span>.<span class="ident">repin_after</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">50</span>)));
+<span class="ident">guard</span>.<span class="ident">repin_after</span>(|| <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">50</span>)));
 {
-    <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
+    <span class="kw">let</span> <span class="ident">p</span> = <span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="kw-2">&amp;</span><span class="ident">guard</span>);
     <span class="macro">assert_eq!</span>(<span class="kw">unsafe</span> { <span class="ident">p</span>.<span class="ident">as_ref</span>() }, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">777</span>));
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.collector" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#403-405">source</a></span><h4 class="code-header">pub fn <a href="#method.collector" class="fnname">collector</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="struct.Collector.html" title="struct crossbeam_epoch::Collector">Collector</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the <code>Collector</code> associated with this guard.</p>
@@ -246,9 +246,9 @@ a data structure come from the same collector.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">crossbeam_epoch</span> <span class="kw">as</span> <span class="ident">epoch</span>;
 
-<span class="kw">let</span> <span class="ident">guard1</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
-<span class="kw">let</span> <span class="ident">guard2</span> <span class="op">=</span> <span class="ident">epoch::pin</span>();
-<span class="macro">assert!</span>(<span class="ident">guard1</span>.<span class="ident">collector</span>() <span class="op">==</span> <span class="ident">guard2</span>.<span class="ident">collector</span>());</code></pre></div>
+<span class="kw">let</span> <span class="ident">guard1</span> = <span class="ident">epoch::pin</span>();
+<span class="kw">let</span> <span class="ident">guard2</span> = <span class="ident">epoch::pin</span>();
+<span class="macro">assert!</span>(<span class="ident">guard1</span>.<span class="ident">collector</span>() == <span class="ident">guard2</span>.<span class="ident">collector</span>());</code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-Guard" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#417-421">source</a></span><a href="#impl-Debug-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#418-420">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Drop-for-Guard" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#408-415">source</a></span><a href="#impl-Drop-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html" title="trait core::ops::drop::Drop">Drop</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.drop" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../src/crossbeam_epoch/guard.rs.html#410-414">source</a></span><a href="#method.drop" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop" class="fnname">drop</a>(&amp;mut self)</h4></section></summary><div class='docblock'><p>Executes the destructor for this type. <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop">Read more</a></p>
 </div></details></div></details></div><h2 id="synthetic-implementations" class="small-section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor"></a></h2><div id="synthetic-implementations-list"><section id="impl-RefUnwindSafe-for-Guard" class="impl has-srclink"><a href="#impl-RefUnwindSafe-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl !<a class="trait" href="https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.RefUnwindSafe.html" title="trait core::panic::unwind_safe::RefUnwindSafe">RefUnwindSafe</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section><section id="impl-Send-for-Guard" class="impl has-srclink"><a href="#impl-Send-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl !<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section><section id="impl-Sync-for-Guard" class="impl has-srclink"><a href="#impl-Sync-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl !<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section><section id="impl-Unpin-for-Guard" class="impl has-srclink"><a href="#impl-Unpin-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section><section id="impl-UnwindSafe-for-Guard" class="impl has-srclink"><a href="#impl-UnwindSafe-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl !<a class="trait" href="https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html" title="trait core::panic::unwind_safe::UnwindSafe">UnwindSafe</a> for <a class="struct" href="struct.Guard.html" title="struct crossbeam_epoch::Guard">Guard</a></h3></section></div><h2 id="blanket-implementations" class="small-section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor"></a></h2><div id="blanket-implementations-list"><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-Any-for-Guard" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/any.rs.html#203">source</a></span><a href="#impl-Any-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html" title="trait core::any::Any">Any</a> for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;T: 'static + ?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/any.rs.html#204">source</a></span><a href="#method.type_id" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html#tymethod.type_id" class="fnname">type_id</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/core/any/struct.TypeId.html" title="struct core::any::TypeId">TypeId</a></h4></section></summary><div class='docblock'><p>Gets the <code>TypeId</code> of <code>self</code>. <a href="https://doc.rust-lang.org/nightly/core/any/trait.Any.html#tymethod.type_id">Read more</a></p>
@@ -262,4 +262,4 @@ a data structure come from the same collector.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Guard" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Guard" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="crossbeam_epoch" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="crossbeam_epoch" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

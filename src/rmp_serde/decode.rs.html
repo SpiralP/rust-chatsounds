@@ -1119,12 +1119,12 @@
 <span class="macro">macro_rules!</span> <span class="ident">depth_count</span>(
     ( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">expr</span>:<span class="ident">expr</span> ) =&gt; {
         {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
-            <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">==</span> <span class="number">0</span> {
+            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> -= <span class="number">1</span>;
+            <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> == <span class="number">0</span> {
                 <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::DepthLimitExceeded</span>)
             }
-            <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">expr</span>;
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            <span class="kw">let</span> <span class="ident">res</span> = <span class="macro-nonterminal">$</span><span class="macro-nonterminal">expr</span>;
+            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> += <span class="number">1</span>;
             <span class="ident">res</span>
         }
     }
@@ -1132,7 +1132,7 @@
 
 <span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
-    <span class="kw">fn</span> <span class="ident">source</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>(<span class="kw">dyn</span> <span class="ident">error::Error</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>)<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">source</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn</span> <span class="ident">error::Error</span> + <span class="lifetime">&#39;static</span>)&gt; {
         <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
             <span class="ident">Error::TypeMismatch</span>(..) =&gt; <span class="prelude-val">None</span>,
             <span class="ident">Error::InvalidMarkerRead</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">err</span>),
@@ -1149,14 +1149,14 @@
 
 <span class="kw">impl</span> <span class="ident">de::Error</span> <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
-    <span class="kw">fn</span> <span class="ident">custom</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Display</span><span class="op">&gt;</span>(<span class="ident">msg</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">custom</span>&lt;<span class="ident">T</span>: <span class="ident">Display</span>&gt;(<span class="ident">msg</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">Error::Syntax</span>(<span class="ident">msg</span>.<span class="ident">to_string</span>())
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Display</span> <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">fmt::Error</span>&gt; {
         <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
             <span class="ident">Error::InvalidMarkerRead</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;IO error while reading marker: {}&quot;</span>, <span class="ident">err</span>),
             <span class="ident">Error::InvalidDataRead</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;IO error while reading data: {}&quot;</span>, <span class="ident">err</span>),
@@ -1177,7 +1177,7 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">MarkerReadError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">MarkerReadError</span>&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">MarkerReadError</span>) -&gt; <span class="ident">Error</span> {
         <span class="kw">match</span> <span class="ident">err</span> {
@@ -1186,14 +1186,14 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Utf8Error</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">Utf8Error</span>&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">Utf8Error</span>) -&gt; <span class="ident">Error</span> {
         <span class="ident">Error::Utf8Error</span>(<span class="ident">err</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ValueReadError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">ValueReadError</span>&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">ValueReadError</span>) -&gt; <span class="ident">Error</span> {
         <span class="kw">match</span> <span class="ident">err</span> {
@@ -1204,7 +1204,7 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">NumValueReadError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">NumValueReadError</span>&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">NumValueReadError</span>) -&gt; <span class="ident">Error</span> {
         <span class="kw">match</span> <span class="ident">err</span> {
@@ -1216,9 +1216,9 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">DecodeStringError</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">From</span>&lt;<span class="ident">DecodeStringError</span>&lt;<span class="lifetime">&#39;a</span>&gt;&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">DecodeStringError</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Error</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">DecodeStringError</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Error</span> {
         <span class="kw">match</span> <span class="ident">err</span> {
             <span class="ident">DecodeStringError::InvalidMarkerRead</span>(<span class="ident">err</span>) =&gt; <span class="ident">Error::InvalidMarkerRead</span>(<span class="ident">err</span>),
             <span class="ident">DecodeStringError::InvalidDataRead</span>(<span class="ident">err</span>) =&gt; <span class="ident">Error::InvalidDataRead</span>(<span class="ident">err</span>),
@@ -1229,7 +1229,7 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">TryFromIntError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">TryFromIntError</span>&gt; <span class="kw">for</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">cold</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="kw">_</span>: <span class="ident">TryFromIntError</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">Error::OutOfRange</span>
@@ -1243,33 +1243,33 @@
 <span class="doccomment">/// All instances of `ErrorKind::Interrupted` are handled by this function and the underlying</span>
 <span class="doccomment">/// operation is retried.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span> <span class="op">=</span> <span class="ident">DefaultConfig</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span> = <span class="ident">DefaultConfig</span>&gt; {
     <span class="ident">rd</span>: <span class="ident">R</span>,
     <span class="ident">config</span>: <span class="ident">C</span>,
-    <span class="ident">marker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Marker</span><span class="op">&gt;</span>,
+    <span class="ident">marker</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">Marker</span>&gt;,
     <span class="ident">depth</span>: <span class="ident">usize</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">take_or_read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Marker</span>, <span class="ident">MarkerReadError</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">take_or_read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Marker</span>, <span class="ident">MarkerReadError</span>&gt; {
         <span class="self">self</span>.<span class="ident">marker</span>
             .<span class="ident">take</span>()
-            .<span class="ident">map_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">rmp::decode::read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>), <span class="prelude-val">Ok</span>)
+            .<span class="ident">map_or_else</span>(|| <span class="ident">rmp::decode::read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>), <span class="prelude-val">Ok</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">peek_or_read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Marker</span>, <span class="ident">MarkerReadError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">m</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">marker</span> {
+    <span class="kw">fn</span> <span class="ident">peek_or_read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Marker</span>, <span class="ident">MarkerReadError</span>&gt; {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">m</span>) = <span class="self">self</span>.<span class="ident">marker</span> {
             <span class="prelude-val">Ok</span>(<span class="ident">m</span>)
         } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">m</span> <span class="op">=</span> <span class="ident">rmp::decode::read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">m</span> = <span class="ident">rmp::decode::read_marker</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">marker</span>.<span class="ident">insert</span>(<span class="ident">m</span>).<span class="ident">to_owned</span>())
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>, <span class="ident">DefaultConfig</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">ReadReader</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DefaultConfig</span>&gt; {
     <span class="doccomment">/// Constructs a new `Deserializer` by consuming the given reader.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rd</span>: <span class="ident">R</span>) -&gt; <span class="self">Self</span> {
@@ -1283,7 +1283,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">ReadReader</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">C</span>&gt; {
     <span class="doccomment">/// Gets a reference to the underlying reader in this decoder.</span>
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">R</span> {
@@ -1303,15 +1303,15 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt; {
     <span class="doccomment">/// Consumes this deserializer and returns a new one, which will deserialize types with</span>
     <span class="doccomment">/// human-readable representations (`Deserializer::is_human_readable` will return `true`).</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This is primarily useful if you need to interoperate with serializations produced by older</span>
     <span class="doccomment">/// versions of `rmp-serde`.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_human_readable</span>(<span class="self">self</span>) -&gt; <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">HumanReadableConfig</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">Deserializer</span> { <span class="ident">rd</span>, <span class="ident">config</span>, <span class="ident">marker</span>, <span class="ident">depth</span> } <span class="op">=</span> <span class="self">self</span>;
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_human_readable</span>(<span class="self">self</span>) -&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">HumanReadableConfig</span>&lt;<span class="ident">C</span>&gt;&gt; {
+        <span class="kw">let</span> <span class="ident">Deserializer</span> { <span class="ident">rd</span>, <span class="ident">config</span>, <span class="ident">marker</span>, <span class="ident">depth</span> } = <span class="self">self</span>;
         <span class="ident">Deserializer</span> {
             <span class="ident">rd</span>,
             <span class="ident">config</span>: <span class="ident">HumanReadableConfig::new</span>(<span class="ident">config</span>),
@@ -1326,8 +1326,8 @@
     <span class="doccomment">/// This is the default MessagePack deserialization mechanism, consuming the most compact</span>
     <span class="doccomment">/// representation.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_binary</span>(<span class="self">self</span>) -&gt; <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">BinaryConfig</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">Deserializer</span> { <span class="ident">rd</span>, <span class="ident">config</span>, <span class="ident">marker</span>, <span class="ident">depth</span> } <span class="op">=</span> <span class="self">self</span>;
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_binary</span>(<span class="self">self</span>) -&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">BinaryConfig</span>&lt;<span class="ident">C</span>&gt;&gt; {
+        <span class="kw">let</span> <span class="ident">Deserializer</span> { <span class="ident">rd</span>, <span class="ident">config</span>, <span class="ident">marker</span>, <span class="ident">depth</span> } = <span class="self">self</span>;
         <span class="ident">Deserializer</span> {
             <span class="ident">rd</span>,
             <span class="ident">config</span>: <span class="ident">BinaryConfig::new</span>(<span class="ident">config</span>),
@@ -1337,7 +1337,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">Cursor</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt;&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">ReadReader</span>&lt;<span class="ident">Cursor</span>&lt;<span class="ident">R</span>&gt;&gt;&gt; {
     <span class="doccomment">/// Returns the current position of this deserializer, i.e. how many bytes were read.</span>
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">position</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
@@ -1345,9 +1345,9 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">R</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">R</span>&gt;&gt;
 <span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
+    <span class="ident">R</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt; + <span class="question-mark">?</span><span class="ident">Sized</span>,
 {
     <span class="doccomment">/// Constructs a new `Deserializer` from the given byte slice.</span>
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
@@ -1367,15 +1367,15 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt; {
     <span class="doccomment">/// Changes the maximum nesting depth that is allowed</span>
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_max_depth</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">depth</span>: <span class="ident">usize</span>) {
-        <span class="self">self</span>.<span class="ident">depth</span> <span class="op">=</span> <span class="ident">depth</span>;
+        <span class="self">self</span>.<span class="ident">depth</span> = <span class="ident">depth</span>;
     }
 
-    <span class="kw">fn</span> <span class="ident">read_str_data</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">u32</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">read_str_data</span>&lt;<span class="ident">V</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">u32</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="kw">match</span> <span class="ident">read_bin_data</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">len</span> <span class="kw">as</span> <span class="ident">u32</span>)<span class="question-mark">?</span> {
             <span class="ident">Reference::Borrowed</span>(<span class="ident">buf</span>) =&gt; {
@@ -1383,7 +1383,7 @@
                     <span class="prelude-val">Ok</span>(<span class="ident">s</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_borrowed_str</span>(<span class="ident">s</span>),
                     <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
                         <span class="comment">// Allow to unpack invalid UTF-8 bytes into a byte array.</span>
-                        <span class="kw">match</span> <span class="ident">visitor</span>.<span class="ident">visit_borrowed_bytes</span>::<span class="op">&lt;</span><span class="ident">Error</span><span class="op">&gt;</span>(<span class="ident">buf</span>) {
+                        <span class="kw">match</span> <span class="ident">visitor</span>.<span class="ident">visit_borrowed_bytes</span>::&lt;<span class="ident">Error</span>&gt;(<span class="ident">buf</span>) {
                             <span class="prelude-val">Ok</span>(<span class="ident">buf</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">buf</span>),
                             <span class="prelude-val">Err</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::Utf8Error</span>(<span class="ident">err</span>)),
                         }
@@ -1395,7 +1395,7 @@
                     <span class="prelude-val">Ok</span>(<span class="ident">s</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_str</span>(<span class="ident">s</span>),
                     <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
                         <span class="comment">// Allow to unpack invalid UTF-8 bytes into a byte array.</span>
-                        <span class="kw">match</span> <span class="ident">visitor</span>.<span class="ident">visit_bytes</span>::<span class="op">&lt;</span><span class="ident">Error</span><span class="op">&gt;</span>(<span class="ident">buf</span>) {
+                        <span class="kw">match</span> <span class="ident">visitor</span>.<span class="ident">visit_bytes</span>::&lt;<span class="ident">Error</span>&gt;(<span class="ident">buf</span>) {
                             <span class="prelude-val">Ok</span>(<span class="ident">buf</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">buf</span>),
                             <span class="prelude-val">Err</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::Utf8Error</span>(<span class="ident">err</span>)),
                         }
@@ -1405,20 +1405,20 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">read_128</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">16</span>], <span class="ident">Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">marker</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
+    <span class="kw">fn</span> <span class="ident">read_128</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[<span class="ident">u8</span>; <span class="number">16</span>], <span class="ident">Error</span>&gt; {
+        <span class="kw">let</span> <span class="ident">marker</span> = <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">marker</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Marker::Bin8</span> {
+        <span class="kw">if</span> <span class="ident">marker</span> != <span class="ident">Marker::Bin8</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::TypeMismatch</span>(<span class="ident">marker</span>));
         }
 
-        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">read_u8</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">read_u8</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">len</span> <span class="op">!</span><span class="op">=</span> <span class="number">16</span> {
+        <span class="kw">if</span> <span class="ident">len</span> != <span class="number">16</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="number">16</span>));
         }
 
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">read_bin_data</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">len</span> <span class="kw">as</span> <span class="ident">u32</span>)<span class="question-mark">?</span> {
+        <span class="kw">let</span> <span class="ident">buf</span> = <span class="kw">match</span> <span class="ident">read_bin_data</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">len</span> <span class="kw">as</span> <span class="ident">u32</span>)<span class="question-mark">?</span> {
             <span class="ident">Reference::Borrowed</span>(<span class="ident">buf</span>) =&gt; <span class="ident">buf</span>,
             <span class="ident">Reference::Copied</span>(<span class="ident">buf</span>) =&gt; <span class="ident">buf</span>,
         };
@@ -1427,25 +1427,25 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">read_bin_data</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">R</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Reference</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>,<span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">read_bin_data</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">R</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Reference</span>&lt;<span class="lifetime">&#39;de</span>,<span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]&gt;, <span class="ident">Error</span>&gt; {
     <span class="ident">rd</span>.<span class="ident">read_slice</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">read_u8</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">read_u8</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u8</span>, <span class="ident">Error</span>&gt; {
     <span class="ident">byteorder::ReadBytesExt::read_u8</span>(<span class="ident">rd</span>).<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">read_u16</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u16</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
-    <span class="ident">rd</span>.<span class="ident">read_u16</span>::<span class="op">&lt;</span><span class="ident">byteorder::BigEndian</span><span class="op">&gt;</span>()
+<span class="kw">fn</span> <span class="ident">read_u16</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u16</span>, <span class="ident">Error</span>&gt; {
+    <span class="ident">rd</span>.<span class="ident">read_u16</span>::&lt;<span class="ident">byteorder::BigEndian</span>&gt;()
         .<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">read_u32</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
-    <span class="ident">rd</span>.<span class="ident">read_u32</span>::<span class="op">&lt;</span><span class="ident">byteorder::BigEndian</span><span class="op">&gt;</span>()
+<span class="kw">fn</span> <span class="ident">read_u32</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>, <span class="ident">Error</span>&gt; {
+    <span class="ident">rd</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">byteorder::BigEndian</span>&gt;()
         .<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">ext_len</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">marker</span>: <span class="ident">Marker</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">ext_len</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">marker</span>: <span class="ident">Marker</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>, <span class="ident">Error</span>&gt; {
     <span class="prelude-val">Ok</span>(<span class="kw">match</span> <span class="ident">marker</span> {
         <span class="ident">Marker::FixExt1</span> =&gt; <span class="number">1</span>,
         <span class="ident">Marker::FixExt2</span> =&gt; <span class="number">2</span>,
@@ -1467,15 +1467,15 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">ExtDeserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">ExtDeserializer</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
     <span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">R</span>,
     <span class="ident">_config</span>: <span class="ident">C</span>,
     <span class="ident">len</span>: <span class="ident">u32</span>,
     <span class="ident">state</span>: <span class="ident">ExtDeserializerState</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">ExtDeserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">d</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">ExtDeserializer</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">d</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">ExtDeserializer</span> {
             <span class="ident">rd</span>: <span class="kw-2">&amp;mut</span> <span class="ident">d</span>.<span class="ident">rd</span>,
             <span class="ident">_config</span>: <span class="ident">d</span>.<span class="ident">config</span>,
@@ -1485,12 +1485,12 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::Deserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ExtDeserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::Deserializer</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">ExtDeserializer</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">deserialize_any</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_any</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="ident">visitor</span>.<span class="ident">visit_seq</span>(<span class="self">self</span>)
     }
@@ -1502,16 +1502,16 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::SeqAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ExtDeserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::SeqAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">ExtDeserializer</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next_element_seed</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Value</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">next_element_seed</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T::Value</span>&gt;, <span class="ident">Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">T</span>: <span class="ident">DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">state</span> {
-            <span class="ident">ExtDeserializerState::New</span> <span class="op">|</span> <span class="ident">ExtDeserializerState::ReadTag</span> =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="self">self</span>)<span class="question-mark">?</span>)),
+            <span class="ident">ExtDeserializerState::New</span> | <span class="ident">ExtDeserializerState::ReadTag</span> =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="self">self</span>)<span class="question-mark">?</span>)),
             <span class="ident">ExtDeserializerState::ReadBinary</span> =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
     }
@@ -1519,21 +1519,21 @@
 
 
 <span class="doccomment">/// Deserializer for Ext SeqAccess</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::Deserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;mut</span> <span class="ident">ExtDeserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::Deserializer</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;mut</span> <span class="ident">ExtDeserializer</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
-    <span class="kw">fn</span> <span class="ident">deserialize_any</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_any</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">state</span> {
             <span class="ident">ExtDeserializerState::New</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_i8</span>()<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">ExtDeserializerState::ReadTag</span>;
+                <span class="kw">let</span> <span class="ident">tag</span> = <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_i8</span>()<span class="question-mark">?</span>;
+                <span class="self">self</span>.<span class="ident">state</span> = <span class="ident">ExtDeserializerState::ReadTag</span>;
                 <span class="ident">visitor</span>.<span class="ident">visit_i8</span>(<span class="ident">tag</span>)
             }
             <span class="ident">ExtDeserializerState::ReadTag</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_slice</span>(<span class="self">self</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">ExtDeserializerState::ReadBinary</span>;
+                <span class="kw">let</span> <span class="ident">data</span> = <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_slice</span>(<span class="self">self</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">map_err</span>(<span class="ident">Error::InvalidDataRead</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.<span class="ident">state</span> = <span class="ident">ExtDeserializerState::ReadBinary</span>;
                 <span class="kw">match</span> <span class="ident">data</span> {
                     <span class="ident">Reference::Borrowed</span>(<span class="ident">bytes</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_borrowed_bytes</span>(<span class="ident">bytes</span>),
                     <span class="ident">Reference::Copied</span>(<span class="ident">bytes</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_bytes</span>(<span class="ident">bytes</span>),
@@ -1550,8 +1550,8 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">serde::Deserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">serde::Deserializer</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
     <span class="kw">fn</span> <span class="ident">is_human_readable</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
@@ -1559,15 +1559,15 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">never</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">deserialize_any</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_any</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
-        <span class="kw">let</span> <span class="ident">marker</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">marker</span> = <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
 
         <span class="kw">match</span> <span class="ident">marker</span> {
             <span class="ident">Marker::Null</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_unit</span>(),
-            <span class="ident">Marker::True</span> <span class="op">|</span>
-            <span class="ident">Marker::False</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_bool</span>(<span class="ident">marker</span> <span class="op">==</span> <span class="ident">Marker::True</span>),
+            <span class="ident">Marker::True</span> |
+            <span class="ident">Marker::False</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_bool</span>(<span class="ident">marker</span> == <span class="ident">Marker::True</span>),
             <span class="ident">Marker::FixPos</span>(<span class="ident">val</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_u8</span>(<span class="ident">val</span>),
             <span class="ident">Marker::FixNeg</span>(<span class="ident">val</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_i8</span>(<span class="ident">val</span>),
             <span class="ident">Marker::U8</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_u8</span>(<span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_u8</span>()<span class="question-mark">?</span>),
@@ -1580,8 +1580,8 @@
             <span class="ident">Marker::I64</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_i64</span>(<span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_i64</span>()<span class="question-mark">?</span>),
             <span class="ident">Marker::F32</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_f32</span>(<span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_f32</span>()<span class="question-mark">?</span>),
             <span class="ident">Marker::F64</span> =&gt; <span class="ident">visitor</span>.<span class="ident">visit_f64</span>(<span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_data_f64</span>()<span class="question-mark">?</span>),
-            <span class="ident">Marker::FixStr</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Marker::Str8</span> <span class="op">|</span> <span class="ident">Marker::Str16</span> <span class="op">|</span> <span class="ident">Marker::Str32</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">marker</span> {
+            <span class="ident">Marker::FixStr</span>(<span class="kw">_</span>) | <span class="ident">Marker::Str8</span> | <span class="ident">Marker::Str16</span> | <span class="ident">Marker::Str32</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="kw">match</span> <span class="ident">marker</span> {
                     <span class="ident">Marker::FixStr</span>(<span class="ident">len</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">len</span>.<span class="ident">into</span>()),
                     <span class="ident">Marker::Str8</span> =&gt; <span class="ident">read_u8</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>).<span class="ident">map</span>(<span class="ident">u32::from</span>),
                     <span class="ident">Marker::Str16</span> =&gt; <span class="ident">read_u16</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>).<span class="ident">map</span>(<span class="ident">u32::from</span>),
@@ -1590,10 +1590,10 @@
                 }<span class="question-mark">?</span>;
                 <span class="self">self</span>.<span class="ident">read_str_data</span>(<span class="ident">len</span>, <span class="ident">visitor</span>)
             }
-            <span class="ident">Marker::FixArray</span>(<span class="kw">_</span>) <span class="op">|</span>
-            <span class="ident">Marker::Array16</span> <span class="op">|</span>
+            <span class="ident">Marker::FixArray</span>(<span class="kw">_</span>) |
+            <span class="ident">Marker::Array16</span> |
             <span class="ident">Marker::Array32</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">marker</span> {
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="kw">match</span> <span class="ident">marker</span> {
                     <span class="ident">Marker::FixArray</span>(<span class="ident">len</span>) =&gt; <span class="ident">len</span>.<span class="ident">into</span>(),
                     <span class="ident">Marker::Array16</span> =&gt; <span class="ident">read_u16</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>.<span class="ident">into</span>(),
                     <span class="ident">Marker::Array32</span> =&gt; <span class="ident">read_u32</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>,
@@ -1601,18 +1601,18 @@
                 };
 
                 <span class="macro">depth_count!</span>(<span class="self">self</span>.<span class="ident">depth</span>, {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seq</span> <span class="op">=</span> <span class="ident">SeqAccess::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
-                    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">visitor</span>.<span class="ident">visit_seq</span>(<span class="kw-2">&amp;mut</span> <span class="ident">seq</span>)<span class="question-mark">?</span>;
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seq</span> = <span class="ident">SeqAccess::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
+                    <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">visitor</span>.<span class="ident">visit_seq</span>(<span class="kw-2">&amp;mut</span> <span class="ident">seq</span>)<span class="question-mark">?</span>;
                     <span class="kw">match</span> <span class="ident">seq</span>.<span class="ident">left</span> {
                         <span class="number">0</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">res</span>),
-                        <span class="ident">excess</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="ident">len</span> <span class="op">-</span> <span class="ident">excess</span>)),
+                        <span class="ident">excess</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="ident">len</span> - <span class="ident">excess</span>)),
                     }
                 })
             }
-            <span class="ident">Marker::FixMap</span>(<span class="kw">_</span>) <span class="op">|</span>
-            <span class="ident">Marker::Map16</span> <span class="op">|</span>
+            <span class="ident">Marker::FixMap</span>(<span class="kw">_</span>) |
+            <span class="ident">Marker::Map16</span> |
             <span class="ident">Marker::Map32</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">marker</span> {
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="kw">match</span> <span class="ident">marker</span> {
                     <span class="ident">Marker::FixMap</span>(<span class="ident">len</span>) =&gt; <span class="ident">len</span>.<span class="ident">into</span>(),
                     <span class="ident">Marker::Map16</span> =&gt; <span class="ident">read_u16</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>.<span class="ident">into</span>(),
                     <span class="ident">Marker::Map32</span> =&gt; <span class="ident">read_u32</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>,
@@ -1620,16 +1620,16 @@
                 };
 
                 <span class="macro">depth_count!</span>(<span class="self">self</span>.<span class="ident">depth</span>, {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seq</span> <span class="op">=</span> <span class="ident">MapAccess::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
-                    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">visitor</span>.<span class="ident">visit_map</span>(<span class="kw-2">&amp;mut</span> <span class="ident">seq</span>)<span class="question-mark">?</span>;
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seq</span> = <span class="ident">MapAccess::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
+                    <span class="kw">let</span> <span class="ident">res</span> = <span class="ident">visitor</span>.<span class="ident">visit_map</span>(<span class="kw-2">&amp;mut</span> <span class="ident">seq</span>)<span class="question-mark">?</span>;
                     <span class="kw">match</span> <span class="ident">seq</span>.<span class="ident">left</span> {
                         <span class="number">0</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">res</span>),
-                        <span class="ident">excess</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="ident">len</span> <span class="op">-</span> <span class="ident">excess</span>)),
+                        <span class="ident">excess</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="ident">len</span> - <span class="ident">excess</span>)),
                     }
                 })
             }
-            <span class="ident">Marker::Bin8</span> <span class="op">|</span> <span class="ident">Marker::Bin16</span> <span class="op">|</span> <span class="ident">Marker::Bin32</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">marker</span> {
+            <span class="ident">Marker::Bin8</span> | <span class="ident">Marker::Bin16</span> | <span class="ident">Marker::Bin32</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="kw">match</span> <span class="ident">marker</span> {
                     <span class="ident">Marker::Bin8</span> =&gt; <span class="ident">read_u8</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>).<span class="ident">map</span>(<span class="ident">u32::from</span>),
                     <span class="ident">Marker::Bin16</span> =&gt; <span class="ident">read_u16</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>).<span class="ident">map</span>(<span class="ident">u32::from</span>),
                     <span class="ident">Marker::Bin32</span> =&gt; <span class="ident">read_u32</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>).<span class="ident">map</span>(<span class="ident">u32::from</span>),
@@ -1640,23 +1640,23 @@
                     <span class="ident">Reference::Copied</span>(<span class="ident">buf</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_bytes</span>(<span class="ident">buf</span>),
                 }
             }
-            <span class="ident">Marker::FixExt1</span> <span class="op">|</span>
-            <span class="ident">Marker::FixExt2</span> <span class="op">|</span>
-            <span class="ident">Marker::FixExt4</span> <span class="op">|</span>
-            <span class="ident">Marker::FixExt8</span> <span class="op">|</span>
-            <span class="ident">Marker::FixExt16</span> <span class="op">|</span>
-            <span class="ident">Marker::Ext8</span> <span class="op">|</span>
-            <span class="ident">Marker::Ext16</span> <span class="op">|</span>
+            <span class="ident">Marker::FixExt1</span> |
+            <span class="ident">Marker::FixExt2</span> |
+            <span class="ident">Marker::FixExt4</span> |
+            <span class="ident">Marker::FixExt8</span> |
+            <span class="ident">Marker::FixExt16</span> |
+            <span class="ident">Marker::Ext8</span> |
+            <span class="ident">Marker::Ext16</span> |
             <span class="ident">Marker::Ext32</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">ext_len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">marker</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">ext_len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">marker</span>)<span class="question-mark">?</span>;
                 <span class="macro">depth_count!</span>(<span class="self">self</span>.<span class="ident">depth</span>, <span class="ident">visitor</span>.<span class="ident">visit_newtype_struct</span>(<span class="ident">ExtDeserializer::new</span>(<span class="self">self</span>, <span class="ident">len</span>)))
             }
             <span class="ident">Marker::Reserved</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::TypeMismatch</span>(<span class="ident">Marker::Reserved</span>)),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">deserialize_option</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_option</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="comment">// # Important</span>
         <span class="comment">//</span>
@@ -1671,28 +1671,28 @@
         <span class="comment">// Round trips of Options where `Option&lt;t&gt; = None` such as `Some(None)` will fail because</span>
         <span class="comment">// they are just seriialized as `nil`. The serialization format has probably to be changed</span>
         <span class="comment">// to solve this. But as serde_json behaves the same, I think it&#39;s not worth doing this.</span>
-        <span class="kw">let</span> <span class="ident">marker</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">marker</span> = <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">marker</span> <span class="op">==</span> <span class="ident">Marker::Null</span> {
+        <span class="kw">if</span> <span class="ident">marker</span> == <span class="ident">Marker::Null</span> {
             <span class="ident">visitor</span>.<span class="ident">visit_none</span>()
         } <span class="kw">else</span> {
             <span class="comment">// Keep the marker until `o`&#39;s innermost type `t` is visited.</span>
-            <span class="self">self</span>.<span class="ident">marker</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">marker</span>);
+            <span class="self">self</span>.<span class="ident">marker</span> = <span class="prelude-val">Some</span>(<span class="ident">marker</span>);
             <span class="ident">visitor</span>.<span class="ident">visit_some</span>(<span class="self">self</span>)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">deserialize_enum</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">_variants</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">str</span>], <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_enum</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">_variants</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">str</span>], <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
-        <span class="kw">let</span> <span class="ident">marker</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">peek_or_read_marker</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">marker</span> = <span class="self">self</span>.<span class="ident">peek_or_read_marker</span>()<span class="question-mark">?</span>;
         <span class="kw">match</span> <span class="ident">rmp::decode::marker_to_len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">marker</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">len</span>) =&gt; <span class="kw">match</span> <span class="ident">len</span> {
                 <span class="comment">// Enums are either encoded as maps with a single K/V pair</span>
                 <span class="comment">// where the K = the variant &amp; V = associated data</span>
                 <span class="comment">// or as just the variant</span>
                 <span class="number">1</span> =&gt; {
-                    <span class="self">self</span>.<span class="ident">marker</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+                    <span class="self">self</span>.<span class="ident">marker</span> = <span class="prelude-val">None</span>;
                     <span class="ident">visitor</span>.<span class="ident">visit_enum</span>(<span class="ident">VariantAccess::new</span>(<span class="self">self</span>))
                 }
                 <span class="ident">n</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::LengthMismatch</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">u32</span>)),
@@ -1702,50 +1702,50 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">deserialize_newtype_struct</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_newtype_struct</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
-        <span class="kw">if</span> <span class="ident">name</span> <span class="op">==</span> <span class="ident">MSGPACK_EXT_STRUCT_NAME</span> {
-            <span class="kw">let</span> <span class="ident">marker</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
+        <span class="kw">if</span> <span class="ident">name</span> == <span class="ident">MSGPACK_EXT_STRUCT_NAME</span> {
+            <span class="kw">let</span> <span class="ident">marker</span> = <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">ext_len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">marker</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">ext_de</span> <span class="op">=</span> <span class="ident">ExtDeserializer::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
+            <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">ext_len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rd</span>, <span class="ident">marker</span>)<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">ext_de</span> = <span class="ident">ExtDeserializer::new</span>(<span class="self">self</span>, <span class="ident">len</span>);
             <span class="kw">return</span> <span class="ident">visitor</span>.<span class="ident">visit_newtype_struct</span>(<span class="ident">ext_de</span>);
         }
 
         <span class="ident">visitor</span>.<span class="ident">visit_newtype_struct</span>(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">deserialize_unit_struct</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_unit_struct</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="comment">// We need to special case this so that [] is treated as a unit struct when asked for,</span>
         <span class="comment">// but as a sequence otherwise. This is because we serialize unit structs as [] rather</span>
         <span class="comment">// than as &#39;nil&#39;.</span>
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">take_or_read_marker</span>()<span class="question-mark">?</span> {
-            <span class="ident">Marker::Null</span> <span class="op">|</span> <span class="ident">Marker::FixArray</span>(<span class="number">0</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_unit</span>(),
+            <span class="ident">Marker::Null</span> | <span class="ident">Marker::FixArray</span>(<span class="number">0</span>) =&gt; <span class="ident">visitor</span>.<span class="ident">visit_unit</span>(),
             <span class="ident">marker</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">marker</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">marker</span>);
+                <span class="self">self</span>.<span class="ident">marker</span> = <span class="prelude-val">Some</span>(<span class="ident">marker</span>);
                 <span class="self">self</span>.<span class="ident">deserialize_any</span>(<span class="ident">visitor</span>)
             }
         }
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">deserialize_i128</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_i128</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">read_128</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">buf</span> = <span class="self">self</span>.<span class="ident">read_128</span>()<span class="question-mark">?</span>;
         <span class="ident">visitor</span>.<span class="ident">visit_i128</span>(<span class="ident">i128::from_be_bytes</span>(<span class="ident">buf</span>))
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">deserialize_u128</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">deserialize_u128</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">read_128</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">buf</span> = <span class="self">self</span>.<span class="ident">read_128</span>()<span class="question-mark">?</span>;
         <span class="ident">visitor</span>.<span class="ident">visit_u128</span>(<span class="ident">u128::from_be_bytes</span>(<span class="ident">buf</span>))
     }
 
@@ -1757,14 +1757,14 @@
     }
 }
 
-<span class="kw">struct</span> <span class="ident">SeqAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>,
+<span class="kw">struct</span> <span class="ident">SeqAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;,
     <span class="ident">left</span>: <span class="ident">u32</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">SeqAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span>&gt; <span class="ident">SeqAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">SeqAccess</span> {
             <span class="ident">de</span>,
             <span class="ident">left</span>: <span class="ident">len</span>,
@@ -1772,15 +1772,15 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::SeqAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SeqAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::SeqAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">SeqAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next_element_seed</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Value</span><span class="op">&gt;</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">next_element_seed</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T::Value</span>&gt;, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">left</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="self">self</span>.<span class="ident">left</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">left</span> &gt; <span class="number">0</span> {
+            <span class="self">self</span>.<span class="ident">left</span> -= <span class="number">1</span>;
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>)<span class="question-mark">?</span>))
         } <span class="kw">else</span> {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
@@ -1788,18 +1788,18 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">left</span>.<span class="ident">try_into</span>().<span class="ident">ok</span>()
     }
 }
 
-<span class="kw">struct</span> <span class="ident">MapAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>,
+<span class="kw">struct</span> <span class="ident">MapAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;,
     <span class="ident">left</span>: <span class="ident">u32</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">MapAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span>&gt; <span class="ident">MapAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">MapAccess</span> {
             <span class="ident">de</span>,
             <span class="ident">left</span>: <span class="ident">len</span>,
@@ -1807,15 +1807,15 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::MapAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MapAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::MapAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">MapAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next_key_seed</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">K</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">K::Value</span><span class="op">&gt;</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">K</span>: <span class="ident">DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">next_key_seed</span>&lt;<span class="ident">K</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">K</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">K::Value</span>&gt;, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">K</span>: <span class="ident">DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">left</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="self">self</span>.<span class="ident">left</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">left</span> &gt; <span class="number">0</span> {
+            <span class="self">self</span>.<span class="ident">left</span> -= <span class="number">1</span>;
             <span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>).<span class="ident">map</span>(<span class="prelude-val">Some</span>)
         } <span class="kw">else</span> {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
@@ -1823,56 +1823,56 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next_value_seed</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">next_value_seed</span>&lt;<span class="ident">V</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">left</span>.<span class="ident">try_into</span>().<span class="ident">ok</span>()
     }
 }
 
-<span class="kw">struct</span> <span class="ident">UnitVariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>,
+<span class="kw">struct</span> <span class="ident">UnitVariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span>&gt; {
+    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">UnitVariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span>&gt; <span class="ident">UnitVariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="ident">UnitVariantAccess</span> { <span class="ident">de</span> }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::EnumAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
-    <span class="kw">for</span> <span class="ident">UnitVariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::EnumAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt;
+    <span class="kw">for</span> <span class="ident">UnitVariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt;
 {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
-    <span class="kw">type</span> <span class="ident">Variant</span> <span class="op">=</span> <span class="self">Self</span>;
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
+    <span class="kw">type</span> <span class="ident">Variant</span> = <span class="self">Self</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">variant_seed</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">V::Value</span>, <span class="self">Self</span>), <span class="ident">Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">variant_seed</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">V::Value</span>, <span class="self">Self</span>), <span class="ident">Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">V</span>: <span class="ident">de::DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">V</span>: <span class="ident">de::DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">variant</span> <span class="op">=</span> <span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">variant</span> = <span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((<span class="ident">variant</span>, <span class="self">self</span>))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
-    <span class="kw">for</span> <span class="ident">UnitVariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; + <span class="lifetime">&#39;a</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::VariantAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt;
+    <span class="kw">for</span> <span class="ident">UnitVariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt;
 {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
-    <span class="kw">fn</span> <span class="ident">unit_variant</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">unit_variant</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Error</span>&gt; {
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">newtype_variant_seed</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">_seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">newtype_variant_seed</span>&lt;<span class="ident">T</span>&gt;(<span class="self">self</span>, <span class="ident">_seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T::Value</span>, <span class="ident">Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">de::DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">T</span>: <span class="ident">de::DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
         <span class="prelude-val">Err</span>(<span class="ident">de::Error::invalid_type</span>(
             <span class="ident">Unexpected::UnitVariant</span>,
@@ -1880,9 +1880,9 @@
         ))
     }
 
-    <span class="kw">fn</span> <span class="ident">tuple_variant</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">_len</span>: <span class="ident">usize</span>, <span class="ident">_visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">tuple_variant</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">_len</span>: <span class="ident">usize</span>, <span class="ident">_visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">V</span>: <span class="ident">de::Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">V</span>: <span class="ident">de::Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
         <span class="prelude-val">Err</span>(<span class="ident">de::Error::invalid_type</span>(
             <span class="ident">Unexpected::UnitVariant</span>,
@@ -1890,13 +1890,13 @@
         ))
     }
 
-    <span class="kw">fn</span> <span class="ident">struct_variant</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(
+    <span class="kw">fn</span> <span class="ident">struct_variant</span>&lt;<span class="ident">V</span>&gt;(
         <span class="self">self</span>,
         <span class="ident">_fields</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>],
         <span class="ident">_visitor</span>: <span class="ident">V</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
     <span class="kw">where</span>
-        <span class="ident">V</span>: <span class="ident">de::Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+        <span class="ident">V</span>: <span class="ident">de::Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
         <span class="prelude-val">Err</span>(<span class="ident">de::Error::invalid_type</span>(
             <span class="ident">Unexpected::UnitVariant</span>,
@@ -1905,54 +1905,54 @@
     }
 }
 
-<span class="kw">struct</span> <span class="ident">VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>,
+<span class="kw">struct</span> <span class="ident">VariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="lifetime">&#39;a</span>, <span class="ident">C</span>&gt; <span class="ident">VariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">de</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Deserializer</span>&lt;<span class="ident">R</span>, <span class="ident">C</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="ident">VariantAccess</span> { <span class="ident">de</span> }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::EnumAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
-    <span class="kw">type</span> <span class="ident">Variant</span> <span class="op">=</span> <span class="self">Self</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::EnumAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">VariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
+    <span class="kw">type</span> <span class="ident">Variant</span> = <span class="self">Self</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">variant_seed</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">V::Value</span>, <span class="self">Self</span>), <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">de::DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>,
+    <span class="kw">fn</span> <span class="ident">variant_seed</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">V::Value</span>, <span class="self">Self</span>), <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">de::DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;,
     {
         <span class="prelude-val">Ok</span>((<span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">de</span>)<span class="question-mark">?</span>, <span class="self">self</span>))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>, <span class="ident">C</span>: <span class="ident">SerializerConfig</span><span class="op">&gt;</span> <span class="ident">de::VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">VariantAccess</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Error</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;, <span class="ident">C</span>: <span class="ident">SerializerConfig</span>&gt; <span class="ident">de::VariantAccess</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">VariantAccess</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">C</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Error</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">unit_variant</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">unit_variant</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Error</span>&gt; {
         <span class="ident">decode::read_nil</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">de</span>.<span class="ident">rd</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">newtype_variant_seed</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">DeserializeSeed</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">newtype_variant_seed</span>&lt;<span class="ident">T</span>&gt;(<span class="self">self</span>, <span class="ident">seed</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T::Value</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">DeserializeSeed</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="ident">seed</span>.<span class="ident">deserialize</span>(<span class="self">self</span>.<span class="ident">de</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">tuple_variant</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">tuple_variant</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>, <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="ident">de::Deserializer::deserialize_tuple</span>(<span class="self">self</span>.<span class="ident">de</span>, <span class="ident">len</span>, <span class="ident">visitor</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">struct_variant</span><span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>], <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">V::Value</span>, <span class="ident">Error</span><span class="op">&gt;</span>
-        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">struct_variant</span>&lt;<span class="ident">V</span>&gt;(<span class="self">self</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>], <span class="ident">visitor</span>: <span class="ident">V</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">V::Value</span>, <span class="ident">Error</span>&gt;
+        <span class="kw">where</span> <span class="ident">V</span>: <span class="ident">Visitor</span>&lt;<span class="lifetime">&#39;de</span>&gt;
     {
         <span class="ident">de::Deserializer::deserialize_tuple</span>(<span class="self">self</span>.<span class="ident">de</span>, <span class="ident">fields</span>.<span class="ident">len</span>(), <span class="ident">visitor</span>)
     }
@@ -1960,7 +1960,7 @@
 
 <span class="doccomment">/// Unification of both borrowed and non-borrowed reference types.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Reference</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;c</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Reference</span>&lt;<span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;c</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> + <span class="lifetime">&#39;static</span>&gt; {
     <span class="doccomment">/// The reference is pointed at data that was borrowed.</span>
     <span class="ident">Borrowed</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="ident">T</span>),
     <span class="doccomment">/// The reference is pointed at data that was copied.</span>
@@ -1970,19 +1970,19 @@
 <span class="doccomment">/// Extends the `Read` trait by allowing to read slices directly by borrowing bytes.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Used to allow zero-copy reading.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span>: <span class="ident">Read</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt;: <span class="ident">Read</span> {
     <span class="doccomment">/// Reads the exact number of bytes from the underlying byte-array.</span>
-    <span class="kw">fn</span> <span class="ident">read_slice</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Reference</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">io::Error</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">read_slice</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Reference</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]&gt;, <span class="ident">io::Error</span>&gt;;
 }
 
 <span class="doccomment">/// Owned reader wrapper.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReadReader</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt; {
     <span class="ident">rd</span>: <span class="ident">R</span>,
-    <span class="ident">buf</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    <span class="ident">buf</span>: <span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span> <span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt; <span class="ident">ReadReader</span>&lt;<span class="ident">R</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rd</span>: <span class="ident">R</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">ReadReader</span> {
@@ -1992,12 +1992,12 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span> <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">R</span>: <span class="ident">Read</span>&gt; <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">ReadReader</span>&lt;<span class="ident">R</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read_slice</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Reference</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">io::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read_slice</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Reference</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]&gt;, <span class="ident">io::Error</span>&gt; {
         <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">clear</span>();
-        <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">by_ref</span>().<span class="ident">take</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u64</span>).<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buf</span>)<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">read</span> <span class="op">!</span><span class="op">=</span> <span class="ident">len</span> {
+        <span class="kw">let</span> <span class="ident">read</span> = <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">by_ref</span>().<span class="ident">take</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u64</span>).<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buf</span>)<span class="question-mark">?</span>;
+        <span class="kw">if</span> <span class="ident">read</span> != <span class="ident">len</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">io::ErrorKind::UnexpectedEof</span>.<span class="ident">into</span>());
         }
 
@@ -2005,33 +2005,33 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Read</span><span class="op">&gt;</span> <span class="ident">Read</span> <span class="kw">for</span> <span class="ident">ReadReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Read</span>&gt; <span class="ident">Read</span> <span class="kw">for</span> <span class="ident">ReadReader</span>&lt;<span class="ident">R</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read</span>(<span class="ident">buf</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
         <span class="self">self</span>.<span class="ident">rd</span>.<span class="ident">read_exact</span>(<span class="ident">buf</span>)
     }
 }
 
 <span class="doccomment">/// Borrowed reader wrapper.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="question-mark">?</span><span class="ident">Sized</span>&gt; {
     <span class="ident">whole_slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">R</span>,
     <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>&gt; <span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>&gt; {
     <span class="doccomment">/// Returns the part that hasn&#39;t been consumed yet</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">remaining_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>] {
         <span class="self">self</span>.<span class="ident">buf</span>
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt; + <span class="question-mark">?</span><span class="ident">Sized</span>&gt; <span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
@@ -2041,34 +2041,34 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Read</span> <span class="kw">for</span> <span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt; + <span class="question-mark">?</span><span class="ident">Sized</span>&gt; <span class="ident">Read</span> <span class="kw">for</span> <span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">io::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">io::Error</span>&gt; {
         <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">read</span>(<span class="ident">buf</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">io::Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">io::Error</span>&gt; {
         <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">read_exact</span>(<span class="ident">buf</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">T</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">ReadSlice</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ReadRefReader</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">T</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt; + <span class="question-mark">?</span><span class="ident">Sized</span>&gt; <span class="ident">ReadSlice</span>&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for</span> <span class="ident">ReadRefReader</span>&lt;<span class="lifetime">&#39;de</span>, <span class="ident">T</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">read_slice</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Reference</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">io::Error</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">len</span> <span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">len</span>() {
+    <span class="kw">fn</span> <span class="ident">read_slice</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Reference</span>&lt;<span class="lifetime">&#39;de</span>, <span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]&gt;, <span class="ident">io::Error</span>&gt; {
+        <span class="kw">if</span> <span class="ident">len</span> &gt; <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">len</span>() {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorKind::UnexpectedEof</span>.<span class="ident">into</span>());
         }
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split_at</span>(<span class="ident">len</span>);
-        <span class="self">self</span>.<span class="ident">buf</span> <span class="op">=</span> <span class="ident">b</span>;
+        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>) = <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split_at</span>(<span class="ident">len</span>);
+        <span class="self">self</span>.<span class="ident">buf</span> = <span class="ident">b</span>;
         <span class="prelude-val">Ok</span>(<span class="ident">Reference::Borrowed</span>(<span class="ident">a</span>))
     }
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">test_as_ref_reader</span>() {
-    <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span>];
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rd</span> <span class="op">=</span> <span class="ident">ReadRefReader::new</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>);
+    <span class="kw">let</span> <span class="ident">buf</span> = [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span>];
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rd</span> = <span class="ident">ReadRefReader::new</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>);
 
     <span class="macro">assert_eq!</span>(<span class="ident">rd</span>.<span class="ident">read_slice</span>(<span class="number">1</span>).<span class="ident">unwrap</span>(), <span class="ident">Reference::Borrowed</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>][..]));
     <span class="macro">assert_eq!</span>(<span class="ident">rd</span>.<span class="ident">read_slice</span>(<span class="number">6</span>).<span class="ident">unwrap</span>(), <span class="ident">Reference::Borrowed</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>][..]));
@@ -2084,7 +2084,7 @@
 <span class="doccomment">/// by `T`. It can also fail if the structure is correct but `T`&#39;s implementation of `Deserialize`</span>
 <span class="doccomment">/// decides that something is wrong with the data, for example required struct fields are missing.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_read</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_read</span>&lt;<span class="ident">R</span>, <span class="ident">T</span>&gt;(<span class="ident">rd</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">Error</span>&gt;
 <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">Read</span>,
       <span class="ident">T</span>: <span class="ident">DeserializeOwned</span>
 {
@@ -2120,23 +2120,23 @@
 <span class="doccomment">/// ```</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_slice</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_slice</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>&gt;(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">Error</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>
+    <span class="ident">T</span>: <span class="ident">Deserialize</span>&lt;<span class="lifetime">&#39;a</span>&gt;
 {
     <span class="ident">from_read_ref</span>(<span class="ident">input</span>)
 }
 
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;use from_slice&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_read_ref</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+<span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">note</span> = <span class="string">&quot;use from_slice&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_read_ref</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">R</span>, <span class="ident">T</span>&gt;(<span class="ident">rd</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">T</span>, <span class="ident">Error</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
-    <span class="ident">T</span>: <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
+    <span class="ident">R</span>: <span class="ident">AsRef</span>&lt;[<span class="ident">u8</span>]&gt; + <span class="question-mark">?</span><span class="ident">Sized</span>,
+    <span class="ident">T</span>: <span class="ident">Deserialize</span>&lt;<span class="lifetime">&#39;a</span>&gt;,
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">de</span> <span class="op">=</span> <span class="ident">Deserializer::from_read_ref</span>(<span class="ident">rd</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">de</span> = <span class="ident">Deserializer::from_read_ref</span>(<span class="ident">rd</span>);
     <span class="ident">Deserialize::deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="ident">de</span>)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rmp_serde" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rmp_serde" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

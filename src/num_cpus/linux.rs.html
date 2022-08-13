@@ -455,18 +455,18 @@
 }
 
 <span class="kw">fn</span> <span class="ident">logical_cpus</span>() -&gt; <span class="ident">usize</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span>: <span class="ident">libc::cpu_set_t</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() };
-    <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">libc::sched_getaffinity</span>(<span class="number">0</span>, <span class="ident">mem::size_of</span>::<span class="op">&lt;</span><span class="ident">libc::cpu_set_t</span><span class="op">&gt;</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">set</span>) } <span class="op">==</span> <span class="number">0</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span>: <span class="ident">libc::cpu_set_t</span> = <span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() };
+    <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">libc::sched_getaffinity</span>(<span class="number">0</span>, <span class="ident">mem::size_of</span>::&lt;<span class="ident">libc::cpu_set_t</span>&gt;(), <span class="kw-2">&amp;mut</span> <span class="ident">set</span>) } == <span class="number">0</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span>: <span class="ident">u32</span> = <span class="number">0</span>;
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">libc::CPU_SETSIZE</span> <span class="kw">as</span> <span class="ident">usize</span> {
             <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">libc::CPU_ISSET</span>(<span class="ident">i</span>, <span class="kw-2">&amp;</span><span class="ident">set</span>) } {
-                <span class="ident">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>
+                <span class="ident">count</span> += <span class="number">1</span>
             }
         }
         <span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span>
     } <span class="kw">else</span> {
-        <span class="kw">let</span> <span class="ident">cpus</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">libc::sysconf</span>(<span class="ident">libc::_SC_NPROCESSORS_ONLN</span>) };
-        <span class="kw">if</span> <span class="ident">cpus</span> <span class="op">&lt;</span> <span class="number">1</span> {
+        <span class="kw">let</span> <span class="ident">cpus</span> = <span class="kw">unsafe</span> { <span class="ident">libc::sysconf</span>(<span class="ident">libc::_SC_NPROCESSORS_ONLN</span>) };
+        <span class="kw">if</span> <span class="ident">cpus</span> &lt; <span class="number">1</span> {
             <span class="number">1</span>
         } <span class="kw">else</span> {
             <span class="ident">cpus</span> <span class="kw">as</span> <span class="ident">usize</span>
@@ -475,43 +475,43 @@
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_num_physical_cpus</span>() -&gt; <span class="ident">usize</span> {
-    <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">File::open</span>(<span class="string">&quot;/proc/cpuinfo&quot;</span>) {
+    <span class="kw">let</span> <span class="ident">file</span> = <span class="kw">match</span> <span class="ident">File::open</span>(<span class="string">&quot;/proc/cpuinfo&quot;</span>) {
         <span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">val</span>,
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span> <span class="ident">get_num_cpus</span>(),
     };
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">physid</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cores</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chgcount</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">for</span> <span class="ident">line</span> <span class="kw">in</span> <span class="ident">reader</span>.<span class="ident">lines</span>().<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> <span class="ident">result</span>.<span class="ident">ok</span>()) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">it</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39;:&#39;</span>);
-        <span class="kw">let</span> (<span class="ident">key</span>, <span class="ident">value</span>) <span class="op">=</span> <span class="kw">match</span> (<span class="ident">it</span>.<span class="ident">next</span>(), <span class="ident">it</span>.<span class="ident">next</span>()) {
+    <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span> = <span class="ident">HashMap::new</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">physid</span>: <span class="ident">u32</span> = <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cores</span>: <span class="ident">usize</span> = <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chgcount</span> = <span class="number">0</span>;
+    <span class="kw">for</span> <span class="ident">line</span> <span class="kw">in</span> <span class="ident">reader</span>.<span class="ident">lines</span>().<span class="ident">filter_map</span>(|<span class="ident">result</span>| <span class="ident">result</span>.<span class="ident">ok</span>()) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">it</span> = <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39;:&#39;</span>);
+        <span class="kw">let</span> (<span class="ident">key</span>, <span class="ident">value</span>) = <span class="kw">match</span> (<span class="ident">it</span>.<span class="ident">next</span>(), <span class="ident">it</span>.<span class="ident">next</span>()) {
             (<span class="prelude-val">Some</span>(<span class="ident">key</span>), <span class="prelude-val">Some</span>(<span class="ident">value</span>)) =&gt; (<span class="ident">key</span>.<span class="ident">trim</span>(), <span class="ident">value</span>.<span class="ident">trim</span>()),
             <span class="kw">_</span> =&gt; <span class="kw">continue</span>,
         };
-        <span class="kw">if</span> <span class="ident">key</span> <span class="op">==</span> <span class="string">&quot;physical id&quot;</span> {
+        <span class="kw">if</span> <span class="ident">key</span> == <span class="string">&quot;physical id&quot;</span> {
             <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">parse</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">physid</span> <span class="op">=</span> <span class="ident">val</span>,
+                <span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">physid</span> = <span class="ident">val</span>,
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
             };
-            <span class="ident">chgcount</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            <span class="ident">chgcount</span> += <span class="number">1</span>;
         }
-        <span class="kw">if</span> <span class="ident">key</span> <span class="op">==</span> <span class="string">&quot;cpu cores&quot;</span> {
+        <span class="kw">if</span> <span class="ident">key</span> == <span class="string">&quot;cpu cores&quot;</span> {
             <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">parse</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">cores</span> <span class="op">=</span> <span class="ident">val</span>,
+                <span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">cores</span> = <span class="ident">val</span>,
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
             };
-            <span class="ident">chgcount</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            <span class="ident">chgcount</span> += <span class="number">1</span>;
         }
-        <span class="kw">if</span> <span class="ident">chgcount</span> <span class="op">==</span> <span class="number">2</span> {
+        <span class="kw">if</span> <span class="ident">chgcount</span> == <span class="number">2</span> {
             <span class="ident">map</span>.<span class="ident">insert</span>(<span class="ident">physid</span>, <span class="ident">cores</span>);
-            <span class="ident">chgcount</span> <span class="op">=</span> <span class="number">0</span>;
+            <span class="ident">chgcount</span> = <span class="number">0</span>;
         }
     }
-    <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">map</span>.<span class="ident">into_iter</span>().<span class="ident">fold</span>(<span class="number">0</span>, <span class="op">|</span><span class="ident">acc</span>, (<span class="kw">_</span>, <span class="ident">cores</span>)<span class="op">|</span> <span class="ident">acc</span> <span class="op">+</span> <span class="ident">cores</span>);
+    <span class="kw">let</span> <span class="ident">count</span> = <span class="ident">map</span>.<span class="ident">into_iter</span>().<span class="ident">fold</span>(<span class="number">0</span>, |<span class="ident">acc</span>, (<span class="kw">_</span>, <span class="ident">cores</span>)| <span class="ident">acc</span> + <span class="ident">cores</span>);
 
-    <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">if</span> <span class="ident">count</span> == <span class="number">0</span> {
         <span class="ident">get_num_cpus</span>()
     } <span class="kw">else</span> {
         <span class="ident">count</span>
@@ -523,17 +523,17 @@
 <span class="doccomment">/// If 0, check logical cpus.</span>
 <span class="comment">// Allow deprecation warnings, we want to work on older rustc</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">warnings</span>)]</span>
-<span class="kw">static</span> <span class="ident">CGROUPS_CPUS</span>: <span class="ident">AtomicUsize</span> <span class="op">=</span> <span class="ident">::std::sync::atomic::ATOMIC_USIZE_INIT</span>;
+<span class="kw">static</span> <span class="ident">CGROUPS_CPUS</span>: <span class="ident">AtomicUsize</span> = <span class="ident">::std::sync::atomic::ATOMIC_USIZE_INIT</span>;
 
-<span class="kw">fn</span> <span class="ident">cgroups_num_cpus</span>() -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">cgroups_num_cpus</span>() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">warnings</span>)]</span>
-    <span class="kw">static</span> <span class="ident">ONCE</span>: <span class="ident">Once</span> <span class="op">=</span> <span class="ident">::std::sync::ONCE_INIT</span>;
+    <span class="kw">static</span> <span class="ident">ONCE</span>: <span class="ident">Once</span> = <span class="ident">::std::sync::ONCE_INIT</span>;
 
     <span class="ident">ONCE</span>.<span class="ident">call_once</span>(<span class="ident">init_cgroups</span>);
 
-    <span class="kw">let</span> <span class="ident">cpus</span> <span class="op">=</span> <span class="ident">CGROUPS_CPUS</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+    <span class="kw">let</span> <span class="ident">cpus</span> = <span class="ident">CGROUPS_CPUS</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
 
-    <span class="kw">if</span> <span class="ident">cpus</span> <span class="op">&gt;</span> <span class="number">0</span> {
+    <span class="kw">if</span> <span class="ident">cpus</span> &gt; <span class="number">0</span> {
         <span class="prelude-val">Some</span>(<span class="ident">cpus</span>)
     } <span class="kw">else</span> {
         <span class="prelude-val">None</span>
@@ -542,28 +542,28 @@
 
 <span class="kw">fn</span> <span class="ident">init_cgroups</span>() {
     <span class="comment">// Should only be called once</span>
-    <span class="macro">debug_assert!</span>(<span class="ident">CGROUPS_CPUS</span>.<span class="ident">load</span>(<span class="ident">Ordering::SeqCst</span>) <span class="op">==</span> <span class="number">0</span>);
+    <span class="macro">debug_assert!</span>(<span class="ident">CGROUPS_CPUS</span>.<span class="ident">load</span>(<span class="ident">Ordering::SeqCst</span>) == <span class="number">0</span>);
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">quota</span>) <span class="op">=</span> <span class="ident">load_cgroups</span>(<span class="string">&quot;/proc/self/cgroup&quot;</span>, <span class="string">&quot;/proc/self/mountinfo&quot;</span>) {
-        <span class="kw">if</span> <span class="ident">quota</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">quota</span>) = <span class="ident">load_cgroups</span>(<span class="string">&quot;/proc/self/cgroup&quot;</span>, <span class="string">&quot;/proc/self/mountinfo&quot;</span>) {
+        <span class="kw">if</span> <span class="ident">quota</span> == <span class="number">0</span> {
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">logical</span> <span class="op">=</span> <span class="ident">logical_cpus</span>();
-        <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">::std::cmp::min</span>(<span class="ident">quota</span>, <span class="ident">logical</span>);
+        <span class="kw">let</span> <span class="ident">logical</span> = <span class="ident">logical_cpus</span>();
+        <span class="kw">let</span> <span class="ident">count</span> = <span class="ident">::std::cmp::min</span>(<span class="ident">quota</span>, <span class="ident">logical</span>);
 
         <span class="ident">CGROUPS_CPUS</span>.<span class="ident">store</span>(<span class="ident">count</span>, <span class="ident">Ordering::SeqCst</span>);
     }
 }
 
-<span class="kw">fn</span> <span class="ident">load_cgroups</span><span class="op">&lt;</span><span class="ident">P1</span>, <span class="ident">P2</span><span class="op">&gt;</span>(<span class="ident">cgroup_proc</span>: <span class="ident">P1</span>, <span class="ident">mountinfo_proc</span>: <span class="ident">P2</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>
+<span class="kw">fn</span> <span class="ident">load_cgroups</span>&lt;<span class="ident">P1</span>, <span class="ident">P2</span>&gt;(<span class="ident">cgroup_proc</span>: <span class="ident">P1</span>, <span class="ident">mountinfo_proc</span>: <span class="ident">P2</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">P1</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
-    <span class="ident">P2</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>,
+    <span class="ident">P1</span>: <span class="ident">AsRef</span>&lt;<span class="ident">Path</span>&gt;,
+    <span class="ident">P2</span>: <span class="ident">AsRef</span>&lt;<span class="ident">Path</span>&gt;,
 {
-    <span class="kw">let</span> <span class="ident">subsys</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">Subsys::load_cpu</span>(<span class="ident">cgroup_proc</span>));
-    <span class="kw">let</span> <span class="ident">mntinfo</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">MountInfo::load_cpu</span>(<span class="ident">mountinfo_proc</span>));
-    <span class="kw">let</span> <span class="ident">cgroup</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">Cgroup::translate</span>(<span class="ident">mntinfo</span>, <span class="ident">subsys</span>));
+    <span class="kw">let</span> <span class="ident">subsys</span> = <span class="macro">some!</span>(<span class="ident">Subsys::load_cpu</span>(<span class="ident">cgroup_proc</span>));
+    <span class="kw">let</span> <span class="ident">mntinfo</span> = <span class="macro">some!</span>(<span class="ident">MountInfo::load_cpu</span>(<span class="ident">mountinfo_proc</span>));
+    <span class="kw">let</span> <span class="ident">cgroup</span> = <span class="macro">some!</span>(<span class="ident">Cgroup::translate</span>(<span class="ident">mntinfo</span>, <span class="ident">subsys</span>));
     <span class="ident">cgroup</span>.<span class="ident">cpu_quota</span>()
 }
 
@@ -585,50 +585,50 @@
         <span class="ident">Cgroup</span> { <span class="ident">base</span>: <span class="ident">dir</span> }
     }
 
-    <span class="kw">fn</span> <span class="ident">translate</span>(<span class="ident">mntinfo</span>: <span class="ident">MountInfo</span>, <span class="ident">subsys</span>: <span class="ident">Subsys</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cgroup</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">translate</span>(<span class="ident">mntinfo</span>: <span class="ident">MountInfo</span>, <span class="ident">subsys</span>: <span class="ident">Subsys</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Cgroup</span>&gt; {
         <span class="comment">// Translate the subsystem directory via the host paths.</span>
         <span class="macro">debug!</span>(
             <span class="string">&quot;subsys = {:?}; root = {:?}; mount_point = {:?}&quot;</span>,
             <span class="ident">subsys</span>.<span class="ident">base</span>, <span class="ident">mntinfo</span>.<span class="ident">root</span>, <span class="ident">mntinfo</span>.<span class="ident">mount_point</span>
         );
 
-        <span class="kw">let</span> <span class="ident">rel_from_root</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">Path::new</span>(<span class="kw-2">&amp;</span><span class="ident">subsys</span>.<span class="ident">base</span>).<span class="ident">strip_prefix</span>(<span class="kw-2">&amp;</span><span class="ident">mntinfo</span>.<span class="ident">root</span>).<span class="ident">ok</span>());
+        <span class="kw">let</span> <span class="ident">rel_from_root</span> = <span class="macro">some!</span>(<span class="ident">Path::new</span>(<span class="kw-2">&amp;</span><span class="ident">subsys</span>.<span class="ident">base</span>).<span class="ident">strip_prefix</span>(<span class="kw-2">&amp;</span><span class="ident">mntinfo</span>.<span class="ident">root</span>).<span class="ident">ok</span>());
 
         <span class="macro">debug!</span>(<span class="string">&quot;rel_from_root: {:?}&quot;</span>, <span class="ident">rel_from_root</span>);
 
         <span class="comment">// join(mp.MountPoint, relPath)</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">PathBuf::from</span>(<span class="ident">mntinfo</span>.<span class="ident">mount_point</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">path</span> = <span class="ident">PathBuf::from</span>(<span class="ident">mntinfo</span>.<span class="ident">mount_point</span>);
         <span class="ident">path</span>.<span class="ident">push</span>(<span class="ident">rel_from_root</span>);
         <span class="prelude-val">Some</span>(<span class="ident">Cgroup::new</span>(<span class="ident">path</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">cpu_quota</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">quota_us</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="self">self</span>.<span class="ident">quota_us</span>());
-        <span class="kw">let</span> <span class="ident">period_us</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="self">self</span>.<span class="ident">period_us</span>());
+    <span class="kw">fn</span> <span class="ident">cpu_quota</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
+        <span class="kw">let</span> <span class="ident">quota_us</span> = <span class="macro">some!</span>(<span class="self">self</span>.<span class="ident">quota_us</span>());
+        <span class="kw">let</span> <span class="ident">period_us</span> = <span class="macro">some!</span>(<span class="self">self</span>.<span class="ident">period_us</span>());
 
         <span class="comment">// protect against dividing by zero</span>
-        <span class="kw">if</span> <span class="ident">period_us</span> <span class="op">==</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="ident">period_us</span> == <span class="number">0</span> {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
 
         <span class="comment">// Ceil the division, since we want to be able to saturate</span>
         <span class="comment">// the available CPUs, and flooring would leave a CPU un-utilized.</span>
 
-        <span class="prelude-val">Some</span>((<span class="ident">quota_us</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="ident">period_us</span> <span class="kw">as</span> <span class="ident">f64</span>).<span class="ident">ceil</span>() <span class="kw">as</span> <span class="ident">usize</span>)
+        <span class="prelude-val">Some</span>((<span class="ident">quota_us</span> <span class="kw">as</span> <span class="ident">f64</span> / <span class="ident">period_us</span> <span class="kw">as</span> <span class="ident">f64</span>).<span class="ident">ceil</span>() <span class="kw">as</span> <span class="ident">usize</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">quota_us</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">quota_us</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">param</span>(<span class="string">&quot;cpu.cfs_quota_us&quot;</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">period_us</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">period_us</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">param</span>(<span class="string">&quot;cpu.cfs_period_us&quot;</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">param</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="self">self</span>.<span class="ident">base</span>.<span class="ident">join</span>(<span class="ident">param</span>)).<span class="ident">ok</span>());
+    <span class="kw">fn</span> <span class="ident">param</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">param</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> = <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="self">self</span>.<span class="ident">base</span>.<span class="ident">join</span>(<span class="ident">param</span>)).<span class="ident">ok</span>());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">String::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">String::new</span>();
         <span class="macro">some!</span>(<span class="ident">file</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="ident">ok</span>());
 
         <span class="ident">buf</span>.<span class="ident">trim</span>().<span class="ident">parse</span>().<span class="ident">ok</span>()
@@ -636,44 +636,44 @@
 }
 
 <span class="kw">impl</span> <span class="ident">MountInfo</span> {
-    <span class="kw">fn</span> <span class="ident">load_cpu</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">proc_path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MountInfo</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="ident">proc_path</span>).<span class="ident">ok</span>());
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
+    <span class="kw">fn</span> <span class="ident">load_cpu</span>&lt;<span class="ident">P</span>: <span class="ident">AsRef</span>&lt;<span class="ident">Path</span>&gt;&gt;(<span class="ident">proc_path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">MountInfo</span>&gt; {
+        <span class="kw">let</span> <span class="ident">file</span> = <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="ident">proc_path</span>).<span class="ident">ok</span>());
+        <span class="kw">let</span> <span class="ident">file</span> = <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
 
         <span class="ident">file</span>.<span class="ident">lines</span>()
-            .<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> <span class="ident">result</span>.<span class="ident">ok</span>())
+            .<span class="ident">filter_map</span>(|<span class="ident">result</span>| <span class="ident">result</span>.<span class="ident">ok</span>())
             .<span class="ident">filter_map</span>(<span class="ident">MountInfo::parse_line</span>)
             .<span class="ident">next</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="ident">line</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MountInfo</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39; &#39;</span>);
+    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="ident">line</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">MountInfo</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> = <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39; &#39;</span>);
 
         <span class="comment">// 7 5 0:6 &lt;/&gt; /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:7 - cgroup cgroup rw,cpu,cpuacct</span>
-        <span class="kw">let</span> <span class="ident">mnt_root</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">3</span>));
+        <span class="kw">let</span> <span class="ident">mnt_root</span> = <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">3</span>));
         <span class="comment">// 7 5 0:6 / &lt;/sys/fs/cgroup/cpu,cpuacct&gt; rw,nosuid,nodev,noexec,relatime shared:7 - cgroup cgroup rw,cpu,cpuacct</span>
-        <span class="kw">let</span> <span class="ident">mnt_point</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">next</span>());
+        <span class="kw">let</span> <span class="ident">mnt_point</span> = <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">next</span>());
 
         <span class="comment">// Ignore all fields until the separator(-).</span>
         <span class="comment">// Note: there could be zero or more optional fields before hyphen.</span>
         <span class="comment">// See: https://man7.org/linux/man-pages/man5/proc.5.html</span>
         <span class="comment">// 7 5 0:6 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:7 &lt;-&gt; cgroup cgroup rw,cpu,cpuacct</span>
         <span class="comment">// Note: we cannot use `?` here because we need to support Rust 1.13.</span>
-        <span class="kw">match</span> <span class="ident">fields</span>.<span class="ident">find</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span> <span class="op">==</span> <span class="string">&quot;-&quot;</span>) {
+        <span class="kw">match</span> <span class="ident">fields</span>.<span class="ident">find</span>(|<span class="kw-2">&amp;</span><span class="ident">s</span>| <span class="ident">s</span> == <span class="string">&quot;-&quot;</span>) {
             <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {}
             <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
         };
 
         <span class="comment">// 7 5 0:6 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:7 - &lt;cgroup&gt; cgroup rw,cpu,cpuacct</span>
-        <span class="kw">if</span> <span class="ident">fields</span>.<span class="ident">next</span>() <span class="op">!</span><span class="op">=</span> <span class="prelude-val">Some</span>(<span class="string">&quot;cgroup&quot;</span>) {
+        <span class="kw">if</span> <span class="ident">fields</span>.<span class="ident">next</span>() != <span class="prelude-val">Some</span>(<span class="string">&quot;cgroup&quot;</span>) {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
 
         <span class="comment">// 7 5 0:6 / /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:7 - cgroup cgroup &lt;rw,cpu,cpuacct&gt;</span>
-        <span class="kw">let</span> <span class="ident">super_opts</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">1</span>));
+        <span class="kw">let</span> <span class="ident">super_opts</span> = <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">1</span>));
 
         <span class="comment">// We only care about the &#39;cpu&#39; option</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">super_opts</span>.<span class="ident">split</span>(<span class="string">&#39;,&#39;</span>).<span class="ident">any</span>(<span class="op">|</span><span class="ident">opt</span><span class="op">|</span> <span class="ident">opt</span> <span class="op">==</span> <span class="string">&quot;cpu&quot;</span>) {
+        <span class="kw">if</span> !<span class="ident">super_opts</span>.<span class="ident">split</span>(<span class="string">&#39;,&#39;</span>).<span class="ident">any</span>(|<span class="ident">opt</span>| <span class="ident">opt</span> == <span class="string">&quot;cpu&quot;</span>) {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
 
@@ -685,28 +685,28 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Subsys</span> {
-    <span class="kw">fn</span> <span class="ident">load_cpu</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">proc_path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Subsys</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="ident">proc_path</span>).<span class="ident">ok</span>());
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
+    <span class="kw">fn</span> <span class="ident">load_cpu</span>&lt;<span class="ident">P</span>: <span class="ident">AsRef</span>&lt;<span class="ident">Path</span>&gt;&gt;(<span class="ident">proc_path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Subsys</span>&gt; {
+        <span class="kw">let</span> <span class="ident">file</span> = <span class="macro">some!</span>(<span class="ident">File::open</span>(<span class="ident">proc_path</span>).<span class="ident">ok</span>());
+        <span class="kw">let</span> <span class="ident">file</span> = <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
 
         <span class="ident">file</span>.<span class="ident">lines</span>()
-            .<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> <span class="ident">result</span>.<span class="ident">ok</span>())
+            .<span class="ident">filter_map</span>(|<span class="ident">result</span>| <span class="ident">result</span>.<span class="ident">ok</span>())
             .<span class="ident">filter_map</span>(<span class="ident">Subsys::parse_line</span>)
             .<span class="ident">next</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="ident">line</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Subsys</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="ident">line</span>: <span class="ident">String</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Subsys</span>&gt; {
         <span class="comment">// Example format:</span>
         <span class="comment">// 11:cpu,cpuacct:/</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39;:&#39;</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> = <span class="ident">line</span>.<span class="ident">split</span>(<span class="string">&#39;:&#39;</span>);
 
-        <span class="kw">let</span> <span class="ident">sub_systems</span> <span class="op">=</span> <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">1</span>));
+        <span class="kw">let</span> <span class="ident">sub_systems</span> = <span class="macro">some!</span>(<span class="ident">fields</span>.<span class="ident">nth</span>(<span class="number">1</span>));
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">sub_systems</span>.<span class="ident">split</span>(<span class="string">&#39;,&#39;</span>).<span class="ident">any</span>(<span class="op">|</span><span class="ident">sub</span><span class="op">|</span> <span class="ident">sub</span> <span class="op">==</span> <span class="string">&quot;cpu&quot;</span>) {
+        <span class="kw">if</span> !<span class="ident">sub_systems</span>.<span class="ident">split</span>(<span class="string">&#39;,&#39;</span>).<span class="ident">any</span>(|<span class="ident">sub</span>| <span class="ident">sub</span> == <span class="string">&quot;cpu&quot;</span>) {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
 
-        <span class="ident">fields</span>.<span class="ident">next</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">Subsys</span> {
+        <span class="ident">fields</span>.<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">path</span>| <span class="ident">Subsys</span> {
             <span class="ident">base</span>: <span class="ident">path</span>.<span class="ident">to_owned</span>(),
         })
     }
@@ -718,39 +718,39 @@
     <span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
 
     <span class="comment">// `static_in_const` feature is not stable in Rust 1.13.</span>
-    <span class="kw">static</span> <span class="ident">FIXTURES_PROC</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;fixtures/cgroups/proc/cgroups&quot;</span>;
+    <span class="kw">static</span> <span class="ident">FIXTURES_PROC</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> = <span class="string">&quot;fixtures/cgroups/proc/cgroups&quot;</span>;
 
-    <span class="kw">static</span> <span class="ident">FIXTURES_CGROUPS</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;fixtures/cgroups/cgroups&quot;</span>;
+    <span class="kw">static</span> <span class="ident">FIXTURES_CGROUPS</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> = <span class="string">&quot;fixtures/cgroups/cgroups&quot;</span>;
 
     <span class="macro">macro_rules!</span> <span class="ident">join</span> {
-        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>:<span class="ident">expr</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">path</span>:<span class="ident">expr</span>),<span class="op">+</span>) =&gt; ({
+        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>:<span class="ident">expr</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">path</span>:<span class="ident">expr</span>),+) =&gt; ({
             <span class="ident">Path::new</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>)
-                $(.<span class="ident">join</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">path</span>))<span class="op">+</span>
+                $(.<span class="ident">join</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">path</span>))+
         })
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_load_mountinfo</span>() {
         <span class="comment">// test only one optional fields</span>
-        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> = <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">mnt_info</span> <span class="op">=</span> <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">mnt_info</span> = <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">root</span>, <span class="string">&quot;/&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">mount_point</span>, <span class="string">&quot;/sys/fs/cgroup/cpu,cpuacct&quot;</span>);
 
         <span class="comment">// test zero optional field</span>
-        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo_zero_opt&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> = <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo_zero_opt&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">mnt_info</span> <span class="op">=</span> <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">mnt_info</span> = <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">root</span>, <span class="string">&quot;/&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">mount_point</span>, <span class="string">&quot;/sys/fs/cgroup/cpu,cpuacct&quot;</span>);
 
         <span class="comment">// test multi optional fields</span>
-        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo_multi_opt&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> = <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;mountinfo_multi_opt&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">mnt_info</span> <span class="op">=</span> <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">mnt_info</span> = <span class="ident">MountInfo::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">root</span>, <span class="string">&quot;/&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">mnt_info</span>.<span class="ident">mount_point</span>, <span class="string">&quot;/sys/fs/cgroup/cpu,cpuacct&quot;</span>);
@@ -758,16 +758,16 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_load_subsys</span>() {
-        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;cgroup&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> = <span class="macro">join!</span>(<span class="ident">FIXTURES_PROC</span>, <span class="string">&quot;cgroup&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">subsys</span> <span class="op">=</span> <span class="ident">Subsys::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">subsys</span> = <span class="ident">Subsys::load_cpu</span>(<span class="ident">path</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">subsys</span>.<span class="ident">base</span>, <span class="string">&quot;/&quot;</span>);
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_cgroup_mount</span>() {
-        <span class="kw">let</span> <span class="ident">cases</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[
+        <span class="kw">let</span> <span class="ident">cases</span> = <span class="kw-2">&amp;</span>[
             (<span class="string">&quot;/&quot;</span>, <span class="string">&quot;/sys/fs/cgroup/cpu&quot;</span>, <span class="string">&quot;/&quot;</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;/sys/fs/cgroup/cpu&quot;</span>)),
             (
                 <span class="string">&quot;/docker/01abcd&quot;</span>,
@@ -800,29 +800,29 @@
         ];
 
         <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="ident">root</span>, <span class="ident">mount_point</span>, <span class="ident">subsys</span>, <span class="ident">expected</span>) <span class="kw">in</span> <span class="ident">cases</span>.<span class="ident">iter</span>() {
-            <span class="kw">let</span> <span class="ident">mnt_info</span> <span class="op">=</span> <span class="ident">MountInfo</span> {
+            <span class="kw">let</span> <span class="ident">mnt_info</span> = <span class="ident">MountInfo</span> {
                 <span class="ident">root</span>: <span class="ident">root</span>.<span class="ident">into</span>(),
                 <span class="ident">mount_point</span>: <span class="ident">mount_point</span>.<span class="ident">into</span>(),
             };
-            <span class="kw">let</span> <span class="ident">subsys</span> <span class="op">=</span> <span class="ident">Subsys</span> {
+            <span class="kw">let</span> <span class="ident">subsys</span> = <span class="ident">Subsys</span> {
                 <span class="ident">base</span>: <span class="ident">subsys</span>.<span class="ident">into</span>(),
             };
 
-            <span class="kw">let</span> <span class="ident">actual</span> <span class="op">=</span> <span class="ident">Cgroup::translate</span>(<span class="ident">mnt_info</span>, <span class="ident">subsys</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">base</span>);
-            <span class="kw">let</span> <span class="ident">expected</span> <span class="op">=</span> <span class="ident">expected</span>.<span class="ident">map</span>(<span class="ident">PathBuf::from</span>);
+            <span class="kw">let</span> <span class="ident">actual</span> = <span class="ident">Cgroup::translate</span>(<span class="ident">mnt_info</span>, <span class="ident">subsys</span>).<span class="ident">map</span>(|<span class="ident">c</span>| <span class="ident">c</span>.<span class="ident">base</span>);
+            <span class="kw">let</span> <span class="ident">expected</span> = <span class="ident">expected</span>.<span class="ident">map</span>(<span class="ident">PathBuf::from</span>);
             <span class="macro">assert_eq!</span>(<span class="ident">actual</span>, <span class="ident">expected</span>);
         }
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_cgroup_cpu_quota</span>() {
-        <span class="kw">let</span> <span class="ident">cgroup</span> <span class="op">=</span> <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;good&quot;</span>));
+        <span class="kw">let</span> <span class="ident">cgroup</span> = <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;good&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">cgroup</span>.<span class="ident">cpu_quota</span>(), <span class="prelude-val">Some</span>(<span class="number">6</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_cgroup_cpu_quota_divide_by_zero</span>() {
-        <span class="kw">let</span> <span class="ident">cgroup</span> <span class="op">=</span> <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;zero-period&quot;</span>));
+        <span class="kw">let</span> <span class="ident">cgroup</span> = <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;zero-period&quot;</span>));
         <span class="macro">assert!</span>(<span class="ident">cgroup</span>.<span class="ident">quota_us</span>().<span class="ident">is_some</span>());
         <span class="macro">assert_eq!</span>(<span class="ident">cgroup</span>.<span class="ident">period_us</span>(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">cgroup</span>.<span class="ident">cpu_quota</span>(), <span class="prelude-val">None</span>);
@@ -830,9 +830,9 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_cgroup_cpu_quota_ceil</span>() {
-        <span class="kw">let</span> <span class="ident">cgroup</span> <span class="op">=</span> <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;ceil&quot;</span>));
+        <span class="kw">let</span> <span class="ident">cgroup</span> = <span class="ident">Cgroup::new</span>(<span class="macro">join!</span>(<span class="ident">FIXTURES_CGROUPS</span>, <span class="string">&quot;ceil&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">cgroup</span>.<span class="ident">cpu_quota</span>(), <span class="prelude-val">Some</span>(<span class="number">2</span>));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="num_cpus" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="num_cpus" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

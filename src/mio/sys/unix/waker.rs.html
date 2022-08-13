@@ -178,7 +178,7 @@
 <span id="178">178</span>
 <span id="179">179</span>
 <span id="180">180</span>
-</pre><pre class="rust"><code><span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;linux&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>))]</span>
+</pre><pre class="rust"><code><span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;linux&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">eventfd</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sys::Selector</span>;
     <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Interest</span>, <span class="ident">Token</span>};
@@ -199,22 +199,22 @@
     }
 
     <span class="kw">impl</span> <span class="ident">Waker</span> {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span> {
-            <span class="macro">syscall!</span>(<span class="ident">eventfd</span>(<span class="number">0</span>, <span class="ident">libc::EFD_CLOEXEC</span> <span class="op">|</span> <span class="ident">libc::EFD_NONBLOCK</span>)).<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">fd</span><span class="op">|</span> {
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">Waker</span>&gt; {
+            <span class="macro">syscall!</span>(<span class="ident">eventfd</span>(<span class="number">0</span>, <span class="ident">libc::EFD_CLOEXEC</span> | <span class="ident">libc::EFD_NONBLOCK</span>)).<span class="ident">and_then</span>(|<span class="ident">fd</span>| {
                 <span class="comment">// Turn the file descriptor into a file first so we&#39;re ensured</span>
                 <span class="comment">// it&#39;s closed when dropped, e.g. when register below fails.</span>
-                <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fd</span>) };
+                <span class="kw">let</span> <span class="ident">file</span> = <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fd</span>) };
                 <span class="ident">selector</span>
                     .<span class="ident">register</span>(<span class="ident">fd</span>, <span class="ident">token</span>, <span class="ident">Interest::READABLE</span>)
-                    .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">Waker</span> { <span class="ident">fd</span>: <span class="ident">file</span> })
+                    .<span class="ident">map</span>(|()| <span class="ident">Waker</span> { <span class="ident">fd</span>: <span class="ident">file</span> })
             })
         }
 
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-            <span class="kw">let</span> <span class="ident">buf</span>: [<span class="ident">u8</span>; <span class="number">8</span>] <span class="op">=</span> <span class="number">1u64</span>.<span class="ident">to_ne_bytes</span>();
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
+            <span class="kw">let</span> <span class="ident">buf</span>: [<span class="ident">u8</span>; <span class="number">8</span>] = <span class="number">1u64</span>.<span class="ident">to_ne_bytes</span>();
             <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fd</span>).<span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
                     <span class="comment">// Writing only blocks if the counter is going to overflow.</span>
                     <span class="comment">// So we&#39;ll reset the counter to 0 and wake it again.</span>
                     <span class="self">self</span>.<span class="ident">reset</span>()<span class="question-mark">?</span>;
@@ -225,23 +225,23 @@
         }
 
         <span class="doccomment">/// Reset the eventfd object, only need to call this if `wake` fails.</span>
-        <span class="kw">fn</span> <span class="ident">reset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span>: [<span class="ident">u8</span>; <span class="number">8</span>] <span class="op">=</span> <span class="number">0u64</span>.<span class="ident">to_ne_bytes</span>();
+        <span class="kw">fn</span> <span class="ident">reset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span>: [<span class="ident">u8</span>; <span class="number">8</span>] = <span class="number">0u64</span>.<span class="ident">to_ne_bytes</span>();
             <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fd</span>).<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
                 <span class="comment">// If the `Waker` hasn&#39;t been awoken yet this will return a</span>
                 <span class="comment">// `WouldBlock` error which we can safely ignore.</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; <span class="prelude-val">Ok</span>(()),
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; <span class="prelude-val">Ok</span>(()),
                 <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">err</span>),
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;linux&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;linux&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>))]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::eventfd::Waker</span>;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;freebsd&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;ios&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;macos&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">kqueue</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sys::Selector</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Token</span>;
@@ -261,29 +261,29 @@
     }
 
     <span class="kw">impl</span> <span class="ident">Waker</span> {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span> {
-            <span class="ident">selector</span>.<span class="ident">try_clone</span>().<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">selector</span><span class="op">|</span> {
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">Waker</span>&gt; {
+            <span class="ident">selector</span>.<span class="ident">try_clone</span>().<span class="ident">and_then</span>(|<span class="ident">selector</span>| {
                 <span class="ident">selector</span>
                     .<span class="ident">setup_waker</span>(<span class="ident">token</span>)
-                    .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">Waker</span> { <span class="ident">selector</span>, <span class="ident">token</span> })
+                    .<span class="ident">map</span>(|()| <span class="ident">Waker</span> { <span class="ident">selector</span>, <span class="ident">token</span> })
             })
         }
 
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
             <span class="self">self</span>.<span class="ident">selector</span>.<span class="ident">wake</span>(<span class="self">self</span>.<span class="ident">token</span>)
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;freebsd&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;ios&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;macos&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>))]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::kqueue::Waker</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;dragonfly&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;illumos&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;netbsd&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;redox&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;illumos&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;netbsd&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;openbsd&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>,
 ))]</span>
 <span class="kw">mod</span> <span class="ident">pipe</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sys::unix::Selector</span>;
@@ -304,34 +304,34 @@
     }
 
     <span class="kw">impl</span> <span class="ident">Waker</span> {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fds</span> <span class="op">=</span> [<span class="op">-</span><span class="number">1</span>; <span class="number">2</span>];
-            <span class="macro">syscall!</span>(<span class="ident">pipe2</span>(<span class="ident">fds</span>.<span class="ident">as_mut_ptr</span>(), <span class="ident">libc::O_NONBLOCK</span> <span class="op">|</span> <span class="ident">libc::O_CLOEXEC</span>))<span class="question-mark">?</span>;
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">selector</span>: <span class="kw-2">&amp;</span><span class="ident">Selector</span>, <span class="ident">token</span>: <span class="ident">Token</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">Waker</span>&gt; {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fds</span> = [-<span class="number">1</span>; <span class="number">2</span>];
+            <span class="macro">syscall!</span>(<span class="ident">pipe2</span>(<span class="ident">fds</span>.<span class="ident">as_mut_ptr</span>(), <span class="ident">libc::O_NONBLOCK</span> | <span class="ident">libc::O_CLOEXEC</span>))<span class="question-mark">?</span>;
             <span class="comment">// Turn the file descriptors into files first so we&#39;re ensured</span>
             <span class="comment">// they&#39;re closed when dropped, e.g. when register below fails.</span>
-            <span class="kw">let</span> <span class="ident">sender</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fds</span>[<span class="number">1</span>]) };
-            <span class="kw">let</span> <span class="ident">receiver</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fds</span>[<span class="number">0</span>]) };
+            <span class="kw">let</span> <span class="ident">sender</span> = <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fds</span>[<span class="number">1</span>]) };
+            <span class="kw">let</span> <span class="ident">receiver</span> = <span class="kw">unsafe</span> { <span class="ident">File::from_raw_fd</span>(<span class="ident">fds</span>[<span class="number">0</span>]) };
             <span class="ident">selector</span>
                 .<span class="ident">register</span>(<span class="ident">fds</span>[<span class="number">0</span>], <span class="ident">token</span>, <span class="ident">Interest::READABLE</span>)
-                .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">Waker</span> { <span class="ident">sender</span>, <span class="ident">receiver</span> })
+                .<span class="ident">map</span>(|()| <span class="ident">Waker</span> { <span class="ident">sender</span>, <span class="ident">receiver</span> })
         }
 
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wake</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
             <span class="comment">// The epoll emulation on some illumos systems currently requires</span>
             <span class="comment">// the pipe buffer to be completely empty for an edge-triggered</span>
             <span class="comment">// wakeup on the pipe read side.</span>
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;illumos&quot;</span>)]</span>
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;illumos&quot;</span>)]</span>
             <span class="self">self</span>.<span class="ident">empty</span>();
 
             <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">sender</span>).<span class="ident">write</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>]) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
                     <span class="comment">// The reading end is full so we&#39;ll empty the buffer and try</span>
                     <span class="comment">// again.</span>
                     <span class="self">self</span>.<span class="ident">empty</span>();
                     <span class="self">self</span>.<span class="ident">wake</span>()
                 }
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::Interrupted</span> =&gt; <span class="self">self</span>.<span class="ident">wake</span>(),
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) <span class="kw">if</span> <span class="ident">err</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::Interrupted</span> =&gt; <span class="self">self</span>.<span class="ident">wake</span>(),
                 <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">err</span>),
             }
         }
@@ -339,10 +339,10 @@
         <span class="doccomment">/// Empty the pipe&#39;s buffer, only need to call this if `wake` fails.</span>
         <span class="doccomment">/// This ignores any errors.</span>
         <span class="kw">fn</span> <span class="ident">empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">4096</span>];
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">4096</span>];
             <span class="kw">loop</span> {
                 <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">receiver</span>).<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-                    <span class="prelude-val">Ok</span>(<span class="ident">n</span>) <span class="kw">if</span> <span class="ident">n</span> <span class="op">&gt;</span> <span class="number">0</span> =&gt; <span class="kw">continue</span>,
+                    <span class="prelude-val">Ok</span>(<span class="ident">n</span>) <span class="kw">if</span> <span class="ident">n</span> &gt; <span class="number">0</span> =&gt; <span class="kw">continue</span>,
                     <span class="kw">_</span> =&gt; <span class="kw">return</span>,
                 }
             }
@@ -351,12 +351,12 @@
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;dragonfly&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;illumos&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;netbsd&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>,
-    <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;redox&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;illumos&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;netbsd&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;openbsd&quot;</span>,
+    <span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>,
 ))]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::pipe::Waker</span>;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

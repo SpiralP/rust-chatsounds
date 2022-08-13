@@ -280,7 +280,7 @@
 <span class="doccomment">/// # run().unwrap();</span>
 <span class="doccomment">/// ```</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PathSegmentsMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PathSegmentsMut</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="ident">url</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Url</span>,
     <span class="ident">after_first_slash</span>: <span class="ident">usize</span>,
     <span class="ident">after_path</span>: <span class="ident">String</span>,
@@ -288,34 +288,34 @@
 }
 
 <span class="comment">// Not re-exported outside the crate</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">url</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Url</span>) -&gt; <span class="ident">PathSegmentsMut</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">after_path</span> <span class="op">=</span> <span class="ident">url</span>.<span class="ident">take_after_path</span>();
-    <span class="kw">let</span> <span class="ident">old_after_path_position</span> <span class="op">=</span> <span class="ident">to_u32</span>(<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>();
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">url</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Url</span>) -&gt; <span class="ident">PathSegmentsMut</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">let</span> <span class="ident">after_path</span> = <span class="ident">url</span>.<span class="ident">take_after_path</span>();
+    <span class="kw">let</span> <span class="ident">old_after_path_position</span> = <span class="ident">to_u32</span>(<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>();
     <span class="comment">// Special urls always have a non empty path</span>
     <span class="kw">if</span> <span class="ident">SchemeType::from</span>(<span class="ident">url</span>.<span class="ident">scheme</span>()).<span class="ident">is_special</span>() {
-        <span class="macro">debug_assert!</span>(<span class="ident">url</span>.<span class="ident">byte_at</span>(<span class="ident">url</span>.<span class="ident">path_start</span>) <span class="op">==</span> <span class="string">b&#39;/&#39;</span>);
+        <span class="macro">debug_assert!</span>(<span class="ident">url</span>.<span class="ident">byte_at</span>(<span class="ident">url</span>.<span class="ident">path_start</span>) == <span class="string">b&#39;/&#39;</span>);
     } <span class="kw">else</span> {
         <span class="macro">debug_assert!</span>(
-            <span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span>
-                <span class="op">|</span><span class="op">|</span> <span class="ident">url</span>.<span class="ident">byte_at</span>(<span class="ident">url</span>.<span class="ident">path_start</span>) <span class="op">==</span> <span class="string">b&#39;/&#39;</span>
+            <span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() == <span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span>
+                || <span class="ident">url</span>.<span class="ident">byte_at</span>(<span class="ident">url</span>.<span class="ident">path_start</span>) == <span class="string">b&#39;/&#39;</span>
         );
     }
     <span class="ident">PathSegmentsMut</span> {
-        <span class="ident">after_first_slash</span>: <span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="string">&quot;/&quot;</span>.<span class="ident">len</span>(),
+        <span class="ident">after_first_slash</span>: <span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span> + <span class="string">&quot;/&quot;</span>.<span class="ident">len</span>(),
         <span class="ident">url</span>,
         <span class="ident">old_after_path_position</span>,
         <span class="ident">after_path</span>,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">PathSegmentsMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">PathSegmentsMut</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="self">self</span>.<span class="ident">url</span>
             .<span class="ident">restore_after_path</span>(<span class="self">self</span>.<span class="ident">old_after_path_position</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">after_path</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">PathSegmentsMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">PathSegmentsMut</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// Remove all segments in the path, leaving the minimal `url.path() == &quot;/&quot;`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns `&amp;mut Self` so that method calls can be chained.</span>
@@ -369,7 +369,7 @@
     <span class="doccomment">/// # run().unwrap();</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pop_if_empty</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">after_first_slash</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">after_first_slash</span> &gt;= <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() {
             <span class="kw">return</span> <span class="self">self</span>;
         }
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>[<span class="self">self</span>.<span class="ident">after_first_slash</span>..].<span class="ident">ends_with</span>(<span class="string">&#39;/&#39;</span>) {
@@ -384,15 +384,15 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns `&amp;mut Self` so that method calls can be chained.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">after_first_slash</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">after_first_slash</span> &gt;= <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() {
             <span class="kw">return</span> <span class="self">self</span>;
         }
-        <span class="kw">let</span> <span class="ident">last_slash</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>[<span class="self">self</span>.<span class="ident">after_first_slash</span>..]
+        <span class="kw">let</span> <span class="ident">last_slash</span> = <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">serialization</span>[<span class="self">self</span>.<span class="ident">after_first_slash</span>..]
             .<span class="ident">rfind</span>(<span class="string">&#39;/&#39;</span>)
             .<span class="ident">unwrap_or</span>(<span class="number">0</span>);
         <span class="self">self</span>.<span class="ident">url</span>
             .<span class="ident">serialization</span>
-            .<span class="ident">truncate</span>(<span class="self">self</span>.<span class="ident">after_first_slash</span> <span class="op">+</span> <span class="ident">last_slash</span>);
+            .<span class="ident">truncate</span>(<span class="self">self</span>.<span class="ident">after_first_slash</span> + <span class="ident">last_slash</span>);
         <span class="self">self</span>
     }
 
@@ -458,27 +458,27 @@
     <span class="doccomment">/// # }</span>
     <span class="doccomment">/// # run().unwrap();</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">extend</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">segments</span>: <span class="ident">I</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">extend</span>&lt;<span class="ident">I</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">segments</span>: <span class="ident">I</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I::Item</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">AsRef</span>&lt;<span class="ident">str</span>&gt;,
     {
-        <span class="kw">let</span> <span class="ident">scheme_type</span> <span class="op">=</span> <span class="ident">SchemeType::from</span>(<span class="self">self</span>.<span class="ident">url</span>.<span class="ident">scheme</span>());
-        <span class="kw">let</span> <span class="ident">path_start</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span>;
-        <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">mutate</span>(<span class="op">|</span><span class="ident">parser</span><span class="op">|</span> {
-            <span class="ident">parser</span>.<span class="ident">context</span> <span class="op">=</span> <span class="ident">parser::Context::PathSegmentSetter</span>;
+        <span class="kw">let</span> <span class="ident">scheme_type</span> = <span class="ident">SchemeType::from</span>(<span class="self">self</span>.<span class="ident">url</span>.<span class="ident">scheme</span>());
+        <span class="kw">let</span> <span class="ident">path_start</span> = <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">path_start</span> <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="self">self</span>.<span class="ident">url</span>.<span class="ident">mutate</span>(|<span class="ident">parser</span>| {
+            <span class="ident">parser</span>.<span class="ident">context</span> = <span class="ident">parser::Context::PathSegmentSetter</span>;
             <span class="kw">for</span> <span class="ident">segment</span> <span class="kw">in</span> <span class="ident">segments</span> {
-                <span class="kw">let</span> <span class="ident">segment</span> <span class="op">=</span> <span class="ident">segment</span>.<span class="ident">as_ref</span>();
-                <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">segment</span>, <span class="string">&quot;.&quot;</span> <span class="op">|</span> <span class="string">&quot;..&quot;</span>) {
+                <span class="kw">let</span> <span class="ident">segment</span> = <span class="ident">segment</span>.<span class="ident">as_ref</span>();
+                <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">segment</span>, <span class="string">&quot;.&quot;</span> | <span class="string">&quot;..&quot;</span>) {
                     <span class="kw">continue</span>;
                 }
-                <span class="kw">if</span> <span class="ident">parser</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">path_start</span> <span class="op">+</span> <span class="number">1</span>
+                <span class="kw">if</span> <span class="ident">parser</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() &gt; <span class="ident">path_start</span> + <span class="number">1</span>
                     <span class="comment">// Non special url&#39;s path might still be empty</span>
-                    <span class="op">|</span><span class="op">|</span> <span class="ident">parser</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">path_start</span>
+                    || <span class="ident">parser</span>.<span class="ident">serialization</span>.<span class="ident">len</span>() == <span class="ident">path_start</span>
                 {
                     <span class="ident">parser</span>.<span class="ident">serialization</span>.<span class="ident">push</span>(<span class="string">&#39;/&#39;</span>);
                 }
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">has_host</span> <span class="op">=</span> <span class="bool-val">true</span>; <span class="comment">// FIXME account for this?</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">has_host</span> = <span class="bool-val">true</span>; <span class="comment">// FIXME account for this?</span>
                 <span class="ident">parser</span>.<span class="ident">parse_path</span>(
                     <span class="ident">scheme_type</span>,
                     <span class="kw-2">&amp;mut</span> <span class="ident">has_host</span>,
@@ -491,4 +491,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="url" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="url" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

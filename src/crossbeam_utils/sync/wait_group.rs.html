@@ -192,13 +192,13 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`Barrier`]: std::sync::Barrier</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WaitGroup</span> {
-    <span class="ident">inner</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Inner</span><span class="op">&gt;</span>,
+    <span class="ident">inner</span>: <span class="ident">Arc</span>&lt;<span class="ident">Inner</span>&gt;,
 }
 
 <span class="doccomment">/// Inner state of a `WaitGroup`.</span>
 <span class="kw">struct</span> <span class="ident">Inner</span> {
     <span class="ident">cvar</span>: <span class="ident">Condvar</span>,
-    <span class="ident">count</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+    <span class="ident">count</span>: <span class="ident">Mutex</span>&lt;<span class="ident">usize</span>&gt;,
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">WaitGroup</span> {
@@ -248,26 +248,26 @@
     <span class="doccomment">/// wg.wait();</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>) {
-        <span class="kw">if</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>() <span class="op">==</span> <span class="number">1</span> {
+        <span class="kw">if</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>() == <span class="number">1</span> {
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="ident">inner</span> = <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
         <span class="ident">drop</span>(<span class="self">self</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="kw">while</span> <span class="kw-2">*</span><span class="ident">count</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="ident">count</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">cvar</span>.<span class="ident">wait</span>(<span class="ident">count</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> = <span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+        <span class="kw">while</span> <span class="kw-2">*</span><span class="ident">count</span> &gt; <span class="number">0</span> {
+            <span class="ident">count</span> = <span class="ident">inner</span>.<span class="ident">cvar</span>.<span class="ident">wait</span>(<span class="ident">count</span>).<span class="ident">unwrap</span>();
         }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">WaitGroup</span> {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="kw-2">*</span><span class="ident">count</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> = <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+        <span class="kw-2">*</span><span class="ident">count</span> -= <span class="number">1</span>;
 
-        <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">count</span> == <span class="number">0</span> {
             <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">cvar</span>.<span class="ident">notify_all</span>();
         }
     }
@@ -275,8 +275,8 @@
 
 <span class="kw">impl</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">WaitGroup</span> {
     <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WaitGroup</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="kw-2">*</span><span class="ident">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> = <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+        <span class="kw-2">*</span><span class="ident">count</span> += <span class="number">1</span>;
 
         <span class="ident">WaitGroup</span> {
             <span class="ident">inner</span>: <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>(),
@@ -285,10 +285,10 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">WaitGroup</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">count</span>: <span class="kw-2">&amp;</span><span class="ident">usize</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
+        <span class="kw">let</span> <span class="ident">count</span>: <span class="kw-2">&amp;</span><span class="ident">usize</span> = <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">count</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
         <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;WaitGroup&quot;</span>).<span class="ident">field</span>(<span class="string">&quot;count&quot;</span>, <span class="ident">count</span>).<span class="ident">finish</span>()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

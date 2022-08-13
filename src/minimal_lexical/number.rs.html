@@ -88,7 +88,7 @@
 
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;nightly&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fpu::set_precision</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::num::Float</span>;
 
@@ -110,11 +110,11 @@
 <span class="kw">impl</span> <span class="ident">Number</span> {
     <span class="doccomment">/// Detect if the float can be accurately reconstructed from native floats.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_fast_path</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">F::MIN_EXPONENT_FAST_PATH</span> <span class="op">&lt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">exponent</span>
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">exponent</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">F::MAX_EXPONENT_DISGUISED_FAST_PATH</span>
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">mantissa</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">F::MAX_MANTISSA_FAST_PATH</span>
-            <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">many_digits</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_fast_path</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="ident">F::MIN_EXPONENT_FAST_PATH</span> &lt;= <span class="self">self</span>.<span class="ident">exponent</span>
+            &amp;&amp; <span class="self">self</span>.<span class="ident">exponent</span> &lt;= <span class="ident">F::MAX_EXPONENT_DISGUISED_FAST_PATH</span>
+            &amp;&amp; <span class="self">self</span>.<span class="ident">mantissa</span> &lt;= <span class="ident">F::MAX_MANTISSA_FAST_PATH</span>
+            &amp;&amp; !<span class="self">self</span>.<span class="ident">many_digits</span>
     }
 
     <span class="doccomment">/// The fast path algorithmn using machine-sized integers and floats.</span>
@@ -126,38 +126,38 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// There is an exception: disguised fast-path cases, where we can shift</span>
     <span class="doccomment">/// powers-of-10 from the exponent to the significant digits.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_fast_path</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_fast_path</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">F</span>&gt; {
         <span class="comment">// The fast path crucially depends on arithmetic being rounded to the correct number of bits</span>
         <span class="comment">// without any intermediate rounding. On x86 (without SSE or SSE2) this requires the precision</span>
         <span class="comment">// of the x87 FPU stack to be changed so that it directly rounds to 64/32 bit.</span>
         <span class="comment">// The `set_precision` function takes care of setting the precision on architectures which</span>
         <span class="comment">// require setting it by changing the global state (like the control word of the x87 FPU).</span>
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">_cw</span> <span class="op">=</span> <span class="ident">set_precision</span>::<span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>();
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;nightly&quot;</span>)]</span>
+        <span class="kw">let</span> <span class="ident">_cw</span> = <span class="ident">set_precision</span>::&lt;<span class="ident">F</span>&gt;();
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_fast_path</span>::<span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>() {
-            <span class="kw">let</span> <span class="ident">max_exponent</span> <span class="op">=</span> <span class="ident">F::MAX_EXPONENT_FAST_PATH</span>;
-            <span class="prelude-val">Some</span>(<span class="kw">if</span> <span class="self">self</span>.<span class="ident">exponent</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">max_exponent</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_fast_path</span>::&lt;<span class="ident">F</span>&gt;() {
+            <span class="kw">let</span> <span class="ident">max_exponent</span> = <span class="ident">F::MAX_EXPONENT_FAST_PATH</span>;
+            <span class="prelude-val">Some</span>(<span class="kw">if</span> <span class="self">self</span>.<span class="ident">exponent</span> &lt;= <span class="ident">max_exponent</span> {
                 <span class="comment">// normal fast path</span>
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">F::from_u64</span>(<span class="self">self</span>.<span class="ident">mantissa</span>);
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exponent</span> <span class="op">&lt;</span> <span class="number">0</span> {
+                <span class="kw">let</span> <span class="ident">value</span> = <span class="ident">F::from_u64</span>(<span class="self">self</span>.<span class="ident">mantissa</span>);
+                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">exponent</span> &lt; <span class="number">0</span> {
                     <span class="comment">// SAFETY: safe, since the `exponent &lt;= max_exponent`.</span>
-                    <span class="ident">value</span> <span class="op">/</span> <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>((<span class="op">-</span><span class="self">self</span>.<span class="ident">exponent</span>) <span class="kw">as</span> <span class="kw">_</span>) }
+                    <span class="ident">value</span> / <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>((-<span class="self">self</span>.<span class="ident">exponent</span>) <span class="kw">as</span> <span class="kw">_</span>) }
                 } <span class="kw">else</span> {
                     <span class="comment">// SAFETY: safe, since the `exponent &lt;= max_exponent`.</span>
-                    <span class="ident">value</span> <span class="op">*</span> <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>(<span class="self">self</span>.<span class="ident">exponent</span> <span class="kw">as</span> <span class="kw">_</span>) }
+                    <span class="ident">value</span> * <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>(<span class="self">self</span>.<span class="ident">exponent</span> <span class="kw">as</span> <span class="kw">_</span>) }
                 }
             } <span class="kw">else</span> {
                 <span class="comment">// disguised fast path</span>
-                <span class="kw">let</span> <span class="ident">shift</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">exponent</span> <span class="op">-</span> <span class="ident">max_exponent</span>;
+                <span class="kw">let</span> <span class="ident">shift</span> = <span class="self">self</span>.<span class="ident">exponent</span> - <span class="ident">max_exponent</span>;
                 <span class="comment">// SAFETY: safe, since `shift &lt;= (max_disguised - max_exponent)`.</span>
-                <span class="kw">let</span> <span class="ident">int_power</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">F::int_pow_fast_path</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="number">10</span>) };
-                <span class="kw">let</span> <span class="ident">mantissa</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">mantissa</span>.<span class="ident">checked_mul</span>(<span class="ident">int_power</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="ident">mantissa</span> <span class="op">&gt;</span> <span class="ident">F::MAX_MANTISSA_FAST_PATH</span> {
+                <span class="kw">let</span> <span class="ident">int_power</span> = <span class="kw">unsafe</span> { <span class="ident">F::int_pow_fast_path</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="number">10</span>) };
+                <span class="kw">let</span> <span class="ident">mantissa</span> = <span class="self">self</span>.<span class="ident">mantissa</span>.<span class="ident">checked_mul</span>(<span class="ident">int_power</span>)<span class="question-mark">?</span>;
+                <span class="kw">if</span> <span class="ident">mantissa</span> &gt; <span class="ident">F::MAX_MANTISSA_FAST_PATH</span> {
                     <span class="kw">return</span> <span class="prelude-val">None</span>;
                 }
                 <span class="comment">// SAFETY: safe, since the `table.len() - 1 == max_exponent`.</span>
-                <span class="ident">F::from_u64</span>(<span class="ident">mantissa</span>) <span class="op">*</span> <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>(<span class="ident">max_exponent</span> <span class="kw">as</span> <span class="kw">_</span>) }
+                <span class="ident">F::from_u64</span>(<span class="ident">mantissa</span>) * <span class="kw">unsafe</span> { <span class="ident">F::pow_fast_path</span>(<span class="ident">max_exponent</span> <span class="kw">as</span> <span class="kw">_</span>) }
             })
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
@@ -165,4 +165,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

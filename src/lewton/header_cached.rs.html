@@ -173,21 +173,21 @@ The caching is done to speed up decoding.
 */</span>
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TwiddleFactors</span> {
-	<span class="kw">pub</span> <span class="ident">a</span> :<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>,
-	<span class="kw">pub</span> <span class="ident">b</span> :<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>,
-	<span class="kw">pub</span> <span class="ident">c</span> :<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">a</span> :<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;,
+	<span class="kw">pub</span> <span class="ident">b</span> :<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;,
+	<span class="kw">pub</span> <span class="ident">c</span> :<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;,
 }
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CachedBlocksizeDerived</span> {
 	<span class="kw">pub</span> <span class="ident">twiddle_factors</span> : <span class="ident">TwiddleFactors</span>,
-	<span class="kw">pub</span> <span class="ident">window_slope</span> : <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>,
-	<span class="kw">pub</span> <span class="ident">bitrev</span> : <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span> <span class="ident">window_slope</span> : <span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;,
+	<span class="kw">pub</span> <span class="ident">bitrev</span> : <span class="ident">Vec</span>&lt;<span class="ident">u32</span>&gt;,
 }
 
 <span class="kw">impl</span> <span class="ident">CachedBlocksizeDerived</span> {
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_blocksize</span>(<span class="ident">bs</span> :<span class="ident">u8</span>) -&gt; <span class="self">Self</span> {
 		<span class="ident">CachedBlocksizeDerived</span> {
-			<span class="ident">window_slope</span> : <span class="ident">generate_window</span>((<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> (<span class="ident">bs</span> <span class="kw">as</span> <span class="ident">u16</span>)) <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">1</span>),
+			<span class="ident">window_slope</span> : <span class="ident">generate_window</span>((<span class="number">1</span> &lt;&lt; (<span class="ident">bs</span> <span class="kw">as</span> <span class="ident">u16</span>)) &gt;&gt; <span class="number">1</span>),
 			<span class="ident">twiddle_factors</span> : <span class="ident">compute_twiddle_factors</span>(<span class="ident">bs</span>),
 			<span class="ident">bitrev</span> : <span class="ident">compute_bitreverse</span>(<span class="ident">bs</span>),
 		}
@@ -203,12 +203,12 @@ The caching is done to speed up decoding.
 	<span class="comment">// as stb_vorbis shares the window slope generation function,</span>
 	<span class="comment">// The *other* possible reason is that we don&#39;t need the right</span>
 	<span class="comment">// window for anything. TODO investigate this more.</span>
-	<span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> (<span class="number">0.5</span> <span class="op">*</span> <span class="ident">std::f32::consts::PI</span> <span class="op">*</span> (<span class="ident">x</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">+</span> <span class="number">0.5</span>) <span class="op">/</span> <span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>).<span class="ident">sin</span>();
-	<span class="kw">return</span> (<span class="number">0.5</span> <span class="op">*</span> <span class="ident">std::f32::consts::PI</span> <span class="op">*</span> <span class="ident">v</span> <span class="op">*</span> <span class="ident">v</span> ).<span class="ident">sin</span>();
+	<span class="kw">let</span> <span class="ident">v</span> = (<span class="number">0.5</span> * <span class="ident">std::f32::consts::PI</span> * (<span class="ident">x</span> <span class="kw">as</span> <span class="ident">f32</span> + <span class="number">0.5</span>) / <span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>).<span class="ident">sin</span>();
+	<span class="kw">return</span> (<span class="number">0.5</span> * <span class="ident">std::f32::consts::PI</span> * <span class="ident">v</span> * <span class="ident">v</span> ).<span class="ident">sin</span>();
 }
 
-<span class="kw">fn</span> <span class="ident">generate_window</span>(<span class="ident">n</span> :<span class="ident">u16</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span> {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">window</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>);
+<span class="kw">fn</span> <span class="ident">generate_window</span>(<span class="ident">n</span> :<span class="ident">u16</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt; {
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">window</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>);
 	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n</span> {
 		<span class="ident">window</span>.<span class="ident">push</span>(<span class="ident">win_slope</span>(<span class="ident">i</span>, <span class="ident">n</span>));
 	}
@@ -216,34 +216,34 @@ The caching is done to speed up decoding.
 }
 
 <span class="kw">fn</span> <span class="ident">compute_twiddle_factors</span>(<span class="ident">blocksize</span> :<span class="ident">u8</span>) -&gt; <span class="ident">TwiddleFactors</span> {
-	<span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> (<span class="ident">blocksize</span> <span class="kw">as</span> <span class="ident">u16</span>);
+	<span class="kw">let</span> <span class="ident">n</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">blocksize</span> <span class="kw">as</span> <span class="ident">u16</span>);
 
-	<span class="kw">let</span> <span class="ident">n2</span> <span class="op">=</span> <span class="ident">n</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">1</span>;
-	<span class="kw">let</span> <span class="ident">n4</span> <span class="op">=</span> <span class="ident">n</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">2</span>;
-	<span class="kw">let</span> <span class="ident">n8</span> <span class="op">=</span> <span class="ident">n</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">3</span>;
+	<span class="kw">let</span> <span class="ident">n2</span> = <span class="ident">n</span> &gt;&gt; <span class="number">1</span>;
+	<span class="kw">let</span> <span class="ident">n4</span> = <span class="ident">n</span> &gt;&gt; <span class="number">2</span>;
+	<span class="kw">let</span> <span class="ident">n8</span> = <span class="ident">n</span> &gt;&gt; <span class="number">3</span>;
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n2</span>);
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n2</span>);
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n4</span>);
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n2</span>);
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n2</span>);
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n4</span>);
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k2</span> <span class="op">=</span> <span class="number">0</span>;
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k2</span> = <span class="number">0</span>;
 
-	<span class="kw">let</span> <span class="ident">pi_4_n</span> <span class="op">=</span> <span class="number">4.0</span> <span class="op">*</span> <span class="ident">std::f32::consts::PI</span> <span class="op">/</span> (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
-	<span class="kw">let</span> <span class="ident">pi_05_n</span> <span class="op">=</span> <span class="number">0.5</span> <span class="op">*</span> <span class="ident">std::f32::consts::PI</span> <span class="op">/</span> (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
-	<span class="kw">let</span> <span class="ident">pi_2_n</span> <span class="op">=</span> <span class="number">2.0</span> <span class="op">*</span> <span class="ident">std::f32::consts::PI</span> <span class="op">/</span> (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
+	<span class="kw">let</span> <span class="ident">pi_4_n</span> = <span class="number">4.0</span> * <span class="ident">std::f32::consts::PI</span> / (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
+	<span class="kw">let</span> <span class="ident">pi_05_n</span> = <span class="number">0.5</span> * <span class="ident">std::f32::consts::PI</span> / (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
+	<span class="kw">let</span> <span class="ident">pi_2_n</span> = <span class="number">2.0</span> * <span class="ident">std::f32::consts::PI</span> / (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>);
 
 	<span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n4</span> {
-		<span class="ident">a</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>((<span class="ident">k</span> <span class="kw">as</span> <span class="ident">f32</span>)      <span class="op">*</span> <span class="ident">pi_4_n</span>));
-		<span class="ident">a</span>.<span class="ident">push</span>(<span class="op">-</span><span class="ident">f32::sin</span>((<span class="ident">k</span> <span class="kw">as</span> <span class="ident">f32</span>)      <span class="op">*</span> <span class="ident">pi_4_n</span>));
-		<span class="ident">b</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>(((<span class="ident">k2</span><span class="op">+</span><span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="ident">pi_05_n</span>) <span class="op">*</span> <span class="number">0.5</span>);
-		<span class="ident">b</span>.<span class="ident">push</span>( <span class="ident">f32::sin</span>(((<span class="ident">k2</span><span class="op">+</span><span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="ident">pi_05_n</span>) <span class="op">*</span> <span class="number">0.5</span>);
-		<span class="ident">k2</span> <span class="op">+</span><span class="op">=</span> <span class="number">2</span>;
+		<span class="ident">a</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>((<span class="ident">k</span> <span class="kw">as</span> <span class="ident">f32</span>)      * <span class="ident">pi_4_n</span>));
+		<span class="ident">a</span>.<span class="ident">push</span>(-<span class="ident">f32::sin</span>((<span class="ident">k</span> <span class="kw">as</span> <span class="ident">f32</span>)      * <span class="ident">pi_4_n</span>));
+		<span class="ident">b</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>(((<span class="ident">k2</span>+<span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) * <span class="ident">pi_05_n</span>) * <span class="number">0.5</span>);
+		<span class="ident">b</span>.<span class="ident">push</span>( <span class="ident">f32::sin</span>(((<span class="ident">k2</span>+<span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) * <span class="ident">pi_05_n</span>) * <span class="number">0.5</span>);
+		<span class="ident">k2</span> += <span class="number">2</span>;
 	}
-	<span class="ident">k2</span> <span class="op">=</span> <span class="number">0</span>;
+	<span class="ident">k2</span> = <span class="number">0</span>;
 	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n8</span> {
-		<span class="ident">c</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>(((<span class="ident">k2</span> <span class="op">+</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="ident">pi_2_n</span>));
-		<span class="ident">c</span>.<span class="ident">push</span>(<span class="op">-</span><span class="ident">f32::sin</span>(((<span class="ident">k2</span> <span class="op">+</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="ident">pi_2_n</span>));
-		<span class="ident">k2</span> <span class="op">+</span><span class="op">=</span> <span class="number">2</span>;
+		<span class="ident">c</span>.<span class="ident">push</span>( <span class="ident">f32::cos</span>(((<span class="ident">k2</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) * <span class="ident">pi_2_n</span>));
+		<span class="ident">c</span>.<span class="ident">push</span>(-<span class="ident">f32::sin</span>(((<span class="ident">k2</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">f32</span>) * <span class="ident">pi_2_n</span>));
+		<span class="ident">k2</span> += <span class="number">2</span>;
 	}
 	<span class="kw">return</span> <span class="ident">TwiddleFactors</span> {
 		<span class="ident">a</span>,
@@ -252,23 +252,23 @@ The caching is done to speed up decoding.
 	};
 }
 
-<span class="kw">fn</span> <span class="ident">compute_bitreverse</span>(<span class="ident">blocksize</span> :<span class="ident">u8</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> {
-	<span class="kw">let</span> <span class="ident">ld</span> <span class="op">=</span> <span class="ident">blocksize</span> <span class="kw">as</span> <span class="ident">u16</span>;
-	<span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">blocksize</span>;
-	<span class="kw">let</span> <span class="ident">n8</span> <span class="op">=</span> <span class="ident">n</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">3</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n8</span>);
+<span class="kw">fn</span> <span class="ident">compute_bitreverse</span>(<span class="ident">blocksize</span> :<span class="ident">u8</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">u32</span>&gt; {
+	<span class="kw">let</span> <span class="ident">ld</span> = <span class="ident">blocksize</span> <span class="kw">as</span> <span class="ident">u16</span>;
+	<span class="kw">let</span> <span class="ident">n</span> = <span class="number">1</span> &lt;&lt; <span class="ident">blocksize</span>;
+	<span class="kw">let</span> <span class="ident">n8</span> = <span class="ident">n</span> &gt;&gt; <span class="number">3</span>;
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rev</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n8</span>);
 	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n8</span> {
-		<span class="ident">rev</span>.<span class="ident">push</span>((<span class="ident">::bit_reverse</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">u32</span>) <span class="kw">as</span> <span class="ident">u32</span> <span class="op">&gt;</span><span class="op">&gt;</span> (<span class="number">32</span> <span class="op">-</span> <span class="ident">ld</span> <span class="op">+</span> <span class="number">3</span>)) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">2</span>);
+		<span class="ident">rev</span>.<span class="ident">push</span>((<span class="ident">::bit_reverse</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">u32</span>) <span class="kw">as</span> <span class="ident">u32</span> &gt;&gt; (<span class="number">32</span> - <span class="ident">ld</span> + <span class="number">3</span>)) &lt;&lt; <span class="number">2</span>);
 	}
 	<span class="kw">return</span> <span class="ident">rev</span>;
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">test_compute_bitreverse</span>() {
-	<span class="kw">let</span> <span class="ident">br</span> <span class="op">=</span> <span class="ident">compute_bitreverse</span>(<span class="number">8</span>);
+	<span class="kw">let</span> <span class="ident">br</span> = <span class="ident">compute_bitreverse</span>(<span class="number">8</span>);
 	<span class="comment">// The output was generated from the output of the</span>
 	<span class="comment">// original stb_vorbis function.</span>
-	<span class="kw">let</span> <span class="ident">cmp_arr</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[
+	<span class="kw">let</span> <span class="ident">cmp_arr</span> = <span class="kw-2">&amp;</span>[
 		<span class="number">0</span>,   <span class="number">64</span>,  <span class="number">32</span>,  <span class="number">96</span>,
 		<span class="number">16</span>,  <span class="number">80</span>,  <span class="number">48</span>, <span class="number">112</span>,
 		<span class="number">8</span>,   <span class="number">72</span>,  <span class="number">40</span>, <span class="number">104</span>,
@@ -282,7 +282,7 @@ The caching is done to speed up decoding.
 
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">fn</span> <span class="ident">bark</span>(<span class="ident">x</span> :<span class="ident">f32</span>) -&gt; <span class="ident">f32</span> {
-	<span class="number">13.1</span> <span class="op">*</span> (<span class="number">0.00074</span> <span class="op">*</span> <span class="ident">x</span>).<span class="ident">atan</span>() <span class="op">+</span> <span class="number">2.24</span> <span class="op">*</span> (<span class="number">0.0000000185</span><span class="kw-2">*</span><span class="ident">x</span><span class="kw-2">*</span><span class="ident">x</span>).<span class="ident">atan</span>() <span class="op">+</span> <span class="number">0.0001</span> <span class="op">*</span> <span class="ident">x</span>
+	<span class="number">13.1</span> * (<span class="number">0.00074</span> * <span class="ident">x</span>).<span class="ident">atan</span>() + <span class="number">2.24</span> * (<span class="number">0.0000000185</span><span class="kw-2">*</span><span class="ident">x</span><span class="kw-2">*</span><span class="ident">x</span>).<span class="ident">atan</span>() + <span class="number">0.0001</span> * <span class="ident">x</span>
 }
 
 <span class="doccomment">/// Precomputes bark map values used by floor type 0 packets</span>
@@ -294,21 +294,21 @@ The caching is done to speed up decoding.
 <span class="doccomment">/// is -1 in the spec, we lack it. Users of the result of this function</span>
 <span class="doccomment">/// implementation should use it &quot;virtually&quot;.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compute_bark_map_cos_omega</span>(<span class="ident">n</span> :<span class="ident">u16</span>, <span class="ident">floor0_rate</span> :<span class="ident">u16</span>,
-		<span class="ident">floor0_bark_map_size</span> :<span class="ident">u16</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span> {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">let</span> <span class="ident">hfl</span> <span class="op">=</span> <span class="ident">floor0_rate</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">/</span> <span class="number">2.0</span>;
-	<span class="kw">let</span> <span class="ident">hfl_dn</span> <span class="op">=</span> <span class="ident">hfl</span> <span class="op">/</span> <span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>;
-	<span class="kw">let</span> <span class="ident">foobar_const_part</span> <span class="op">=</span> <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">/</span> <span class="ident">bark</span>(<span class="ident">hfl</span>);
+		<span class="ident">floor0_bark_map_size</span> :<span class="ident">u16</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt; {
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>);
+	<span class="kw">let</span> <span class="ident">hfl</span> = <span class="ident">floor0_rate</span> <span class="kw">as</span> <span class="ident">f32</span> / <span class="number">2.0</span>;
+	<span class="kw">let</span> <span class="ident">hfl_dn</span> = <span class="ident">hfl</span> / <span class="ident">n</span> <span class="kw">as</span> <span class="ident">f32</span>;
+	<span class="kw">let</span> <span class="ident">foobar_const_part</span> = <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span> / <span class="ident">bark</span>(<span class="ident">hfl</span>);
 	<span class="comment">// Bark map size minus 1:</span>
-	<span class="kw">let</span> <span class="ident">bms_m1</span> <span class="op">=</span> <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">-</span> <span class="number">1.0</span>;
-	<span class="kw">let</span> <span class="ident">omega_factor</span> <span class="op">=</span> <span class="ident">std::f32::consts::PI</span> <span class="op">/</span> <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span>;
+	<span class="kw">let</span> <span class="ident">bms_m1</span> = <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span> - <span class="number">1.0</span>;
+	<span class="kw">let</span> <span class="ident">omega_factor</span> = <span class="ident">std::f32::consts::PI</span> / <span class="ident">floor0_bark_map_size</span> <span class="kw">as</span> <span class="ident">f32</span>;
 	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n</span> {
-		<span class="kw">let</span> <span class="ident">foobar</span> <span class="op">=</span> (<span class="ident">bark</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">*</span> <span class="ident">hfl_dn</span>) <span class="op">*</span> <span class="ident">foobar_const_part</span>).<span class="ident">floor</span>();
-		<span class="kw">let</span> <span class="ident">map_elem</span> <span class="op">=</span> <span class="ident">foobar</span>.<span class="ident">min</span>(<span class="ident">bms_m1</span>);
-		<span class="kw">let</span> <span class="ident">cos_omega</span> <span class="op">=</span> (<span class="ident">map_elem</span> <span class="op">*</span> <span class="ident">omega_factor</span>).<span class="ident">cos</span>();
+		<span class="kw">let</span> <span class="ident">foobar</span> = (<span class="ident">bark</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">f32</span> * <span class="ident">hfl_dn</span>) * <span class="ident">foobar_const_part</span>).<span class="ident">floor</span>();
+		<span class="kw">let</span> <span class="ident">map_elem</span> = <span class="ident">foobar</span>.<span class="ident">min</span>(<span class="ident">bms_m1</span>);
+		<span class="kw">let</span> <span class="ident">cos_omega</span> = (<span class="ident">map_elem</span> * <span class="ident">omega_factor</span>).<span class="ident">cos</span>();
 		<span class="ident">res</span>.<span class="ident">push</span>(<span class="ident">cos_omega</span>);
 	}
 	<span class="kw">return</span> <span class="ident">res</span>;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

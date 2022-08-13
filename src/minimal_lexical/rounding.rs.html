@@ -144,22 +144,22 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// Shifts the significant digits into place, adjusts the exponent,</span>
 <span class="doccomment">/// so it can be easily converted to a native float.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">round</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Cb</span><span class="op">&gt;</span>(<span class="ident">fp</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">cb</span>: <span class="ident">Cb</span>)
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">round</span>&lt;<span class="ident">F</span>, <span class="ident">Cb</span>&gt;(<span class="ident">fp</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">cb</span>: <span class="ident">Cb</span>)
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Float</span>,
     <span class="ident">Cb</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">i32</span>),
 {
-    <span class="kw">let</span> <span class="ident">fp_inf</span> <span class="op">=</span> <span class="ident">ExtendedFloat</span> {
+    <span class="kw">let</span> <span class="ident">fp_inf</span> = <span class="ident">ExtendedFloat</span> {
         <span class="ident">mant</span>: <span class="number">0</span>,
         <span class="ident">exp</span>: <span class="ident">F::INFINITE_POWER</span>,
     };
 
     <span class="comment">// Calculate our shift in significant digits.</span>
-    <span class="kw">let</span> <span class="ident">mantissa_shift</span> <span class="op">=</span> <span class="number">64</span> <span class="op">-</span> <span class="ident">F::MANTISSA_SIZE</span> <span class="op">-</span> <span class="number">1</span>;
+    <span class="kw">let</span> <span class="ident">mantissa_shift</span> = <span class="number">64</span> - <span class="ident">F::MANTISSA_SIZE</span> - <span class="number">1</span>;
 
     <span class="comment">// Check for a denormal float, if after the shift the exponent is negative.</span>
-    <span class="kw">if</span> <span class="op">-</span><span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">mantissa_shift</span> {
+    <span class="kw">if</span> -<span class="ident">fp</span>.<span class="ident">exp</span> &gt;= <span class="ident">mantissa_shift</span> {
         <span class="comment">// Have a denormal float that isn&#39;t a literal 0.</span>
         <span class="comment">// The extra 1 is to adjust for the denormal float, which is</span>
         <span class="comment">// `1 - F::EXPONENT_BIAS`. This works as before, because our</span>
@@ -169,11 +169,11 @@
         <span class="comment">//</span>
         <span class="comment">// This might round-down to 0, but shift will be at **max** 65,</span>
         <span class="comment">// for halfway cases rounding towards 0.</span>
-        <span class="kw">let</span> <span class="ident">shift</span> <span class="op">=</span> <span class="op">-</span><span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">+</span> <span class="number">1</span>;
-        <span class="macro">debug_assert!</span>(<span class="ident">shift</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">65</span>);
+        <span class="kw">let</span> <span class="ident">shift</span> = -<span class="ident">fp</span>.<span class="ident">exp</span> + <span class="number">1</span>;
+        <span class="macro">debug_assert!</span>(<span class="ident">shift</span> &lt;= <span class="number">65</span>);
         <span class="ident">cb</span>(<span class="ident">fp</span>, <span class="ident">shift</span>.<span class="ident">min</span>(<span class="number">64</span>));
         <span class="comment">// Check for round-up: if rounding-nearest carried us to the hidden bit.</span>
-        <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">=</span> (<span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">F::HIDDEN_BIT_MASK</span>) <span class="kw">as</span> <span class="ident">i32</span>;
+        <span class="ident">fp</span>.<span class="ident">exp</span> = (<span class="ident">fp</span>.<span class="ident">mant</span> &gt;= <span class="ident">F::HIDDEN_BIT_MASK</span>) <span class="kw">as</span> <span class="ident">i32</span>;
         <span class="kw">return</span>;
     }
 
@@ -181,21 +181,21 @@
     <span class="ident">cb</span>(<span class="ident">fp</span>, <span class="ident">mantissa_shift</span>);
 
     <span class="comment">// Check if we carried, and if so, shift the bit to the hidden bit.</span>
-    <span class="kw">let</span> <span class="ident">carry_mask</span> <span class="op">=</span> <span class="ident">F::CARRY_MASK</span>;
-    <span class="kw">if</span> <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;</span> <span class="ident">carry_mask</span> <span class="op">==</span> <span class="ident">carry_mask</span> {
-        <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&gt;</span><span class="op">&gt;</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+    <span class="kw">let</span> <span class="ident">carry_mask</span> = <span class="ident">F::CARRY_MASK</span>;
+    <span class="kw">if</span> <span class="ident">fp</span>.<span class="ident">mant</span> &amp; <span class="ident">carry_mask</span> == <span class="ident">carry_mask</span> {
+        <span class="ident">fp</span>.<span class="ident">mant</span> &gt;&gt;= <span class="number">1</span>;
+        <span class="ident">fp</span>.<span class="ident">exp</span> += <span class="number">1</span>;
     }
 
     <span class="comment">// Handle if we carried and check for overflow again.</span>
-    <span class="kw">if</span> <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">F::INFINITE_POWER</span> {
+    <span class="kw">if</span> <span class="ident">fp</span>.<span class="ident">exp</span> &gt;= <span class="ident">F::INFINITE_POWER</span> {
         <span class="comment">// Exponent is above largest normal value, must be infinite.</span>
-        <span class="kw-2">*</span><span class="ident">fp</span> <span class="op">=</span> <span class="ident">fp_inf</span>;
+        <span class="kw-2">*</span><span class="ident">fp</span> = <span class="ident">fp_inf</span>;
         <span class="kw">return</span>;
     }
 
     <span class="comment">// Remove the hidden bit.</span>
-    <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;=</span> <span class="ident">F::MANTISSA_MASK</span>;
+    <span class="ident">fp</span>.<span class="ident">mant</span> &amp;= <span class="ident">F::MANTISSA_MASK</span>;
 }
 
 <span class="doccomment">/// Shift right N-bytes and round towards a direction.</span>
@@ -204,14 +204,14 @@
 <span class="doccomment">///     1. is_odd</span>
 <span class="doccomment">///     1. is_halfway</span>
 <span class="doccomment">///     1. is_above</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">round_nearest_tie_even</span><span class="op">&lt;</span><span class="ident">Cb</span><span class="op">&gt;</span>(<span class="ident">fp</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">shift</span>: <span class="ident">i32</span>, <span class="ident">cb</span>: <span class="ident">Cb</span>)
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">round_nearest_tie_even</span>&lt;<span class="ident">Cb</span>&gt;(<span class="ident">fp</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">shift</span>: <span class="ident">i32</span>, <span class="ident">cb</span>: <span class="ident">Cb</span>)
 <span class="kw">where</span>
     <span class="comment">// is_odd, is_halfway, is_above</span>
     <span class="ident">Cb</span>: <span class="ident">Fn</span>(<span class="ident">bool</span>, <span class="ident">bool</span>, <span class="ident">bool</span>) -&gt; <span class="ident">bool</span>,
 {
     <span class="comment">// Ensure we&#39;ve already handled denormal values that underflow.</span>
-    <span class="macro">debug_assert!</span>(<span class="ident">shift</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">64</span>);
+    <span class="macro">debug_assert!</span>(<span class="ident">shift</span> &lt;= <span class="number">64</span>);
 
     <span class="comment">// Extract the truncated bits using mask.</span>
     <span class="comment">// Calculate if the value of the truncated bits are either above</span>
@@ -219,11 +219,11 @@
     <span class="comment">//</span>
     <span class="comment">// For example, for 4 truncated bytes, the mask would be 0b1111</span>
     <span class="comment">// and the midway point would be 0b1000.</span>
-    <span class="kw">let</span> <span class="ident">mask</span> <span class="op">=</span> <span class="ident">lower_n_mask</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">u64</span>);
-    <span class="kw">let</span> <span class="ident">halfway</span> <span class="op">=</span> <span class="ident">lower_n_halfway</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">u64</span>);
-    <span class="kw">let</span> <span class="ident">truncated_bits</span> <span class="op">=</span> <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;</span> <span class="ident">mask</span>;
-    <span class="kw">let</span> <span class="ident">is_above</span> <span class="op">=</span> <span class="ident">truncated_bits</span> <span class="op">&gt;</span> <span class="ident">halfway</span>;
-    <span class="kw">let</span> <span class="ident">is_halfway</span> <span class="op">=</span> <span class="ident">truncated_bits</span> <span class="op">==</span> <span class="ident">halfway</span>;
+    <span class="kw">let</span> <span class="ident">mask</span> = <span class="ident">lower_n_mask</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">u64</span>);
+    <span class="kw">let</span> <span class="ident">halfway</span> = <span class="ident">lower_n_halfway</span>(<span class="ident">shift</span> <span class="kw">as</span> <span class="ident">u64</span>);
+    <span class="kw">let</span> <span class="ident">truncated_bits</span> = <span class="ident">fp</span>.<span class="ident">mant</span> &amp; <span class="ident">mask</span>;
+    <span class="kw">let</span> <span class="ident">is_above</span> = <span class="ident">truncated_bits</span> &gt; <span class="ident">halfway</span>;
+    <span class="kw">let</span> <span class="ident">is_halfway</span> = <span class="ident">truncated_bits</span> == <span class="ident">halfway</span>;
 
     <span class="comment">// Bit shift so the leading bit is in the hidden bit.</span>
     <span class="comment">// This optimixes pretty well:</span>
@@ -235,30 +235,30 @@
     <span class="comment">//   cmovne  rax, rdi</span>
     <span class="comment">//   ret</span>
     <span class="comment">//  ```</span>
-    <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">shift</span> <span class="op">==</span> <span class="number">64</span> {
+    <span class="ident">fp</span>.<span class="ident">mant</span> = <span class="kw">match</span> <span class="ident">shift</span> == <span class="number">64</span> {
         <span class="bool-val">true</span> =&gt; <span class="number">0</span>,
-        <span class="bool-val">false</span> =&gt; <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">shift</span>,
+        <span class="bool-val">false</span> =&gt; <span class="ident">fp</span>.<span class="ident">mant</span> &gt;&gt; <span class="ident">shift</span>,
     };
-    <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">+</span><span class="op">=</span> <span class="ident">shift</span>;
+    <span class="ident">fp</span>.<span class="ident">exp</span> += <span class="ident">shift</span>;
 
     <span class="comment">// Extract the last bit after shifting (and determine if it is odd).</span>
-    <span class="kw">let</span> <span class="ident">is_odd</span> <span class="op">=</span> <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;</span> <span class="number">1</span> <span class="op">==</span> <span class="number">1</span>;
+    <span class="kw">let</span> <span class="ident">is_odd</span> = <span class="ident">fp</span>.<span class="ident">mant</span> &amp; <span class="number">1</span> == <span class="number">1</span>;
 
     <span class="comment">// Calculate if we need to roundup.</span>
     <span class="comment">// We need to roundup if we are above halfway, or if we are odd</span>
     <span class="comment">// and at half-way (need to tie-to-even). Avoid the branch here.</span>
-    <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">+</span><span class="op">=</span> <span class="ident">cb</span>(<span class="ident">is_odd</span>, <span class="ident">is_halfway</span>, <span class="ident">is_above</span>) <span class="kw">as</span> <span class="ident">u64</span>;
+    <span class="ident">fp</span>.<span class="ident">mant</span> += <span class="ident">cb</span>(<span class="ident">is_odd</span>, <span class="ident">is_halfway</span>, <span class="ident">is_above</span>) <span class="kw">as</span> <span class="ident">u64</span>;
 }
 
 <span class="doccomment">/// Round our significant digits into place, truncating them.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;compact&quot;</span>), <span class="ident">inline</span>)]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">round_down</span>(<span class="ident">fp</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExtendedFloat</span>, <span class="ident">shift</span>: <span class="ident">i32</span>) {
     <span class="comment">// Might have a shift greater than 64 if we have an error.</span>
-    <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">shift</span> <span class="op">==</span> <span class="number">64</span> {
+    <span class="ident">fp</span>.<span class="ident">mant</span> = <span class="kw">match</span> <span class="ident">shift</span> == <span class="number">64</span> {
         <span class="bool-val">true</span> =&gt; <span class="number">0</span>,
-        <span class="bool-val">false</span> =&gt; <span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">shift</span>,
+        <span class="bool-val">false</span> =&gt; <span class="ident">fp</span>.<span class="ident">mant</span> &gt;&gt; <span class="ident">shift</span>,
     };
-    <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">+</span><span class="op">=</span> <span class="ident">shift</span>;
+    <span class="ident">fp</span>.<span class="ident">exp</span> += <span class="ident">shift</span>;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

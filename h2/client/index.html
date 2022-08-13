@@ -55,17 +55,17 @@ Alternatively, the caller can call <code>poll</code> manually.</p>
 <span class="kw">use</span> <span class="ident">tokio::net::TcpStream</span>;
 
 <span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
     <span class="comment">// Establish TCP connection to the server.</span>
-    <span class="kw">let</span> <span class="ident">tcp</span> <span class="op">=</span> <span class="ident">TcpStream::connect</span>(<span class="string">&quot;127.0.0.1:5928&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> (<span class="ident">h2</span>, <span class="ident">connection</span>) <span class="op">=</span> <span class="ident">client::handshake</span>(<span class="ident">tcp</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">tcp</span> = <span class="ident">TcpStream::connect</span>(<span class="string">&quot;127.0.0.1:5928&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> (<span class="ident">h2</span>, <span class="ident">connection</span>) = <span class="ident">client::handshake</span>(<span class="ident">tcp</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
         <span class="ident">connection</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
     });
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h2</span> <span class="op">=</span> <span class="ident">h2</span>.<span class="ident">ready</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h2</span> = <span class="ident">h2</span>.<span class="ident">ready</span>().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="comment">// Prepare the HTTP request to send to the server.</span>
-    <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">Request::builder</span>()
+    <span class="kw">let</span> <span class="ident">request</span> = <span class="ident">Request::builder</span>()
                     .<span class="ident">method</span>(<span class="ident">Method::GET</span>)
                     .<span class="ident">uri</span>(<span class="string">&quot;https://www.example.com/&quot;</span>)
                     .<span class="ident">body</span>(())
@@ -73,9 +73,9 @@ Alternatively, the caller can call <code>poll</code> manually.</p>
 
     <span class="comment">// Send the request. The second tuple item allows the caller</span>
     <span class="comment">// to stream a request body.</span>
-    <span class="kw">let</span> (<span class="ident">response</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">h2</span>.<span class="ident">send_request</span>(<span class="ident">request</span>, <span class="bool-val">true</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> (<span class="ident">response</span>, <span class="kw">_</span>) = <span class="ident">h2</span>.<span class="ident">send_request</span>(<span class="ident">request</span>, <span class="bool-val">true</span>).<span class="ident">unwrap</span>();
 
-    <span class="kw">let</span> (<span class="ident">head</span>, <span class="kw-2">mut</span> <span class="ident">body</span>) <span class="op">=</span> <span class="ident">response</span>.<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">into_parts</span>();
+    <span class="kw">let</span> (<span class="ident">head</span>, <span class="kw-2">mut</span> <span class="ident">body</span>) = <span class="ident">response</span>.<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">into_parts</span>();
 
     <span class="macro">println!</span>(<span class="string">&quot;Received response: {:?}&quot;</span>, <span class="ident">head</span>);
 
@@ -85,14 +85,14 @@ Alternatively, the caller can call <code>poll</code> manually.</p>
     <span class="comment">// Whenever data is received, the caller is responsible for</span>
     <span class="comment">// releasing capacity back to the server once it has freed</span>
     <span class="comment">// the data from memory.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flow_control</span> <span class="op">=</span> <span class="ident">body</span>.<span class="ident">flow_control</span>().<span class="ident">clone</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flow_control</span> = <span class="ident">body</span>.<span class="ident">flow_control</span>().<span class="ident">clone</span>();
 
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) <span class="op">=</span> <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
-        <span class="kw">let</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="ident">chunk</span><span class="question-mark">?</span>;
+    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) = <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
+        <span class="kw">let</span> <span class="ident">chunk</span> = <span class="ident">chunk</span><span class="question-mark">?</span>;
         <span class="macro">println!</span>(<span class="string">&quot;RX: {:?}&quot;</span>, <span class="ident">chunk</span>);
 
         <span class="comment">// Let the server send more data.</span>
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">flow_control</span>.<span class="ident">release_capacity</span>(<span class="ident">chunk</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">flow_control</span>.<span class="ident">release_capacity</span>(<span class="ident">chunk</span>.<span class="ident">len</span>());
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -108,4 +108,4 @@ request.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SendRequest.html" title="h2::client::SendRequest struct">SendRequest</a></div><div class="item-right docblock-short"><p>Initializes new HTTP/2 streams on a connection by sending a request.</p>
 </div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.handshake.html" title="h2::client::handshake fn">handshake</a></div><div class="item-right docblock-short"><p>Creates a new configured HTTP/2 client with default configuration
 values backed by <code>io</code>.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

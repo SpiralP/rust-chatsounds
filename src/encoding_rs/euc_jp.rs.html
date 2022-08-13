@@ -503,8 +503,8 @@
         <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
             <span class="ident">EucJpPending::None</span> =&gt; <span class="number">0</span>,
             <span class="ident">EucJpPending::Jis0208Lead</span>(<span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">EucJpPending::Jis0212Shift</span>
-            <span class="op">|</span> <span class="ident">EucJpPending::HalfWidthKatakana</span> =&gt; <span class="number">1</span>,
+            | <span class="ident">EucJpPending::Jis0212Shift</span>
+            | <span class="ident">EucJpPending::HalfWidthKatakana</span> =&gt; <span class="number">1</span>,
             <span class="ident">EucJpPending::Jis0212Lead</span>(<span class="kw">_</span>) =&gt; <span class="number">2</span>,
         }
     }
@@ -525,37 +525,37 @@
         <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">is_none</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">plus_one_if_lead</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">plus_one_if_lead</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="ident">byte_length</span>.<span class="ident">checked_add</span>(<span class="kw">if</span> <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">is_none</span>() { <span class="number">0</span> } <span class="kw">else</span> { <span class="number">1</span> })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf16_buffer_length</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf16_buffer_length</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="self">self</span>.<span class="ident">plus_one_if_lead</span>(<span class="ident">byte_length</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf8_buffer_length_without_replacement</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf8_buffer_length_without_replacement</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="comment">// worst case: 2 to 3</span>
-        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">plus_one_if_lead</span>(<span class="ident">byte_length</span>);
+        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">plus_one_if_lead</span>(<span class="ident">byte_length</span>);
         <span class="ident">checked_add</span>(<span class="number">2</span>, <span class="ident">checked_add_opt</span>(<span class="ident">len</span>, <span class="ident">checked_div</span>(<span class="ident">checked_add</span>(<span class="number">1</span>, <span class="ident">len</span>), <span class="number">2</span>)))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf8_buffer_length</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_utf8_buffer_length</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">byte_length</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="ident">checked_mul</span>(<span class="number">3</span>, <span class="self">self</span>.<span class="ident">plus_one_if_lead</span>(<span class="ident">byte_length</span>))
     }
 
     <span class="macro">euc_jp_decoder_functions!</span>(
         {
-            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> <span class="op">=</span> <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
+            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> = <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
             <span class="comment">// Fast-track Hiragana (60% according to Lunde)</span>
             <span class="comment">// and Katakana (10% acconding to Lunde).</span>
-            <span class="kw">if</span> <span class="ident">jis0208_lead_minus_offset</span> <span class="op">==</span> <span class="number">0x03</span> <span class="op">&amp;&amp;</span> <span class="ident">trail_minus_offset</span> <span class="op">&lt;</span> <span class="number">0x53</span> {
+            <span class="kw">if</span> <span class="ident">jis0208_lead_minus_offset</span> == <span class="number">0x03</span> &amp;&amp; <span class="ident">trail_minus_offset</span> &lt; <span class="number">0x53</span> {
                 <span class="comment">// Hiragana</span>
-                <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0x3041</span> <span class="op">+</span> <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">jis0208_lead_minus_offset</span> <span class="op">==</span> <span class="number">0x04</span> <span class="op">&amp;&amp;</span> <span class="ident">trail_minus_offset</span> <span class="op">&lt;</span> <span class="number">0x56</span> {
+                <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0x3041</span> + <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">jis0208_lead_minus_offset</span> == <span class="number">0x04</span> &amp;&amp; <span class="ident">trail_minus_offset</span> &lt; <span class="number">0x56</span> {
                 <span class="comment">// Katakana</span>
-                <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0x30A1</span> <span class="op">+</span> <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">trail_minus_offset</span> <span class="op">&gt;</span> (<span class="number">0xFE</span> <span class="op">-</span> <span class="number">0xA1</span>) {
-                <span class="kw">if</span> <span class="ident">byte</span> <span class="op">&lt;</span> <span class="number">0x80</span> {
+                <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0x30A1</span> + <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">trail_minus_offset</span> &gt; (<span class="number">0xFE</span> - <span class="number">0xA1</span>) {
+                <span class="kw">if</span> <span class="ident">byte</span> &lt; <span class="number">0x80</span> {
                     <span class="kw">return</span> (
                         <span class="ident">DecoderResult::Malformed</span>(<span class="number">1</span>, <span class="number">0</span>),
                         <span class="ident">unread_handle_trail</span>.<span class="ident">unread</span>(),
@@ -568,21 +568,21 @@
                     <span class="ident">handle</span>.<span class="ident">written</span>(),
                 );
             } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">pointer</span> <span class="op">=</span> <span class="ident">mul_94</span>(<span class="ident">jis0208_lead_minus_offset</span>) <span class="op">+</span> <span class="ident">usize::from</span>(<span class="ident">trail_minus_offset</span>);
-                <span class="kw">let</span> <span class="ident">level1_pointer</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">1410</span>);
-                <span class="kw">if</span> <span class="ident">level1_pointer</span> <span class="op">&lt;</span> <span class="ident">JIS0208_LEVEL1_KANJI</span>.<span class="ident">len</span>() {
+                <span class="kw">let</span> <span class="ident">pointer</span> = <span class="ident">mul_94</span>(<span class="ident">jis0208_lead_minus_offset</span>) + <span class="ident">usize::from</span>(<span class="ident">trail_minus_offset</span>);
+                <span class="kw">let</span> <span class="ident">level1_pointer</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">1410</span>);
+                <span class="kw">if</span> <span class="ident">level1_pointer</span> &lt; <span class="ident">JIS0208_LEVEL1_KANJI</span>.<span class="ident">len</span>() {
                     <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="ident">JIS0208_LEVEL1_KANJI</span>[<span class="ident">level1_pointer</span>])
                 } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">level2_pointer</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">4418</span>);
-                    <span class="kw">if</span> <span class="ident">level2_pointer</span> <span class="op">&lt;</span> <span class="ident">JIS0208_LEVEL2_AND_ADDITIONAL_KANJI</span>.<span class="ident">len</span>() {
+                    <span class="kw">let</span> <span class="ident">level2_pointer</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">4418</span>);
+                    <span class="kw">if</span> <span class="ident">level2_pointer</span> &lt; <span class="ident">JIS0208_LEVEL2_AND_ADDITIONAL_KANJI</span>.<span class="ident">len</span>() {
                         <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="ident">JIS0208_LEVEL2_AND_ADDITIONAL_KANJI</span>[<span class="ident">level2_pointer</span>])
                     } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="ident">ibm_pointer</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">8272</span>);
-                        <span class="kw">if</span> <span class="ident">ibm_pointer</span> <span class="op">&lt;</span> <span class="ident">IBM_KANJI</span>.<span class="ident">len</span>() {
+                        <span class="kw">let</span> <span class="ident">ibm_pointer</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">8272</span>);
+                        <span class="kw">if</span> <span class="ident">ibm_pointer</span> &lt; <span class="ident">IBM_KANJI</span>.<span class="ident">len</span>() {
                             <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="ident">IBM_KANJI</span>[<span class="ident">ibm_pointer</span>])
-                        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) <span class="op">=</span> <span class="ident">jis0208_symbol_decode</span>(<span class="ident">pointer</span>) {
+                        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) = <span class="ident">jis0208_symbol_decode</span>(<span class="ident">pointer</span>) {
                             <span class="ident">handle</span>.<span class="ident">write_bmp_excl_ascii</span>(<span class="ident">bmp</span>)
-                        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) <span class="op">=</span> <span class="ident">jis0208_range_decode</span>(<span class="ident">pointer</span>) {
+                        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) = <span class="ident">jis0208_range_decode</span>(<span class="ident">pointer</span>) {
                             <span class="ident">handle</span>.<span class="ident">write_bmp_excl_ascii</span>(<span class="ident">bmp</span>)
                         } <span class="kw">else</span> {
                             <span class="kw">return</span> (
@@ -598,9 +598,9 @@
         {
             <span class="comment">// If lead is between 0xA1 and 0xFE, inclusive,</span>
             <span class="comment">// subtract 0xA1.</span>
-            <span class="kw">let</span> <span class="ident">jis0212_lead_minus_offset</span> <span class="op">=</span> <span class="ident">lead</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
-            <span class="kw">if</span> <span class="ident">jis0212_lead_minus_offset</span> <span class="op">&gt;</span> (<span class="number">0xFE</span> <span class="op">-</span> <span class="number">0xA1</span>) {
-                <span class="kw">if</span> <span class="ident">lead</span> <span class="op">&lt;</span> <span class="number">0x80</span> {
+            <span class="kw">let</span> <span class="ident">jis0212_lead_minus_offset</span> = <span class="ident">lead</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
+            <span class="kw">if</span> <span class="ident">jis0212_lead_minus_offset</span> &gt; (<span class="number">0xFE</span> - <span class="number">0xA1</span>) {
+                <span class="kw">if</span> <span class="ident">lead</span> &lt; <span class="number">0x80</span> {
                     <span class="kw">return</span> (
                         <span class="ident">DecoderResult::Malformed</span>(<span class="number">1</span>, <span class="number">0</span>),
                         <span class="ident">unread_handle_jis0212</span>.<span class="ident">unread</span>(),
@@ -618,9 +618,9 @@
         {
             <span class="comment">// If trail is between 0xA1 and 0xFE, inclusive,</span>
             <span class="comment">// subtract 0xA1.</span>
-            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> <span class="op">=</span> <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
-            <span class="kw">if</span> <span class="ident">trail_minus_offset</span> <span class="op">&gt;</span> (<span class="number">0xFE</span> <span class="op">-</span> <span class="number">0xA1</span>) {
-                <span class="kw">if</span> <span class="ident">byte</span> <span class="op">&lt;</span> <span class="number">0x80</span> {
+            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> = <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
+            <span class="kw">if</span> <span class="ident">trail_minus_offset</span> &gt; (<span class="number">0xFE</span> - <span class="number">0xA1</span>) {
+                <span class="kw">if</span> <span class="ident">byte</span> &lt; <span class="number">0x80</span> {
                     <span class="kw">return</span> (
                         <span class="ident">DecoderResult::Malformed</span>(<span class="number">2</span>, <span class="number">0</span>),
                         <span class="ident">unread_handle_trail</span>.<span class="ident">unread</span>(),
@@ -633,20 +633,20 @@
                     <span class="ident">handle</span>.<span class="ident">written</span>(),
                 );
             }
-            <span class="kw">let</span> <span class="ident">pointer</span> <span class="op">=</span> <span class="ident">mul_94</span>(<span class="ident">jis0212_lead_minus_offset</span>) <span class="op">+</span> <span class="ident">usize::from</span>(<span class="ident">trail_minus_offset</span>);
-            <span class="kw">let</span> <span class="ident">pointer_minus_kanji</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">1410</span>);
-            <span class="kw">if</span> <span class="ident">pointer_minus_kanji</span> <span class="op">&lt;</span> <span class="ident">JIS0212_KANJI</span>.<span class="ident">len</span>() {
+            <span class="kw">let</span> <span class="ident">pointer</span> = <span class="ident">mul_94</span>(<span class="ident">jis0212_lead_minus_offset</span>) + <span class="ident">usize::from</span>(<span class="ident">trail_minus_offset</span>);
+            <span class="kw">let</span> <span class="ident">pointer_minus_kanji</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">1410</span>);
+            <span class="kw">if</span> <span class="ident">pointer_minus_kanji</span> &lt; <span class="ident">JIS0212_KANJI</span>.<span class="ident">len</span>() {
                 <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="ident">JIS0212_KANJI</span>[<span class="ident">pointer_minus_kanji</span>])
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) <span class="op">=</span> <span class="ident">jis0212_accented_decode</span>(<span class="ident">pointer</span>) {
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bmp</span>) = <span class="ident">jis0212_accented_decode</span>(<span class="ident">pointer</span>) {
                 <span class="ident">handle</span>.<span class="ident">write_bmp_excl_ascii</span>(<span class="ident">bmp</span>)
             } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">pointer_minus_upper_cyrillic</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">597</span>);
-                <span class="kw">if</span> <span class="ident">pointer_minus_upper_cyrillic</span> <span class="op">&lt;</span><span class="op">=</span> (<span class="number">607</span> <span class="op">-</span> <span class="number">597</span>) {
-                    <span class="ident">handle</span>.<span class="ident">write_mid_bmp</span>(<span class="number">0x0402</span> <span class="op">+</span> <span class="ident">pointer_minus_upper_cyrillic</span> <span class="kw">as</span> <span class="ident">u16</span>)
+                <span class="kw">let</span> <span class="ident">pointer_minus_upper_cyrillic</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">597</span>);
+                <span class="kw">if</span> <span class="ident">pointer_minus_upper_cyrillic</span> &lt;= (<span class="number">607</span> - <span class="number">597</span>) {
+                    <span class="ident">handle</span>.<span class="ident">write_mid_bmp</span>(<span class="number">0x0402</span> + <span class="ident">pointer_minus_upper_cyrillic</span> <span class="kw">as</span> <span class="ident">u16</span>)
                 } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">pointer_minus_lower_cyrillic</span> <span class="op">=</span> <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">645</span>);
-                    <span class="kw">if</span> <span class="ident">pointer_minus_lower_cyrillic</span> <span class="op">&lt;</span><span class="op">=</span> (<span class="number">655</span> <span class="op">-</span> <span class="number">645</span>) {
-                        <span class="ident">handle</span>.<span class="ident">write_mid_bmp</span>(<span class="number">0x0452</span> <span class="op">+</span> <span class="ident">pointer_minus_lower_cyrillic</span> <span class="kw">as</span> <span class="ident">u16</span>)
+                    <span class="kw">let</span> <span class="ident">pointer_minus_lower_cyrillic</span> = <span class="ident">pointer</span>.<span class="ident">wrapping_sub</span>(<span class="number">645</span>);
+                    <span class="kw">if</span> <span class="ident">pointer_minus_lower_cyrillic</span> &lt;= (<span class="number">655</span> - <span class="number">645</span>) {
+                        <span class="ident">handle</span>.<span class="ident">write_mid_bmp</span>(<span class="number">0x0452</span> + <span class="ident">pointer_minus_lower_cyrillic</span> <span class="kw">as</span> <span class="ident">u16</span>)
                     } <span class="kw">else</span> {
                         <span class="kw">return</span> (
                             <span class="ident">DecoderResult::Malformed</span>(<span class="number">3</span>, <span class="number">0</span>),
@@ -660,9 +660,9 @@
         {
             <span class="comment">// If trail is between 0xA1 and 0xDF, inclusive,</span>
             <span class="comment">// subtract 0xA1 and map to half-width Katakana.</span>
-            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> <span class="op">=</span> <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
-            <span class="kw">if</span> <span class="ident">trail_minus_offset</span> <span class="op">&gt;</span> (<span class="number">0xDF</span> <span class="op">-</span> <span class="number">0xA1</span>) {
-                <span class="kw">if</span> <span class="ident">byte</span> <span class="op">&lt;</span> <span class="number">0x80</span> {
+            <span class="kw">let</span> <span class="ident">trail_minus_offset</span> = <span class="ident">byte</span>.<span class="ident">wrapping_sub</span>(<span class="number">0xA1</span>);
+            <span class="kw">if</span> <span class="ident">trail_minus_offset</span> &gt; (<span class="number">0xDF</span> - <span class="number">0xA1</span>) {
+                <span class="kw">if</span> <span class="ident">byte</span> &lt; <span class="number">0x80</span> {
                     <span class="kw">return</span> (
                         <span class="ident">DecoderResult::Malformed</span>(<span class="number">1</span>, <span class="number">0</span>),
                         <span class="ident">unread_handle_trail</span>.<span class="ident">unread</span>(),
@@ -675,7 +675,7 @@
                     <span class="ident">handle</span>.<span class="ident">written</span>(),
                 );
             }
-            <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0xFF61</span> <span class="op">+</span> <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
+            <span class="ident">handle</span>.<span class="ident">write_upper_bmp</span>(<span class="number">0xFF61</span> + <span class="ident">u16::from</span>(<span class="ident">trail_minus_offset</span>))
         },
         <span class="self">self</span>,
         <span class="ident">non_ascii</span>,
@@ -690,27 +690,27 @@
     );
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fast-kanji-encode&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fast-kanji-encode&quot;</span>)]</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-<span class="kw">fn</span> <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">u8</span>, <span class="ident">u8</span>)<span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="ident">u8</span>, <span class="ident">u8</span>)&gt; {
     <span class="ident">jis0208_kanji_euc_jp_encode</span>(<span class="ident">bmp</span>)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fast-kanji-encode&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fast-kanji-encode&quot;</span>))]</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-<span class="kw">fn</span> <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">u8</span>, <span class="ident">u8</span>)<span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="number">0x4EDD</span> <span class="op">==</span> <span class="ident">bmp</span> {
+<span class="kw">fn</span> <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="ident">u8</span>, <span class="ident">u8</span>)&gt; {
+    <span class="kw">if</span> <span class="number">0x4EDD</span> == <span class="ident">bmp</span> {
         <span class="comment">// Ideograph on the symbol row!</span>
         <span class="prelude-val">Some</span>((<span class="number">0xA1</span>, <span class="number">0xB8</span>))
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">lead</span>, <span class="ident">trail</span>)) <span class="op">=</span> <span class="ident">jis0208_level1_kanji_euc_jp_encode</span>(<span class="ident">bmp</span>) {
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">lead</span>, <span class="ident">trail</span>)) = <span class="ident">jis0208_level1_kanji_euc_jp_encode</span>(<span class="ident">bmp</span>) {
         <span class="prelude-val">Some</span>((<span class="ident">lead</span>, <span class="ident">trail</span>))
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">jis0208_level2_and_additional_kanji_encode</span>(<span class="ident">bmp</span>) {
-        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xD0</span>;
-        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) = <span class="ident">jis0208_level2_and_additional_kanji_encode</span>(<span class="ident">bmp</span>) {
+        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pos</span> / <span class="number">94</span>) + <span class="number">0xD0</span>;
+        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pos</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
         <span class="prelude-val">Some</span>((<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>))
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">position</span>(<span class="kw-2">&amp;</span><span class="ident">IBM_KANJI</span>[..], <span class="ident">bmp</span>) {
-        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xF9</span>;
-        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) = <span class="ident">position</span>(<span class="kw-2">&amp;</span><span class="ident">IBM_KANJI</span>[..], <span class="ident">bmp</span>) {
+        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pos</span> / <span class="number">94</span>) + <span class="number">0xF9</span>;
+        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pos</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
         <span class="prelude-val">Some</span>((<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>))
     } <span class="kw">else</span> {
         <span class="prelude-val">None</span>
@@ -727,25 +727,25 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_buffer_length_from_utf16_without_replacement</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">u16_length</span>: <span class="ident">usize</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="ident">u16_length</span>.<span class="ident">checked_mul</span>(<span class="number">2</span>)
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_buffer_length_from_utf8_without_replacement</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">byte_length</span>: <span class="ident">usize</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="ident">byte_length</span>.<span class="ident">checked_add</span>(<span class="number">1</span>)
     }
 
     <span class="macro">ascii_compatible_bmp_encoder_functions!</span>(
         {
             <span class="comment">// Lunde says 60% Hiragana, 30% Kanji, 10% Katakana</span>
-            <span class="kw">let</span> <span class="ident">bmp_minus_hiragana</span> <span class="op">=</span> <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x3041</span>);
-            <span class="kw">if</span> <span class="ident">bmp_minus_hiragana</span> <span class="op">&lt;</span> <span class="number">0x53</span> {
-                <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA4</span>, <span class="number">0xA1</span> <span class="op">+</span> <span class="ident">bmp_minus_hiragana</span> <span class="kw">as</span> <span class="ident">u8</span>)
+            <span class="kw">let</span> <span class="ident">bmp_minus_hiragana</span> = <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x3041</span>);
+            <span class="kw">if</span> <span class="ident">bmp_minus_hiragana</span> &lt; <span class="number">0x53</span> {
+                <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA4</span>, <span class="number">0xA1</span> + <span class="ident">bmp_minus_hiragana</span> <span class="kw">as</span> <span class="ident">u8</span>)
             } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">in_inclusive_range16</span>(<span class="ident">bmp</span>, <span class="number">0x4E00</span>, <span class="number">0x9FA0</span>) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">lead</span>, <span class="ident">trail</span>)) <span class="op">=</span> <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>) {
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">lead</span>, <span class="ident">trail</span>)) = <span class="ident">encode_kanji</span>(<span class="ident">bmp</span>) {
                     <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="ident">lead</span>, <span class="ident">trail</span>)
                 } <span class="kw">else</span> {
                     <span class="kw">return</span> (
@@ -755,42 +755,42 @@
                     );
                 }
             } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">bmp_minus_katakana</span> <span class="op">=</span> <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x30A1</span>);
-                <span class="kw">if</span> <span class="ident">bmp_minus_katakana</span> <span class="op">&lt;</span> <span class="number">0x56</span> {
-                    <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA5</span>, <span class="number">0xA1</span> <span class="op">+</span> <span class="ident">bmp_minus_katakana</span> <span class="kw">as</span> <span class="ident">u8</span>)
+                <span class="kw">let</span> <span class="ident">bmp_minus_katakana</span> = <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x30A1</span>);
+                <span class="kw">if</span> <span class="ident">bmp_minus_katakana</span> &lt; <span class="number">0x56</span> {
+                    <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA5</span>, <span class="number">0xA1</span> + <span class="ident">bmp_minus_katakana</span> <span class="kw">as</span> <span class="ident">u8</span>)
                 } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">bmp_minus_space</span> <span class="op">=</span> <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x3000</span>);
-                    <span class="kw">if</span> <span class="ident">bmp_minus_space</span> <span class="op">&lt;</span> <span class="number">3</span> {
+                    <span class="kw">let</span> <span class="ident">bmp_minus_space</span> = <span class="ident">bmp</span>.<span class="ident">wrapping_sub</span>(<span class="number">0x3000</span>);
+                    <span class="kw">if</span> <span class="ident">bmp_minus_space</span> &lt; <span class="number">3</span> {
                         <span class="comment">// fast-track common punctuation</span>
-                        <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA1</span>, <span class="number">0xA1</span> <span class="op">+</span> <span class="ident">bmp_minus_space</span> <span class="kw">as</span> <span class="ident">u8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> <span class="op">==</span> <span class="number">0xA5</span> {
+                        <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA1</span>, <span class="number">0xA1</span> + <span class="ident">bmp_minus_space</span> <span class="kw">as</span> <span class="ident">u8</span>)
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> == <span class="number">0xA5</span> {
                         <span class="ident">handle</span>.<span class="ident">write_one</span>(<span class="number">0x5Cu8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> <span class="op">==</span> <span class="number">0x203E</span> {
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> == <span class="number">0x203E</span> {
                         <span class="ident">handle</span>.<span class="ident">write_one</span>(<span class="number">0x7Eu8</span>)
                     } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">in_inclusive_range16</span>(<span class="ident">bmp</span>, <span class="number">0xFF61</span>, <span class="number">0xFF9F</span>) {
-                        <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0x8Eu8</span>, (<span class="ident">bmp</span> <span class="op">-</span> (<span class="number">0xFF61</span> <span class="op">-</span> <span class="number">0xA1</span>)) <span class="kw">as</span> <span class="ident">u8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> <span class="op">==</span> <span class="number">0x2212</span> {
+                        <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0x8Eu8</span>, (<span class="ident">bmp</span> - (<span class="number">0xFF61</span> - <span class="number">0xA1</span>)) <span class="kw">as</span> <span class="ident">u8</span>)
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">bmp</span> == <span class="number">0x2212</span> {
                         <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="number">0xA1u8</span>, <span class="number">0xDDu8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) <span class="op">=</span> <span class="ident">jis0208_range_encode</span>(<span class="ident">bmp</span>) {
-                        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
-                        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) = <span class="ident">jis0208_range_encode</span>(<span class="ident">bmp</span>) {
+                        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pointer</span> / <span class="number">94</span>) + <span class="number">0xA1</span>;
+                        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pointer</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
                         <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>)
                     } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">in_inclusive_range16</span>(<span class="ident">bmp</span>, <span class="number">0xFA0E</span>, <span class="number">0xFA2D</span>)
-                        <span class="op">|</span><span class="op">|</span> <span class="ident">bmp</span> <span class="op">==</span> <span class="number">0xF929</span>
-                        <span class="op">|</span><span class="op">|</span> <span class="ident">bmp</span> <span class="op">==</span> <span class="number">0xF9DC</span>
+                        || <span class="ident">bmp</span> == <span class="number">0xF929</span>
+                        || <span class="ident">bmp</span> == <span class="number">0xF9DC</span>
                     {
                         <span class="comment">// Guaranteed to be found in IBM_KANJI</span>
-                        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">position</span>(<span class="kw-2">&amp;</span><span class="ident">IBM_KANJI</span>[..], <span class="ident">bmp</span>).<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xF9</span>;
-                        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pos</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+                        <span class="kw">let</span> <span class="ident">pos</span> = <span class="ident">position</span>(<span class="kw-2">&amp;</span><span class="ident">IBM_KANJI</span>[..], <span class="ident">bmp</span>).<span class="ident">unwrap</span>();
+                        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pos</span> / <span class="number">94</span>) + <span class="number">0xF9</span>;
+                        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pos</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
                         <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) <span class="op">=</span> <span class="ident">ibm_symbol_encode</span>(<span class="ident">bmp</span>) {
-                        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
-                        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) = <span class="ident">ibm_symbol_encode</span>(<span class="ident">bmp</span>) {
+                        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pointer</span> / <span class="number">94</span>) + <span class="number">0xA1</span>;
+                        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pointer</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
                         <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>)
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) <span class="op">=</span> <span class="ident">jis0208_symbol_encode</span>(<span class="ident">bmp</span>) {
-                        <span class="kw">let</span> <span class="ident">lead</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">/</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
-                        <span class="kw">let</span> <span class="ident">trail</span> <span class="op">=</span> (<span class="ident">pointer</span> <span class="op">%</span> <span class="number">94</span>) <span class="op">+</span> <span class="number">0xA1</span>;
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pointer</span>) = <span class="ident">jis0208_symbol_encode</span>(<span class="ident">bmp</span>) {
+                        <span class="kw">let</span> <span class="ident">lead</span> = (<span class="ident">pointer</span> / <span class="number">94</span>) + <span class="number">0xA1</span>;
+                        <span class="kw">let</span> <span class="ident">trail</span> = (<span class="ident">pointer</span> % <span class="number">94</span>) + <span class="number">0xA1</span>;
                         <span class="ident">handle</span>.<span class="ident">write_two</span>(<span class="ident">lead</span> <span class="kw">as</span> <span class="ident">u8</span>, <span class="ident">trail</span> <span class="kw">as</span> <span class="ident">u8</span>)
                     } <span class="kw">else</span> {
                         <span class="kw">return</span> (
@@ -815,7 +815,7 @@
 <span class="comment">// Any copyright to the test code below this comment is dedicated to the</span>
 <span class="comment">// Public Domain. http://creativecommons.org/publicdomain/zero/1.0/</span>
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> = <span class="string">&quot;alloc&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">tests</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::testing</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span></span>::<span class="kw-2">*</span>;
@@ -908,9 +908,9 @@
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span> <span class="comment">// Miri is too slow</span>
     <span class="kw">fn</span> <span class="ident">test_jis0208_decode_all</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0208_in.txt&quot;</span>);
-        <span class="kw">let</span> <span class="ident">expectation</span> <span class="op">=</span> <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0208_in_ref.txt&quot;</span>);
-        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">had_errors</span>) <span class="op">=</span> <span class="ident">EUC_JP</span>.<span class="ident">decode_without_bom_handling</span>(<span class="ident">input</span>);
+        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0208_in.txt&quot;</span>);
+        <span class="kw">let</span> <span class="ident">expectation</span> = <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0208_in_ref.txt&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">had_errors</span>) = <span class="ident">EUC_JP</span>.<span class="ident">decode_without_bom_handling</span>(<span class="ident">input</span>);
         <span class="macro">assert!</span>(<span class="ident">had_errors</span>, <span class="string">&quot;Should have had errors.&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">cow</span>[..], <span class="ident">expectation</span>);
     }
@@ -918,10 +918,10 @@
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span> <span class="comment">// Miri is too slow</span>
     <span class="kw">fn</span> <span class="ident">test_jis0208_encode_all</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0208_out.txt&quot;</span>);
-        <span class="kw">let</span> <span class="ident">expectation</span> <span class="op">=</span> <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0208_out_ref.txt&quot;</span>);
-        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">encoding</span>, <span class="ident">had_errors</span>) <span class="op">=</span> <span class="ident">EUC_JP</span>.<span class="ident">encode</span>(<span class="ident">input</span>);
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">had_errors</span>, <span class="string">&quot;Should not have had errors.&quot;</span>);
+        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0208_out.txt&quot;</span>);
+        <span class="kw">let</span> <span class="ident">expectation</span> = <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0208_out_ref.txt&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">encoding</span>, <span class="ident">had_errors</span>) = <span class="ident">EUC_JP</span>.<span class="ident">encode</span>(<span class="ident">input</span>);
+        <span class="macro">assert!</span>(!<span class="ident">had_errors</span>, <span class="string">&quot;Should not have had errors.&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">encoding</span>, <span class="ident">EUC_JP</span>);
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">cow</span>[..], <span class="kw-2">&amp;</span><span class="ident">expectation</span>[..]);
     }
@@ -929,12 +929,12 @@
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span> <span class="comment">// Miri is too slow</span>
     <span class="kw">fn</span> <span class="ident">test_jis0212_decode_all</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0212_in.txt&quot;</span>);
-        <span class="kw">let</span> <span class="ident">expectation</span> <span class="op">=</span> <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0212_in_ref.txt&quot;</span>);
-        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">had_errors</span>) <span class="op">=</span> <span class="ident">EUC_JP</span>.<span class="ident">decode_without_bom_handling</span>(<span class="ident">input</span>);
+        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">include_bytes!</span>(<span class="string">&quot;test_data/jis0212_in.txt&quot;</span>);
+        <span class="kw">let</span> <span class="ident">expectation</span> = <span class="macro">include_str!</span>(<span class="string">&quot;test_data/jis0212_in_ref.txt&quot;</span>);
+        <span class="kw">let</span> (<span class="ident">cow</span>, <span class="ident">had_errors</span>) = <span class="ident">EUC_JP</span>.<span class="ident">decode_without_bom_handling</span>(<span class="ident">input</span>);
         <span class="macro">assert!</span>(<span class="ident">had_errors</span>, <span class="string">&quot;Should have had errors.&quot;</span>);
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">cow</span>[..], <span class="ident">expectation</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="encoding_rs" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="encoding_rs" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

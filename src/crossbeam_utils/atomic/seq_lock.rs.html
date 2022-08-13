@@ -135,9 +135,9 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// This method should be called before optimistic reads.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">optimistic_read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
-        <span class="kw">if</span> <span class="ident">state</span> <span class="op">==</span> <span class="number">1</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">optimistic_read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
+        <span class="kw">let</span> <span class="ident">state</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+        <span class="kw">if</span> <span class="ident">state</span> == <span class="number">1</span> {
             <span class="prelude-val">None</span>
         } <span class="kw">else</span> {
             <span class="prelude-val">Some</span>(<span class="ident">state</span>)
@@ -151,17 +151,17 @@
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">validate_read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">stamp</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
         <span class="ident">atomic::fence</span>(<span class="ident">Ordering::Acquire</span>);
-        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Ordering::Relaxed</span>) <span class="op">==</span> <span class="ident">stamp</span>
+        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Ordering::Relaxed</span>) == <span class="ident">stamp</span>
     }
 
     <span class="doccomment">/// Grabs the lock for writing.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="self">self</span>) -&gt; <span class="ident">SeqLockWriteGuard</span> {
-        <span class="kw">let</span> <span class="ident">backoff</span> <span class="op">=</span> <span class="ident">Backoff::new</span>();
+        <span class="kw">let</span> <span class="ident">backoff</span> = <span class="ident">Backoff::new</span>();
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">previous</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">swap</span>(<span class="number">1</span>, <span class="ident">Ordering::Acquire</span>);
+            <span class="kw">let</span> <span class="ident">previous</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">swap</span>(<span class="number">1</span>, <span class="ident">Ordering::Acquire</span>);
 
-            <span class="kw">if</span> <span class="ident">previous</span> <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
+            <span class="kw">if</span> <span class="ident">previous</span> != <span class="number">1</span> {
                 <span class="ident">atomic::fence</span>(<span class="ident">Ordering::Release</span>);
 
                 <span class="kw">return</span> <span class="ident">SeqLockWriteGuard</span> {
@@ -212,15 +212,15 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_abort</span>() {
-        <span class="kw">static</span> <span class="ident">LK</span>: <span class="ident">SeqLock</span> <span class="op">=</span> <span class="ident">SeqLock::new</span>();
-        <span class="kw">let</span> <span class="ident">before</span> <span class="op">=</span> <span class="ident">LK</span>.<span class="ident">optimistic_read</span>().<span class="ident">unwrap</span>();
+        <span class="kw">static</span> <span class="ident">LK</span>: <span class="ident">SeqLock</span> = <span class="ident">SeqLock::new</span>();
+        <span class="kw">let</span> <span class="ident">before</span> = <span class="ident">LK</span>.<span class="ident">optimistic_read</span>().<span class="ident">unwrap</span>();
         {
-            <span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="ident">LK</span>.<span class="ident">write</span>();
+            <span class="kw">let</span> <span class="ident">guard</span> = <span class="ident">LK</span>.<span class="ident">write</span>();
             <span class="ident">guard</span>.<span class="ident">abort</span>();
         }
-        <span class="kw">let</span> <span class="ident">after</span> <span class="op">=</span> <span class="ident">LK</span>.<span class="ident">optimistic_read</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">after</span> = <span class="ident">LK</span>.<span class="ident">optimistic_read</span>().<span class="ident">unwrap</span>();
         <span class="macro">assert_eq!</span>(<span class="ident">before</span>, <span class="ident">after</span>, <span class="string">&quot;aborted write does not update the stamp&quot;</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

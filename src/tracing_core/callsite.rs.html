@@ -769,7 +769,7 @@
     <span class="doccomment">/// &lt;/pre&gt;&lt;/div&gt;</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [metadata]: super::metadata::Metadata</span>
-    <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Metadata</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Metadata</span>&lt;<span class="lifetime">&#39;_</span>&gt;;
 
     <span class="doccomment">/// This method is an *internal implementation detail* of `tracing-core`. It</span>
     <span class="doccomment">/// is *not* intended to be called or overridden from downstream code.</span>
@@ -786,11 +786,11 @@
     <span class="comment">// for `&amp;dyn Callsite`s in the future.</span>
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">private_type_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: <span class="ident">private::Private</span><span class="op">&lt;</span>()<span class="op">&gt;</span>) -&gt; <span class="ident">private::Private</span><span class="op">&lt;</span><span class="ident">TypeId</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">private_type_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: <span class="ident">private::Private</span>&lt;()&gt;) -&gt; <span class="ident">private::Private</span>&lt;<span class="ident">TypeId</span>&gt;
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="lifetime">&#39;static</span>,
     {
-        <span class="ident">private::Private</span>(<span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>())
+        <span class="ident">private::Private</span>(<span class="ident">TypeId::of</span>::&lt;<span class="self">Self</span>&gt;())
     }
 }
 
@@ -817,8 +817,8 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DefaultCallsite</span> {
     <span class="ident">interest</span>: <span class="ident">AtomicU8</span>,
     <span class="ident">registration</span>: <span class="ident">AtomicU8</span>,
-    <span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">Metadata</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
-    <span class="ident">next</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>,
+    <span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">Metadata</span>&lt;<span class="lifetime">&#39;static</span>&gt;,
+    <span class="ident">next</span>: <span class="ident">AtomicPtr</span>&lt;<span class="self">Self</span>&gt;,
 }
 
 <span class="doccomment">/// Clear and reregister interest on every [`Callsite`]</span>
@@ -862,8 +862,8 @@
     <span class="ident">rebuild_callsite_interest</span>(<span class="ident">callsite</span>, <span class="kw-2">&amp;</span><span class="ident">DISPATCHERS</span>.<span class="ident">rebuilder</span>());
 
     <span class="comment">// Is this a `DefaultCallsite`? If so, use the fancy linked list!</span>
-    <span class="kw">if</span> <span class="ident">callsite</span>.<span class="ident">private_type_id</span>(<span class="ident">private::Private</span>(())).<span class="number">0</span> <span class="op">==</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">DefaultCallsite</span><span class="op">&gt;</span>() {
-        <span class="kw">let</span> <span class="ident">callsite</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+    <span class="kw">if</span> <span class="ident">callsite</span>.<span class="ident">private_type_id</span>(<span class="ident">private::Private</span>(())).<span class="number">0</span> == <span class="ident">TypeId::of</span>::&lt;<span class="ident">DefaultCallsite</span>&gt;() {
+        <span class="kw">let</span> <span class="ident">callsite</span> = <span class="kw">unsafe</span> {
             <span class="comment">// Safety: the pointer cast is safe because the type id of the</span>
             <span class="comment">// provided callsite matches that of the target type for the cast</span>
             <span class="comment">// (`DefaultCallsite`). Because user implementations of `Callsite`</span>
@@ -878,33 +878,33 @@
     <span class="ident">CALLSITES</span>.<span class="ident">push_dyn</span>(<span class="ident">callsite</span>);
 }
 
-<span class="kw">static</span> <span class="ident">CALLSITES</span>: <span class="ident">Callsites</span> <span class="op">=</span> <span class="ident">Callsites</span> {
+<span class="kw">static</span> <span class="ident">CALLSITES</span>: <span class="ident">Callsites</span> = <span class="ident">Callsites</span> {
     <span class="ident">list_head</span>: <span class="ident">AtomicPtr::new</span>(<span class="ident">ptr::null_mut</span>()),
     <span class="ident">has_locked_callsites</span>: <span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>),
 };
 
-<span class="kw">static</span> <span class="ident">DISPATCHERS</span>: <span class="ident">Dispatchers</span> <span class="op">=</span> <span class="ident">Dispatchers::new</span>();
+<span class="kw">static</span> <span class="ident">DISPATCHERS</span>: <span class="ident">Dispatchers</span> = <span class="ident">Dispatchers::new</span>();
 
-<span class="kw">static</span> <span class="ident">LOCKED_CALLSITES</span>: <span class="ident">Lazy</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Callsite</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Lazy::new</span>(<span class="ident">Default::default</span>);
+<span class="kw">static</span> <span class="ident">LOCKED_CALLSITES</span>: <span class="ident">Lazy</span>&lt;<span class="ident">Mutex</span>&lt;<span class="ident">Vec</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Callsite</span>&gt;&gt;&gt; = <span class="ident">Lazy::new</span>(<span class="ident">Default::default</span>);
 
 <span class="kw">struct</span> <span class="ident">Callsites</span> {
-    <span class="ident">list_head</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="ident">DefaultCallsite</span><span class="op">&gt;</span>,
+    <span class="ident">list_head</span>: <span class="ident">AtomicPtr</span>&lt;<span class="ident">DefaultCallsite</span>&gt;,
     <span class="ident">has_locked_callsites</span>: <span class="ident">AtomicBool</span>,
 }
 
 <span class="comment">// === impl DefaultCallsite ===</span>
 
 <span class="kw">impl</span> <span class="ident">DefaultCallsite</span> {
-    <span class="kw">const</span> <span class="ident">UNREGISTERED</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">const</span> <span class="ident">REGISTERING</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
-    <span class="kw">const</span> <span class="ident">REGISTERED</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">2</span>;
+    <span class="kw">const</span> <span class="ident">UNREGISTERED</span>: <span class="ident">u8</span> = <span class="number">0</span>;
+    <span class="kw">const</span> <span class="ident">REGISTERING</span>: <span class="ident">u8</span> = <span class="number">1</span>;
+    <span class="kw">const</span> <span class="ident">REGISTERED</span>: <span class="ident">u8</span> = <span class="number">2</span>;
 
-    <span class="kw">const</span> <span class="ident">INTEREST_NEVER</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">const</span> <span class="ident">INTEREST_SOMETIMES</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
-    <span class="kw">const</span> <span class="ident">INTEREST_ALWAYS</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">2</span>;
+    <span class="kw">const</span> <span class="ident">INTEREST_NEVER</span>: <span class="ident">u8</span> = <span class="number">0</span>;
+    <span class="kw">const</span> <span class="ident">INTEREST_SOMETIMES</span>: <span class="ident">u8</span> = <span class="number">1</span>;
+    <span class="kw">const</span> <span class="ident">INTEREST_ALWAYS</span>: <span class="ident">u8</span> = <span class="number">2</span>;
 
     <span class="doccomment">/// Returns a new `DefaultCallsite` with the specified `Metadata`.</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">Metadata</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">Metadata</span>&lt;<span class="lifetime">&#39;static</span>&gt;) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">interest</span>: <span class="ident">AtomicU8::new</span>(<span class="number">0xFF</span>),
             <span class="ident">meta</span>,
@@ -982,7 +982,7 @@
 
 <span class="kw">impl</span> <span class="ident">Callsite</span> <span class="kw">for</span> <span class="ident">DefaultCallsite</span> {
     <span class="kw">fn</span> <span class="ident">set_interest</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">interest</span>: <span class="ident">Interest</span>) {
-        <span class="kw">let</span> <span class="ident">interest</span> <span class="op">=</span> <span class="kw">match</span> () {
+        <span class="kw">let</span> <span class="ident">interest</span> = <span class="kw">match</span> () {
             <span class="kw">_</span> <span class="kw">if</span> <span class="ident">interest</span>.<span class="ident">is_never</span>() =&gt; <span class="ident"><span class="self">Self</span>::INTEREST_NEVER</span>,
             <span class="kw">_</span> <span class="kw">if</span> <span class="ident">interest</span>.<span class="ident">is_always</span>() =&gt; <span class="ident"><span class="self">Self</span>::INTEREST_ALWAYS</span>,
             <span class="kw">_</span> =&gt; <span class="ident"><span class="self">Self</span>::INTEREST_SOMETIMES</span>,
@@ -991,7 +991,7 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Metadata</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Metadata</span>&lt;<span class="lifetime">&#39;static</span>&gt; {
         <span class="self">self</span>.<span class="ident">meta</span>
     }
 }
@@ -1010,13 +1010,13 @@
 <span class="kw">impl</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">Identifier</span> {}
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Identifier</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;Identifier({:p})&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Hash</span> <span class="kw">for</span> <span class="ident">Identifier</span> {
-    <span class="kw">fn</span> <span class="ident">hash</span><span class="op">&lt;</span><span class="ident">H</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">H</span>)
+    <span class="kw">fn</span> <span class="ident">hash</span>&lt;<span class="ident">H</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">H</span>)
     <span class="kw">where</span>
         <span class="ident">H</span>: <span class="ident">Hasher</span>,
     {
@@ -1030,18 +1030,18 @@
     <span class="doccomment">/// Rebuild `Interest`s for all callsites in the registry.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This also re-computes the max level hint.</span>
-    <span class="kw">fn</span> <span class="ident">rebuild_interest</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dispatchers</span>: <span class="ident">dispatchers::Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max_level</span> <span class="op">=</span> <span class="ident">LevelFilter::OFF</span>;
-        <span class="ident">dispatchers</span>.<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">dispatch</span><span class="op">|</span> {
+    <span class="kw">fn</span> <span class="ident">rebuild_interest</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dispatchers</span>: <span class="ident">dispatchers::Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt;) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max_level</span> = <span class="ident">LevelFilter::OFF</span>;
+        <span class="ident">dispatchers</span>.<span class="ident">for_each</span>(|<span class="ident">dispatch</span>| {
             <span class="comment">// If the subscriber did not provide a max level hint, assume</span>
             <span class="comment">// that it may enable every level.</span>
-            <span class="kw">let</span> <span class="ident">level_hint</span> <span class="op">=</span> <span class="ident">dispatch</span>.<span class="ident">max_level_hint</span>().<span class="ident">unwrap_or</span>(<span class="ident">LevelFilter::TRACE</span>);
-            <span class="kw">if</span> <span class="ident">level_hint</span> <span class="op">&gt;</span> <span class="ident">max_level</span> {
-                <span class="ident">max_level</span> <span class="op">=</span> <span class="ident">level_hint</span>;
+            <span class="kw">let</span> <span class="ident">level_hint</span> = <span class="ident">dispatch</span>.<span class="ident">max_level_hint</span>().<span class="ident">unwrap_or</span>(<span class="ident">LevelFilter::TRACE</span>);
+            <span class="kw">if</span> <span class="ident">level_hint</span> &gt; <span class="ident">max_level</span> {
+                <span class="ident">max_level</span> = <span class="ident">level_hint</span>;
             }
         });
 
-        <span class="self">self</span>.<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">callsite</span><span class="op">|</span> {
+        <span class="self">self</span>.<span class="ident">for_each</span>(|<span class="ident">callsite</span>| {
             <span class="ident">rebuild_callsite_interest</span>(<span class="ident">callsite</span>, <span class="kw-2">&amp;</span><span class="ident">dispatchers</span>);
         });
         <span class="ident">LevelFilter::set_max</span>(<span class="ident">max_level</span>);
@@ -1051,7 +1051,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// This will attempt to lock the callsites vector.</span>
     <span class="kw">fn</span> <span class="ident">push_dyn</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">callsite</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Callsite</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">LOCKED_CALLSITES</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> = <span class="ident">LOCKED_CALLSITES</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
         <span class="self">self</span>.<span class="ident">has_locked_callsites</span>.<span class="ident">store</span>(<span class="bool-val">true</span>, <span class="ident">Ordering::Release</span>);
         <span class="ident">lock</span>.<span class="ident">push</span>(<span class="ident">callsite</span>);
     }
@@ -1061,7 +1061,7 @@
     <span class="doccomment">/// If we know the callsite being pushed is a `DefaultCallsite`, we can push</span>
     <span class="doccomment">/// it to the linked list without having to acquire a lock.</span>
     <span class="kw">fn</span> <span class="ident">push_default</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">callsite</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">DefaultCallsite</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">head</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">list_head</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">head</span> = <span class="self">self</span>.<span class="ident">list_head</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
 
         <span class="kw">loop</span> {
             <span class="ident">callsite</span>.<span class="ident">next</span>.<span class="ident">store</span>(<span class="ident">head</span>, <span class="ident">Ordering::Release</span>);
@@ -1083,23 +1083,23 @@
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
                     <span class="kw">break</span>;
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">current</span>) =&gt; <span class="ident">head</span> <span class="op">=</span> <span class="ident">current</span>,
+                <span class="prelude-val">Err</span>(<span class="ident">current</span>) =&gt; <span class="ident">head</span> = <span class="ident">current</span>,
             }
         }
     }
 
     <span class="doccomment">/// Invokes the provided closure `f` with each callsite in the registry.</span>
     <span class="kw">fn</span> <span class="ident">for_each</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Callsite</span>)) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">head</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">list_head</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">head</span> = <span class="self">self</span>.<span class="ident">list_head</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
 
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">cs</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">head</span>.<span class="ident">as_ref</span>() } {
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">cs</span>) = <span class="kw">unsafe</span> { <span class="ident">head</span>.<span class="ident">as_ref</span>() } {
             <span class="ident">f</span>(<span class="ident">cs</span>);
 
-            <span class="ident">head</span> <span class="op">=</span> <span class="ident">cs</span>.<span class="ident">next</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+            <span class="ident">head</span> = <span class="ident">cs</span>.<span class="ident">next</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
         }
 
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">has_locked_callsites</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>) {
-            <span class="kw">let</span> <span class="ident">locked</span> <span class="op">=</span> <span class="ident">LOCKED_CALLSITES</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+            <span class="kw">let</span> <span class="ident">locked</span> = <span class="ident">LOCKED_CALLSITES</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
             <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">cs</span> <span class="kw">in</span> <span class="ident">locked</span>.<span class="ident">iter</span>() {
                 <span class="ident">f</span>(<span class="ident">cs</span>);
             }
@@ -1108,36 +1108,36 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">register_dispatch</span>(<span class="ident">dispatch</span>: <span class="kw-2">&amp;</span><span class="ident">Dispatch</span>) {
-    <span class="kw">let</span> <span class="ident">dispatchers</span> <span class="op">=</span> <span class="ident">DISPATCHERS</span>.<span class="ident">register_dispatch</span>(<span class="ident">dispatch</span>);
+    <span class="kw">let</span> <span class="ident">dispatchers</span> = <span class="ident">DISPATCHERS</span>.<span class="ident">register_dispatch</span>(<span class="ident">dispatch</span>);
     <span class="ident">CALLSITES</span>.<span class="ident">rebuild_interest</span>(<span class="ident">dispatchers</span>);
 }
 
 <span class="kw">fn</span> <span class="ident">rebuild_callsite_interest</span>(
     <span class="ident">callsite</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="kw">dyn</span> <span class="ident">Callsite</span>,
-    <span class="ident">dispatchers</span>: <span class="kw-2">&amp;</span><span class="ident">dispatchers::Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+    <span class="ident">dispatchers</span>: <span class="kw-2">&amp;</span><span class="ident">dispatchers::Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt;,
 ) {
-    <span class="kw">let</span> <span class="ident">meta</span> <span class="op">=</span> <span class="ident">callsite</span>.<span class="ident">metadata</span>();
+    <span class="kw">let</span> <span class="ident">meta</span> = <span class="ident">callsite</span>.<span class="ident">metadata</span>();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interest</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="ident">dispatchers</span>.<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">dispatch</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">this_interest</span> <span class="op">=</span> <span class="ident">dispatch</span>.<span class="ident">register_callsite</span>(<span class="ident">meta</span>);
-        <span class="ident">interest</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">interest</span>.<span class="ident">take</span>() {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interest</span> = <span class="prelude-val">None</span>;
+    <span class="ident">dispatchers</span>.<span class="ident">for_each</span>(|<span class="ident">dispatch</span>| {
+        <span class="kw">let</span> <span class="ident">this_interest</span> = <span class="ident">dispatch</span>.<span class="ident">register_callsite</span>(<span class="ident">meta</span>);
+        <span class="ident">interest</span> = <span class="kw">match</span> <span class="ident">interest</span>.<span class="ident">take</span>() {
             <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">this_interest</span>),
             <span class="prelude-val">Some</span>(<span class="ident">that_interest</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">that_interest</span>.<span class="ident">and</span>(<span class="ident">this_interest</span>)),
         }
     });
 
-    <span class="kw">let</span> <span class="ident">interest</span> <span class="op">=</span> <span class="ident">interest</span>.<span class="ident">unwrap_or_else</span>(<span class="ident">Interest::never</span>);
+    <span class="kw">let</span> <span class="ident">interest</span> = <span class="ident">interest</span>.<span class="ident">unwrap_or_else</span>(<span class="ident">Interest::never</span>);
     <span class="ident">callsite</span>.<span class="ident">set_interest</span>(<span class="ident">interest</span>)
 }
 
 <span class="kw">mod</span> <span class="ident">private</span> {
     <span class="doccomment">/// Don&#39;t call this function, it&#39;s private.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">missing_debug_implementations</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Private</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">T</span>);
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Private</span>&lt;<span class="ident">T</span>&gt;(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">T</span>);
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">dispatchers</span> {
     <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">dispatcher</span>, <span class="ident">lazy::Lazy</span>};
     <span class="kw">use</span> <span class="ident">std::sync</span>::{
@@ -1149,13 +1149,13 @@
         <span class="ident">has_just_one</span>: <span class="ident">AtomicBool</span>,
     }
 
-    <span class="kw">static</span> <span class="ident">LOCKED_DISPATCHERS</span>: <span class="ident">Lazy</span><span class="op">&lt;</span><span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">dispatcher::Registrar</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
+    <span class="kw">static</span> <span class="ident">LOCKED_DISPATCHERS</span>: <span class="ident">Lazy</span>&lt;<span class="ident">RwLock</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">dispatcher::Registrar</span>&gt;&gt;&gt; =
         <span class="ident">Lazy::new</span>(<span class="ident">Default::default</span>);
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum</span> <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum</span> <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
         <span class="ident">JustOne</span>,
-        <span class="ident">Read</span>(<span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">dispatcher::Registrar</span><span class="op">&gt;</span><span class="op">&gt;</span>),
-        <span class="ident">Write</span>(<span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">dispatcher::Registrar</span><span class="op">&gt;</span><span class="op">&gt;</span>),
+        <span class="ident">Read</span>(<span class="ident">RwLockReadGuard</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Vec</span>&lt;<span class="ident">dispatcher::Registrar</span>&gt;&gt;),
+        <span class="ident">Write</span>(<span class="ident">RwLockWriteGuard</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Vec</span>&lt;<span class="ident">dispatcher::Registrar</span>&gt;&gt;),
     }
 
     <span class="kw">impl</span> <span class="ident">Dispatchers</span> {
@@ -1165,26 +1165,26 @@
             }
         }
 
-        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">rebuilder</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">rebuilder</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">has_just_one</span>.<span class="ident">load</span>(<span class="ident">Ordering::SeqCst</span>) {
                 <span class="kw">return</span> <span class="ident">Rebuilder::JustOne</span>;
             }
             <span class="ident">Rebuilder::Read</span>(<span class="ident">LOCKED_DISPATCHERS</span>.<span class="ident">read</span>().<span class="ident">unwrap</span>())
         }
 
-        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">register_dispatch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dispatch</span>: <span class="kw-2">&amp;</span><span class="ident">dispatcher::Dispatch</span>) -&gt; <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dispatchers</span> <span class="op">=</span> <span class="ident">LOCKED_DISPATCHERS</span>.<span class="ident">write</span>().<span class="ident">unwrap</span>();
-            <span class="ident">dispatchers</span>.<span class="ident">retain</span>(<span class="op">|</span><span class="ident">d</span><span class="op">|</span> <span class="ident">d</span>.<span class="ident">upgrade</span>().<span class="ident">is_some</span>());
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">register_dispatch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dispatch</span>: <span class="kw-2">&amp;</span><span class="ident">dispatcher::Dispatch</span>) -&gt; <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">dispatchers</span> = <span class="ident">LOCKED_DISPATCHERS</span>.<span class="ident">write</span>().<span class="ident">unwrap</span>();
+            <span class="ident">dispatchers</span>.<span class="ident">retain</span>(|<span class="ident">d</span>| <span class="ident">d</span>.<span class="ident">upgrade</span>().<span class="ident">is_some</span>());
             <span class="ident">dispatchers</span>.<span class="ident">push</span>(<span class="ident">dispatch</span>.<span class="ident">registrar</span>());
             <span class="self">self</span>.<span class="ident">has_just_one</span>
-                .<span class="ident">store</span>(<span class="ident">dispatchers</span>.<span class="ident">len</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="number">1</span>, <span class="ident">Ordering::SeqCst</span>);
+                .<span class="ident">store</span>(<span class="ident">dispatchers</span>.<span class="ident">len</span>() &lt;= <span class="number">1</span>, <span class="ident">Ordering::SeqCst</span>);
             <span class="ident">Rebuilder::Write</span>(<span class="ident">dispatchers</span>)
         }
     }
 
-    <span class="kw">impl</span> <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">impl</span> <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">for_each</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">dispatcher::Dispatch</span>)) {
-            <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
+            <span class="kw">let</span> <span class="ident">iter</span> = <span class="kw">match</span> <span class="self">self</span> {
                 <span class="ident">Rebuilder::JustOne</span> =&gt; {
                     <span class="ident">dispatcher::get_default</span>(<span class="ident">f</span>);
                     <span class="kw">return</span>;
@@ -1193,40 +1193,40 @@
                 <span class="ident">Rebuilder::Write</span>(<span class="ident">vec</span>) =&gt; <span class="ident">vec</span>.<span class="ident">iter</span>(),
             };
             <span class="ident">iter</span>.<span class="ident">filter_map</span>(<span class="ident">dispatcher::Registrar::upgrade</span>)
-                .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">dispatch</span><span class="op">|</span> <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">dispatch</span>))
+                .<span class="ident">for_each</span>(|<span class="ident">dispatch</span>| <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">dispatch</span>))
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">dispatchers</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dispatcher</span>;
 
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Dispatchers</span>(());
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">dispatcher::Dispatch</span><span class="op">&gt;</span>);
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">dispatcher::Dispatch</span>&gt;);
 
     <span class="kw">impl</span> <span class="ident">Dispatchers</span> {
         <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
             <span class="self">Self</span>(())
         }
 
-        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">rebuilder</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">rebuilder</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
             <span class="ident">Rebuilder</span>(<span class="prelude-val">None</span>)
         }
 
-        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">register_dispatch</span><span class="op">&lt;</span><span class="lifetime">&#39;dispatch</span><span class="op">&gt;</span>(
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">register_dispatch</span>&lt;<span class="lifetime">&#39;dispatch</span>&gt;(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             <span class="ident">dispatch</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;dispatch</span> <span class="ident">dispatcher::Dispatch</span>,
-        ) -&gt; <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;dispatch</span><span class="op">&gt;</span> {
+        ) -&gt; <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;dispatch</span>&gt; {
             <span class="comment">// nop; on no_std, there can only ever be one dispatcher</span>
             <span class="ident">Rebuilder</span>(<span class="prelude-val">Some</span>(<span class="ident">dispatch</span>))
         }
     }
 
-    <span class="kw">impl</span> <span class="ident">Rebuilder</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">impl</span> <span class="ident">Rebuilder</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="attribute">#[<span class="ident">inline</span>]</span>
         <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">for_each</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">dispatcher::Dispatch</span>)) {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">dispatch</span>) <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">dispatch</span>) = <span class="self">self</span>.<span class="number">0</span> {
                 <span class="comment">// we are rebuilding the interest cache because a new dispatcher</span>
                 <span class="comment">// is about to be set. on `no_std`, this should only happen</span>
                 <span class="comment">// once, because the new dispatcher will be the global default.</span>
@@ -1241,4 +1241,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tracing_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tracing_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -121,36 +121,36 @@
 <span class="doccomment">/// # Ok(())</span>
 <span class="doccomment">/// # }</span>
 <span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">to_bytes</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">body</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">T::Error</span><span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">to_bytes</span>&lt;<span class="ident">T</span>&gt;(<span class="ident">body</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>, <span class="ident">T::Error</span>&gt;
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">HttpBody</span>,
 {
     <span class="macro">futures_util::pin_mut!</span>(<span class="ident">body</span>);
 
     <span class="comment">// If there&#39;s only 1 chunk, we can just return Buf::to_bytes()</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) <span class="op">=</span> <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first</span> = <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) = <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
         <span class="ident">buf</span><span class="question-mark">?</span>
     } <span class="kw">else</span> {
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Bytes::new</span>());
     };
 
-    <span class="kw">let</span> <span class="ident">second</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) <span class="op">=</span> <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
+    <span class="kw">let</span> <span class="ident">second</span> = <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) = <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
         <span class="ident">buf</span><span class="question-mark">?</span>
     } <span class="kw">else</span> {
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">first</span>.<span class="ident">copy_to_bytes</span>(<span class="ident">first</span>.<span class="ident">remaining</span>()));
     };
 
     <span class="comment">// With more than 1 buf, we gotta flatten into a Vec first.</span>
-    <span class="kw">let</span> <span class="ident">cap</span> <span class="op">=</span> <span class="ident">first</span>.<span class="ident">remaining</span>() <span class="op">+</span> <span class="ident">second</span>.<span class="ident">remaining</span>() <span class="op">+</span> <span class="ident">body</span>.<span class="ident">size_hint</span>().<span class="ident">lower</span>() <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vec</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">cap</span>);
+    <span class="kw">let</span> <span class="ident">cap</span> = <span class="ident">first</span>.<span class="ident">remaining</span>() + <span class="ident">second</span>.<span class="ident">remaining</span>() + <span class="ident">body</span>.<span class="ident">size_hint</span>().<span class="ident">lower</span>() <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vec</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">cap</span>);
     <span class="ident">vec</span>.<span class="ident">put</span>(<span class="ident">first</span>);
     <span class="ident">vec</span>.<span class="ident">put</span>(<span class="ident">second</span>);
 
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) <span class="op">=</span> <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
+    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">buf</span>) = <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
         <span class="ident">vec</span>.<span class="ident">put</span>(<span class="ident">buf</span><span class="question-mark">?</span>);
     }
 
     <span class="prelude-val">Ok</span>(<span class="ident">vec</span>.<span class="ident">into</span>())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

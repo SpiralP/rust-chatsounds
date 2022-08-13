@@ -450,7 +450,7 @@
 
 <span class="kw">fn</span> <span class="ident">assert_fd_valid</span>(<span class="ident">fd</span>: <span class="ident">RawFd</span>) {
     <span class="macro">assert!</span>(
-        <span class="ident">usize::try_from</span>(<span class="ident">fd</span>).<span class="ident">map_or</span>(<span class="bool-val">false</span>, <span class="op">|</span><span class="ident">fd</span><span class="op">|</span> <span class="ident">fd</span> <span class="op">&lt;</span> <span class="ident">FD_SETSIZE</span>),
+        <span class="ident">usize::try_from</span>(<span class="ident">fd</span>).<span class="ident">map_or</span>(<span class="bool-val">false</span>, |<span class="ident">fd</span>| <span class="ident">fd</span> &lt; <span class="ident">FD_SETSIZE</span>),
         <span class="string">&quot;fd must be in the range 0..FD_SETSIZE&quot;</span>,
     );
 }
@@ -458,7 +458,7 @@
 <span class="kw">impl</span> <span class="ident">FdSet</span> {
     <span class="doccomment">/// Create an empty `FdSet`</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">FdSet</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fdset</span> <span class="op">=</span> <span class="ident">mem::MaybeUninit::uninit</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fdset</span> = <span class="ident">mem::MaybeUninit::uninit</span>();
         <span class="kw">unsafe</span> {
             <span class="ident">libc::FD_ZERO</span>(<span class="ident">fdset</span>.<span class="ident">as_mut_ptr</span>());
             <span class="ident">FdSet</span>(<span class="ident">fdset</span>.<span class="ident">assume_init</span>())
@@ -505,7 +505,7 @@
     <span class="doccomment">/// ```</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`select`]: fn.select.html</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">highest</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RawFd</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">highest</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">RawFd</span>&gt; {
         <span class="self">self</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">next_back</span>()
     }
 
@@ -527,10 +527,10 @@
     <span class="doccomment">/// assert_eq!(fds, vec![4, 9]);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">highest</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RawFd</span><span class="op">&gt;</span>) -&gt; <span class="ident">Fds</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">highest</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">RawFd</span>&gt;) -&gt; <span class="ident">Fds</span> {
         <span class="ident">Fds</span> {
             <span class="ident">set</span>: <span class="self">self</span>,
-            <span class="ident">range</span>: <span class="number">0</span>..<span class="ident">highest</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">h</span><span class="op">|</span> <span class="ident">h</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="number">1</span>).<span class="ident">unwrap_or</span>(<span class="ident">FD_SETSIZE</span>),
+            <span class="ident">range</span>: <span class="number">0</span>..<span class="ident">highest</span>.<span class="ident">map</span>(|<span class="ident">h</span>| <span class="ident">h</span> <span class="kw">as</span> <span class="ident">usize</span> + <span class="number">1</span>).<span class="ident">unwrap_or</span>(<span class="ident">FD_SETSIZE</span>),
         }
     }
 }
@@ -543,15 +543,15 @@
 
 <span class="doccomment">/// Iterator over `FdSet`.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Fds</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Fds</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="ident">set</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">FdSet</span>,
-    <span class="ident">range</span>: <span class="ident">Range</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+    <span class="ident">range</span>: <span class="ident">Range</span>&lt;<span class="ident">usize</span>&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Fds</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">RawFd</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Fds</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">RawFd</span>;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RawFd</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">RawFd</span>&gt; {
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">range</span> {
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>) {
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>);
@@ -561,16 +561,16 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">upper</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">range</span>.<span class="ident">size_hint</span>();
+    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">upper</span>) = <span class="self">self</span>.<span class="ident">range</span>.<span class="ident">size_hint</span>();
         (<span class="number">0</span>, <span class="ident">upper</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">Fds</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">Fds</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next_back</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RawFd</span><span class="op">&gt;</span> {
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">range</span>.<span class="ident">next_back</span>() {
+    <span class="kw">fn</span> <span class="ident">next_back</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">RawFd</span>&gt; {
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) = <span class="self">self</span>.<span class="ident">range</span>.<span class="ident">next_back</span>() {
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>) {
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>);
             }
@@ -579,7 +579,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">FusedIterator</span> <span class="kw">for</span> <span class="ident">Fds</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">FusedIterator</span> <span class="kw">for</span> <span class="ident">Fds</span>&lt;<span class="lifetime">&#39;a</span>&gt; {}
 
 <span class="doccomment">/// Monitors file descriptors for readiness</span>
 <span class="doccomment">///</span>
@@ -604,39 +604,39 @@
 <span class="doccomment">/// [select(2)](https://pubs.opengroup.org/onlinepubs/9699919799/functions/select.html)</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`FdSet::highest`]: struct.FdSet.html#method.highest</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">select</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">N</span>, <span class="ident">R</span>, <span class="ident">W</span>, <span class="ident">E</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">nfds</span>: <span class="ident">N</span>,
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">select</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">N</span>, <span class="ident">R</span>, <span class="ident">W</span>, <span class="ident">E</span>, <span class="ident">T</span>&gt;(<span class="ident">nfds</span>: <span class="ident">N</span>,
     <span class="ident">readfds</span>: <span class="ident">R</span>,
     <span class="ident">writefds</span>: <span class="ident">W</span>,
     <span class="ident">errorfds</span>: <span class="ident">E</span>,
-                                 <span class="ident">timeout</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">c_int</span><span class="op">&gt;</span>
+                                 <span class="ident">timeout</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">c_int</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">c_int</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">R</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">W</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">TimeVal</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">N</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">c_int</span>&gt;&gt;,
+    <span class="ident">R</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">W</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">E</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">T</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">TimeVal</span>&gt;&gt;,
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">readfds</span> <span class="op">=</span> <span class="ident">readfds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writefds</span> <span class="op">=</span> <span class="ident">writefds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errorfds</span> <span class="op">=</span> <span class="ident">errorfds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">timeout</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">readfds</span> = <span class="ident">readfds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writefds</span> = <span class="ident">writefds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errorfds</span> = <span class="ident">errorfds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="ident">timeout</span> = <span class="ident">timeout</span>.<span class="ident">into</span>();
 
-    <span class="kw">let</span> <span class="ident">nfds</span> <span class="op">=</span> <span class="ident">nfds</span>.<span class="ident">into</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">nfds</span> = <span class="ident">nfds</span>.<span class="ident">into</span>().<span class="ident">unwrap_or_else</span>(|| {
         <span class="ident">readfds</span>.<span class="ident">iter_mut</span>()
             .<span class="ident">chain</span>(<span class="ident">writefds</span>.<span class="ident">iter_mut</span>())
             .<span class="ident">chain</span>(<span class="ident">errorfds</span>.<span class="ident">iter_mut</span>())
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span>.<span class="ident">highest</span>().<span class="ident">unwrap_or</span>(<span class="op">-</span><span class="number">1</span>))
+            .<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span>.<span class="ident">highest</span>().<span class="ident">unwrap_or</span>(-<span class="number">1</span>))
             .<span class="ident">max</span>()
-            .<span class="ident">unwrap_or</span>(<span class="op">-</span><span class="number">1</span>) <span class="op">+</span> <span class="number">1</span>
+            .<span class="ident">unwrap_or</span>(-<span class="number">1</span>) + <span class="number">1</span>
     });
 
-    <span class="kw">let</span> <span class="ident">readfds</span> <span class="op">=</span> <span class="ident">readfds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">writefds</span> <span class="op">=</span> <span class="ident">writefds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">errorfds</span> <span class="op">=</span> <span class="ident">errorfds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">timeout</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">tv</span><span class="op">|</span> <span class="ident">tv</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::timeval</span>)
+    <span class="kw">let</span> <span class="ident">readfds</span> = <span class="ident">readfds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">writefds</span> = <span class="ident">writefds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">errorfds</span> = <span class="ident">errorfds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">timeout</span> = <span class="ident">timeout</span>.<span class="ident">map</span>(|<span class="ident">tv</span>| <span class="ident">tv</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::timeval</span>)
         .<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
 
-    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> {
         <span class="ident">libc::select</span>(<span class="ident">nfds</span>, <span class="ident">readfds</span>, <span class="ident">writefds</span>, <span class="ident">errorfds</span>, <span class="ident">timeout</span>)
     };
 
@@ -672,42 +672,42 @@
 <span class="doccomment">/// [The new pselect() system call](https://lwn.net/Articles/176911/)</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`FdSet::highest`]: struct.FdSet.html#method.highest</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pselect</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">N</span>, <span class="ident">R</span>, <span class="ident">W</span>, <span class="ident">E</span>, <span class="ident">T</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">nfds</span>: <span class="ident">N</span>,
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pselect</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">N</span>, <span class="ident">R</span>, <span class="ident">W</span>, <span class="ident">E</span>, <span class="ident">T</span>, <span class="ident">S</span>&gt;(<span class="ident">nfds</span>: <span class="ident">N</span>,
     <span class="ident">readfds</span>: <span class="ident">R</span>,
     <span class="ident">writefds</span>: <span class="ident">W</span>,
     <span class="ident">errorfds</span>: <span class="ident">E</span>,
     <span class="ident">timeout</span>: <span class="ident">T</span>,
-                                     <span class="ident">sigmask</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">c_int</span><span class="op">&gt;</span>
+                                     <span class="ident">sigmask</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">c_int</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">N</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">c_int</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">R</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">W</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">TimeSpec</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">S</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SigSet</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">N</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">c_int</span>&gt;&gt;,
+    <span class="ident">R</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">W</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">E</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">FdSet</span>&gt;&gt;,
+    <span class="ident">T</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">TimeSpec</span>&gt;&gt;,
+    <span class="ident">S</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">SigSet</span>&gt;&gt;,
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">readfds</span> <span class="op">=</span> <span class="ident">readfds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writefds</span> <span class="op">=</span> <span class="ident">writefds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errorfds</span> <span class="op">=</span> <span class="ident">errorfds</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="ident">sigmask</span> <span class="op">=</span> <span class="ident">sigmask</span>.<span class="ident">into</span>();
-    <span class="kw">let</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">timeout</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">readfds</span> = <span class="ident">readfds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writefds</span> = <span class="ident">writefds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errorfds</span> = <span class="ident">errorfds</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="ident">sigmask</span> = <span class="ident">sigmask</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="ident">timeout</span> = <span class="ident">timeout</span>.<span class="ident">into</span>();
 
-    <span class="kw">let</span> <span class="ident">nfds</span> <span class="op">=</span> <span class="ident">nfds</span>.<span class="ident">into</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">nfds</span> = <span class="ident">nfds</span>.<span class="ident">into</span>().<span class="ident">unwrap_or_else</span>(|| {
         <span class="ident">readfds</span>.<span class="ident">iter_mut</span>()
             .<span class="ident">chain</span>(<span class="ident">writefds</span>.<span class="ident">iter_mut</span>())
             .<span class="ident">chain</span>(<span class="ident">errorfds</span>.<span class="ident">iter_mut</span>())
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span>.<span class="ident">highest</span>().<span class="ident">unwrap_or</span>(<span class="op">-</span><span class="number">1</span>))
+            .<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span>.<span class="ident">highest</span>().<span class="ident">unwrap_or</span>(-<span class="number">1</span>))
             .<span class="ident">max</span>()
-            .<span class="ident">unwrap_or</span>(<span class="op">-</span><span class="number">1</span>) <span class="op">+</span> <span class="number">1</span>
+            .<span class="ident">unwrap_or</span>(-<span class="number">1</span>) + <span class="number">1</span>
     });
 
-    <span class="kw">let</span> <span class="ident">readfds</span> <span class="op">=</span> <span class="ident">readfds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">writefds</span> <span class="op">=</span> <span class="ident">writefds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">errorfds</span> <span class="op">=</span> <span class="ident">errorfds</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">set</span><span class="op">|</span> <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
-    <span class="kw">let</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">timeout</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">ts</span><span class="op">|</span> <span class="ident">ts</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">libc::timespec</span>).<span class="ident">unwrap_or</span>(<span class="ident">null</span>());
-    <span class="kw">let</span> <span class="ident">sigmask</span> <span class="op">=</span> <span class="ident">sigmask</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">sm</span><span class="op">|</span> <span class="ident">sm</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">libc::sigset_t</span>).<span class="ident">unwrap_or</span>(<span class="ident">null</span>());
+    <span class="kw">let</span> <span class="ident">readfds</span> = <span class="ident">readfds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">writefds</span> = <span class="ident">writefds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">errorfds</span> = <span class="ident">errorfds</span>.<span class="ident">map</span>(|<span class="ident">set</span>| <span class="ident">set</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">libc::fd_set</span>).<span class="ident">unwrap_or</span>(<span class="ident">null_mut</span>());
+    <span class="kw">let</span> <span class="ident">timeout</span> = <span class="ident">timeout</span>.<span class="ident">map</span>(|<span class="ident">ts</span>| <span class="ident">ts</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">libc::timespec</span>).<span class="ident">unwrap_or</span>(<span class="ident">null</span>());
+    <span class="kw">let</span> <span class="ident">sigmask</span> = <span class="ident">sigmask</span>.<span class="ident">map</span>(|<span class="ident">sm</span>| <span class="ident">sm</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">libc::sigset_t</span>).<span class="ident">unwrap_or</span>(<span class="ident">null</span>());
 
-    <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> {
         <span class="ident">libc::pselect</span>(<span class="ident">nfds</span>, <span class="ident">readfds</span>, <span class="ident">writefds</span>, <span class="ident">errorfds</span>, <span class="ident">timeout</span>, <span class="ident">sigmask</span>)
     };
 
@@ -724,10 +724,10 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">fdset_insert</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">FD_SETSIZE</span> {
-            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
+            <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
         }
 
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="number">7</span>);
@@ -737,37 +737,37 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">fdset_remove</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">FD_SETSIZE</span> {
-            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
+            <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
         }
 
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="number">7</span>);
         <span class="ident">fd_set</span>.<span class="ident">remove</span>(<span class="number">7</span>);
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">FD_SETSIZE</span> {
-            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
+            <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
         }
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">fdset_clear</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="number">1</span>);
-        <span class="ident">fd_set</span>.<span class="ident">insert</span>((<span class="ident">FD_SETSIZE</span> <span class="op">/</span> <span class="number">2</span>) <span class="kw">as</span> <span class="ident">RawFd</span>);
-        <span class="ident">fd_set</span>.<span class="ident">insert</span>((<span class="ident">FD_SETSIZE</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">RawFd</span>);
+        <span class="ident">fd_set</span>.<span class="ident">insert</span>((<span class="ident">FD_SETSIZE</span> / <span class="number">2</span>) <span class="kw">as</span> <span class="ident">RawFd</span>);
+        <span class="ident">fd_set</span>.<span class="ident">insert</span>((<span class="ident">FD_SETSIZE</span> - <span class="number">1</span>) <span class="kw">as</span> <span class="ident">RawFd</span>);
 
         <span class="ident">fd_set</span>.<span class="ident">clear</span>();
 
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">FD_SETSIZE</span> {
-            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
+            <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">RawFd</span>));
         }
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">fdset_highest</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> = <span class="ident">FdSet::new</span>();
         <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">highest</span>(), <span class="prelude-val">None</span>);
         <span class="ident">set</span>.<span class="ident">insert</span>(<span class="number">0</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">highest</span>(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
@@ -786,77 +786,77 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">fdset_fds</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(), <span class="macro">vec!</span>[]);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> = <span class="ident">FdSet::new</span>();
+        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(), <span class="macro">vec!</span>[]);
         <span class="ident">set</span>.<span class="ident">insert</span>(<span class="number">0</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(), <span class="macro">vec!</span>[<span class="number">0</span>]);
+        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(), <span class="macro">vec!</span>[<span class="number">0</span>]);
         <span class="ident">set</span>.<span class="ident">insert</span>(<span class="number">90</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(), <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">90</span>]);
+        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">None</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(), <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">90</span>]);
 
         <span class="comment">// highest limit</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">Some</span>(<span class="number">89</span>)).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(), <span class="macro">vec!</span>[<span class="number">0</span>]);
-        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">Some</span>(<span class="number">90</span>)).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(), <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">90</span>]);
+        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">Some</span>(<span class="number">89</span>)).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(), <span class="macro">vec!</span>[<span class="number">0</span>]);
+        <span class="macro">assert_eq!</span>(<span class="ident">set</span>.<span class="ident">fds</span>(<span class="prelude-val">Some</span>(<span class="number">90</span>)).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;(), <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">90</span>]);
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_select</span>() {
-        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
         <span class="ident">write</span>(<span class="ident">w1</span>, <span class="string">b&quot;hi!&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r1</span>);
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r2</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> = <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">select</span>(<span class="prelude-val">None</span>,
                              <span class="kw-2">&amp;mut</span> <span class="ident">fd_set</span>,
                              <span class="prelude-val">None</span>,
                              <span class="prelude-val">None</span>,
                              <span class="kw-2">&amp;mut</span> <span class="ident">timeout</span>).<span class="ident">unwrap</span>());
         <span class="macro">assert!</span>(<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r1</span>));
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
+        <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_select_nfds</span>() {
-        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
         <span class="ident">write</span>(<span class="ident">w1</span>, <span class="string">b&quot;hi!&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r1</span>);
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r2</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">select</span>(<span class="prelude-val">Some</span>(<span class="ident">fd_set</span>.<span class="ident">highest</span>().<span class="ident">unwrap</span>() <span class="op">+</span> <span class="number">1</span>),
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> = <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">select</span>(<span class="prelude-val">Some</span>(<span class="ident">fd_set</span>.<span class="ident">highest</span>().<span class="ident">unwrap</span>() + <span class="number">1</span>),
                 <span class="kw-2">&amp;mut</span> <span class="ident">fd_set</span>,
                 <span class="prelude-val">None</span>,
                 <span class="prelude-val">None</span>,
                              <span class="kw-2">&amp;mut</span> <span class="ident">timeout</span>).<span class="ident">unwrap</span>());
         <span class="macro">assert!</span>(<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r1</span>));
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
+        <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_select_nfds2</span>() {
-        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r1</span>, <span class="ident">w1</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
         <span class="ident">write</span>(<span class="ident">w1</span>, <span class="string">b&quot;hi!&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) <span class="op">=</span> <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let</span> (<span class="ident">r2</span>, <span class="ident">_w2</span>) = <span class="ident">pipe</span>().<span class="ident">unwrap</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> <span class="op">=</span> <span class="ident">FdSet::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd_set</span> = <span class="ident">FdSet::new</span>();
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r1</span>);
         <span class="ident">fd_set</span>.<span class="ident">insert</span>(<span class="ident">r2</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> <span class="op">=</span> <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">select</span>(<span class="ident">::std::cmp::max</span>(<span class="ident">r1</span>, <span class="ident">r2</span>) <span class="op">+</span> <span class="number">1</span>,
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timeout</span> = <span class="ident">TimeVal::seconds</span>(<span class="number">10</span>);
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">select</span>(<span class="ident">::std::cmp::max</span>(<span class="ident">r1</span>, <span class="ident">r2</span>) + <span class="number">1</span>,
                 <span class="kw-2">&amp;mut</span> <span class="ident">fd_set</span>,
                 <span class="prelude-val">None</span>,
                 <span class="prelude-val">None</span>,
                              <span class="kw-2">&amp;mut</span> <span class="ident">timeout</span>).<span class="ident">unwrap</span>());
         <span class="macro">assert!</span>(<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r1</span>));
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
+        <span class="macro">assert!</span>(!<span class="ident">fd_set</span>.<span class="ident">contains</span>(<span class="ident">r2</span>));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

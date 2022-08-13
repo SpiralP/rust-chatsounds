@@ -386,11 +386,11 @@
     <span class="ident">io</span>::{<span class="ident">ErrorKind</span>, <span class="prelude-ty">Result</span>, <span class="ident">Write</span>},
 };
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">BUF_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">1024</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">BUF_SIZE</span>: <span class="ident">usize</span> = <span class="number">1024</span>;
 <span class="doccomment">/// The most bytes whose encoding will fit in `BUF_SIZE`</span>
-<span class="kw">const</span> <span class="ident">MAX_INPUT_LEN</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">BUF_SIZE</span> <span class="op">/</span> <span class="number">4</span> <span class="op">*</span> <span class="number">3</span>;
+<span class="kw">const</span> <span class="ident">MAX_INPUT_LEN</span>: <span class="ident">usize</span> = <span class="ident">BUF_SIZE</span> / <span class="number">4</span> * <span class="number">3</span>;
 <span class="comment">// 3 bytes of input = 4 bytes of base64, always (because we don&#39;t allow line wrapping)</span>
-<span class="kw">const</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">3</span>;
+<span class="kw">const</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>: <span class="ident">usize</span> = <span class="number">3</span>;
 
 <span class="doccomment">/// A `Write` implementation that base64 encodes data before delegating to the wrapped writer.</span>
 <span class="doccomment">///</span>
@@ -434,12 +434,12 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// It has some minor performance loss compared to encoding slices (a couple percent).</span>
 <span class="doccomment">/// It does not do any heap allocation.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>: <span class="ident">Write</span>&gt; {
     <span class="ident">config</span>: <span class="ident">Config</span>,
     <span class="doccomment">/// Where encoded data is written to. It&#39;s an Option as it&#39;s None immediately before Drop is</span>
     <span class="doccomment">/// called so that finish() can return the underlying writer. None implies that finish() has</span>
     <span class="doccomment">/// been called successfully.</span>
-    <span class="ident">delegate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span>,
+    <span class="ident">delegate</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">W</span>&gt;,
     <span class="doccomment">/// Holds a partial chunk, if any, after the last `write()`, so that we may then fill the chunk</span>
     <span class="doccomment">/// with the next `write()`, encode it, then proceed with the rest of the input normally.</span>
     <span class="ident">extra_input</span>: [<span class="ident">u8</span>; <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>],
@@ -454,7 +454,7 @@
     <span class="ident">panicked</span>: <span class="ident">bool</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">W</span>: <span class="ident">Write</span>&gt; <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>&gt; {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
         <span class="macro">write!</span>(
             <span class="ident">f</span>,
@@ -467,9 +467,9 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span> <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">W</span>: <span class="ident">Write</span>&gt; <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>&gt; {
     <span class="doccomment">/// Create a new encoder that will write to the provided delegate writer `w`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">w</span>: <span class="ident">W</span>, <span class="ident">config</span>: <span class="ident">Config</span>) -&gt; <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">w</span>: <span class="ident">W</span>, <span class="ident">config</span>: <span class="ident">Config</span>) -&gt; <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>&gt; {
         <span class="ident">EncoderWriter</span> {
             <span class="ident">config</span>,
             <span class="ident">delegate</span>: <span class="prelude-val">Some</span>(<span class="ident">w</span>),
@@ -497,7 +497,7 @@
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// The first error that is not of `ErrorKind::Interrupted` will be returned.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">W</span>&gt; {
         <span class="comment">// If we could consume self in finish(), we wouldn&#39;t have to worry about this case, but</span>
         <span class="comment">// finish() is retryable in the face of I/O errors, so we can&#39;t consume here.</span>
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">delegate</span>.<span class="ident">is_none</span>() {
@@ -506,13 +506,13 @@
 
         <span class="self">self</span>.<span class="ident">write_final_leftovers</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">delegate</span>.<span class="ident">take</span>().<span class="ident">expect</span>(<span class="string">&quot;Writer must be present&quot;</span>);
+        <span class="kw">let</span> <span class="ident">writer</span> = <span class="self">self</span>.<span class="ident">delegate</span>.<span class="ident">take</span>().<span class="ident">expect</span>(<span class="string">&quot;Writer must be present&quot;</span>);
 
         <span class="prelude-val">Ok</span>(<span class="ident">writer</span>)
     }
 
     <span class="doccomment">/// Write any remaining buffered data to the delegate writer.</span>
-    <span class="kw">fn</span> <span class="ident">write_final_leftovers</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write_final_leftovers</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">delegate</span>.<span class="ident">is_none</span>() {
             <span class="comment">// finish() has already successfully called this, and we are now in drop() with a None</span>
             <span class="comment">// writer, so just no-op</span>
@@ -521,19 +521,19 @@
 
         <span class="self">self</span>.<span class="ident">write_all_encoded_output</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="ident">encoded_len</span> <span class="op">=</span> <span class="ident">encode_config_slice</span>(
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> &gt; <span class="number">0</span> {
+            <span class="kw">let</span> <span class="ident">encoded_len</span> = <span class="ident">encode_config_slice</span>(
                 <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">extra_input</span>[..<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>],
                 <span class="self">self</span>.<span class="ident">config</span>,
                 <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output</span>[..],
             );
 
-            <span class="self">self</span>.<span class="ident">output_occupied_len</span> <span class="op">=</span> <span class="ident">encoded_len</span>;
+            <span class="self">self</span>.<span class="ident">output_occupied_len</span> = <span class="ident">encoded_len</span>;
 
             <span class="self">self</span>.<span class="ident">write_all_encoded_output</span>()<span class="question-mark">?</span>;
 
             <span class="comment">// write succeeded, do not write the encoding of extra again if finish() is retried</span>
-            <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">=</span> <span class="number">0</span>;
+            <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> = <span class="number">0</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -547,26 +547,26 @@
     <span class="doccomment">/// Errors from the delegate writer are returned. In the case of an error,</span>
     <span class="doccomment">/// `self.output_occupied_len` will not be updated, as errors from `write` are specified to mean</span>
     <span class="doccomment">/// that no write took place.</span>
-    <span class="kw">fn</span> <span class="ident">write_to_delegate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">current_output_len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">panicked</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="self">self</span>
+    <span class="kw">fn</span> <span class="ident">write_to_delegate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">current_output_len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.<span class="ident">panicked</span> = <span class="bool-val">true</span>;
+        <span class="kw">let</span> <span class="ident">res</span> = <span class="self">self</span>
             .<span class="ident">delegate</span>
             .<span class="ident">as_mut</span>()
             .<span class="ident">expect</span>(<span class="string">&quot;Writer must be present&quot;</span>)
             .<span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>[..<span class="ident">current_output_len</span>]);
-        <span class="self">self</span>.<span class="ident">panicked</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="self">self</span>.<span class="ident">panicked</span> = <span class="bool-val">false</span>;
 
-        <span class="ident">res</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">consumed</span><span class="op">|</span> {
-            <span class="macro">debug_assert!</span>(<span class="ident">consumed</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">current_output_len</span>);
+        <span class="ident">res</span>.<span class="ident">map</span>(|<span class="ident">consumed</span>| {
+            <span class="macro">debug_assert!</span>(<span class="ident">consumed</span> &lt;= <span class="ident">current_output_len</span>);
 
-            <span class="kw">if</span> <span class="ident">consumed</span> <span class="op">&lt;</span> <span class="ident">current_output_len</span> {
-                <span class="self">self</span>.<span class="ident">output_occupied_len</span> <span class="op">=</span> <span class="ident">current_output_len</span>.<span class="ident">checked_sub</span>(<span class="ident">consumed</span>).<span class="ident">unwrap</span>();
+            <span class="kw">if</span> <span class="ident">consumed</span> &lt; <span class="ident">current_output_len</span> {
+                <span class="self">self</span>.<span class="ident">output_occupied_len</span> = <span class="ident">current_output_len</span>.<span class="ident">checked_sub</span>(<span class="ident">consumed</span>).<span class="ident">unwrap</span>();
                 <span class="comment">// If we&#39;re blocking on I/O, the minor inefficiency of copying bytes to the</span>
                 <span class="comment">// start of the buffer is the least of our concerns...</span>
                 <span class="comment">// Rotate moves more than we need to, but copy_within isn&#39;t stabilized yet.</span>
                 <span class="self">self</span>.<span class="ident">output</span>.<span class="ident">rotate_left</span>(<span class="ident">consumed</span>);
             } <span class="kw">else</span> {
-                <span class="self">self</span>.<span class="ident">output_occupied_len</span> <span class="op">=</span> <span class="number">0</span>;
+                <span class="self">self</span>.<span class="ident">output_occupied_len</span> = <span class="number">0</span>;
             }
         })
     }
@@ -580,12 +580,12 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Any error emitted by the delegate writer abort the write loop and is returned, unless it&#39;s</span>
     <span class="doccomment">/// `Interrupted`, in which case the error is ignored and writes will continue.</span>
-    <span class="kw">fn</span> <span class="ident">write_all_encoded_output</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="ident">remaining_len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span>;
+    <span class="kw">fn</span> <span class="ident">write_all_encoded_output</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span> &gt; <span class="number">0</span> {
+            <span class="kw">let</span> <span class="ident">remaining_len</span> = <span class="self">self</span>.<span class="ident">output_occupied_len</span>;
             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">write_to_delegate</span>(<span class="ident">remaining_len</span>) {
                 <span class="comment">// try again on interrupts ala write_all</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">ErrorKind::Interrupted</span> =&gt; {}
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">ErrorKind::Interrupted</span> =&gt; {}
                 <span class="comment">// other errors return</span>
                 <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>),
                 <span class="comment">// success no-ops because remaining length is already updated</span>
@@ -598,7 +598,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span> <span class="ident">Write</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">W</span>: <span class="ident">Write</span>&gt; <span class="ident">Write</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>&gt; {
     <span class="doccomment">/// Encode input and then write to the delegate writer.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Under non-error circumstances, this returns `Ok` with the value being the number of bytes</span>
@@ -615,7 +615,7 @@
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Any errors emitted by the delegate writer are returned.</span>
-    <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>&gt; {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">delegate</span>.<span class="ident">is_none</span>() {
             <span class="macro">panic!</span>(<span class="string">&quot;Cannot write more after calling finish()&quot;</span>);
         }
@@ -631,57 +631,57 @@
         <span class="comment">// internal state to what it was before the error occurred</span>
 
         <span class="comment">// before reading any input, write any leftover encoded output from last time</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="ident">current_len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span>;
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">output_occupied_len</span> &gt; <span class="number">0</span> {
+            <span class="kw">let</span> <span class="ident">current_len</span> = <span class="self">self</span>.<span class="ident">output_occupied_len</span>;
             <span class="kw">return</span> <span class="self">self</span>
                 .<span class="ident">write_to_delegate</span>(<span class="ident">current_len</span>)
                 <span class="comment">// did not read any input</span>
-                .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="number">0</span>);
+                .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="number">0</span>);
         }
 
         <span class="macro">debug_assert_eq!</span>(<span class="number">0</span>, <span class="self">self</span>.<span class="ident">output_occupied_len</span>);
 
         <span class="comment">// how many bytes, if any, were read into `extra` to create a triple to encode</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">extra_input_read_len</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">extra_input_read_len</span> = <span class="number">0</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> = <span class="ident">input</span>;
 
-        <span class="kw">let</span> <span class="ident">orig_extra_len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>;
+        <span class="kw">let</span> <span class="ident">orig_extra_len</span> = <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">encoded_size</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">encoded_size</span> = <span class="number">0</span>;
         <span class="comment">// always a multiple of MIN_ENCODE_CHUNK_SIZE</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max_input_len</span> <span class="op">=</span> <span class="ident">MAX_INPUT_LEN</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max_input_len</span> = <span class="ident">MAX_INPUT_LEN</span>;
 
         <span class="comment">// process leftover un-encoded input from last write</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">&lt;</span> <span class="number">3</span>);
-            <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> &gt; <span class="number">0</span> {
+            <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> &lt; <span class="number">3</span>);
+            <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() + <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> &gt;= <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> {
                 <span class="comment">// Fill up `extra`, encode that into `output`, and consume as much of the rest of</span>
                 <span class="comment">// `input` as possible.</span>
                 <span class="comment">// We could write just the encoding of `extra` by itself but then we&#39;d have to</span>
                 <span class="comment">// return after writing only 4 bytes, which is inefficient if the underlying writer</span>
                 <span class="comment">// would make a syscall.</span>
-                <span class="ident">extra_input_read_len</span> <span class="op">=</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>;
-                <span class="macro">debug_assert!</span>(<span class="ident">extra_input_read_len</span> <span class="op">&gt;</span> <span class="number">0</span>);
+                <span class="ident">extra_input_read_len</span> = <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> - <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>;
+                <span class="macro">debug_assert!</span>(<span class="ident">extra_input_read_len</span> &gt; <span class="number">0</span>);
                 <span class="comment">// overwrite only bytes that weren&#39;t already used. If we need to rollback extra_len</span>
                 <span class="comment">// (when the subsequent write errors), the old leading bytes will still be there.</span>
                 <span class="self">self</span>.<span class="ident">extra_input</span>[<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>..<span class="ident">MIN_ENCODE_CHUNK_SIZE</span>]
                     .<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="number">0</span>..<span class="ident">extra_input_read_len</span>]);
 
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">encode_to_slice</span>(
+                <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">encode_to_slice</span>(
                     <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">extra_input</span>[<span class="number">0</span>..<span class="ident">MIN_ENCODE_CHUNK_SIZE</span>],
                     <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output</span>[..],
                     <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">char_set</span>.<span class="ident">encode_table</span>(),
                 );
                 <span class="macro">debug_assert_eq!</span>(<span class="number">4</span>, <span class="ident">len</span>);
 
-                <span class="ident">input</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="ident">extra_input_read_len</span>..];
+                <span class="ident">input</span> = <span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="ident">extra_input_read_len</span>..];
 
                 <span class="comment">// consider extra to be used up, since we encoded it</span>
-                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">=</span> <span class="number">0</span>;
+                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> = <span class="number">0</span>;
                 <span class="comment">// don&#39;t clobber where we just encoded to</span>
-                <span class="ident">encoded_size</span> <span class="op">=</span> <span class="number">4</span>;
+                <span class="ident">encoded_size</span> = <span class="number">4</span>;
                 <span class="comment">// and don&#39;t read more than can be encoded</span>
-                <span class="ident">max_input_len</span> <span class="op">=</span> <span class="ident">MAX_INPUT_LEN</span> <span class="op">-</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>;
+                <span class="ident">max_input_len</span> = <span class="ident">MAX_INPUT_LEN</span> - <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>;
 
             <span class="comment">// fall through to normal encoding</span>
             } <span class="kw">else</span> {
@@ -690,33 +690,33 @@
                 <span class="macro">debug_assert_eq!</span>(<span class="number">1</span>, <span class="ident">input</span>.<span class="ident">len</span>());
                 <span class="macro">debug_assert_eq!</span>(<span class="number">1</span>, <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>);
 
-                <span class="self">self</span>.<span class="ident">extra_input</span>[<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>] <span class="op">=</span> <span class="ident">input</span>[<span class="number">0</span>];
-                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                <span class="self">self</span>.<span class="ident">extra_input</span>[<span class="self">self</span>.<span class="ident">extra_input_occupied_len</span>] = <span class="ident">input</span>[<span class="number">0</span>];
+                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> += <span class="number">1</span>;
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="number">1</span>);
             };
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> {
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() &lt; <span class="ident">MIN_ENCODE_CHUNK_SIZE</span> {
             <span class="comment">// `extra` is empty, and `input` fits inside it</span>
             <span class="self">self</span>.<span class="ident">extra_input</span>[<span class="number">0</span>..<span class="ident">input</span>.<span class="ident">len</span>()].<span class="ident">copy_from_slice</span>(<span class="ident">input</span>);
-            <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">len</span>();
+            <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> = <span class="ident">input</span>.<span class="ident">len</span>();
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">input</span>.<span class="ident">len</span>());
         };
 
         <span class="comment">// either 0 or 1 complete chunks encoded from extra</span>
-        <span class="macro">debug_assert!</span>(<span class="ident">encoded_size</span> <span class="op">==</span> <span class="number">0</span> <span class="op">|</span><span class="op">|</span> <span class="ident">encoded_size</span> <span class="op">==</span> <span class="number">4</span>);
+        <span class="macro">debug_assert!</span>(<span class="ident">encoded_size</span> == <span class="number">0</span> || <span class="ident">encoded_size</span> == <span class="number">4</span>);
         <span class="macro">debug_assert!</span>(
             <span class="comment">// didn&#39;t encode extra input</span>
-            <span class="ident">MAX_INPUT_LEN</span> <span class="op">==</span> <span class="ident">max_input_len</span>
+            <span class="ident">MAX_INPUT_LEN</span> == <span class="ident">max_input_len</span>
                 <span class="comment">// encoded one triple</span>
-                <span class="op">|</span><span class="op">|</span> <span class="ident">MAX_INPUT_LEN</span> <span class="op">==</span> <span class="ident">max_input_len</span> <span class="op">+</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>
+                || <span class="ident">MAX_INPUT_LEN</span> == <span class="ident">max_input_len</span> + <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>
         );
 
         <span class="comment">// encode complete triples only</span>
-        <span class="kw">let</span> <span class="ident">input_complete_chunks_len</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">-</span> (<span class="ident">input</span>.<span class="ident">len</span>() <span class="op">%</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
-        <span class="kw">let</span> <span class="ident">input_chunks_to_encode_len</span> <span class="op">=</span> <span class="ident">cmp::min</span>(<span class="ident">input_complete_chunks_len</span>, <span class="ident">max_input_len</span>);
-        <span class="macro">debug_assert_eq!</span>(<span class="number">0</span>, <span class="ident">max_input_len</span> <span class="op">%</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
-        <span class="macro">debug_assert_eq!</span>(<span class="number">0</span>, <span class="ident">input_chunks_to_encode_len</span> <span class="op">%</span> <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
+        <span class="kw">let</span> <span class="ident">input_complete_chunks_len</span> = <span class="ident">input</span>.<span class="ident">len</span>() - (<span class="ident">input</span>.<span class="ident">len</span>() % <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
+        <span class="kw">let</span> <span class="ident">input_chunks_to_encode_len</span> = <span class="ident">cmp::min</span>(<span class="ident">input_complete_chunks_len</span>, <span class="ident">max_input_len</span>);
+        <span class="macro">debug_assert_eq!</span>(<span class="number">0</span>, <span class="ident">max_input_len</span> % <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
+        <span class="macro">debug_assert_eq!</span>(<span class="number">0</span>, <span class="ident">input_chunks_to_encode_len</span> % <span class="ident">MIN_ENCODE_CHUNK_SIZE</span>);
 
-        <span class="ident">encoded_size</span> <span class="op">+</span><span class="op">=</span> <span class="ident">encode_to_slice</span>(
+        <span class="ident">encoded_size</span> += <span class="ident">encode_to_slice</span>(
             <span class="kw-2">&amp;</span><span class="ident">input</span>[..(<span class="ident">input_chunks_to_encode_len</span>)],
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output</span>[<span class="ident">encoded_size</span>..],
             <span class="self">self</span>.<span class="ident">config</span>.<span class="ident">char_set</span>.<span class="ident">encode_table</span>(),
@@ -729,10 +729,10 @@
         <span class="self">self</span>.<span class="ident">write_to_delegate</span>(<span class="ident">encoded_size</span>)
             <span class="comment">// no matter whether we wrote the full encoded buffer or not, we consumed the same</span>
             <span class="comment">// input</span>
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">extra_input_read_len</span> <span class="op">+</span> <span class="ident">input_chunks_to_encode_len</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">extra_input_read_len</span> + <span class="ident">input_chunks_to_encode_len</span>)
+            .<span class="ident">map_err</span>(|<span class="ident">e</span>| {
                 <span class="comment">// in case we filled and encoded `extra`, reset extra_len</span>
-                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> <span class="op">=</span> <span class="ident">orig_extra_len</span>;
+                <span class="self">self</span>.<span class="ident">extra_input_occupied_len</span> = <span class="ident">orig_extra_len</span>;
 
                 <span class="ident">e</span>
             })
@@ -743,7 +743,7 @@
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// The first error that is not of [`ErrorKind::Interrupted`] will be returned.</span>
-    <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.<span class="ident">write_all_encoded_output</span>()<span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">delegate</span>
             .<span class="ident">as_mut</span>()
@@ -752,13 +752,13 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span><span class="op">&lt;</span><span class="ident">W</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">W</span>: <span class="ident">Write</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">EncoderWriter</span>&lt;<span class="ident">W</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">panicked</span> {
+        <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">panicked</span> {
             <span class="comment">// like `BufWriter`, ignore errors during drop</span>
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">write_final_leftovers</span>();
+            <span class="kw">let</span> <span class="kw">_</span> = <span class="self">self</span>.<span class="ident">write_final_leftovers</span>();
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="base64" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="base64" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

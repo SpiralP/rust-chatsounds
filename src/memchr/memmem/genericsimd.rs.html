@@ -271,7 +271,7 @@
 <span class="doccomment">/// The minimum length of a needle required for this algorithm. The minimum</span>
 <span class="doccomment">/// is 2 since a length of 1 should just use memchr and a length of 0 isn&#39;t</span>
 <span class="doccomment">/// a case handled by this searcher.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MIN_NEEDLE_LEN</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">2</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MIN_NEEDLE_LEN</span>: <span class="ident">usize</span> = <span class="number">2</span>;
 
 <span class="doccomment">/// The maximum length of a needle required for this algorithm.</span>
 <span class="doccomment">///</span>
@@ -298,7 +298,7 @@
 <span class="doccomment">/// impact of pathological cases. I did try 64, and some benchmarks got a</span>
 <span class="doccomment">/// little better, and others (particularly the pathological ones), got a lot</span>
 <span class="doccomment">/// worse. So... 32 it is?</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MAX_NEEDLE_LEN</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">32</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MAX_NEEDLE_LEN</span>: <span class="ident">usize</span> = <span class="number">32</span>;
 
 <span class="doccomment">/// The implementation of the forward vector accelerated substring search.</span>
 <span class="doccomment">///</span>
@@ -327,15 +327,15 @@
 <span class="kw">impl</span> <span class="ident">Forward</span> {
     <span class="doccomment">/// Create a new &quot;generic simd&quot; forward searcher. If one could not be</span>
     <span class="doccomment">/// created from the given inputs, then None is returned.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">ninfo</span>: <span class="kw-2">&amp;</span><span class="ident">NeedleInfo</span>, <span class="ident">needle</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Forward</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">rare1i</span>, <span class="ident">rare2i</span>) <span class="op">=</span> <span class="ident">ninfo</span>.<span class="ident">rarebytes</span>.<span class="ident">as_rare_ordered_u8</span>();
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">ninfo</span>: <span class="kw-2">&amp;</span><span class="ident">NeedleInfo</span>, <span class="ident">needle</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Forward</span>&gt; {
+        <span class="kw">let</span> (<span class="ident">rare1i</span>, <span class="ident">rare2i</span>) = <span class="ident">ninfo</span>.<span class="ident">rarebytes</span>.<span class="ident">as_rare_ordered_u8</span>();
         <span class="comment">// If the needle is too short or too long, give up. Also, give up</span>
         <span class="comment">// if the rare bytes detected are at the same position. (It likely</span>
         <span class="comment">// suggests a degenerate case, although it should technically not be</span>
         <span class="comment">// possible.)</span>
-        <span class="kw">if</span> <span class="ident">needle</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">MIN_NEEDLE_LEN</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">needle</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">MAX_NEEDLE_LEN</span>
-            <span class="op">|</span><span class="op">|</span> <span class="ident">rare1i</span> <span class="op">==</span> <span class="ident">rare2i</span>
+        <span class="kw">if</span> <span class="ident">needle</span>.<span class="ident">len</span>() &lt; <span class="ident">MIN_NEEDLE_LEN</span>
+            || <span class="ident">needle</span>.<span class="ident">len</span>() &gt; <span class="ident">MAX_NEEDLE_LEN</span>
+            || <span class="ident">rare1i</span> == <span class="ident">rare2i</span>
         {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
@@ -346,8 +346,8 @@
     <span class="doccomment">/// to work for a particular vector. Passing a haystack with a length</span>
     <span class="doccomment">/// smaller than this will cause `fwd_find` to panic.</span>
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">min_haystack_len</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Vector</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>()
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">min_haystack_len</span>&lt;<span class="ident">V</span>: <span class="ident">Vector</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span> + <span class="ident">size_of</span>::&lt;<span class="ident">V</span>&gt;()
     }
 }
 
@@ -366,94 +366,94 @@
 <span class="doccomment">/// supports the vector functions that this function is specialized for. (For</span>
 <span class="doccomment">/// the specific vector functions used, see the Vector trait implementations.)</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">fwd_find</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Vector</span><span class="op">&gt;</span>(
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">fwd_find</span>&lt;<span class="ident">V</span>: <span class="ident">Vector</span>&gt;(
     <span class="ident">fwd</span>: <span class="kw-2">&amp;</span><span class="ident">Forward</span>,
     <span class="ident">haystack</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
     <span class="ident">needle</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
     <span class="comment">// It would be nice if we didn&#39;t have this check here, since the meta</span>
     <span class="comment">// searcher should handle it for us. But without this, I don&#39;t think we</span>
     <span class="comment">// guarantee that end_ptr.sub(needle.len()) won&#39;t result in UB. We could</span>
     <span class="comment">// put it as part of the safety contract, but it makes it more complicated</span>
     <span class="comment">// than necessary.</span>
-    <span class="kw">if</span> <span class="ident">haystack</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">needle</span>.<span class="ident">len</span>() {
+    <span class="kw">if</span> <span class="ident">haystack</span>.<span class="ident">len</span>() &lt; <span class="ident">needle</span>.<span class="ident">len</span>() {
         <span class="kw">return</span> <span class="prelude-val">None</span>;
     }
-    <span class="kw">let</span> <span class="ident">min_haystack_len</span> <span class="op">=</span> <span class="ident">fwd</span>.<span class="ident">min_haystack_len</span>::<span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>();
-    <span class="macro">assert!</span>(<span class="ident">haystack</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">min_haystack_len</span>, <span class="string">&quot;haystack too small&quot;</span>);
-    <span class="macro">debug_assert!</span>(<span class="ident">needle</span>.<span class="ident">len</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">haystack</span>.<span class="ident">len</span>());
+    <span class="kw">let</span> <span class="ident">min_haystack_len</span> = <span class="ident">fwd</span>.<span class="ident">min_haystack_len</span>::&lt;<span class="ident">V</span>&gt;();
+    <span class="macro">assert!</span>(<span class="ident">haystack</span>.<span class="ident">len</span>() &gt;= <span class="ident">min_haystack_len</span>, <span class="string">&quot;haystack too small&quot;</span>);
+    <span class="macro">debug_assert!</span>(<span class="ident">needle</span>.<span class="ident">len</span>() &lt;= <span class="ident">haystack</span>.<span class="ident">len</span>());
     <span class="macro">debug_assert!</span>(
-        <span class="ident">needle</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MIN_NEEDLE_LEN</span>,
+        <span class="ident">needle</span>.<span class="ident">len</span>() &gt;= <span class="ident">MIN_NEEDLE_LEN</span>,
         <span class="string">&quot;needle must be at least {} bytes&quot;</span>,
         <span class="ident">MIN_NEEDLE_LEN</span>,
     );
     <span class="macro">debug_assert!</span>(
-        <span class="ident">needle</span>.<span class="ident">len</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">MAX_NEEDLE_LEN</span>,
+        <span class="ident">needle</span>.<span class="ident">len</span>() &lt;= <span class="ident">MAX_NEEDLE_LEN</span>,
         <span class="string">&quot;needle must be at most {} bytes&quot;</span>,
         <span class="ident">MAX_NEEDLE_LEN</span>,
     );
 
-    <span class="kw">let</span> (<span class="ident">rare1i</span>, <span class="ident">rare2i</span>) <span class="op">=</span> (<span class="ident">fwd</span>.<span class="ident">rare1i</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">fwd</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span>);
-    <span class="kw">let</span> <span class="ident">rare1chunk</span> <span class="op">=</span> <span class="ident">V::splat</span>(<span class="ident">needle</span>[<span class="ident">rare1i</span>]);
-    <span class="kw">let</span> <span class="ident">rare2chunk</span> <span class="op">=</span> <span class="ident">V::splat</span>(<span class="ident">needle</span>[<span class="ident">rare2i</span>]);
+    <span class="kw">let</span> (<span class="ident">rare1i</span>, <span class="ident">rare2i</span>) = (<span class="ident">fwd</span>.<span class="ident">rare1i</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">fwd</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span>);
+    <span class="kw">let</span> <span class="ident">rare1chunk</span> = <span class="ident">V::splat</span>(<span class="ident">needle</span>[<span class="ident">rare1i</span>]);
+    <span class="kw">let</span> <span class="ident">rare2chunk</span> = <span class="ident">V::splat</span>(<span class="ident">needle</span>[<span class="ident">rare2i</span>]);
 
-    <span class="kw">let</span> <span class="ident">start_ptr</span> <span class="op">=</span> <span class="ident">haystack</span>.<span class="ident">as_ptr</span>();
-    <span class="kw">let</span> <span class="ident">end_ptr</span> <span class="op">=</span> <span class="ident">start_ptr</span>.<span class="ident">add</span>(<span class="ident">haystack</span>.<span class="ident">len</span>());
-    <span class="kw">let</span> <span class="ident">max_ptr</span> <span class="op">=</span> <span class="ident">end_ptr</span>.<span class="ident">sub</span>(<span class="ident">min_haystack_len</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">start_ptr</span>;
+    <span class="kw">let</span> <span class="ident">start_ptr</span> = <span class="ident">haystack</span>.<span class="ident">as_ptr</span>();
+    <span class="kw">let</span> <span class="ident">end_ptr</span> = <span class="ident">start_ptr</span>.<span class="ident">add</span>(<span class="ident">haystack</span>.<span class="ident">len</span>());
+    <span class="kw">let</span> <span class="ident">max_ptr</span> = <span class="ident">end_ptr</span>.<span class="ident">sub</span>(<span class="ident">min_haystack_len</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ptr</span> = <span class="ident">start_ptr</span>;
 
     <span class="comment">// N.B. I did experiment with unrolling the loop to deal with size(V)</span>
     <span class="comment">// bytes at a time and 2*size(V) bytes at a time. The double unroll was</span>
     <span class="comment">// marginally faster while the quadruple unroll was unambiguously slower.</span>
     <span class="comment">// In the end, I decided the complexity from unrolling wasn&#39;t worth it. I</span>
     <span class="comment">// used the memmem/krate/prebuilt/huge-en/ benchmarks to compare.</span>
-    <span class="kw">while</span> <span class="ident">ptr</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">max_ptr</span> {
-        <span class="kw">let</span> <span class="ident">m</span> <span class="op">=</span> <span class="ident">fwd_find_in_chunk</span>(
-            <span class="ident">fwd</span>, <span class="ident">needle</span>, <span class="ident">ptr</span>, <span class="ident">end_ptr</span>, <span class="ident">rare1chunk</span>, <span class="ident">rare2chunk</span>, <span class="op">!</span><span class="number">0</span>,
+    <span class="kw">while</span> <span class="ident">ptr</span> &lt;= <span class="ident">max_ptr</span> {
+        <span class="kw">let</span> <span class="ident">m</span> = <span class="ident">fwd_find_in_chunk</span>(
+            <span class="ident">fwd</span>, <span class="ident">needle</span>, <span class="ident">ptr</span>, <span class="ident">end_ptr</span>, <span class="ident">rare1chunk</span>, <span class="ident">rare2chunk</span>, !<span class="number">0</span>,
         );
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunki</span>) <span class="op">=</span> <span class="ident">m</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunki</span>) = <span class="ident">m</span> {
             <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">matched</span>(<span class="ident">start_ptr</span>, <span class="ident">ptr</span>, <span class="ident">chunki</span>));
         }
-        <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>());
+        <span class="ident">ptr</span> = <span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">size_of</span>::&lt;<span class="ident">V</span>&gt;());
     }
-    <span class="kw">if</span> <span class="ident">ptr</span> <span class="op">&lt;</span> <span class="ident">end_ptr</span> {
-        <span class="kw">let</span> <span class="ident">remaining</span> <span class="op">=</span> <span class="ident">diff</span>(<span class="ident">end_ptr</span>, <span class="ident">ptr</span>);
+    <span class="kw">if</span> <span class="ident">ptr</span> &lt; <span class="ident">end_ptr</span> {
+        <span class="kw">let</span> <span class="ident">remaining</span> = <span class="ident">diff</span>(<span class="ident">end_ptr</span>, <span class="ident">ptr</span>);
         <span class="macro">debug_assert!</span>(
-            <span class="ident">remaining</span> <span class="op">&lt;</span> <span class="ident">min_haystack_len</span>,
+            <span class="ident">remaining</span> &lt; <span class="ident">min_haystack_len</span>,
             <span class="string">&quot;remaining bytes should be smaller than the minimum haystack \
              length of {}, but there are {} bytes remaining&quot;</span>,
             <span class="ident">min_haystack_len</span>,
             <span class="ident">remaining</span>,
         );
-        <span class="kw">if</span> <span class="ident">remaining</span> <span class="op">&lt;</span> <span class="ident">needle</span>.<span class="ident">len</span>() {
+        <span class="kw">if</span> <span class="ident">remaining</span> &lt; <span class="ident">needle</span>.<span class="ident">len</span>() {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
         <span class="macro">debug_assert!</span>(
-            <span class="ident">max_ptr</span> <span class="op">&lt;</span> <span class="ident">ptr</span>,
+            <span class="ident">max_ptr</span> &lt; <span class="ident">ptr</span>,
             <span class="string">&quot;after main loop, ptr should have exceeded max_ptr&quot;</span>,
         );
-        <span class="kw">let</span> <span class="ident">overlap</span> <span class="op">=</span> <span class="ident">diff</span>(<span class="ident">ptr</span>, <span class="ident">max_ptr</span>);
+        <span class="kw">let</span> <span class="ident">overlap</span> = <span class="ident">diff</span>(<span class="ident">ptr</span>, <span class="ident">max_ptr</span>);
         <span class="macro">debug_assert!</span>(
-            <span class="ident">overlap</span> <span class="op">&gt;</span> <span class="number">0</span>,
+            <span class="ident">overlap</span> &gt; <span class="number">0</span>,
             <span class="string">&quot;overlap ({}) must always be non-zero&quot;</span>,
             <span class="ident">overlap</span>,
         );
         <span class="macro">debug_assert!</span>(
-            <span class="ident">overlap</span> <span class="op">&lt;</span> <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(),
+            <span class="ident">overlap</span> &lt; <span class="ident">size_of</span>::&lt;<span class="ident">V</span>&gt;(),
             <span class="string">&quot;overlap ({}) cannot possibly be &gt;= than a vector ({})&quot;</span>,
             <span class="ident">overlap</span>,
-            <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">V</span><span class="op">&gt;</span>(),
+            <span class="ident">size_of</span>::&lt;<span class="ident">V</span>&gt;(),
         );
         <span class="comment">// The mask has all of its bits set except for the first N least</span>
         <span class="comment">// significant bits, where N=overlap. This way, any matches that</span>
         <span class="comment">// occur in find_in_chunk within the overlap are automatically</span>
         <span class="comment">// ignored.</span>
-        <span class="kw">let</span> <span class="ident">mask</span> <span class="op">=</span> <span class="op">!</span>((<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">overlap</span>) <span class="op">-</span> <span class="number">1</span>);
-        <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">max_ptr</span>;
-        <span class="kw">let</span> <span class="ident">m</span> <span class="op">=</span> <span class="ident">fwd_find_in_chunk</span>(
+        <span class="kw">let</span> <span class="ident">mask</span> = !((<span class="number">1</span> &lt;&lt; <span class="ident">overlap</span>) - <span class="number">1</span>);
+        <span class="ident">ptr</span> = <span class="ident">max_ptr</span>;
+        <span class="kw">let</span> <span class="ident">m</span> = <span class="ident">fwd_find_in_chunk</span>(
             <span class="ident">fwd</span>, <span class="ident">needle</span>, <span class="ident">ptr</span>, <span class="ident">end_ptr</span>, <span class="ident">rare1chunk</span>, <span class="ident">rare2chunk</span>, <span class="ident">mask</span>,
         );
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunki</span>) <span class="op">=</span> <span class="ident">m</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunki</span>) = <span class="ident">m</span> {
             <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">matched</span>(<span class="ident">start_ptr</span>, <span class="ident">ptr</span>, <span class="ident">chunki</span>));
         }
     }
@@ -480,7 +480,7 @@
 <span class="doccomment">/// (ptr + rare1i) and (ptr + rare2i). It must also be safe to do unaligned</span>
 <span class="doccomment">/// loads on ptr up to (end_ptr - needle.len()).</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">fwd_find_in_chunk</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Vector</span><span class="op">&gt;</span>(
+<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">fwd_find_in_chunk</span>&lt;<span class="ident">V</span>: <span class="ident">Vector</span>&gt;(
     <span class="ident">fwd</span>: <span class="kw-2">&amp;</span><span class="ident">Forward</span>,
     <span class="ident">needle</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
     <span class="ident">ptr</span>: <span class="kw-2">*const</span> <span class="ident">u8</span>,
@@ -488,25 +488,25 @@
     <span class="ident">rare1chunk</span>: <span class="ident">V</span>,
     <span class="ident">rare2chunk</span>: <span class="ident">V</span>,
     <span class="ident">mask</span>: <span class="ident">u32</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">chunk0</span> <span class="op">=</span> <span class="ident">V::load_unaligned</span>(<span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">fwd</span>.<span class="ident">rare1i</span> <span class="kw">as</span> <span class="ident">usize</span>));
-    <span class="kw">let</span> <span class="ident">chunk1</span> <span class="op">=</span> <span class="ident">V::load_unaligned</span>(<span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">fwd</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span>));
+) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
+    <span class="kw">let</span> <span class="ident">chunk0</span> = <span class="ident">V::load_unaligned</span>(<span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">fwd</span>.<span class="ident">rare1i</span> <span class="kw">as</span> <span class="ident">usize</span>));
+    <span class="kw">let</span> <span class="ident">chunk1</span> = <span class="ident">V::load_unaligned</span>(<span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">fwd</span>.<span class="ident">rare2i</span> <span class="kw">as</span> <span class="ident">usize</span>));
 
-    <span class="kw">let</span> <span class="ident">eq0</span> <span class="op">=</span> <span class="ident">chunk0</span>.<span class="ident">cmpeq</span>(<span class="ident">rare1chunk</span>);
-    <span class="kw">let</span> <span class="ident">eq1</span> <span class="op">=</span> <span class="ident">chunk1</span>.<span class="ident">cmpeq</span>(<span class="ident">rare2chunk</span>);
+    <span class="kw">let</span> <span class="ident">eq0</span> = <span class="ident">chunk0</span>.<span class="ident">cmpeq</span>(<span class="ident">rare1chunk</span>);
+    <span class="kw">let</span> <span class="ident">eq1</span> = <span class="ident">chunk1</span>.<span class="ident">cmpeq</span>(<span class="ident">rare2chunk</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">match_offsets</span> <span class="op">=</span> <span class="ident">eq0</span>.<span class="ident">and</span>(<span class="ident">eq1</span>).<span class="ident">movemask</span>() <span class="op">&amp;</span> <span class="ident">mask</span>;
-    <span class="kw">while</span> <span class="ident">match_offsets</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-        <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="ident">match_offsets</span>.<span class="ident">trailing_zeros</span>() <span class="kw">as</span> <span class="ident">usize</span>;
-        <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">offset</span>);
-        <span class="kw">if</span> <span class="ident">end_ptr</span>.<span class="ident">sub</span>(<span class="ident">needle</span>.<span class="ident">len</span>()) <span class="op">&lt;</span> <span class="ident">ptr</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">match_offsets</span> = <span class="ident">eq0</span>.<span class="ident">and</span>(<span class="ident">eq1</span>).<span class="ident">movemask</span>() &amp; <span class="ident">mask</span>;
+    <span class="kw">while</span> <span class="ident">match_offsets</span> != <span class="number">0</span> {
+        <span class="kw">let</span> <span class="ident">offset</span> = <span class="ident">match_offsets</span>.<span class="ident">trailing_zeros</span>() <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let</span> <span class="ident">ptr</span> = <span class="ident">ptr</span>.<span class="ident">add</span>(<span class="ident">offset</span>);
+        <span class="kw">if</span> <span class="ident">end_ptr</span>.<span class="ident">sub</span>(<span class="ident">needle</span>.<span class="ident">len</span>()) &lt; <span class="ident">ptr</span> {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
-        <span class="kw">let</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="ident">core::slice::from_raw_parts</span>(<span class="ident">ptr</span>, <span class="ident">needle</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="ident">chunk</span> = <span class="ident">core::slice::from_raw_parts</span>(<span class="ident">ptr</span>, <span class="ident">needle</span>.<span class="ident">len</span>());
         <span class="kw">if</span> <span class="ident">memcmp</span>(<span class="ident">needle</span>, <span class="ident">chunk</span>) {
             <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">offset</span>);
         }
-        <span class="ident">match_offsets</span> <span class="op">&amp;=</span> <span class="ident">match_offsets</span> <span class="op">-</span> <span class="number">1</span>;
+        <span class="ident">match_offsets</span> &amp;= <span class="ident">match_offsets</span> - <span class="number">1</span>;
     }
     <span class="prelude-val">None</span>
 }
@@ -521,14 +521,14 @@
 <span class="attribute">#[<span class="ident">cold</span>]</span>
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">never</span>)]</span>
 <span class="kw">fn</span> <span class="ident">matched</span>(<span class="ident">start_ptr</span>: <span class="kw-2">*const</span> <span class="ident">u8</span>, <span class="ident">ptr</span>: <span class="kw-2">*const</span> <span class="ident">u8</span>, <span class="ident">chunki</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    <span class="ident">diff</span>(<span class="ident">ptr</span>, <span class="ident">start_ptr</span>) <span class="op">+</span> <span class="ident">chunki</span>
+    <span class="ident">diff</span>(<span class="ident">ptr</span>, <span class="ident">start_ptr</span>) + <span class="ident">chunki</span>
 }
 
 <span class="doccomment">/// Subtract `b` from `a` and return the difference. `a` must be greater than</span>
 <span class="doccomment">/// or equal to `b`.</span>
 <span class="kw">fn</span> <span class="ident">diff</span>(<span class="ident">a</span>: <span class="kw-2">*const</span> <span class="ident">u8</span>, <span class="ident">b</span>: <span class="kw-2">*const</span> <span class="ident">u8</span>) -&gt; <span class="ident">usize</span> {
-    <span class="macro">debug_assert!</span>(<span class="ident">a</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">b</span>);
-    (<span class="ident">a</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">-</span> (<span class="ident">b</span> <span class="kw">as</span> <span class="ident">usize</span>)
+    <span class="macro">debug_assert!</span>(<span class="ident">a</span> &gt;= <span class="ident">b</span>);
+    (<span class="ident">a</span> <span class="kw">as</span> <span class="ident">usize</span>) - (<span class="ident">b</span> <span class="kw">as</span> <span class="ident">usize</span>)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="memchr" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="memchr" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

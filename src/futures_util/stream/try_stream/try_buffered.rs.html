@@ -91,27 +91,27 @@
 <span class="kw">use</span> <span class="ident">futures_core::future::TryFuture</span>;
 <span class="kw">use</span> <span class="ident">futures_core::stream</span>::{<span class="ident">Stream</span>, <span class="ident">TryStream</span>};
 <span class="kw">use</span> <span class="ident">futures_core::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;sink&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;sink&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">futures_sink::Sink</span>;
 <span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
 
 <span class="macro">pin_project!</span> {
     <span class="doccomment">/// Stream for the [`try_buffered`](super::TryStreamExt::try_buffered) method.</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;streams do nothing unless polled&quot;</span>]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TryBuffered</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span>
+    <span class="attribute">#[<span class="ident">must_use</span> = <span class="string">&quot;streams do nothing unless polled&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TryBuffered</span>&lt;<span class="ident">St</span>&gt;
     <span class="kw">where</span>
         <span class="ident">St</span>: <span class="ident">TryStream</span>,
         <span class="ident">St::Ok</span>: <span class="ident">TryFuture</span>,
     {
         <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">stream</span>: <span class="ident">Fuse</span><span class="op">&lt;</span><span class="ident">IntoStream</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">in_progress_queue</span>: <span class="ident">FuturesOrdered</span><span class="op">&lt;</span><span class="ident">IntoFuture</span><span class="op">&lt;</span><span class="ident">St::Ok</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">stream</span>: <span class="ident">Fuse</span>&lt;<span class="ident">IntoStream</span>&lt;<span class="ident">St</span>&gt;&gt;,
+        <span class="ident">in_progress_queue</span>: <span class="ident">FuturesOrdered</span>&lt;<span class="ident">IntoFuture</span>&lt;<span class="ident">St::Ok</span>&gt;&gt;,
         <span class="ident">max</span>: <span class="ident">usize</span>,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span> <span class="ident">TryBuffered</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">St</span>&gt; <span class="ident">TryBuffered</span>&lt;<span class="ident">St</span>&gt;
 <span class="kw">where</span>
     <span class="ident">St</span>: <span class="ident">TryStream</span>,
     <span class="ident">St::Ok</span>: <span class="ident">TryFuture</span>,
@@ -127,28 +127,28 @@
     <span class="macro">delegate_access_inner!</span>(<span class="ident">stream</span>, <span class="ident">St</span>, (. .));
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span> <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">TryBuffered</span><span class="op">&lt;</span><span class="ident">St</span><span class="op">&gt;</span>
+<span class="kw">impl</span>&lt;<span class="ident">St</span>&gt; <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">TryBuffered</span>&lt;<span class="ident">St</span>&gt;
 <span class="kw">where</span>
     <span class="ident">St</span>: <span class="ident">TryStream</span>,
-    <span class="ident">St::Ok</span>: <span class="ident">TryFuture</span><span class="op">&lt;</span><span class="ident">Error</span> <span class="op">=</span> <span class="ident">St::Error</span><span class="op">&gt;</span>,
+    <span class="ident">St::Ok</span>: <span class="ident">TryFuture</span>&lt;<span class="ident">Error</span> = <span class="ident">St::Error</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">St::Ok</span> <span class="kw">as</span> <span class="ident">TryFuture</span><span class="op">&gt;</span><span class="ident">::Ok</span>, <span class="ident">St::Error</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Item</span> = <span class="prelude-ty">Result</span>&lt;&lt;<span class="ident">St::Ok</span> <span class="kw">as</span> <span class="ident">TryFuture</span>&gt;<span class="ident">::Ok</span>, <span class="ident">St::Error</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> = <span class="self">self</span>.<span class="ident">project</span>();
 
         <span class="comment">// First up, try to spawn off as many futures as possible by filling up</span>
         <span class="comment">// our queue of futures. Propagate errors from the stream immediately.</span>
-        <span class="kw">while</span> <span class="ident">this</span>.<span class="ident">in_progress_queue</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">max</span> {
+        <span class="kw">while</span> <span class="ident">this</span>.<span class="ident">in_progress_queue</span>.<span class="ident">len</span>() &lt; <span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">max</span> {
             <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">cx</span>)<span class="question-mark">?</span> {
                 <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">fut</span>)) =&gt; <span class="ident">this</span>.<span class="ident">in_progress_queue</span>.<span class="ident">push</span>(<span class="ident">fut</span>.<span class="ident">into_future</span>()),
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) <span class="op">|</span> <span class="ident">Poll::Pending</span> =&gt; <span class="kw">break</span>,
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) | <span class="ident">Poll::Pending</span> =&gt; <span class="kw">break</span>,
             }
         }
 
         <span class="comment">// Attempt to pull the next value from the in_progress_queue</span>
         <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">in_progress_queue</span>.<span class="ident">poll_next_unpin</span>(<span class="ident">cx</span>) {
-            <span class="ident">x</span> @ <span class="ident">Poll::Pending</span> <span class="op">|</span> <span class="ident">x</span> @ <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return</span> <span class="ident">x</span>,
+            <span class="ident">x</span> @ <span class="ident">Poll::Pending</span> | <span class="ident">x</span> @ <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return</span> <span class="ident">x</span>,
             <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) =&gt; {}
         }
 
@@ -162,15 +162,15 @@
 }
 
 <span class="comment">// Forwarding impl of Sink from the underlying stream</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;sink&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Item</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">Item</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">TryBuffered</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;sink&quot;</span>)]</span>
+<span class="kw">impl</span>&lt;<span class="ident">S</span>, <span class="ident">Item</span>, <span class="ident">E</span>&gt; <span class="ident">Sink</span>&lt;<span class="ident">Item</span>&gt; <span class="kw">for</span> <span class="ident">TryBuffered</span>&lt;<span class="ident">S</span>&gt;
 <span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">TryStream</span> <span class="op">+</span> <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">Error</span> <span class="op">=</span> <span class="ident">E</span><span class="op">&gt;</span>,
-    <span class="ident">S::Ok</span>: <span class="ident">TryFuture</span><span class="op">&lt;</span><span class="ident">Error</span> <span class="op">=</span> <span class="ident">E</span><span class="op">&gt;</span>,
+    <span class="ident">S</span>: <span class="ident">TryStream</span> + <span class="ident">Sink</span>&lt;<span class="ident">Item</span>, <span class="ident">Error</span> = <span class="ident">E</span>&gt;,
+    <span class="ident">S::Ok</span>: <span class="ident">TryFuture</span>&lt;<span class="ident">Error</span> = <span class="ident">E</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">E</span>;
+    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">E</span>;
 
     <span class="macro">delegate_sink!</span>(<span class="ident">stream</span>, <span class="ident">Item</span>);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="futures_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="futures_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

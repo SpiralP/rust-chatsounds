@@ -132,27 +132,27 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ReadyToRunQueue</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::task</span>::{<span class="ident">waker_ref</span>, <span class="ident">ArcWake</span>, <span class="ident">WakerRef</span>};
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {
     <span class="comment">// The future</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">future</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">future</span>: <span class="ident">UnsafeCell</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Fut</span>&gt;&gt;,
 
     <span class="comment">// Next pointer for linked list tracking all active tasks (use</span>
     <span class="comment">// `spin_next_all` to read when access is shared across threads)</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">next_all</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">next_all</span>: <span class="ident">AtomicPtr</span>&lt;<span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt;&gt;,
 
     <span class="comment">// Previous task in linked list tracking all active tasks</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">prev_all</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="kw-2">*const</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">prev_all</span>: <span class="ident">UnsafeCell</span>&lt;<span class="kw-2">*const</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt;&gt;,
 
     <span class="comment">// Length of the linked list tracking all active tasks when this node was</span>
     <span class="comment">// inserted (use `spin_next_all` to synchronize before reading when access</span>
     <span class="comment">// is shared across threads)</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">len_all</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">len_all</span>: <span class="ident">UnsafeCell</span>&lt;<span class="ident">usize</span>&gt;,
 
     <span class="comment">// Next pointer in ready to run queue</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">next_ready_to_run</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">next_ready_to_run</span>: <span class="ident">AtomicPtr</span>&lt;<span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt;&gt;,
 
     <span class="comment">// Queue that we&#39;ll be enqueued to when woken</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">ready_to_run_queue</span>: <span class="ident">Weak</span><span class="op">&lt;</span><span class="ident">ReadyToRunQueue</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">ready_to_run_queue</span>: <span class="ident">Weak</span>&lt;<span class="ident">ReadyToRunQueue</span>&lt;<span class="ident">Fut</span>&gt;&gt;,
 
     <span class="comment">// Whether or not this task is currently in the ready to run queue</span>
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">queued</span>: <span class="ident">AtomicBool</span>,
@@ -168,12 +168,12 @@
 <span class="comment">//</span>
 <span class="comment">// The parent (`super`) module is trusted not to access `future`</span>
 <span class="comment">// across different threads.</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">Fut</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">Fut</span>&gt; <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">arc_self</span>.<span class="ident">ready_to_run_queue</span>.<span class="ident">upgrade</span>() {
+<span class="kw">impl</span>&lt;<span class="ident">Fut</span>&gt; <span class="ident">ArcWake</span> <span class="kw">for</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {
+    <span class="kw">fn</span> <span class="ident">wake_by_ref</span>(<span class="ident">arc_self</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) {
+        <span class="kw">let</span> <span class="ident">inner</span> = <span class="kw">match</span> <span class="ident">arc_self</span>.<span class="ident">ready_to_run_queue</span>.<span class="ident">upgrade</span>() {
             <span class="prelude-val">Some</span>(<span class="ident">inner</span>) =&gt; <span class="ident">inner</span>,
             <span class="prelude-val">None</span> =&gt; <span class="kw">return</span>,
         };
@@ -192,17 +192,17 @@
         <span class="comment">// implementation guarantees that if we set the `queued` flag that</span>
         <span class="comment">// there&#39;s a reference count held by the main `FuturesUnordered` queue</span>
         <span class="comment">// still.</span>
-        <span class="kw">let</span> <span class="ident">prev</span> <span class="op">=</span> <span class="ident">arc_self</span>.<span class="ident">queued</span>.<span class="ident">swap</span>(<span class="bool-val">true</span>, <span class="ident">SeqCst</span>);
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">prev</span> {
+        <span class="kw">let</span> <span class="ident">prev</span> = <span class="ident">arc_self</span>.<span class="ident">queued</span>.<span class="ident">swap</span>(<span class="bool-val">true</span>, <span class="ident">SeqCst</span>);
+        <span class="kw">if</span> !<span class="ident">prev</span> {
             <span class="ident">inner</span>.<span class="ident">enqueue</span>(<span class="ident">Arc::as_ptr</span>(<span class="ident">arc_self</span>));
             <span class="ident">inner</span>.<span class="ident">waker</span>.<span class="ident">wake</span>();
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">Fut</span>&gt; <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {
     <span class="doccomment">/// Returns a waker reference for this task without cloning the Arc.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">waker_ref</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="ident">WakerRef</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">waker_ref</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="ident">Arc</span>&lt;<span class="self">Self</span>&gt;) -&gt; <span class="ident">WakerRef</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="ident">waker_ref</span>(<span class="ident">this</span>)
     }
 
@@ -223,15 +223,15 @@
         <span class="ident">ordering</span>: <span class="ident">Ordering</span>,
     ) -&gt; <span class="kw-2">*const</span> <span class="self">Self</span> {
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">next_all</span>.<span class="ident">load</span>(<span class="ident">ordering</span>);
-            <span class="kw">if</span> <span class="ident">next</span> <span class="op">!</span><span class="op">=</span> <span class="ident">pending_next_all</span> {
+            <span class="kw">let</span> <span class="ident">next</span> = <span class="self">self</span>.<span class="ident">next_all</span>.<span class="ident">load</span>(<span class="ident">ordering</span>);
+            <span class="kw">if</span> <span class="ident">next</span> != <span class="ident">pending_next_all</span> {
                 <span class="kw">return</span> <span class="ident">next</span>;
             }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Task</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">Fut</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Task</span>&lt;<span class="ident">Fut</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="comment">// Since `Task&lt;Fut&gt;` is sent across all threads for any lifetime,</span>
         <span class="comment">// regardless of `Fut`, we, to guarantee memory safety, can&#39;t actually</span>
@@ -249,4 +249,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="futures_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="futures_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

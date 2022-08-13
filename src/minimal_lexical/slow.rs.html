@@ -436,7 +436,7 @@
 <span class="doccomment">/// to `16777216.0`. These near-halfway conversions therefore may require</span>
 <span class="doccomment">/// a large number of digits to unambiguously determine how to round.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">slow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">F</span>, <span class="ident">Iter1</span>, <span class="ident">Iter2</span><span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">slow</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">F</span>, <span class="ident">Iter1</span>, <span class="ident">Iter2</span>&gt;(
     <span class="ident">num</span>: <span class="ident">Number</span>,
     <span class="ident">fp</span>: <span class="ident">ExtendedFloat</span>,
     <span class="ident">integer</span>: <span class="ident">Iter1</span>,
@@ -444,32 +444,32 @@
 ) -&gt; <span class="ident">ExtendedFloat</span>
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Float</span>,
-    <span class="ident">Iter1</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">Iter2</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
+    <span class="ident">Iter1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span>&gt; + <span class="ident">Clone</span>,
+    <span class="ident">Iter2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span>&gt; + <span class="ident">Clone</span>,
 {
     <span class="comment">// Ensure our preconditions are valid:</span>
     <span class="comment">//  1. The significant digits are not shifted into place.</span>
-    <span class="macro">debug_assert!</span>(<span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">63</span>) <span class="op">!</span><span class="op">=</span> <span class="number">0</span>);
+    <span class="macro">debug_assert!</span>(<span class="ident">fp</span>.<span class="ident">mant</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">63</span>) != <span class="number">0</span>);
 
     <span class="comment">// This assumes the sign bit has already been parsed, and we&#39;re</span>
     <span class="comment">// starting with the integer digits, and the float format has been</span>
     <span class="comment">// correctly validated.</span>
-    <span class="kw">let</span> <span class="ident">sci_exp</span> <span class="op">=</span> <span class="ident">scientific_exponent</span>(<span class="kw-2">&amp;</span><span class="ident">num</span>);
+    <span class="kw">let</span> <span class="ident">sci_exp</span> = <span class="ident">scientific_exponent</span>(<span class="kw-2">&amp;</span><span class="ident">num</span>);
 
     <span class="comment">// We have 2 major algorithms we use for this:</span>
     <span class="comment">//  1. An algorithm with a finite number of digits and a positive exponent.</span>
     <span class="comment">//  2. An algorithm with a finite number of digits and a negative exponent.</span>
-    <span class="kw">let</span> (<span class="ident">bigmant</span>, <span class="ident">digits</span>) <span class="op">=</span> <span class="ident">parse_mantissa</span>(<span class="ident">integer</span>, <span class="ident">fraction</span>, <span class="ident">F::MAX_DIGITS</span>);
-    <span class="kw">let</span> <span class="ident">exponent</span> <span class="op">=</span> <span class="ident">sci_exp</span> <span class="op">+</span> <span class="number">1</span> <span class="op">-</span> <span class="ident">digits</span> <span class="kw">as</span> <span class="ident">i32</span>;
-    <span class="kw">if</span> <span class="ident">exponent</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> {
-        <span class="ident">positive_digit_comp</span>::<span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">bigmant</span>, <span class="ident">exponent</span>)
+    <span class="kw">let</span> (<span class="ident">bigmant</span>, <span class="ident">digits</span>) = <span class="ident">parse_mantissa</span>(<span class="ident">integer</span>, <span class="ident">fraction</span>, <span class="ident">F::MAX_DIGITS</span>);
+    <span class="kw">let</span> <span class="ident">exponent</span> = <span class="ident">sci_exp</span> + <span class="number">1</span> - <span class="ident">digits</span> <span class="kw">as</span> <span class="ident">i32</span>;
+    <span class="kw">if</span> <span class="ident">exponent</span> &gt;= <span class="number">0</span> {
+        <span class="ident">positive_digit_comp</span>::&lt;<span class="ident">F</span>&gt;(<span class="ident">bigmant</span>, <span class="ident">exponent</span>)
     } <span class="kw">else</span> {
-        <span class="ident">negative_digit_comp</span>::<span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">bigmant</span>, <span class="ident">fp</span>, <span class="ident">exponent</span>)
+        <span class="ident">negative_digit_comp</span>::&lt;<span class="ident">F</span>&gt;(<span class="ident">bigmant</span>, <span class="ident">fp</span>, <span class="ident">exponent</span>)
     }
 }
 
 <span class="doccomment">/// Generate the significant digits with a positive exponent relative to mantissa.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">positive_digit_comp</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(<span class="kw-2">mut</span> <span class="ident">bigmant</span>: <span class="ident">Bigint</span>, <span class="ident">exponent</span>: <span class="ident">i32</span>) -&gt; <span class="ident">ExtendedFloat</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">positive_digit_comp</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(<span class="kw-2">mut</span> <span class="ident">bigmant</span>: <span class="ident">Bigint</span>, <span class="ident">exponent</span>: <span class="ident">i32</span>) -&gt; <span class="ident">ExtendedFloat</span> {
     <span class="comment">// Simple, we just need to multiply by the power of the radix.</span>
     <span class="comment">// Now, we can calculate the mantissa and the exponent from this.</span>
     <span class="comment">// The binary exponent is the binary exponent for the mantissa</span>
@@ -479,17 +479,17 @@
     <span class="comment">// Get the exact representation of the float from the big integer.</span>
     <span class="comment">// hi64 checks **all** the remaining bits after the mantissa,</span>
     <span class="comment">// so it will check if **any** truncated digits exist.</span>
-    <span class="kw">let</span> (<span class="ident">mant</span>, <span class="ident">is_truncated</span>) <span class="op">=</span> <span class="ident">bigmant</span>.<span class="ident">hi64</span>();
-    <span class="kw">let</span> <span class="ident">exp</span> <span class="op">=</span> <span class="ident">bigmant</span>.<span class="ident">bit_length</span>() <span class="kw">as</span> <span class="ident">i32</span> <span class="op">-</span> <span class="number">64</span> <span class="op">+</span> <span class="ident">F::EXPONENT_BIAS</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fp</span> <span class="op">=</span> <span class="ident">ExtendedFloat</span> {
+    <span class="kw">let</span> (<span class="ident">mant</span>, <span class="ident">is_truncated</span>) = <span class="ident">bigmant</span>.<span class="ident">hi64</span>();
+    <span class="kw">let</span> <span class="ident">exp</span> = <span class="ident">bigmant</span>.<span class="ident">bit_length</span>() <span class="kw">as</span> <span class="ident">i32</span> - <span class="number">64</span> + <span class="ident">F::EXPONENT_BIAS</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fp</span> = <span class="ident">ExtendedFloat</span> {
         <span class="ident">mant</span>,
         <span class="ident">exp</span>,
     };
 
     <span class="comment">// Shift the digits into position and determine if we need to round-up.</span>
-    <span class="ident">round</span>::<span class="op">&lt;</span><span class="ident">F</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="ident">fp</span>, <span class="op">|</span><span class="ident">f</span>, <span class="ident">s</span><span class="op">|</span> {
-        <span class="ident">round_nearest_tie_even</span>(<span class="ident">f</span>, <span class="ident">s</span>, <span class="op">|</span><span class="ident">is_odd</span>, <span class="ident">is_halfway</span>, <span class="ident">is_above</span><span class="op">|</span> {
-            <span class="ident">is_above</span> <span class="op">|</span><span class="op">|</span> (<span class="ident">is_halfway</span> <span class="op">&amp;&amp;</span> <span class="ident">is_truncated</span>) <span class="op">|</span><span class="op">|</span> (<span class="ident">is_odd</span> <span class="op">&amp;&amp;</span> <span class="ident">is_halfway</span>)
+    <span class="ident">round</span>::&lt;<span class="ident">F</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="ident">fp</span>, |<span class="ident">f</span>, <span class="ident">s</span>| {
+        <span class="ident">round_nearest_tie_even</span>(<span class="ident">f</span>, <span class="ident">s</span>, |<span class="ident">is_odd</span>, <span class="ident">is_halfway</span>, <span class="ident">is_above</span>| {
+            <span class="ident">is_above</span> || (<span class="ident">is_halfway</span> &amp;&amp; <span class="ident">is_truncated</span>) || (<span class="ident">is_odd</span> &amp;&amp; <span class="ident">is_halfway</span>)
         });
     });
     <span class="ident">fp</span>
@@ -516,29 +516,29 @@
 <span class="doccomment">/// This allows us to compare both floats using integers efficiently</span>
 <span class="doccomment">/// without any loss of precision.</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::comparison_chain</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">negative_digit_comp</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">negative_digit_comp</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(
     <span class="ident">bigmant</span>: <span class="ident">Bigint</span>,
     <span class="kw-2">mut</span> <span class="ident">fp</span>: <span class="ident">ExtendedFloat</span>,
     <span class="ident">exponent</span>: <span class="ident">i32</span>,
 ) -&gt; <span class="ident">ExtendedFloat</span> {
     <span class="comment">// Ensure our preconditions are valid:</span>
     <span class="comment">//  1. The significant digits are not shifted into place.</span>
-    <span class="macro">debug_assert!</span>(<span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&amp;</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">63</span>) <span class="op">!</span><span class="op">=</span> <span class="number">0</span>);
+    <span class="macro">debug_assert!</span>(<span class="ident">fp</span>.<span class="ident">mant</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">63</span>) != <span class="number">0</span>);
 
     <span class="comment">// Get the significant digits and radix exponent for the real digits.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">real_digits</span> <span class="op">=</span> <span class="ident">bigmant</span>;
-    <span class="kw">let</span> <span class="ident">real_exp</span> <span class="op">=</span> <span class="ident">exponent</span>;
-    <span class="macro">debug_assert!</span>(<span class="ident">real_exp</span> <span class="op">&lt;</span> <span class="number">0</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">real_digits</span> = <span class="ident">bigmant</span>;
+    <span class="kw">let</span> <span class="ident">real_exp</span> = <span class="ident">exponent</span>;
+    <span class="macro">debug_assert!</span>(<span class="ident">real_exp</span> &lt; <span class="number">0</span>);
 
     <span class="comment">// Round down our extended-precision float and calculate `b`.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">fp</span>;
-    <span class="ident">round</span>::<span class="op">&lt;</span><span class="ident">F</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="ident">b</span>, <span class="ident">round_down</span>);
-    <span class="kw">let</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">extended_to_float</span>::<span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">b</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> = <span class="ident">fp</span>;
+    <span class="ident">round</span>::&lt;<span class="ident">F</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="ident">b</span>, <span class="ident">round_down</span>);
+    <span class="kw">let</span> <span class="ident">b</span> = <span class="ident">extended_to_float</span>::&lt;<span class="ident">F</span>&gt;(<span class="ident">b</span>);
 
     <span class="comment">// Get the significant digits and the binary exponent for `b+h`.</span>
-    <span class="kw">let</span> <span class="ident">theor</span> <span class="op">=</span> <span class="ident">bh</span>(<span class="ident">b</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">theor_digits</span> <span class="op">=</span> <span class="ident">Bigint::from_u64</span>(<span class="ident">theor</span>.<span class="ident">mant</span>);
-    <span class="kw">let</span> <span class="ident">theor_exp</span> <span class="op">=</span> <span class="ident">theor</span>.<span class="ident">exp</span>;
+    <span class="kw">let</span> <span class="ident">theor</span> = <span class="ident">bh</span>(<span class="ident">b</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">theor_digits</span> = <span class="ident">Bigint::from_u64</span>(<span class="ident">theor</span>.<span class="ident">mant</span>);
+    <span class="kw">let</span> <span class="ident">theor_exp</span> = <span class="ident">theor</span>.<span class="ident">exp</span>;
 
     <span class="comment">// We need to scale the real digits and `b+h` digits to be the same</span>
     <span class="comment">// order. We currently have `real_exp`, in `radix`, that needs to be</span>
@@ -555,21 +555,21 @@
     <span class="comment">// Example: 10^-10, 2^-15   -&gt; (-5, 10, 0)</span>
     <span class="comment">// Example: 10^-10, 2^-5    -&gt; ( 5, 10, 0)</span>
     <span class="comment">// Example: 10^-10, 2^5     -&gt; (15, 10, 0)</span>
-    <span class="kw">let</span> <span class="ident">binary_exp</span> <span class="op">=</span> <span class="ident">theor_exp</span> <span class="op">-</span> <span class="ident">real_exp</span>;
-    <span class="kw">let</span> <span class="ident">halfradix_exp</span> <span class="op">=</span> <span class="op">-</span><span class="ident">real_exp</span>;
-    <span class="kw">if</span> <span class="ident">halfradix_exp</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
+    <span class="kw">let</span> <span class="ident">binary_exp</span> = <span class="ident">theor_exp</span> - <span class="ident">real_exp</span>;
+    <span class="kw">let</span> <span class="ident">halfradix_exp</span> = -<span class="ident">real_exp</span>;
+    <span class="kw">if</span> <span class="ident">halfradix_exp</span> != <span class="number">0</span> {
         <span class="ident">theor_digits</span>.<span class="ident">pow</span>(<span class="number">5</span>, <span class="ident">halfradix_exp</span> <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">unwrap</span>();
     }
-    <span class="kw">if</span> <span class="ident">binary_exp</span> <span class="op">&gt;</span> <span class="number">0</span> {
+    <span class="kw">if</span> <span class="ident">binary_exp</span> &gt; <span class="number">0</span> {
         <span class="ident">theor_digits</span>.<span class="ident">pow</span>(<span class="number">2</span>, <span class="ident">binary_exp</span> <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">unwrap</span>();
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">binary_exp</span> <span class="op">&lt;</span> <span class="number">0</span> {
-        <span class="ident">real_digits</span>.<span class="ident">pow</span>(<span class="number">2</span>, (<span class="op">-</span><span class="ident">binary_exp</span>) <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">unwrap</span>();
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">binary_exp</span> &lt; <span class="number">0</span> {
+        <span class="ident">real_digits</span>.<span class="ident">pow</span>(<span class="number">2</span>, (-<span class="ident">binary_exp</span>) <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">unwrap</span>();
     }
 
     <span class="comment">// Compare our theoretical and real digits and round nearest, tie even.</span>
-    <span class="kw">let</span> <span class="ident">ord</span> <span class="op">=</span> <span class="ident">real_digits</span>.<span class="ident">data</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">theor_digits</span>.<span class="ident">data</span>);
-    <span class="ident">round</span>::<span class="op">&lt;</span><span class="ident">F</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="ident">fp</span>, <span class="op">|</span><span class="ident">f</span>, <span class="ident">s</span><span class="op">|</span> {
-        <span class="ident">round_nearest_tie_even</span>(<span class="ident">f</span>, <span class="ident">s</span>, <span class="op">|</span><span class="ident">is_odd</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">ord</span> = <span class="ident">real_digits</span>.<span class="ident">data</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">theor_digits</span>.<span class="ident">data</span>);
+    <span class="ident">round</span>::&lt;<span class="ident">F</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="ident">fp</span>, |<span class="ident">f</span>, <span class="ident">s</span>| {
+        <span class="ident">round_nearest_tie_even</span>(<span class="ident">f</span>, <span class="ident">s</span>, |<span class="ident">is_odd</span>, <span class="kw">_</span>, <span class="kw">_</span>| {
             <span class="comment">// Can ignore `is_halfway` and `is_above`, since those were</span>
             <span class="comment">// calculates using less significant digits.</span>
             <span class="kw">match</span> <span class="ident">ord</span> {
@@ -586,13 +586,13 @@
 <span class="doccomment">/// Add a digit to the temporary value.</span>
 <span class="macro">macro_rules!</span> <span class="ident">add_digit</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">c</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span>:<span class="ident">ident</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">digit</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">c</span> <span class="op">-</span> <span class="string">b&#39;0&#39;</span>;
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> <span class="kw-2">*</span><span class="op">=</span> <span class="number">10</span> <span class="kw">as</span> <span class="ident">Limb</span>;
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> <span class="op">+</span><span class="op">=</span> <span class="ident">digit</span> <span class="kw">as</span> <span class="ident">Limb</span>;
+        <span class="kw">let</span> <span class="ident">digit</span> = <span class="macro-nonterminal">$</span><span class="macro-nonterminal">c</span> - <span class="string">b&#39;0&#39;</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> <span class="kw-2">*</span>= <span class="number">10</span> <span class="kw">as</span> <span class="ident">Limb</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> += <span class="ident">digit</span> <span class="kw">as</span> <span class="ident">Limb</span>;
 
         <span class="comment">// Increment our counters.</span>
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> += <span class="number">1</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span> += <span class="number">1</span>;
     }};
 }
 
@@ -608,12 +608,12 @@
     <span class="comment">//</span>
     <span class="comment">// Safe is `counter &lt;= step`, or smaller than the table size.</span>
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">format</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> != <span class="number">0</span> {
             <span class="comment">// SAFETY: safe, since `counter &lt;= step`, or smaller than the table size.</span>
-            <span class="kw">let</span> <span class="ident">small_power</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">f64::int_pow_fast_path</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>, <span class="number">10</span>) };
+            <span class="kw">let</span> <span class="ident">small_power</span> = <span class="kw">unsafe</span> { <span class="ident">f64::int_pow_fast_path</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>, <span class="number">10</span>) };
             <span class="macro">add_temporary!</span>(@<span class="ident">mul</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="ident">small_power</span> <span class="kw">as</span> <span class="ident">Limb</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>);
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> <span class="op">=</span> <span class="number">0</span>;
+            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> = <span class="number">0</span>;
+            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> = <span class="number">0</span>;
         }
     };
 
@@ -623,9 +623,9 @@
     <span class="comment">//</span>
     <span class="comment">// Safe is `counter &lt;= step`, or smaller than the table size.</span>
     (@<span class="ident">end</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">format</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> != <span class="number">0</span> {
             <span class="comment">// SAFETY: safe, since `counter &lt;= step`, or smaller than the table size.</span>
-            <span class="kw">let</span> <span class="ident">small_power</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">f64::int_pow_fast_path</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>, <span class="number">10</span>) };
+            <span class="kw">let</span> <span class="ident">small_power</span> = <span class="kw">unsafe</span> { <span class="ident">f64::int_pow_fast_path</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>, <span class="number">10</span>) };
             <span class="macro">add_temporary!</span>(@<span class="ident">mul</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="ident">small_power</span> <span class="kw">as</span> <span class="ident">Limb</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>);
         }
     };
@@ -633,8 +633,8 @@
     <span class="comment">// Add the maximum native value.</span>
     (@<span class="ident">max</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">format</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">max</span>:<span class="ident">ident</span>) =&gt; {
         <span class="macro">add_temporary!</span>(@<span class="ident">mul</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">max</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>);
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">counter</span> = <span class="number">0</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> = <span class="number">0</span>;
     };
 }
 
@@ -645,7 +645,7 @@
         <span class="comment">// Can&#39;t just add 1, since this can accidentally round-up</span>
         <span class="comment">// values to a halfway point, which can cause invalid results.</span>
         <span class="macro">add_temporary!</span>(@<span class="ident">mul</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="number">10</span>, <span class="number">1</span>);
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span> += <span class="number">1</span>;
     }};
 }
 
@@ -653,7 +653,7 @@
 <span class="macro">macro_rules!</span> <span class="ident">round_up_nonzero</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">format</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">iter</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span>:<span class="ident">ident</span>) =&gt; {{
         <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">digit</span> <span class="kw">in</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">iter</span> {
-            <span class="kw">if</span> <span class="ident">digit</span> <span class="op">!</span><span class="op">=</span> <span class="string">b&#39;0&#39;</span> {
+            <span class="kw">if</span> <span class="ident">digit</span> != <span class="string">b&#39;0&#39;</span> {
                 <span class="macro">round_up_truncated!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">format</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span>);
                 <span class="kw">return</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">result</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">count</span>);
             }
@@ -665,38 +665,38 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// Returns the parsed mantissa and the number of digits in the mantissa.</span>
 <span class="doccomment">/// The max digits is the maximum number of digits plus one.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_mantissa</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Iter1</span>, <span class="ident">Iter2</span><span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_mantissa</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">Iter1</span>, <span class="ident">Iter2</span>&gt;(
     <span class="kw-2">mut</span> <span class="ident">integer</span>: <span class="ident">Iter1</span>,
     <span class="kw-2">mut</span> <span class="ident">fraction</span>: <span class="ident">Iter2</span>,
     <span class="ident">max_digits</span>: <span class="ident">usize</span>,
 ) -&gt; (<span class="ident">Bigint</span>, <span class="ident">usize</span>)
 <span class="kw">where</span>
-    <span class="ident">Iter1</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
-    <span class="ident">Iter2</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
+    <span class="ident">Iter1</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span>&gt; + <span class="ident">Clone</span>,
+    <span class="ident">Iter2</span>: <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">u8</span>&gt; + <span class="ident">Clone</span>,
 {
     <span class="comment">// Iteratively process all the data in the mantissa.</span>
     <span class="comment">// We do this via small, intermediate values which once we reach</span>
     <span class="comment">// the maximum number of digits we can process without overflow,</span>
     <span class="comment">// we add the temporary to the big integer.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">counter</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">Limb</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">Bigint::new</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">counter</span>: <span class="ident">usize</span> = <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span>: <span class="ident">usize</span> = <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">Limb</span> = <span class="number">0</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> = <span class="ident">Bigint::new</span>();
 
     <span class="comment">// Now use our pre-computed small powers iteratively.</span>
     <span class="comment">// This is calculated as `⌊log(2^BITS - 1, 10)⌋`.</span>
-    <span class="kw">let</span> <span class="ident">step</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">LIMB_BITS</span> <span class="op">==</span> <span class="number">32</span> {
+    <span class="kw">let</span> <span class="ident">step</span>: <span class="ident">usize</span> = <span class="kw">if</span> <span class="ident">LIMB_BITS</span> == <span class="number">32</span> {
         <span class="number">9</span>
     } <span class="kw">else</span> {
         <span class="number">19</span>
     };
-    <span class="kw">let</span> <span class="ident">max_native</span> <span class="op">=</span> (<span class="number">10</span> <span class="kw">as</span> <span class="ident">Limb</span>).<span class="ident">pow</span>(<span class="ident">step</span> <span class="kw">as</span> <span class="ident">u32</span>);
+    <span class="kw">let</span> <span class="ident">max_native</span> = (<span class="number">10</span> <span class="kw">as</span> <span class="ident">Limb</span>).<span class="ident">pow</span>(<span class="ident">step</span> <span class="kw">as</span> <span class="ident">u32</span>);
 
     <span class="comment">// Process the integer digits.</span>
     <span class="lifetime">&#39;integer</span>: <span class="kw">loop</span> {
         <span class="comment">// Parse a digit at a time, until we reach step.</span>
-        <span class="kw">while</span> <span class="ident">counter</span> <span class="op">&lt;</span> <span class="ident">step</span> <span class="op">&amp;&amp;</span> <span class="ident">count</span> <span class="op">&lt;</span> <span class="ident">max_digits</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) <span class="op">=</span> <span class="ident">integer</span>.<span class="ident">next</span>() {
+        <span class="kw">while</span> <span class="ident">counter</span> &lt; <span class="ident">step</span> &amp;&amp; <span class="ident">count</span> &lt; <span class="ident">max_digits</span> {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) = <span class="ident">integer</span>.<span class="ident">next</span>() {
                 <span class="macro">add_digit!</span>(<span class="ident">c</span>, <span class="ident">value</span>, <span class="ident">counter</span>, <span class="ident">count</span>);
             } <span class="kw">else</span> {
                 <span class="kw">break</span> <span class="lifetime">&#39;integer</span>;
@@ -704,7 +704,7 @@
         }
 
         <span class="comment">// Check if we&#39;ve exhausted our max digits.</span>
-        <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="ident">max_digits</span> {
+        <span class="kw">if</span> <span class="ident">count</span> == <span class="ident">max_digits</span> {
             <span class="comment">// Need to check if we&#39;re truncated, and round-up accordingly.</span>
             <span class="comment">// SAFETY: safe since `counter &lt;= step`.</span>
             <span class="macro">add_temporary!</span>(@<span class="ident">end</span> <span class="ident">format</span>, <span class="ident">result</span>, <span class="ident">counter</span>, <span class="ident">value</span>);
@@ -720,9 +720,9 @@
 
     <span class="comment">// Skip leading fraction zeros.</span>
     <span class="comment">// Required to get an accurate count.</span>
-    <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">if</span> <span class="ident">count</span> == <span class="number">0</span> {
         <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">c</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="ident">fraction</span> {
-            <span class="kw">if</span> <span class="ident">c</span> <span class="op">!</span><span class="op">=</span> <span class="string">b&#39;0&#39;</span> {
+            <span class="kw">if</span> <span class="ident">c</span> != <span class="string">b&#39;0&#39;</span> {
                 <span class="macro">add_digit!</span>(<span class="ident">c</span>, <span class="ident">value</span>, <span class="ident">counter</span>, <span class="ident">count</span>);
                 <span class="kw">break</span>;
             }
@@ -732,8 +732,8 @@
     <span class="comment">// Process the fraction digits.</span>
     <span class="lifetime">&#39;fraction</span>: <span class="kw">loop</span> {
         <span class="comment">// Parse a digit at a time, until we reach step.</span>
-        <span class="kw">while</span> <span class="ident">counter</span> <span class="op">&lt;</span> <span class="ident">step</span> <span class="op">&amp;&amp;</span> <span class="ident">count</span> <span class="op">&lt;</span> <span class="ident">max_digits</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) <span class="op">=</span> <span class="ident">fraction</span>.<span class="ident">next</span>() {
+        <span class="kw">while</span> <span class="ident">counter</span> &lt; <span class="ident">step</span> &amp;&amp; <span class="ident">count</span> &lt; <span class="ident">max_digits</span> {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) = <span class="ident">fraction</span>.<span class="ident">next</span>() {
                 <span class="macro">add_digit!</span>(<span class="ident">c</span>, <span class="ident">value</span>, <span class="ident">counter</span>, <span class="ident">count</span>);
             } <span class="kw">else</span> {
                 <span class="kw">break</span> <span class="lifetime">&#39;fraction</span>;
@@ -741,7 +741,7 @@
         }
 
         <span class="comment">// Check if we&#39;ve exhausted our max digits.</span>
-        <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="ident">max_digits</span> {
+        <span class="kw">if</span> <span class="ident">count</span> == <span class="ident">max_digits</span> {
             <span class="comment">// SAFETY: safe since `counter &lt;= step`.</span>
             <span class="macro">add_temporary!</span>(@<span class="ident">end</span> <span class="ident">format</span>, <span class="ident">result</span>, <span class="ident">counter</span>, <span class="ident">value</span>);
             <span class="macro">round_up_nonzero!</span>(<span class="ident">format</span>, <span class="ident">fraction</span>, <span class="ident">result</span>, <span class="ident">count</span>);
@@ -769,26 +769,26 @@
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">scientific_exponent</span>(<span class="ident">num</span>: <span class="kw-2">&amp;</span><span class="ident">Number</span>) -&gt; <span class="ident">i32</span> {
     <span class="comment">// Use power reduction to make this faster.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mantissa</span> <span class="op">=</span> <span class="ident">num</span>.<span class="ident">mantissa</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span> <span class="op">=</span> <span class="ident">num</span>.<span class="ident">exponent</span>;
-    <span class="kw">while</span> <span class="ident">mantissa</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">10000</span> {
-        <span class="ident">mantissa</span> <span class="op">/</span><span class="op">=</span> <span class="number">10000</span>;
-        <span class="ident">exponent</span> <span class="op">+</span><span class="op">=</span> <span class="number">4</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mantissa</span> = <span class="ident">num</span>.<span class="ident">mantissa</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span> = <span class="ident">num</span>.<span class="ident">exponent</span>;
+    <span class="kw">while</span> <span class="ident">mantissa</span> &gt;= <span class="number">10000</span> {
+        <span class="ident">mantissa</span> /= <span class="number">10000</span>;
+        <span class="ident">exponent</span> += <span class="number">4</span>;
     }
-    <span class="kw">while</span> <span class="ident">mantissa</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">100</span> {
-        <span class="ident">mantissa</span> <span class="op">/</span><span class="op">=</span> <span class="number">100</span>;
-        <span class="ident">exponent</span> <span class="op">+</span><span class="op">=</span> <span class="number">2</span>;
+    <span class="kw">while</span> <span class="ident">mantissa</span> &gt;= <span class="number">100</span> {
+        <span class="ident">mantissa</span> /= <span class="number">100</span>;
+        <span class="ident">exponent</span> += <span class="number">2</span>;
     }
-    <span class="kw">while</span> <span class="ident">mantissa</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">10</span> {
-        <span class="ident">mantissa</span> <span class="op">/</span><span class="op">=</span> <span class="number">10</span>;
-        <span class="ident">exponent</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+    <span class="kw">while</span> <span class="ident">mantissa</span> &gt;= <span class="number">10</span> {
+        <span class="ident">mantissa</span> /= <span class="number">10</span>;
+        <span class="ident">exponent</span> += <span class="number">1</span>;
     }
     <span class="ident">exponent</span> <span class="kw">as</span> <span class="ident">i32</span>
 }
 
 <span class="doccomment">/// Calculate `b` from a a representation of `b` as a float.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">b</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(<span class="ident">float</span>: <span class="ident">F</span>) -&gt; <span class="ident">ExtendedFloat</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">b</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(<span class="ident">float</span>: <span class="ident">F</span>) -&gt; <span class="ident">ExtendedFloat</span> {
     <span class="ident">ExtendedFloat</span> {
         <span class="ident">mant</span>: <span class="ident">float</span>.<span class="ident">mantissa</span>(),
         <span class="ident">exp</span>: <span class="ident">float</span>.<span class="ident">exponent</span>(),
@@ -797,12 +797,12 @@
 
 <span class="doccomment">/// Calculate `b+h` from a a representation of `b` as a float.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bh</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span><span class="op">&gt;</span>(<span class="ident">float</span>: <span class="ident">F</span>) -&gt; <span class="ident">ExtendedFloat</span> {
-    <span class="kw">let</span> <span class="ident">fp</span> <span class="op">=</span> <span class="ident">b</span>(<span class="ident">float</span>);
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bh</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span>&gt;(<span class="ident">float</span>: <span class="ident">F</span>) -&gt; <span class="ident">ExtendedFloat</span> {
+    <span class="kw">let</span> <span class="ident">fp</span> = <span class="ident">b</span>(<span class="ident">float</span>);
     <span class="ident">ExtendedFloat</span> {
-        <span class="ident">mant</span>: (<span class="ident">fp</span>.<span class="ident">mant</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>) <span class="op">+</span> <span class="number">1</span>,
-        <span class="ident">exp</span>: <span class="ident">fp</span>.<span class="ident">exp</span> <span class="op">-</span> <span class="number">1</span>,
+        <span class="ident">mant</span>: (<span class="ident">fp</span>.<span class="ident">mant</span> &lt;&lt; <span class="number">1</span>) + <span class="number">1</span>,
+        <span class="ident">exp</span>: <span class="ident">fp</span>.<span class="ident">exp</span> - <span class="number">1</span>,
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimal_lexical" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

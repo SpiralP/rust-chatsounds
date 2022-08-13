@@ -2358,13 +2358,13 @@
 
 <span class="kw">use</span> {<span class="ident">Num</span>, <span class="ident">NumCast</span>, <span class="ident">ToPrimitive</span>};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">libm</span>;
 
 <span class="doccomment">/// Generic trait for floating point numbers that works with `no_std`.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This trait implements a subset of the `Float` trait.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">FloatCore</span>: <span class="ident">Num</span> <span class="op">+</span> <span class="ident">NumCast</span> <span class="op">+</span> <span class="ident">Neg</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">Copy</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">FloatCore</span>: <span class="ident">Num</span> + <span class="ident">NumCast</span> + <span class="ident">Neg</span>&lt;<span class="ident">Output</span> = <span class="self">Self</span>&gt; + <span class="ident">PartialOrd</span> + <span class="ident">Copy</span> {
     <span class="doccomment">/// Returns positive infinity.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
@@ -2522,7 +2522,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_nan</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>
+        <span class="self">self</span> != <span class="self">self</span>
     }
 
     <span class="doccomment">/// Returns `true` if the number is infinite.</span>
@@ -2546,7 +2546,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_infinite</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span> <span class="op">==</span> <span class="ident"><span class="self">Self</span>::infinity</span>() <span class="op">|</span><span class="op">|</span> <span class="self">self</span> <span class="op">==</span> <span class="ident"><span class="self">Self</span>::neg_infinity</span>()
+        <span class="self">self</span> == <span class="ident"><span class="self">Self</span>::infinity</span>() || <span class="self">self</span> == <span class="ident"><span class="self">Self</span>::neg_infinity</span>()
     }
 
     <span class="doccomment">/// Returns `true` if the number is neither infinite or NaN.</span>
@@ -2569,7 +2569,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_finite</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="op">!</span>(<span class="self">self</span>.<span class="ident">is_nan</span>() <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">is_infinite</span>())
+        !(<span class="self">self</span>.<span class="ident">is_nan</span>() || <span class="self">self</span>.<span class="ident">is_infinite</span>())
     }
 
     <span class="doccomment">/// Returns `true` if the number is neither zero, infinite, subnormal or NaN.</span>
@@ -2592,7 +2592,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_normal</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">classify</span>() <span class="op">==</span> <span class="ident">FpCategory::Normal</span>
+        <span class="self">self</span>.<span class="ident">classify</span>() == <span class="ident">FpCategory::Normal</span>
     }
 
     <span class="doccomment">/// Returns the floating point category of the number. If only one property</span>
@@ -2643,13 +2643,13 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">floor</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fract</span>();
-        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">is_zero</span>() {
+        <span class="kw">let</span> <span class="ident">f</span> = <span class="self">self</span>.<span class="ident">fract</span>();
+        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() || <span class="ident">f</span>.<span class="ident">is_zero</span>() {
             <span class="self">self</span>
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> <span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::zero</span>() {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span> <span class="op">-</span> <span class="ident"><span class="self">Self</span>::one</span>()
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> &lt; <span class="ident"><span class="self">Self</span>::zero</span>() {
+            <span class="self">self</span> - <span class="ident">f</span> - <span class="ident"><span class="self">Self</span>::one</span>()
         } <span class="kw">else</span> {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span>
+            <span class="self">self</span> - <span class="ident">f</span>
         }
     }
 
@@ -2677,13 +2677,13 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">ceil</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fract</span>();
-        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">is_zero</span>() {
+        <span class="kw">let</span> <span class="ident">f</span> = <span class="self">self</span>.<span class="ident">fract</span>();
+        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() || <span class="ident">f</span>.<span class="ident">is_zero</span>() {
             <span class="self">self</span>
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> <span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::zero</span>() {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span> <span class="op">+</span> <span class="ident"><span class="self">Self</span>::one</span>()
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> &gt; <span class="ident"><span class="self">Self</span>::zero</span>() {
+            <span class="self">self</span> - <span class="ident">f</span> + <span class="ident"><span class="self">Self</span>::one</span>()
         } <span class="kw">else</span> {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span>
+            <span class="self">self</span> - <span class="ident">f</span>
         }
     }
 
@@ -2710,22 +2710,22 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">round</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">one</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::one</span>();
-        <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">0.5</span>).<span class="ident">expect</span>(<span class="string">&quot;Unable to cast from 0.5&quot;</span>);
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fract</span>();
-        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">is_zero</span>() {
+        <span class="kw">let</span> <span class="ident">one</span> = <span class="ident"><span class="self">Self</span>::one</span>();
+        <span class="kw">let</span> <span class="ident">h</span> = <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">0.5</span>).<span class="ident">expect</span>(<span class="string">&quot;Unable to cast from 0.5&quot;</span>);
+        <span class="kw">let</span> <span class="ident">f</span> = <span class="self">self</span>.<span class="ident">fract</span>();
+        <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() || <span class="ident">f</span>.<span class="ident">is_zero</span>() {
             <span class="self">self</span>
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> <span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::zero</span>() {
-            <span class="kw">if</span> <span class="ident">f</span> <span class="op">&lt;</span> <span class="ident">h</span> {
-                <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span>
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span> &gt; <span class="ident"><span class="self">Self</span>::zero</span>() {
+            <span class="kw">if</span> <span class="ident">f</span> &lt; <span class="ident">h</span> {
+                <span class="self">self</span> - <span class="ident">f</span>
             } <span class="kw">else</span> {
-                <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span> <span class="op">+</span> <span class="ident">one</span>
+                <span class="self">self</span> - <span class="ident">f</span> + <span class="ident">one</span>
             }
         } <span class="kw">else</span> {
-            <span class="kw">if</span> <span class="op">-</span><span class="ident">f</span> <span class="op">&lt;</span> <span class="ident">h</span> {
-                <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span>
+            <span class="kw">if</span> -<span class="ident">f</span> &lt; <span class="ident">h</span> {
+                <span class="self">self</span> - <span class="ident">f</span>
             } <span class="kw">else</span> {
-                <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span> <span class="op">-</span> <span class="ident">one</span>
+                <span class="self">self</span> - <span class="ident">f</span> - <span class="ident">one</span>
             }
         }
     }
@@ -2754,11 +2754,11 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">trunc</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fract</span>();
+        <span class="kw">let</span> <span class="ident">f</span> = <span class="self">self</span>.<span class="ident">fract</span>();
         <span class="kw">if</span> <span class="ident">f</span>.<span class="ident">is_nan</span>() {
             <span class="self">self</span>
         } <span class="kw">else</span> {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">f</span>
+            <span class="self">self</span> - <span class="ident">f</span>
         }
     }
 
@@ -2789,7 +2789,7 @@
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_zero</span>() {
             <span class="ident"><span class="self">Self</span>::zero</span>()
         } <span class="kw">else</span> {
-            <span class="self">self</span> <span class="op">%</span> <span class="ident"><span class="self">Self</span>::one</span>()
+            <span class="self">self</span> % <span class="ident"><span class="self">Self</span>::one</span>()
         }
     }
 
@@ -2819,7 +2819,7 @@
             <span class="kw">return</span> <span class="self">self</span>;
         }
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_sign_negative</span>() {
-            <span class="kw">return</span> <span class="op">-</span><span class="self">self</span>;
+            <span class="kw">return</span> -<span class="self">self</span>;
         }
         <span class="ident"><span class="self">Self</span>::nan</span>()
     }
@@ -2852,7 +2852,7 @@
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_nan</span>() {
             <span class="ident"><span class="self">Self</span>::nan</span>()
         } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_sign_negative</span>() {
-            <span class="op">-</span><span class="ident"><span class="self">Self</span>::one</span>()
+            -<span class="ident"><span class="self">Self</span>::one</span>()
         } <span class="kw">else</span> {
             <span class="ident"><span class="self">Self</span>::one</span>()
         }
@@ -2882,7 +2882,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_sign_positive</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="op">!</span><span class="self">self</span>.<span class="ident">is_sign_negative</span>()
+        !<span class="self">self</span>.<span class="ident">is_sign_negative</span>()
     }
 
     <span class="doccomment">/// Returns `true` if `self` is negative, including `-0.0` and</span>
@@ -2909,8 +2909,8 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">is_sign_negative</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">sign</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">integer_decode</span>();
-        <span class="ident">sign</span> <span class="op">&lt;</span> <span class="number">0</span>
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">sign</span>) = <span class="self">self</span>.<span class="ident">integer_decode</span>();
+        <span class="ident">sign</span> &lt; <span class="number">0</span>
     }
 
     <span class="doccomment">/// Returns the minimum of the two numbers.</span>
@@ -2940,7 +2940,7 @@
         <span class="kw">if</span> <span class="ident">other</span>.<span class="ident">is_nan</span>() {
             <span class="kw">return</span> <span class="self">self</span>;
         }
-        <span class="kw">if</span> <span class="self">self</span> <span class="op">&lt;</span> <span class="ident">other</span> {
+        <span class="kw">if</span> <span class="self">self</span> &lt; <span class="ident">other</span> {
             <span class="self">self</span>
         } <span class="kw">else</span> {
             <span class="ident">other</span>
@@ -2974,7 +2974,7 @@
         <span class="kw">if</span> <span class="ident">other</span>.<span class="ident">is_nan</span>() {
             <span class="kw">return</span> <span class="self">self</span>;
         }
-        <span class="kw">if</span> <span class="self">self</span> <span class="op">&gt;</span> <span class="ident">other</span> {
+        <span class="kw">if</span> <span class="self">self</span> &gt; <span class="ident">other</span> {
             <span class="self">self</span>
         } <span class="kw">else</span> {
             <span class="ident">other</span>
@@ -3001,7 +3001,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">recip</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::one</span>() <span class="op">/</span> <span class="self">self</span>
+        <span class="ident"><span class="self">Self</span>::one</span>() / <span class="self">self</span>
     }
 
     <span class="doccomment">/// Raise a number to an integer power.</span>
@@ -3025,9 +3025,9 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">powi</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">exp</span>: <span class="ident">i32</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">if</span> <span class="ident">exp</span> <span class="op">&lt;</span> <span class="number">0</span> {
-            <span class="ident">exp</span> <span class="op">=</span> <span class="ident">exp</span>.<span class="ident">wrapping_neg</span>();
-            <span class="self">self</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">recip</span>();
+        <span class="kw">if</span> <span class="ident">exp</span> &lt; <span class="number">0</span> {
+            <span class="ident">exp</span> = <span class="ident">exp</span>.<span class="ident">wrapping_neg</span>();
+            <span class="self">self</span> = <span class="self">self</span>.<span class="ident">recip</span>();
         }
         <span class="comment">// It should always be possible to convert a positive `i32` to a `usize`.</span>
         <span class="comment">// Note, `i32::MIN` will wrap and still be negative, so we need to convert</span>
@@ -3102,7 +3102,7 @@
         <span class="ident">infinity</span>() -&gt; <span class="ident">f32::INFINITY</span>;
         <span class="ident">neg_infinity</span>() -&gt; <span class="ident">f32::NEG_INFINITY</span>;
         <span class="ident">nan</span>() -&gt; <span class="ident">f32::NAN</span>;
-        <span class="ident">neg_zero</span>() -&gt; <span class="op">-</span><span class="number">0.0</span>;
+        <span class="ident">neg_zero</span>() -&gt; -<span class="number">0.0</span>;
         <span class="ident">min_value</span>() -&gt; <span class="ident">f32::MIN</span>;
         <span class="ident">min_positive_value</span>() -&gt; <span class="ident">f32::MIN_POSITIVE</span>;
         <span class="ident">epsilon</span>() -&gt; <span class="ident">f32::EPSILON</span>;
@@ -3115,15 +3115,15 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">classify</span>(<span class="self">self</span>) -&gt; <span class="ident">FpCategory</span> {
-        <span class="kw">const</span> <span class="ident">EXP_MASK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0x7f800000</span>;
-        <span class="kw">const</span> <span class="ident">MAN_MASK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0x007fffff</span>;
+        <span class="kw">const</span> <span class="ident">EXP_MASK</span>: <span class="ident">u32</span> = <span class="number">0x7f800000</span>;
+        <span class="kw">const</span> <span class="ident">MAN_MASK</span>: <span class="ident">u32</span> = <span class="number">0x007fffff</span>;
 
         <span class="comment">// Safety: this identical to the implementation of f32::to_bits(),</span>
         <span class="comment">// which is only available starting at Rust 1.20</span>
-        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
-        <span class="kw">match</span> (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">MAN_MASK</span>, <span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">EXP_MASK</span>) {
+        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
+        <span class="kw">match</span> (<span class="ident">bits</span> &amp; <span class="ident">MAN_MASK</span>, <span class="ident">bits</span> &amp; <span class="ident">EXP_MASK</span>) {
             (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="ident">FpCategory::Zero</span>,
             (<span class="kw">_</span>, <span class="number">0</span>) =&gt; <span class="ident">FpCategory::Subnormal</span>,
             (<span class="number">0</span>, <span class="ident">EXP_MASK</span>) =&gt; <span class="ident">FpCategory::Infinite</span>,
@@ -3133,31 +3133,31 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">is_sign_negative</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">const</span> <span class="ident">SIGN_MASK</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0x80000000</span>;
+        <span class="kw">const</span> <span class="ident">SIGN_MASK</span>: <span class="ident">u32</span> = <span class="number">0x80000000</span>;
 
         <span class="comment">// Safety: this identical to the implementation of f32::to_bits(),</span>
         <span class="comment">// which is only available starting at Rust 1.20</span>
-        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
-        <span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">SIGN_MASK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>
+        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
+        <span class="ident">bits</span> &amp; <span class="ident">SIGN_MASK</span> != <span class="number">0</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">to_degrees</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// Use a constant for better precision.</span>
-        <span class="kw">const</span> <span class="ident">PIS_IN_180</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="number">57.2957795130823208767981548141051703_f32</span>;
-        <span class="self">self</span> <span class="op">*</span> <span class="ident">PIS_IN_180</span>
+        <span class="kw">const</span> <span class="ident">PIS_IN_180</span>: <span class="ident">f32</span> = <span class="number">57.2957795130823208767981548141051703_f32</span>;
+        <span class="self">self</span> * <span class="ident">PIS_IN_180</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">to_radians</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span> <span class="op">*</span> (<span class="ident">f32::consts::PI</span> <span class="op">/</span> <span class="number">180.0</span>)
+        <span class="self">self</span> * (<span class="ident">f32::consts::PI</span> / <span class="number">180.0</span>)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
     <span class="macro">forward!</span> {
         <span class="ident"><span class="self">Self</span>::is_nan</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span>;
         <span class="ident"><span class="self">Self</span>::is_infinite</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span>;
@@ -3181,7 +3181,7 @@
         <span class="ident"><span class="self">Self</span>::to_radians</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="macro">forward!</span> {
         <span class="ident">libm::floorf</span> <span class="kw">as</span> <span class="ident">floor</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
         <span class="ident">libm::ceilf</span> <span class="kw">as</span> <span class="ident">ceil</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
@@ -3192,10 +3192,10 @@
         <span class="ident">libm::fmaxf</span> <span class="kw">as</span> <span class="ident">max</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">fract</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span> <span class="op">-</span> <span class="ident">libm::truncf</span>(<span class="self">self</span>)
+        <span class="self">self</span> - <span class="ident">libm::truncf</span>(<span class="self">self</span>)
     }
 }
 
@@ -3204,7 +3204,7 @@
         <span class="ident">infinity</span>() -&gt; <span class="ident">f64::INFINITY</span>;
         <span class="ident">neg_infinity</span>() -&gt; <span class="ident">f64::NEG_INFINITY</span>;
         <span class="ident">nan</span>() -&gt; <span class="ident">f64::NAN</span>;
-        <span class="ident">neg_zero</span>() -&gt; <span class="op">-</span><span class="number">0.0</span>;
+        <span class="ident">neg_zero</span>() -&gt; -<span class="number">0.0</span>;
         <span class="ident">min_value</span>() -&gt; <span class="ident">f64::MIN</span>;
         <span class="ident">min_positive_value</span>() -&gt; <span class="ident">f64::MIN_POSITIVE</span>;
         <span class="ident">epsilon</span>() -&gt; <span class="ident">f64::EPSILON</span>;
@@ -3217,15 +3217,15 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">classify</span>(<span class="self">self</span>) -&gt; <span class="ident">FpCategory</span> {
-        <span class="kw">const</span> <span class="ident">EXP_MASK</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">0x7ff0000000000000</span>;
-        <span class="kw">const</span> <span class="ident">MAN_MASK</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">0x000fffffffffffff</span>;
+        <span class="kw">const</span> <span class="ident">EXP_MASK</span>: <span class="ident">u64</span> = <span class="number">0x7ff0000000000000</span>;
+        <span class="kw">const</span> <span class="ident">MAN_MASK</span>: <span class="ident">u64</span> = <span class="number">0x000fffffffffffff</span>;
 
         <span class="comment">// Safety: this identical to the implementation of f64::to_bits(),</span>
         <span class="comment">// which is only available starting at Rust 1.20</span>
-        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
-        <span class="kw">match</span> (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">MAN_MASK</span>, <span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">EXP_MASK</span>) {
+        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
+        <span class="kw">match</span> (<span class="ident">bits</span> &amp; <span class="ident">MAN_MASK</span>, <span class="ident">bits</span> &amp; <span class="ident">EXP_MASK</span>) {
             (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="ident">FpCategory::Zero</span>,
             (<span class="kw">_</span>, <span class="number">0</span>) =&gt; <span class="ident">FpCategory::Subnormal</span>,
             (<span class="number">0</span>, <span class="ident">EXP_MASK</span>) =&gt; <span class="ident">FpCategory::Infinite</span>,
@@ -3235,32 +3235,32 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">is_sign_negative</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">const</span> <span class="ident">SIGN_MASK</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">0x8000000000000000</span>;
+        <span class="kw">const</span> <span class="ident">SIGN_MASK</span>: <span class="ident">u64</span> = <span class="number">0x8000000000000000</span>;
 
         <span class="comment">// Safety: this identical to the implementation of f64::to_bits(),</span>
         <span class="comment">// which is only available starting at Rust 1.20</span>
-        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
-        <span class="ident">bits</span> <span class="op">&amp;</span> <span class="ident">SIGN_MASK</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>
+        <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="self">self</span>) };
+        <span class="ident">bits</span> &amp; <span class="ident">SIGN_MASK</span> != <span class="number">0</span>
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">to_degrees</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// The division here is correctly rounded with respect to the true</span>
         <span class="comment">// value of 180/π. (This differs from f32, where a constant must be</span>
         <span class="comment">// used to ensure a correctly rounded result.)</span>
-        <span class="self">self</span> <span class="op">*</span> (<span class="number">180.0</span> <span class="op">/</span> <span class="ident">f64::consts::PI</span>)
+        <span class="self">self</span> * (<span class="number">180.0</span> / <span class="ident">f64::consts::PI</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">to_radians</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span> <span class="op">*</span> (<span class="ident">f64::consts::PI</span> <span class="op">/</span> <span class="number">180.0</span>)
+        <span class="self">self</span> * (<span class="ident">f64::consts::PI</span> / <span class="number">180.0</span>)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
     <span class="macro">forward!</span> {
         <span class="ident"><span class="self">Self</span>::is_nan</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span>;
         <span class="ident"><span class="self">Self</span>::is_infinite</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span>;
@@ -3284,7 +3284,7 @@
         <span class="ident"><span class="self">Self</span>::to_radians</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="macro">forward!</span> {
         <span class="ident">libm::floor</span> <span class="kw">as</span> <span class="ident">floor</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
         <span class="ident">libm::ceil</span> <span class="kw">as</span> <span class="ident">ceil</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
@@ -3295,10 +3295,10 @@
         <span class="ident">libm::fmax</span> <span class="kw">as</span> <span class="ident">max</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">fract</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span> <span class="op">-</span> <span class="ident">libm::trunc</span>(<span class="self">self</span>)
+        <span class="self">self</span> - <span class="ident">libm::trunc</span>(<span class="self">self</span>)
     }
 }
 
@@ -3308,8 +3308,8 @@
 <span class="doccomment">/// Generic trait for floating point numbers</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This trait is only available with the `std` feature, or with the `libm` feature otherwise.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Float</span>: <span class="ident">Num</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">NumCast</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">Neg</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span> {
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Float</span>: <span class="ident">Num</span> + <span class="ident">Copy</span> + <span class="ident">NumCast</span> + <span class="ident">PartialOrd</span> + <span class="ident">Neg</span>&lt;<span class="ident">Output</span> = <span class="self">Self</span>&gt; {
     <span class="doccomment">/// Returns the `NaN` value.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
@@ -3832,9 +3832,9 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">to_degrees</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">halfpi</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::zero</span>().<span class="ident">acos</span>();
-        <span class="kw">let</span> <span class="ident">ninety</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">90u8</span>).<span class="ident">unwrap</span>();
-        <span class="self">self</span> <span class="op">*</span> <span class="ident">ninety</span> <span class="op">/</span> <span class="ident">halfpi</span>
+        <span class="kw">let</span> <span class="ident">halfpi</span> = <span class="ident"><span class="self">Self</span>::zero</span>().<span class="ident">acos</span>();
+        <span class="kw">let</span> <span class="ident">ninety</span> = <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">90u8</span>).<span class="ident">unwrap</span>();
+        <span class="self">self</span> * <span class="ident">ninety</span> / <span class="ident">halfpi</span>
     }
 
     <span class="doccomment">/// Converts degrees to radians.</span>
@@ -3850,9 +3850,9 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">to_radians</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">halfpi</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::zero</span>().<span class="ident">acos</span>();
-        <span class="kw">let</span> <span class="ident">ninety</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">90u8</span>).<span class="ident">unwrap</span>();
-        <span class="self">self</span> <span class="op">*</span> <span class="ident">halfpi</span> <span class="op">/</span> <span class="ident">ninety</span>
+        <span class="kw">let</span> <span class="ident">halfpi</span> = <span class="ident"><span class="self">Self</span>::zero</span>().<span class="ident">acos</span>();
+        <span class="kw">let</span> <span class="ident">ninety</span> = <span class="ident"><span class="self">Self</span>::from</span>(<span class="number">90u8</span>).<span class="ident">unwrap</span>();
+        <span class="self">self</span> * <span class="ident">halfpi</span> / <span class="ident">ninety</span>
     }
 
     <span class="doccomment">/// Returns the maximum of the two numbers.</span>
@@ -4236,7 +4236,7 @@
     <span class="doccomment">/// assert!(f32::nan().copysign(1.0).is_nan());</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">fn</span> <span class="ident">copysign</span>(<span class="self">self</span>, <span class="ident">sign</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_sign_negative</span>() <span class="op">==</span> <span class="ident">sign</span>.<span class="ident">is_sign_negative</span>() {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_sign_negative</span>() == <span class="ident">sign</span>.<span class="ident">is_sign_negative</span>() {
             <span class="self">self</span>
         } <span class="kw">else</span> {
             <span class="self">self</span>.<span class="ident">neg</span>()
@@ -4244,7 +4244,7 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
 <span class="macro">macro_rules!</span> <span class="ident">float_impl_std</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">decode</span>:<span class="ident">ident</span>) =&gt; {
         <span class="kw">impl</span> <span class="ident">Float</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span> {
@@ -4252,7 +4252,7 @@
                 <span class="ident">nan</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::NAN</span>;
                 <span class="ident">infinity</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::INFINITY</span>;
                 <span class="ident">neg_infinity</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::NEG_INFINITY</span>;
-                <span class="ident">neg_zero</span>() -&gt; <span class="op">-</span><span class="number">0.0</span>;
+                <span class="ident">neg_zero</span>() -&gt; -<span class="number">0.0</span>;
                 <span class="ident">min_value</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::MIN</span>;
                 <span class="ident">min_positive_value</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::MIN_POSITIVE</span>;
                 <span class="ident">epsilon</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::EPSILON</span>;
@@ -4262,7 +4262,7 @@
             <span class="attribute">#[<span class="ident">inline</span>]</span>
             <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
             <span class="kw">fn</span> <span class="ident">abs_sub</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-                <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span><span class="op">&gt;</span><span class="ident">::abs_sub</span>(<span class="self">self</span>, <span class="ident">other</span>)
+                &lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>&gt;<span class="ident">::abs_sub</span>(<span class="self">self</span>, <span class="ident">other</span>)
             }
 
             <span class="attribute">#[<span class="ident">inline</span>]</span>
@@ -4329,14 +4329,14 @@
     };
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
 <span class="macro">macro_rules!</span> <span class="ident">float_impl_libm</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">decode</span>:<span class="ident">ident</span>) =&gt; {
         <span class="macro">constant!</span> {
             <span class="ident">nan</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::NAN</span>;
             <span class="ident">infinity</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::INFINITY</span>;
             <span class="ident">neg_infinity</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::NEG_INFINITY</span>;
-            <span class="ident">neg_zero</span>() -&gt; <span class="op">-</span><span class="number">0.0</span>;
+            <span class="ident">neg_zero</span>() -&gt; -<span class="number">0.0</span>;
             <span class="ident">min_value</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::MIN</span>;
             <span class="ident">min_positive_value</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::MIN_POSITIVE</span>;
             <span class="ident">epsilon</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::EPSILON</span>;
@@ -4350,12 +4350,12 @@
 
         <span class="attribute">#[<span class="ident">inline</span>]</span>
         <span class="kw">fn</span> <span class="ident">fract</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-            <span class="self">self</span> <span class="op">-</span> <span class="ident">Float::trunc</span>(<span class="self">self</span>)
+            <span class="self">self</span> - <span class="ident">Float::trunc</span>(<span class="self">self</span>)
         }
 
         <span class="attribute">#[<span class="ident">inline</span>]</span>
         <span class="kw">fn</span> <span class="ident">log</span>(<span class="self">self</span>, <span class="ident">base</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-            <span class="self">self</span>.<span class="ident">ln</span>() <span class="op">/</span> <span class="ident">base</span>.<span class="ident">ln</span>()
+            <span class="self">self</span>.<span class="ident">ln</span>() / <span class="ident">base</span>.<span class="ident">ln</span>()
         }
 
         <span class="macro">forward!</span> {
@@ -4378,41 +4378,41 @@
 <span class="kw">fn</span> <span class="ident">integer_decode_f32</span>(<span class="ident">f</span>: <span class="ident">f32</span>) -&gt; (<span class="ident">u64</span>, <span class="ident">i16</span>, <span class="ident">i8</span>) {
     <span class="comment">// Safety: this identical to the implementation of f32::to_bits(),</span>
     <span class="comment">// which is only available starting at Rust 1.20</span>
-    <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="ident">f</span>) };
-    <span class="kw">let</span> <span class="ident">sign</span>: <span class="ident">i8</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">bits</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">31</span> <span class="op">==</span> <span class="number">0</span> { <span class="number">1</span> } <span class="kw">else</span> { <span class="op">-</span><span class="number">1</span> };
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span>: <span class="ident">i16</span> <span class="op">=</span> ((<span class="ident">bits</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">23</span>) <span class="op">&amp;</span> <span class="number">0xff</span>) <span class="kw">as</span> <span class="ident">i16</span>;
-    <span class="kw">let</span> <span class="ident">mantissa</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">exponent</span> <span class="op">==</span> <span class="number">0</span> {
-        (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="number">0x7fffff</span>) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>
+    <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u32</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="ident">f</span>) };
+    <span class="kw">let</span> <span class="ident">sign</span>: <span class="ident">i8</span> = <span class="kw">if</span> <span class="ident">bits</span> &gt;&gt; <span class="number">31</span> == <span class="number">0</span> { <span class="number">1</span> } <span class="kw">else</span> { -<span class="number">1</span> };
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span>: <span class="ident">i16</span> = ((<span class="ident">bits</span> &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xff</span>) <span class="kw">as</span> <span class="ident">i16</span>;
+    <span class="kw">let</span> <span class="ident">mantissa</span> = <span class="kw">if</span> <span class="ident">exponent</span> == <span class="number">0</span> {
+        (<span class="ident">bits</span> &amp; <span class="number">0x7fffff</span>) &lt;&lt; <span class="number">1</span>
     } <span class="kw">else</span> {
-        (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="number">0x7fffff</span>) <span class="op">|</span> <span class="number">0x800000</span>
+        (<span class="ident">bits</span> &amp; <span class="number">0x7fffff</span>) | <span class="number">0x800000</span>
     };
     <span class="comment">// Exponent bias + mantissa shift</span>
-    <span class="ident">exponent</span> <span class="op">-</span><span class="op">=</span> <span class="number">127</span> <span class="op">+</span> <span class="number">23</span>;
+    <span class="ident">exponent</span> -= <span class="number">127</span> + <span class="number">23</span>;
     (<span class="ident">mantissa</span> <span class="kw">as</span> <span class="ident">u64</span>, <span class="ident">exponent</span>, <span class="ident">sign</span>)
 }
 
 <span class="kw">fn</span> <span class="ident">integer_decode_f64</span>(<span class="ident">f</span>: <span class="ident">f64</span>) -&gt; (<span class="ident">u64</span>, <span class="ident">i16</span>, <span class="ident">i8</span>) {
     <span class="comment">// Safety: this identical to the implementation of f64::to_bits(),</span>
     <span class="comment">// which is only available starting at Rust 1.20</span>
-    <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="ident">f</span>) };
-    <span class="kw">let</span> <span class="ident">sign</span>: <span class="ident">i8</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">bits</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">63</span> <span class="op">==</span> <span class="number">0</span> { <span class="number">1</span> } <span class="kw">else</span> { <span class="op">-</span><span class="number">1</span> };
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span>: <span class="ident">i16</span> <span class="op">=</span> ((<span class="ident">bits</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">52</span>) <span class="op">&amp;</span> <span class="number">0x7ff</span>) <span class="kw">as</span> <span class="ident">i16</span>;
-    <span class="kw">let</span> <span class="ident">mantissa</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">exponent</span> <span class="op">==</span> <span class="number">0</span> {
-        (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="number">0xfffffffffffff</span>) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>
+    <span class="kw">let</span> <span class="ident">bits</span>: <span class="ident">u64</span> = <span class="kw">unsafe</span> { <span class="ident">mem::transmute</span>(<span class="ident">f</span>) };
+    <span class="kw">let</span> <span class="ident">sign</span>: <span class="ident">i8</span> = <span class="kw">if</span> <span class="ident">bits</span> &gt;&gt; <span class="number">63</span> == <span class="number">0</span> { <span class="number">1</span> } <span class="kw">else</span> { -<span class="number">1</span> };
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exponent</span>: <span class="ident">i16</span> = ((<span class="ident">bits</span> &gt;&gt; <span class="number">52</span>) &amp; <span class="number">0x7ff</span>) <span class="kw">as</span> <span class="ident">i16</span>;
+    <span class="kw">let</span> <span class="ident">mantissa</span> = <span class="kw">if</span> <span class="ident">exponent</span> == <span class="number">0</span> {
+        (<span class="ident">bits</span> &amp; <span class="number">0xfffffffffffff</span>) &lt;&lt; <span class="number">1</span>
     } <span class="kw">else</span> {
-        (<span class="ident">bits</span> <span class="op">&amp;</span> <span class="number">0xfffffffffffff</span>) <span class="op">|</span> <span class="number">0x10000000000000</span>
+        (<span class="ident">bits</span> &amp; <span class="number">0xfffffffffffff</span>) | <span class="number">0x10000000000000</span>
     };
     <span class="comment">// Exponent bias + mantissa shift</span>
-    <span class="ident">exponent</span> <span class="op">-</span><span class="op">=</span> <span class="number">1023</span> <span class="op">+</span> <span class="number">52</span>;
+    <span class="ident">exponent</span> -= <span class="number">1023</span> + <span class="number">52</span>;
     (<span class="ident">mantissa</span>, <span class="ident">exponent</span>, <span class="ident">sign</span>)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
 <span class="macro">float_impl_std!</span>(<span class="ident">f32</span> <span class="ident">integer_decode_f32</span>);
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>)]</span>
 <span class="macro">float_impl_std!</span>(<span class="ident">f64</span> <span class="ident">integer_decode_f64</span>);
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
 <span class="kw">impl</span> <span class="ident">Float</span> <span class="kw">for</span> <span class="ident">f32</span> {
     <span class="macro">float_impl_libm!</span>(<span class="ident">f32</span> <span class="ident">integer_decode_f32</span>);
 
@@ -4460,7 +4460,7 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
 <span class="kw">impl</span> <span class="ident">Float</span> <span class="kw">for</span> <span class="ident">f64</span> {
     <span class="macro">float_impl_libm!</span>(<span class="ident">f64</span> <span class="ident">integer_decode_f64</span>);
 
@@ -4509,33 +4509,33 @@
 }
 
 <span class="macro">macro_rules!</span> <span class="ident">float_const_impl</span> {
-    ($(<span class="attribute">#[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">doc</span>:<span class="ident">meta</span>]</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>:<span class="ident">ident</span>,)<span class="op">+</span>) =&gt; (
+    ($(<span class="attribute">#[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">doc</span>:<span class="ident">meta</span>]</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>:<span class="ident">ident</span>,)+) =&gt; (
         <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_snake_case</span>)]</span>
         <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">FloatConst</span> {
-            $(<span class="attribute">#[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">doc</span>]</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>() -&gt; <span class="self">Self</span>;)<span class="op">+</span>
-            <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return the full circle constant `τ`.&quot;</span>]</span>
+            $(<span class="attribute">#[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">doc</span>]</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>() -&gt; <span class="self">Self</span>;)+
+            <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return the full circle constant `τ`.&quot;</span>]</span>
             <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">TAU</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">Add</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span> {
-                <span class="ident"><span class="self">Self</span>::PI</span>() <span class="op">+</span> <span class="ident"><span class="self">Self</span>::PI</span>()
+            <span class="kw">fn</span> <span class="ident">TAU</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">Add</span>&lt;<span class="self">Self</span>, <span class="ident">Output</span> = <span class="self">Self</span>&gt; {
+                <span class="ident"><span class="self">Self</span>::PI</span>() + <span class="ident"><span class="self">Self</span>::PI</span>()
             }
-            <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `log10(2.0)`.&quot;</span>]</span>
+            <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `log10(2.0)`.&quot;</span>]</span>
             <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">LOG10_2</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span> {
-                <span class="ident"><span class="self">Self</span>::LN_2</span>() <span class="op">/</span> <span class="ident"><span class="self">Self</span>::LN_10</span>()
+            <span class="kw">fn</span> <span class="ident">LOG10_2</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">Div</span>&lt;<span class="self">Self</span>, <span class="ident">Output</span> = <span class="self">Self</span>&gt; {
+                <span class="ident"><span class="self">Self</span>::LN_2</span>() / <span class="ident"><span class="self">Self</span>::LN_10</span>()
             }
-            <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `log2(10.0)`.&quot;</span>]</span>
+            <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `log2(10.0)`.&quot;</span>]</span>
             <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">LOG2_10</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span> {
-                <span class="ident"><span class="self">Self</span>::LN_10</span>() <span class="op">/</span> <span class="ident"><span class="self">Self</span>::LN_2</span>()
+            <span class="kw">fn</span> <span class="ident">LOG2_10</span>() -&gt; <span class="self">Self</span> <span class="kw">where</span> <span class="self">Self</span>: <span class="ident">Sized</span> + <span class="ident">Div</span>&lt;<span class="self">Self</span>, <span class="ident">Output</span> = <span class="self">Self</span>&gt; {
+                <span class="ident"><span class="self">Self</span>::LN_10</span>() / <span class="ident"><span class="self">Self</span>::LN_2</span>()
             }
         }
-        <span class="macro">float_const_impl!</span> { @<span class="ident">float</span> <span class="ident">f32</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>,)<span class="op">+</span> }
-        <span class="macro">float_const_impl!</span> { @<span class="ident">float</span> <span class="ident">f64</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>,)<span class="op">+</span> }
+        <span class="macro">float_const_impl!</span> { @<span class="ident">float</span> <span class="ident">f32</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>,)+ }
+        <span class="macro">float_const_impl!</span> { @<span class="ident">float</span> <span class="ident">f64</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>,)+ }
     );
-    (@<span class="ident">float</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>:<span class="ident">ident</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>:<span class="ident">ident</span>,)<span class="op">+</span>) =&gt; (
+    (@<span class="ident">float</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>:<span class="ident">ident</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>:<span class="ident">ident</span>,)+) =&gt; (
         <span class="kw">impl</span> <span class="ident">FloatConst</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span> {
             <span class="macro">constant!</span> {
-                $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::consts</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>; )<span class="op">+</span>
+                $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>() -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">T::consts</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">constant</span>; )+
                 <span class="ident">TAU</span>() -&gt; <span class="number">6.28318530717958647692528676655900577</span>;
                 <span class="ident">LOG10_2</span>() -&gt; <span class="number">0.301029995663981195213738894724493027</span>;
                 <span class="ident">LOG2_10</span>() -&gt; <span class="number">3.32192809488736234787031942948939018</span>;
@@ -4545,37 +4545,37 @@
 }
 
 <span class="macro">float_const_impl!</span> {
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return Euler’s number.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return Euler’s number.&quot;</span>]</span>
     <span class="ident">E</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `1.0 / π`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `1.0 / π`.&quot;</span>]</span>
     <span class="ident">FRAC_1_PI</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `1.0 / sqrt(2.0)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `1.0 / sqrt(2.0)`.&quot;</span>]</span>
     <span class="ident">FRAC_1_SQRT_2</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `2.0 / π`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `2.0 / π`.&quot;</span>]</span>
     <span class="ident">FRAC_2_PI</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `2.0 / sqrt(π)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `2.0 / sqrt(π)`.&quot;</span>]</span>
     <span class="ident">FRAC_2_SQRT_PI</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `π / 2.0`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `π / 2.0`.&quot;</span>]</span>
     <span class="ident">FRAC_PI_2</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `π / 3.0`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `π / 3.0`.&quot;</span>]</span>
     <span class="ident">FRAC_PI_3</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `π / 4.0`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `π / 4.0`.&quot;</span>]</span>
     <span class="ident">FRAC_PI_4</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `π / 6.0`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `π / 6.0`.&quot;</span>]</span>
     <span class="ident">FRAC_PI_6</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `π / 8.0`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `π / 8.0`.&quot;</span>]</span>
     <span class="ident">FRAC_PI_8</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `ln(10.0)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `ln(10.0)`.&quot;</span>]</span>
     <span class="ident">LN_10</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `ln(2.0)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `ln(2.0)`.&quot;</span>]</span>
     <span class="ident">LN_2</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `log10(e)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `log10(e)`.&quot;</span>]</span>
     <span class="ident">LOG10_E</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `log2(e)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `log2(e)`.&quot;</span>]</span>
     <span class="ident">LOG2_E</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return Archimedes’ constant `π`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return Archimedes’ constant `π`.&quot;</span>]</span>
     <span class="ident">PI</span>,
-    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;Return `sqrt(2.0)`.&quot;</span>]</span>
+    <span class="attribute">#[<span class="ident">doc</span> = <span class="string">&quot;Return `sqrt(2.0)`.&quot;</span>]</span>
     <span class="ident">SQRT_2</span>,
 }
 
@@ -4583,7 +4583,7 @@
 <span class="kw">mod</span> <span class="ident">tests</span> {
     <span class="kw">use</span> <span class="ident">core::f64::consts</span>;
 
-    <span class="kw">const</span> <span class="ident">DEG_RAD_PAIRS</span>: [(<span class="ident">f64</span>, <span class="ident">f64</span>); <span class="number">7</span>] <span class="op">=</span> [
+    <span class="kw">const</span> <span class="ident">DEG_RAD_PAIRS</span>: [(<span class="ident">f64</span>, <span class="ident">f64</span>); <span class="number">7</span>] = [
         (<span class="number">0.0</span>, <span class="number">0.</span>),
         (<span class="number">22.5</span>, <span class="ident">consts::FRAC_PI_8</span>),
         (<span class="number">30.0</span>, <span class="ident">consts::FRAC_PI_6</span>),
@@ -4598,34 +4598,34 @@
         <span class="kw">use</span> <span class="ident">float::FloatCore</span>;
 
         <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="ident">deg</span>, <span class="ident">rad</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">DEG_RAD_PAIRS</span> {
-            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_degrees</span>(<span class="ident">rad</span>) <span class="op">-</span> <span class="ident">deg</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-6</span>);
-            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_radians</span>(<span class="ident">deg</span>) <span class="op">-</span> <span class="ident">rad</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-6</span>);
+            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_degrees</span>(<span class="ident">rad</span>) - <span class="ident">deg</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-6</span>);
+            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_radians</span>(<span class="ident">deg</span>) - <span class="ident">rad</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-6</span>);
 
-            <span class="kw">let</span> (<span class="ident">deg</span>, <span class="ident">rad</span>) <span class="op">=</span> (<span class="ident">deg</span> <span class="kw">as</span> <span class="ident">f32</span>, <span class="ident">rad</span> <span class="kw">as</span> <span class="ident">f32</span>);
-            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_degrees</span>(<span class="ident">rad</span>) <span class="op">-</span> <span class="ident">deg</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-5</span>);
-            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_radians</span>(<span class="ident">deg</span>) <span class="op">-</span> <span class="ident">rad</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-5</span>);
+            <span class="kw">let</span> (<span class="ident">deg</span>, <span class="ident">rad</span>) = (<span class="ident">deg</span> <span class="kw">as</span> <span class="ident">f32</span>, <span class="ident">rad</span> <span class="kw">as</span> <span class="ident">f32</span>);
+            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_degrees</span>(<span class="ident">rad</span>) - <span class="ident">deg</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-5</span>);
+            <span class="macro">assert!</span>((<span class="ident">FloatCore::to_radians</span>(<span class="ident">deg</span>) - <span class="ident">rad</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-5</span>);
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">convert_deg_rad_std</span>() {
         <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="ident">deg</span>, <span class="ident">rad</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">DEG_RAD_PAIRS</span> {
             <span class="kw">use</span> <span class="ident">Float</span>;
 
-            <span class="macro">assert!</span>((<span class="ident">Float::to_degrees</span>(<span class="ident">rad</span>) <span class="op">-</span> <span class="ident">deg</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-6</span>);
-            <span class="macro">assert!</span>((<span class="ident">Float::to_radians</span>(<span class="ident">deg</span>) <span class="op">-</span> <span class="ident">rad</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-6</span>);
+            <span class="macro">assert!</span>((<span class="ident">Float::to_degrees</span>(<span class="ident">rad</span>) - <span class="ident">deg</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-6</span>);
+            <span class="macro">assert!</span>((<span class="ident">Float::to_radians</span>(<span class="ident">deg</span>) - <span class="ident">rad</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-6</span>);
 
-            <span class="kw">let</span> (<span class="ident">deg</span>, <span class="ident">rad</span>) <span class="op">=</span> (<span class="ident">deg</span> <span class="kw">as</span> <span class="ident">f32</span>, <span class="ident">rad</span> <span class="kw">as</span> <span class="ident">f32</span>);
-            <span class="macro">assert!</span>((<span class="ident">Float::to_degrees</span>(<span class="ident">rad</span>) <span class="op">-</span> <span class="ident">deg</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-5</span>);
-            <span class="macro">assert!</span>((<span class="ident">Float::to_radians</span>(<span class="ident">deg</span>) <span class="op">-</span> <span class="ident">rad</span>).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="number">1e-5</span>);
+            <span class="kw">let</span> (<span class="ident">deg</span>, <span class="ident">rad</span>) = (<span class="ident">deg</span> <span class="kw">as</span> <span class="ident">f32</span>, <span class="ident">rad</span> <span class="kw">as</span> <span class="ident">f32</span>);
+            <span class="macro">assert!</span>((<span class="ident">Float::to_degrees</span>(<span class="ident">rad</span>) - <span class="ident">deg</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-5</span>);
+            <span class="macro">assert!</span>((<span class="ident">Float::to_radians</span>(<span class="ident">deg</span>) - <span class="ident">rad</span>).<span class="ident">abs</span>() &lt; <span class="number">1e-5</span>);
         }
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="comment">// This fails with the forwarded `std` implementation in Rust 1.8.</span>
     <span class="comment">// To avoid the failure, the test is limited to `no_std` builds.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">to_degrees_rounding</span>() {
         <span class="kw">use</span> <span class="ident">float::FloatCore</span>;
 
@@ -4636,34 +4636,34 @@
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">extra_logs</span>() {
         <span class="kw">use</span> <span class="ident">float</span>::{<span class="ident">Float</span>, <span class="ident">FloatConst</span>};
 
-        <span class="kw">fn</span> <span class="ident">check</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Float</span> <span class="op">+</span> <span class="ident">FloatConst</span><span class="op">&gt;</span>(<span class="ident">diff</span>: <span class="ident">F</span>) {
-            <span class="kw">let</span> <span class="ident">_2</span> <span class="op">=</span> <span class="ident">F::from</span>(<span class="number">2.0</span>).<span class="ident">unwrap</span>();
-            <span class="macro">assert!</span>((<span class="ident">F::LOG10_2</span>() <span class="op">-</span> <span class="ident">F::log10</span>(<span class="ident">_2</span>)).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="ident">diff</span>);
-            <span class="macro">assert!</span>((<span class="ident">F::LOG10_2</span>() <span class="op">-</span> <span class="ident">F::LN_2</span>() <span class="op">/</span> <span class="ident">F::LN_10</span>()).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="ident">diff</span>);
+        <span class="kw">fn</span> <span class="ident">check</span>&lt;<span class="ident">F</span>: <span class="ident">Float</span> + <span class="ident">FloatConst</span>&gt;(<span class="ident">diff</span>: <span class="ident">F</span>) {
+            <span class="kw">let</span> <span class="ident">_2</span> = <span class="ident">F::from</span>(<span class="number">2.0</span>).<span class="ident">unwrap</span>();
+            <span class="macro">assert!</span>((<span class="ident">F::LOG10_2</span>() - <span class="ident">F::log10</span>(<span class="ident">_2</span>)).<span class="ident">abs</span>() &lt; <span class="ident">diff</span>);
+            <span class="macro">assert!</span>((<span class="ident">F::LOG10_2</span>() - <span class="ident">F::LN_2</span>() / <span class="ident">F::LN_10</span>()).<span class="ident">abs</span>() &lt; <span class="ident">diff</span>);
 
-            <span class="kw">let</span> <span class="ident">_10</span> <span class="op">=</span> <span class="ident">F::from</span>(<span class="number">10.0</span>).<span class="ident">unwrap</span>();
-            <span class="macro">assert!</span>((<span class="ident">F::LOG2_10</span>() <span class="op">-</span> <span class="ident">F::log2</span>(<span class="ident">_10</span>)).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="ident">diff</span>);
-            <span class="macro">assert!</span>((<span class="ident">F::LOG2_10</span>() <span class="op">-</span> <span class="ident">F::LN_10</span>() <span class="op">/</span> <span class="ident">F::LN_2</span>()).<span class="ident">abs</span>() <span class="op">&lt;</span> <span class="ident">diff</span>);
+            <span class="kw">let</span> <span class="ident">_10</span> = <span class="ident">F::from</span>(<span class="number">10.0</span>).<span class="ident">unwrap</span>();
+            <span class="macro">assert!</span>((<span class="ident">F::LOG2_10</span>() - <span class="ident">F::log2</span>(<span class="ident">_10</span>)).<span class="ident">abs</span>() &lt; <span class="ident">diff</span>);
+            <span class="macro">assert!</span>((<span class="ident">F::LOG2_10</span>() - <span class="ident">F::LN_10</span>() / <span class="ident">F::LN_2</span>()).<span class="ident">abs</span>() &lt; <span class="ident">diff</span>);
         }
 
-        <span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>(<span class="number">1e-6</span>);
-        <span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>(<span class="number">1e-12</span>);
+        <span class="ident">check</span>::&lt;<span class="ident">f32</span>&gt;(<span class="number">1e-6</span>);
+        <span class="ident">check</span>::&lt;<span class="ident">f64</span>&gt;(<span class="number">1e-12</span>);
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">copysign</span>() {
         <span class="kw">use</span> <span class="ident">float::Float</span>;
-        <span class="ident">test_copysign_generic</span>(<span class="number">2.0_f32</span>, <span class="op">-</span><span class="number">2.0_f32</span>, <span class="ident">f32::nan</span>());
-        <span class="ident">test_copysign_generic</span>(<span class="number">2.0_f64</span>, <span class="op">-</span><span class="number">2.0_f64</span>, <span class="ident">f64::nan</span>());
-        <span class="ident">test_copysignf</span>(<span class="number">2.0_f32</span>, <span class="op">-</span><span class="number">2.0_f32</span>, <span class="ident">f32::nan</span>());
+        <span class="ident">test_copysign_generic</span>(<span class="number">2.0_f32</span>, -<span class="number">2.0_f32</span>, <span class="ident">f32::nan</span>());
+        <span class="ident">test_copysign_generic</span>(<span class="number">2.0_f64</span>, -<span class="number">2.0_f64</span>, <span class="ident">f64::nan</span>());
+        <span class="ident">test_copysignf</span>(<span class="number">2.0_f32</span>, -<span class="number">2.0_f32</span>, <span class="ident">f32::nan</span>());
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
     <span class="kw">fn</span> <span class="ident">test_copysignf</span>(<span class="ident">p</span>: <span class="ident">f32</span>, <span class="ident">n</span>: <span class="ident">f32</span>, <span class="ident">nan</span>: <span class="ident">f32</span>) {
         <span class="kw">use</span> <span class="ident">core::ops::Neg</span>;
         <span class="kw">use</span> <span class="ident">float::Float</span>;
@@ -4683,8 +4683,8 @@
         <span class="comment">// assert!(Float::copysign(nan, n).is_sign_negative());</span>
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;libm&quot;</span>))]</span>
-    <span class="kw">fn</span> <span class="ident">test_copysign_generic</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">::float::Float</span> <span class="op">+</span> <span class="ident">::core::fmt::Debug</span><span class="op">&gt;</span>(<span class="ident">p</span>: <span class="ident">F</span>, <span class="ident">n</span>: <span class="ident">F</span>, <span class="ident">nan</span>: <span class="ident">F</span>) {
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;std&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;libm&quot;</span>))]</span>
+    <span class="kw">fn</span> <span class="ident">test_copysign_generic</span>&lt;<span class="ident">F</span>: <span class="ident">::float::Float</span> + <span class="ident">::core::fmt::Debug</span>&gt;(<span class="ident">p</span>: <span class="ident">F</span>, <span class="ident">n</span>: <span class="ident">F</span>, <span class="ident">nan</span>: <span class="ident">F</span>) {
         <span class="macro">assert!</span>(<span class="ident">p</span>.<span class="ident">is_sign_positive</span>());
         <span class="macro">assert!</span>(<span class="ident">n</span>.<span class="ident">is_sign_negative</span>());
         <span class="macro">assert!</span>(<span class="ident">nan</span>.<span class="ident">is_nan</span>());
@@ -4701,4 +4701,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="num_traits" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="num_traits" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

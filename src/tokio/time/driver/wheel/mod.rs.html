@@ -394,7 +394,7 @@
     <span class="doccomment">/// * ~ 4 min slots / ~ 4 hr range</span>
     <span class="doccomment">/// * ~ 4 hr slots / ~ 12 day range</span>
     <span class="doccomment">/// * ~ 12 day slots / ~ 2 yr range</span>
-    <span class="ident">levels</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Level</span><span class="op">&gt;</span>,
+    <span class="ident">levels</span>: <span class="ident">Vec</span>&lt;<span class="ident">Level</span>&gt;,
 
     <span class="doccomment">/// Entries queued for firing</span>
     <span class="ident">pending</span>: <span class="ident">EntryList</span>,
@@ -403,15 +403,15 @@
 <span class="doccomment">/// Number of levels. Each level has 64 slots. By using 6 levels with 64 slots</span>
 <span class="doccomment">/// each, the timer is able to track time up to 2 years into the future with a</span>
 <span class="doccomment">/// precision of 1 millisecond.</span>
-<span class="kw">const</span> <span class="ident">NUM_LEVELS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">6</span>;
+<span class="kw">const</span> <span class="ident">NUM_LEVELS</span>: <span class="ident">usize</span> = <span class="number">6</span>;
 
 <span class="doccomment">/// The maximum duration of a `Sleep`.</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const</span> <span class="ident">MAX_DURATION</span>: <span class="ident">u64</span> <span class="op">=</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> (<span class="number">6</span> <span class="op">*</span> <span class="ident">NUM_LEVELS</span>)) <span class="op">-</span> <span class="number">1</span>;
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const</span> <span class="ident">MAX_DURATION</span>: <span class="ident">u64</span> = (<span class="number">1</span> &lt;&lt; (<span class="number">6</span> * <span class="ident">NUM_LEVELS</span>)) - <span class="number">1</span>;
 
 <span class="kw">impl</span> <span class="ident">Wheel</span> {
     <span class="doccomment">/// Creates a new timing wheel.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">Wheel</span> {
-        <span class="kw">let</span> <span class="ident">levels</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">NUM_LEVELS</span>).<span class="ident">map</span>(<span class="ident">Level::new</span>).<span class="ident">collect</span>();
+        <span class="kw">let</span> <span class="ident">levels</span> = (<span class="number">0</span>..<span class="ident">NUM_LEVELS</span>).<span class="ident">map</span>(<span class="ident">Level::new</span>).<span class="ident">collect</span>();
 
         <span class="ident">Wheel</span> {
             <span class="ident">elapsed</span>: <span class="number">0</span>,
@@ -450,15 +450,15 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">insert</span>(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">item</span>: <span class="ident">TimerHandle</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span>, (<span class="ident">TimerHandle</span>, <span class="ident">InsertError</span>)<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">when</span> <span class="op">=</span> <span class="ident">item</span>.<span class="ident">sync_when</span>();
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u64</span>, (<span class="ident">TimerHandle</span>, <span class="ident">InsertError</span>)&gt; {
+        <span class="kw">let</span> <span class="ident">when</span> = <span class="ident">item</span>.<span class="ident">sync_when</span>();
 
-        <span class="kw">if</span> <span class="ident">when</span> <span class="op">&lt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">elapsed</span> {
+        <span class="kw">if</span> <span class="ident">when</span> &lt;= <span class="self">self</span>.<span class="ident">elapsed</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>((<span class="ident">item</span>, <span class="ident">InsertError::Elapsed</span>));
         }
 
         <span class="comment">// Get the level at which the entry should be stored</span>
-        <span class="kw">let</span> <span class="ident">level</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">level_for</span>(<span class="ident">when</span>);
+        <span class="kw">let</span> <span class="ident">level</span> = <span class="self">self</span>.<span class="ident">level_for</span>(<span class="ident">when</span>);
 
         <span class="kw">unsafe</span> {
             <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>].<span class="ident">add_entry</span>(<span class="ident">item</span>);
@@ -467,7 +467,7 @@
         <span class="macro">debug_assert!</span>({
             <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>]
                 .<span class="ident">next_expiration</span>(<span class="self">self</span>.<span class="ident">elapsed</span>)
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">deadline</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">elapsed</span>)
+                .<span class="ident">map</span>(|<span class="ident">e</span>| <span class="ident">e</span>.<span class="ident">deadline</span> &gt;= <span class="self">self</span>.<span class="ident">elapsed</span>)
                 .<span class="ident">unwrap_or</span>(<span class="bool-val">true</span>)
         });
 
@@ -475,20 +475,20 @@
     }
 
     <span class="doccomment">/// Removes `item` from the timing wheel.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">remove</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">TimerShared</span><span class="op">&gt;</span>) {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">remove</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">NonNull</span>&lt;<span class="ident">TimerShared</span>&gt;) {
         <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">when</span> <span class="op">=</span> <span class="ident">item</span>.<span class="ident">as_ref</span>().<span class="ident">cached_when</span>();
-            <span class="kw">if</span> <span class="ident">when</span> <span class="op">==</span> <span class="ident">u64::MAX</span> {
+            <span class="kw">let</span> <span class="ident">when</span> = <span class="ident">item</span>.<span class="ident">as_ref</span>().<span class="ident">cached_when</span>();
+            <span class="kw">if</span> <span class="ident">when</span> == <span class="ident">u64::MAX</span> {
                 <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">remove</span>(<span class="ident">item</span>);
             } <span class="kw">else</span> {
                 <span class="macro">debug_assert!</span>(
-                    <span class="self">self</span>.<span class="ident">elapsed</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">when</span>,
+                    <span class="self">self</span>.<span class="ident">elapsed</span> &lt;= <span class="ident">when</span>,
                     <span class="string">&quot;elapsed={}; when={}&quot;</span>,
                     <span class="self">self</span>.<span class="ident">elapsed</span>,
                     <span class="ident">when</span>
                 );
 
-                <span class="kw">let</span> <span class="ident">level</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">level_for</span>(<span class="ident">when</span>);
+                <span class="kw">let</span> <span class="ident">level</span> = <span class="self">self</span>.<span class="ident">level_for</span>(<span class="ident">when</span>);
 
                 <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>].<span class="ident">remove_entry</span>(<span class="ident">item</span>);
             }
@@ -496,20 +496,20 @@
     }
 
     <span class="doccomment">/// Instant at which to poll.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">poll_at</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">expiration</span><span class="op">|</span> <span class="ident">expiration</span>.<span class="ident">deadline</span>)
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">poll_at</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt; {
+        <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">map</span>(|<span class="ident">expiration</span>| <span class="ident">expiration</span>.<span class="ident">deadline</span>)
     }
 
     <span class="doccomment">/// Advances the timer up to the instant represented by `now`.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">now</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TimerHandle</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">now</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">TimerHandle</span>&gt; {
         <span class="kw">loop</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">handle</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">pop_back</span>() {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">handle</span>) = <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">pop_back</span>() {
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">handle</span>);
             }
 
             <span class="comment">// under what circumstances is poll.expiration Some vs. None?</span>
-            <span class="kw">let</span> <span class="ident">expiration</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">expiration</span><span class="op">|</span> {
-                <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">deadline</span> <span class="op">&gt;</span> <span class="ident">now</span> {
+            <span class="kw">let</span> <span class="ident">expiration</span> = <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">and_then</span>(|<span class="ident">expiration</span>| {
+                <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">deadline</span> &gt; <span class="ident">now</span> {
                     <span class="prelude-val">None</span>
                 } <span class="kw">else</span> {
                     <span class="prelude-val">Some</span>(<span class="ident">expiration</span>)
@@ -517,7 +517,7 @@
             });
 
             <span class="kw">match</span> <span class="ident">expiration</span> {
-                <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">expiration</span>) <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">deadline</span> <span class="op">&gt;</span> <span class="ident">now</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
+                <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">expiration</span>) <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">deadline</span> &gt; <span class="ident">now</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
                 <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">expiration</span>) =&gt; {
                     <span class="self">self</span>.<span class="ident">process_expiration</span>(<span class="ident">expiration</span>);
 
@@ -538,8 +538,8 @@
     }
 
     <span class="doccomment">/// Returns the instant at which the next timeout expires.</span>
-    <span class="kw">fn</span> <span class="ident">next_expiration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Expiration</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">is_empty</span>() {
+    <span class="kw">fn</span> <span class="ident">next_expiration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Expiration</span>&gt; {
+        <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">is_empty</span>() {
             <span class="comment">// Expire immediately as we have things pending firing</span>
             <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">Expiration</span> {
                 <span class="ident">level</span>: <span class="number">0</span>,
@@ -550,10 +550,10 @@
 
         <span class="comment">// Check all levels</span>
         <span class="kw">for</span> <span class="ident">level</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">NUM_LEVELS</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">expiration</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>].<span class="ident">next_expiration</span>(<span class="self">self</span>.<span class="ident">elapsed</span>) {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">expiration</span>) = <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>].<span class="ident">next_expiration</span>(<span class="self">self</span>.<span class="ident">elapsed</span>) {
                 <span class="comment">// There cannot be any expirations at a higher level that happen</span>
                 <span class="comment">// before this one.</span>
-                <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">no_expirations_before</span>(<span class="ident">level</span> <span class="op">+</span> <span class="number">1</span>, <span class="ident">expiration</span>.<span class="ident">deadline</span>));
+                <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">no_expirations_before</span>(<span class="ident">level</span> + <span class="number">1</span>, <span class="ident">expiration</span>.<span class="ident">deadline</span>));
 
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">expiration</span>);
             }
@@ -564,18 +564,18 @@
 
     <span class="doccomment">/// Returns the tick at which this timer wheel next needs to perform some</span>
     <span class="doccomment">/// processing, or None if there are no timers registered.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">next_expiration_time</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ex</span><span class="op">|</span> <span class="ident">ex</span>.<span class="ident">deadline</span>)
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">next_expiration_time</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt; {
+        <span class="self">self</span>.<span class="ident">next_expiration</span>().<span class="ident">map</span>(|<span class="ident">ex</span>| <span class="ident">ex</span>.<span class="ident">deadline</span>)
     }
 
     <span class="doccomment">/// Used for debug assertions</span>
     <span class="kw">fn</span> <span class="ident">no_expirations_before</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">start_level</span>: <span class="ident">usize</span>, <span class="ident">before</span>: <span class="ident">u64</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> = <span class="bool-val">true</span>;
 
         <span class="kw">for</span> <span class="ident">l2</span> <span class="kw">in</span> <span class="ident">start_level</span>..<span class="ident">NUM_LEVELS</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e2</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">l2</span>].<span class="ident">next_expiration</span>(<span class="self">self</span>.<span class="ident">elapsed</span>) {
-                <span class="kw">if</span> <span class="ident">e2</span>.<span class="ident">deadline</span> <span class="op">&lt;</span> <span class="ident">before</span> {
-                    <span class="ident">res</span> <span class="op">=</span> <span class="bool-val">false</span>;
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e2</span>) = <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">l2</span>].<span class="ident">next_expiration</span>(<span class="self">self</span>.<span class="ident">elapsed</span>) {
+                <span class="kw">if</span> <span class="ident">e2</span>.<span class="ident">deadline</span> &lt; <span class="ident">before</span> {
+                    <span class="ident">res</span> = <span class="bool-val">false</span>;
                 }
             }
         }
@@ -598,10 +598,10 @@
         <span class="comment">// they actually need to be dropped down a level. We then reinsert them</span>
         <span class="comment">// back into the same position; we must make sure we don&#39;t then process</span>
         <span class="comment">// those entries again or we&#39;ll end up in an infinite loop.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entries</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_entries</span>(<span class="ident">expiration</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entries</span> = <span class="self">self</span>.<span class="ident">take_entries</span>(<span class="ident">expiration</span>);
 
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="ident">entries</span>.<span class="ident">pop_back</span>() {
-            <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">level</span> <span class="op">==</span> <span class="number">0</span> {
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) = <span class="ident">entries</span>.<span class="ident">pop_back</span>() {
+            <span class="kw">if</span> <span class="ident">expiration</span>.<span class="ident">level</span> == <span class="number">0</span> {
                 <span class="macro">debug_assert_eq!</span>(<span class="kw">unsafe</span> { <span class="ident">item</span>.<span class="ident">cached_when</span>() }, <span class="ident">expiration</span>.<span class="ident">deadline</span>);
             }
 
@@ -613,7 +613,7 @@
                     <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">push_front</span>(<span class="ident">item</span>);
                 }
                 <span class="prelude-val">Err</span>(<span class="ident">expiration_tick</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">level</span> <span class="op">=</span> <span class="ident">level_for</span>(<span class="ident">expiration</span>.<span class="ident">deadline</span>, <span class="ident">expiration_tick</span>);
+                    <span class="kw">let</span> <span class="ident">level</span> = <span class="ident">level_for</span>(<span class="ident">expiration</span>.<span class="ident">deadline</span>, <span class="ident">expiration_tick</span>);
                     <span class="kw">unsafe</span> {
                         <span class="self">self</span>.<span class="ident">levels</span>[<span class="ident">level</span>].<span class="ident">add_entry</span>(<span class="ident">item</span>);
                     }
@@ -624,14 +624,14 @@
 
     <span class="kw">fn</span> <span class="ident">set_elapsed</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">when</span>: <span class="ident">u64</span>) {
         <span class="macro">assert!</span>(
-            <span class="self">self</span>.<span class="ident">elapsed</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">when</span>,
+            <span class="self">self</span>.<span class="ident">elapsed</span> &lt;= <span class="ident">when</span>,
             <span class="string">&quot;elapsed={:?}; when={:?}&quot;</span>,
             <span class="self">self</span>.<span class="ident">elapsed</span>,
             <span class="ident">when</span>
         );
 
-        <span class="kw">if</span> <span class="ident">when</span> <span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">elapsed</span> {
-            <span class="self">self</span>.<span class="ident">elapsed</span> <span class="op">=</span> <span class="ident">when</span>;
+        <span class="kw">if</span> <span class="ident">when</span> &gt; <span class="self">self</span>.<span class="ident">elapsed</span> {
+            <span class="self">self</span>.<span class="ident">elapsed</span> = <span class="ident">when</span>;
         }
     }
 
@@ -647,21 +647,21 @@
 }
 
 <span class="kw">fn</span> <span class="ident">level_for</span>(<span class="ident">elapsed</span>: <span class="ident">u64</span>, <span class="ident">when</span>: <span class="ident">u64</span>) -&gt; <span class="ident">usize</span> {
-    <span class="kw">const</span> <span class="ident">SLOT_MASK</span>: <span class="ident">u64</span> <span class="op">=</span> (<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">6</span>) <span class="op">-</span> <span class="number">1</span>;
+    <span class="kw">const</span> <span class="ident">SLOT_MASK</span>: <span class="ident">u64</span> = (<span class="number">1</span> &lt;&lt; <span class="number">6</span>) - <span class="number">1</span>;
 
     <span class="comment">// Mask in the trailing bits ignored by the level calculation in order to cap</span>
     <span class="comment">// the possible leading zeros</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">masked</span> <span class="op">=</span> <span class="ident">elapsed</span> <span class="op">^</span> <span class="ident">when</span> <span class="op">|</span> <span class="ident">SLOT_MASK</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">masked</span> = <span class="ident">elapsed</span> ^ <span class="ident">when</span> | <span class="ident">SLOT_MASK</span>;
 
-    <span class="kw">if</span> <span class="ident">masked</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_DURATION</span> {
+    <span class="kw">if</span> <span class="ident">masked</span> &gt;= <span class="ident">MAX_DURATION</span> {
         <span class="comment">// Fudge the timer into the top level</span>
-        <span class="ident">masked</span> <span class="op">=</span> <span class="ident">MAX_DURATION</span> <span class="op">-</span> <span class="number">1</span>;
+        <span class="ident">masked</span> = <span class="ident">MAX_DURATION</span> - <span class="number">1</span>;
     }
 
-    <span class="kw">let</span> <span class="ident">leading_zeros</span> <span class="op">=</span> <span class="ident">masked</span>.<span class="ident">leading_zeros</span>() <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">significant</span> <span class="op">=</span> <span class="number">63</span> <span class="op">-</span> <span class="ident">leading_zeros</span>;
+    <span class="kw">let</span> <span class="ident">leading_zeros</span> = <span class="ident">masked</span>.<span class="ident">leading_zeros</span>() <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="kw">let</span> <span class="ident">significant</span> = <span class="number">63</span> - <span class="ident">leading_zeros</span>;
 
-    <span class="ident">significant</span> <span class="op">/</span> <span class="number">6</span>
+    <span class="ident">significant</span> / <span class="number">6</span>
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">not</span>(<span class="ident">loom</span>)))]</span>
@@ -682,7 +682,7 @@
 
         <span class="kw">for</span> <span class="ident">level</span> <span class="kw">in</span> <span class="number">1</span>..<span class="number">5</span> {
             <span class="kw">for</span> <span class="ident">pos</span> <span class="kw">in</span> <span class="ident">level</span>..<span class="number">64</span> {
-                <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">pos</span> <span class="op">*</span> <span class="number">64_usize</span>.<span class="ident">pow</span>(<span class="ident">level</span> <span class="kw">as</span> <span class="ident">u32</span>);
+                <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">pos</span> * <span class="number">64_usize</span>.<span class="ident">pow</span>(<span class="ident">level</span> <span class="kw">as</span> <span class="ident">u32</span>);
                 <span class="macro">assert_eq!</span>(
                     <span class="ident">level</span>,
                     <span class="ident">level_for</span>(<span class="number">0</span>, <span class="ident">a</span> <span class="kw">as</span> <span class="ident">u64</span>),
@@ -691,8 +691,8 @@
                     <span class="ident">a</span>
                 );
 
-                <span class="kw">if</span> <span class="ident">pos</span> <span class="op">&gt;</span> <span class="ident">level</span> {
-                    <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">a</span> <span class="op">-</span> <span class="number">1</span>;
+                <span class="kw">if</span> <span class="ident">pos</span> &gt; <span class="ident">level</span> {
+                    <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">a</span> - <span class="number">1</span>;
                     <span class="macro">assert_eq!</span>(
                         <span class="ident">level</span>,
                         <span class="ident">level_for</span>(<span class="number">0</span>, <span class="ident">a</span> <span class="kw">as</span> <span class="ident">u64</span>),
@@ -702,8 +702,8 @@
                     );
                 }
 
-                <span class="kw">if</span> <span class="ident">pos</span> <span class="op">&lt;</span> <span class="number">64</span> {
-                    <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">a</span> <span class="op">+</span> <span class="number">1</span>;
+                <span class="kw">if</span> <span class="ident">pos</span> &lt; <span class="number">64</span> {
+                    <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">a</span> + <span class="number">1</span>;
                     <span class="macro">assert_eq!</span>(
                         <span class="ident">level</span>,
                         <span class="ident">level_for</span>(<span class="number">0</span>, <span class="ident">a</span> <span class="kw">as</span> <span class="ident">u64</span>),
@@ -717,4 +717,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

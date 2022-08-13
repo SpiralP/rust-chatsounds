@@ -462,21 +462,21 @@
     <span class="doccomment">/// # Ok(())</span>
     <span class="doccomment">/// # }</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">init</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">init</span>: <span class="ident">F</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span>(<span class="ident">T</span>, <span class="ident">SockAddr</span>)<span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">init</span>&lt;<span class="ident">F</span>, <span class="ident">T</span>&gt;(<span class="ident">init</span>: <span class="ident">F</span>) -&gt; <span class="ident">io::Result</span>&lt;(<span class="ident">T</span>, <span class="ident">SockAddr</span>)&gt;
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">*mut</span> <span class="ident">sockaddr_storage</span>, <span class="kw-2">*mut</span> <span class="ident">socklen_t</span>) -&gt; <span class="ident">io::Result</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">*mut</span> <span class="ident">sockaddr_storage</span>, <span class="kw-2">*mut</span> <span class="ident">socklen_t</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">T</span>&gt;,
     {
-        <span class="kw">const</span> <span class="ident">STORAGE_SIZE</span>: <span class="ident">socklen_t</span> <span class="op">=</span> <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_storage</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>;
+        <span class="kw">const</span> <span class="ident">STORAGE_SIZE</span>: <span class="ident">socklen_t</span> = <span class="ident">size_of</span>::&lt;<span class="ident">sockaddr_storage</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>;
         <span class="comment">// NOTE: `SockAddr::unix` depends on the storage being zeroed before</span>
         <span class="comment">// calling `init`.</span>
         <span class="comment">// NOTE: calling `recvfrom` with an empty buffer also depends on the</span>
         <span class="comment">// storage being zeroed before calling `init` as the OS might not</span>
         <span class="comment">// initialise it.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> <span class="op">=</span> <span class="ident">MaybeUninit</span>::<span class="op">&lt;</span><span class="ident">sockaddr_storage</span><span class="op">&gt;</span><span class="ident">::zeroed</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">STORAGE_SIZE</span>;
-        <span class="ident">init</span>(<span class="ident">storage</span>.<span class="ident">as_mut_ptr</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">len</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> {
-            <span class="macro">debug_assert!</span>(<span class="ident">len</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">STORAGE_SIZE</span>, <span class="string">&quot;overflown address storage&quot;</span>);
-            <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SockAddr</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> = <span class="ident">MaybeUninit</span>::&lt;<span class="ident">sockaddr_storage</span>&gt;<span class="ident">::zeroed</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> = <span class="ident">STORAGE_SIZE</span>;
+        <span class="ident">init</span>(<span class="ident">storage</span>.<span class="ident">as_mut_ptr</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">len</span>).<span class="ident">map</span>(|<span class="ident">res</span>| {
+            <span class="macro">debug_assert!</span>(<span class="ident">len</span> &lt;= <span class="ident">STORAGE_SIZE</span>, <span class="string">&quot;overflown address storage&quot;</span>);
+            <span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">SockAddr</span> {
                 <span class="comment">// Safety: zeroed-out `sockaddr_storage` is valid, caller must</span>
                 <span class="comment">// ensure at least `len` bytes are valid.</span>
                 <span class="ident">storage</span>: <span class="ident">storage</span>.<span class="ident">assume_init</span>(),
@@ -502,27 +502,27 @@
     }
 
     <span class="doccomment">/// Returns a raw pointer to the address storage.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">unix</span>, <span class="ident">not</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;redox&quot;</span>)))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">unix</span>, <span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>)))]</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">as_storage_ptr</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const</span> <span class="ident">sockaddr_storage</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span>
     }
 
     <span class="doccomment">/// Returns this address as a `SocketAddr` if it is in the `AF_INET` (IPv4)</span>
     <span class="doccomment">/// or `AF_INET6` (IPv6) family, otherwise returns `None`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_family</span> <span class="op">==</span> <span class="ident">AF_INET</span> <span class="kw">as</span> <span class="ident">sa_family_t</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">SocketAddr</span>&gt; {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_family</span> == <span class="ident">AF_INET</span> <span class="kw">as</span> <span class="ident">sa_family_t</span> {
             <span class="comment">// Safety: if the ss_family field is AF_INET then storage must be a sockaddr_in.</span>
-            <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">sockaddr_in</span>) };
+            <span class="kw">let</span> <span class="ident">addr</span> = <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">sockaddr_in</span>) };
 
-            <span class="kw">let</span> <span class="ident">ip</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::sys::from_in_addr</span>(<span class="ident">addr</span>.<span class="ident">sin_addr</span>);
-            <span class="kw">let</span> <span class="ident">port</span> <span class="op">=</span> <span class="ident">u16::from_be</span>(<span class="ident">addr</span>.<span class="ident">sin_port</span>);
+            <span class="kw">let</span> <span class="ident">ip</span> = <span class="ident"><span class="kw">crate</span>::sys::from_in_addr</span>(<span class="ident">addr</span>.<span class="ident">sin_addr</span>);
+            <span class="kw">let</span> <span class="ident">port</span> = <span class="ident">u16::from_be</span>(<span class="ident">addr</span>.<span class="ident">sin_port</span>);
             <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V4</span>(<span class="ident">SocketAddrV4::new</span>(<span class="ident">ip</span>, <span class="ident">port</span>)))
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_family</span> <span class="op">==</span> <span class="ident">AF_INET6</span> <span class="kw">as</span> <span class="ident">sa_family_t</span> {
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_family</span> == <span class="ident">AF_INET6</span> <span class="kw">as</span> <span class="ident">sa_family_t</span> {
             <span class="comment">// Safety: if the ss_family field is AF_INET6 then storage must be a sockaddr_in6.</span>
-            <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">sockaddr_in6</span>) };
+            <span class="kw">let</span> <span class="ident">addr</span> = <span class="kw">unsafe</span> { <span class="kw-2">&amp;</span><span class="kw-2">*</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">sockaddr_in6</span>) };
 
-            <span class="kw">let</span> <span class="ident">ip</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::sys::from_in6_addr</span>(<span class="ident">addr</span>.<span class="ident">sin6_addr</span>);
-            <span class="kw">let</span> <span class="ident">port</span> <span class="op">=</span> <span class="ident">u16::from_be</span>(<span class="ident">addr</span>.<span class="ident">sin6_port</span>);
+            <span class="kw">let</span> <span class="ident">ip</span> = <span class="ident"><span class="kw">crate</span>::sys::from_in6_addr</span>(<span class="ident">addr</span>.<span class="ident">sin6_addr</span>);
+            <span class="kw">let</span> <span class="ident">port</span> = <span class="ident">u16::from_be</span>(<span class="ident">addr</span>.<span class="ident">sin6_port</span>);
             <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V6</span>(<span class="ident">SocketAddrV6::new</span>(
                 <span class="ident">ip</span>,
                 <span class="ident">port</span>,
@@ -541,7 +541,7 @@
 
     <span class="doccomment">/// Returns this address as a [`SocketAddrV4`] if it is in the `AF_INET`</span>
     <span class="doccomment">/// family.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket_ipv4</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SocketAddrV4</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket_ipv4</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">SocketAddrV4</span>&gt; {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">as_socket</span>() {
             <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V4</span>(<span class="ident">addr</span>)) =&gt; <span class="prelude-val">Some</span>(<span class="ident">addr</span>),
             <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
@@ -550,7 +550,7 @@
 
     <span class="doccomment">/// Returns this address as a [`SocketAddrV6`] if it is in the `AF_INET6`</span>
     <span class="doccomment">/// family.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket_ipv6</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SocketAddrV6</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_socket_ipv6</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">SocketAddrV6</span>&gt; {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">as_socket</span>() {
             <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V6</span>(<span class="ident">addr</span>)) =&gt; <span class="prelude-val">Some</span>(<span class="ident">addr</span>),
             <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
@@ -558,7 +558,7 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SockAddr</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">SocketAddr</span>&gt; <span class="kw">for</span> <span class="ident">SockAddr</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">SocketAddr</span>) -&gt; <span class="ident">SockAddr</span> {
         <span class="kw">match</span> <span class="ident">addr</span> {
             <span class="ident">SocketAddr::V4</span>(<span class="ident">addr</span>) =&gt; <span class="ident">addr</span>.<span class="ident">into</span>(),
@@ -567,44 +567,44 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SocketAddrV4</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SockAddr</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">SocketAddrV4</span>&gt; <span class="kw">for</span> <span class="ident">SockAddr</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">SocketAddrV4</span>) -&gt; <span class="ident">SockAddr</span> {
-        <span class="kw">let</span> <span class="ident">sockaddr_in</span> <span class="op">=</span> <span class="ident">sockaddr_in</span> {
+        <span class="kw">let</span> <span class="ident">sockaddr_in</span> = <span class="ident">sockaddr_in</span> {
             <span class="ident">sin_family</span>: <span class="ident">AF_INET</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>,
             <span class="ident">sin_port</span>: <span class="ident">addr</span>.<span class="ident">port</span>().<span class="ident">to_be</span>(),
             <span class="ident">sin_addr</span>: <span class="ident"><span class="kw">crate</span>::sys::to_in_addr</span>(<span class="ident">addr</span>.<span class="ident">ip</span>()),
             <span class="ident">sin_zero</span>: <span class="ident">Default::default</span>(),
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;dragonfly&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;freebsd&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;haiku&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;ios&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;macos&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;netbsd&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>
+                <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;haiku&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;netbsd&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;openbsd&quot;</span>
             ))]</span>
             <span class="ident">sin_len</span>: <span class="number">0</span>,
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> <span class="op">=</span> <span class="ident">MaybeUninit</span>::<span class="op">&lt;</span><span class="ident">sockaddr_storage</span><span class="op">&gt;</span><span class="ident">::zeroed</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> = <span class="ident">MaybeUninit</span>::&lt;<span class="ident">sockaddr_storage</span>&gt;<span class="ident">::zeroed</span>();
         <span class="comment">// Safety: A `sockaddr_in` is memory compatible with a `sockaddr_storage`</span>
         <span class="kw">unsafe</span> { (<span class="ident">storage</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">sockaddr_in</span>).<span class="ident">write</span>(<span class="ident">sockaddr_in</span>) };
         <span class="ident">SockAddr</span> {
             <span class="ident">storage</span>: <span class="kw">unsafe</span> { <span class="ident">storage</span>.<span class="ident">assume_init</span>() },
-            <span class="ident">len</span>: <span class="ident">mem::size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>,
+            <span class="ident">len</span>: <span class="ident">mem::size_of</span>::&lt;<span class="ident">sockaddr_in</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SocketAddrV6</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SockAddr</span> {
+<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">SocketAddrV6</span>&gt; <span class="kw">for</span> <span class="ident">SockAddr</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">SocketAddrV6</span>) -&gt; <span class="ident">SockAddr</span> {
         <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">windows</span>)]</span>
-        <span class="kw">let</span> <span class="ident">u</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">u</span> <span class="op">=</span> <span class="ident">mem::zeroed</span>::<span class="op">&lt;</span><span class="ident">SOCKADDR_IN6_LH_u</span><span class="op">&gt;</span>();
-            <span class="kw-2">*</span><span class="ident">u</span>.<span class="ident">sin6_scope_id_mut</span>() <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">scope_id</span>();
+        <span class="kw">let</span> <span class="ident">u</span> = <span class="kw">unsafe</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">u</span> = <span class="ident">mem::zeroed</span>::&lt;<span class="ident">SOCKADDR_IN6_LH_u</span>&gt;();
+            <span class="kw-2">*</span><span class="ident">u</span>.<span class="ident">sin6_scope_id_mut</span>() = <span class="ident">addr</span>.<span class="ident">scope_id</span>();
             <span class="ident">u</span>
         };
 
-        <span class="kw">let</span> <span class="ident">sockaddr_in6</span> <span class="op">=</span> <span class="ident">sockaddr_in6</span> {
+        <span class="kw">let</span> <span class="ident">sockaddr_in6</span> = <span class="ident">sockaddr_in6</span> {
             <span class="ident">sin6_family</span>: <span class="ident">AF_INET6</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>,
             <span class="ident">sin6_port</span>: <span class="ident">addr</span>.<span class="ident">port</span>().<span class="ident">to_be</span>(),
             <span class="ident">sin6_addr</span>: <span class="ident"><span class="kw">crate</span>::sys::to_in6_addr</span>(<span class="ident">addr</span>.<span class="ident">ip</span>()),
@@ -614,41 +614,41 @@
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">windows</span>)]</span>
             <span class="ident">u</span>,
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;dragonfly&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;freebsd&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;haiku&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;ios&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;macos&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;netbsd&quot;</span>,
-                <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>
+                <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;haiku&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;netbsd&quot;</span>,
+                <span class="ident">target_os</span> = <span class="string">&quot;openbsd&quot;</span>
             ))]</span>
             <span class="ident">sin6_len</span>: <span class="number">0</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;solaris&quot;</span>, <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;illumos&quot;</span>))]</span>
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;solaris&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;illumos&quot;</span>))]</span>
             <span class="ident">__sin6_src_id</span>: <span class="number">0</span>,
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> <span class="op">=</span> <span class="ident">MaybeUninit</span>::<span class="op">&lt;</span><span class="ident">sockaddr_storage</span><span class="op">&gt;</span><span class="ident">::zeroed</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">storage</span> = <span class="ident">MaybeUninit</span>::&lt;<span class="ident">sockaddr_storage</span>&gt;<span class="ident">::zeroed</span>();
         <span class="comment">// Safety: A `sockaddr_in6` is memory compatible with a `sockaddr_storage`</span>
         <span class="kw">unsafe</span> { (<span class="ident">storage</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">sockaddr_in6</span>).<span class="ident">write</span>(<span class="ident">sockaddr_in6</span>) };
         <span class="ident">SockAddr</span> {
             <span class="ident">storage</span>: <span class="kw">unsafe</span> { <span class="ident">storage</span>.<span class="ident">assume_init</span>() },
-            <span class="ident">len</span>: <span class="ident">mem::size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in6</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>,
+            <span class="ident">len</span>: <span class="ident">mem::size_of</span>::&lt;<span class="ident">sockaddr_in6</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>,
         }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">SockAddr</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;SockAddr&quot;</span>);
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">f</span> = <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;SockAddr&quot;</span>);
         <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;dragonfly&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;freebsd&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;haiku&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;hermit&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;ios&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;macos&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;netbsd&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>,
-            <span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;vxworks&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;haiku&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;hermit&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;netbsd&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;openbsd&quot;</span>,
+            <span class="ident">target_os</span> = <span class="string">&quot;vxworks&quot;</span>,
         ))]</span>
         <span class="ident">f</span>.<span class="ident">field</span>(<span class="string">&quot;ss_len&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_len</span>);
         <span class="ident">f</span>.<span class="ident">field</span>(<span class="string">&quot;ss_family&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">storage</span>.<span class="ident">ss_family</span>)
@@ -660,17 +660,17 @@
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">ipv4</span>() {
     <span class="kw">use</span> <span class="ident">std::net::Ipv4Addr</span>;
-    <span class="kw">let</span> <span class="ident">std</span> <span class="op">=</span> <span class="ident">SocketAddrV4::new</span>(<span class="ident">Ipv4Addr::new</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>), <span class="number">9876</span>);
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SockAddr::from</span>(<span class="ident">std</span>);
+    <span class="kw">let</span> <span class="ident">std</span> = <span class="ident">SocketAddrV4::new</span>(<span class="ident">Ipv4Addr::new</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>), <span class="number">9876</span>);
+    <span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">SockAddr::from</span>(<span class="ident">std</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">family</span>(), <span class="ident">AF_INET</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>);
+    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::&lt;<span class="ident">sockaddr_in</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket</span>(), <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V4</span>(<span class="ident">std</span>)));
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv4</span>(), <span class="prelude-val">Some</span>(<span class="ident">std</span>));
     <span class="macro">assert!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv6</span>().<span class="ident">is_none</span>());
 
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SockAddr::from</span>(<span class="ident">SocketAddr::from</span>(<span class="ident">std</span>));
+    <span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">SockAddr::from</span>(<span class="ident">SocketAddr::from</span>(<span class="ident">std</span>));
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">family</span>(), <span class="ident">AF_INET</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>);
+    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::&lt;<span class="ident">sockaddr_in</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket</span>(), <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V4</span>(<span class="ident">std</span>)));
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv4</span>(), <span class="prelude-val">Some</span>(<span class="ident">std</span>));
     <span class="macro">assert!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv6</span>().<span class="ident">is_none</span>());
@@ -679,20 +679,20 @@
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">ipv6</span>() {
     <span class="kw">use</span> <span class="ident">std::net::Ipv6Addr</span>;
-    <span class="kw">let</span> <span class="ident">std</span> <span class="op">=</span> <span class="ident">SocketAddrV6::new</span>(<span class="ident">Ipv6Addr::new</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>), <span class="number">9876</span>, <span class="number">11</span>, <span class="number">12</span>);
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SockAddr::from</span>(<span class="ident">std</span>);
+    <span class="kw">let</span> <span class="ident">std</span> = <span class="ident">SocketAddrV6::new</span>(<span class="ident">Ipv6Addr::new</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>), <span class="number">9876</span>, <span class="number">11</span>, <span class="number">12</span>);
+    <span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">SockAddr::from</span>(<span class="ident">std</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">family</span>(), <span class="ident">AF_INET6</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in6</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>);
+    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::&lt;<span class="ident">sockaddr_in6</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket</span>(), <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V6</span>(<span class="ident">std</span>)));
     <span class="macro">assert!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv4</span>().<span class="ident">is_none</span>());
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv6</span>(), <span class="prelude-val">Some</span>(<span class="ident">std</span>));
 
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SockAddr::from</span>(<span class="ident">SocketAddr::from</span>(<span class="ident">std</span>));
+    <span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">SockAddr::from</span>(<span class="ident">SocketAddr::from</span>(<span class="ident">std</span>));
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">family</span>(), <span class="ident">AF_INET6</span> <span class="kw">as</span> <span class="ident">sa_family_t</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">sockaddr_in6</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">socklen_t</span>);
+    <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">len</span>(), <span class="ident">size_of</span>::&lt;<span class="ident">sockaddr_in6</span>&gt;() <span class="kw">as</span> <span class="ident">socklen_t</span>);
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket</span>(), <span class="prelude-val">Some</span>(<span class="ident">SocketAddr::V6</span>(<span class="ident">std</span>)));
     <span class="macro">assert!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv4</span>().<span class="ident">is_none</span>());
     <span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_socket_ipv6</span>(), <span class="prelude-val">Some</span>(<span class="ident">std</span>));
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="socket2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="socket2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

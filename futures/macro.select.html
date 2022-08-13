@@ -25,24 +25,24 @@ activated by default.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures::future</span>;
 <span class="kw">use</span> <span class="ident">futures::select</span>;
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">future::ready</span>(<span class="number">4</span>);
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">future::pending</span>::<span class="op">&lt;</span>()<span class="op">&gt;</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> = <span class="ident">future::ready</span>(<span class="number">4</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> = <span class="ident">future::pending</span>::&lt;()&gt;();
 
-<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">select!</span> {
-    <span class="ident">a_res</span> <span class="op">=</span> <span class="ident">a</span> =&gt; <span class="ident">a_res</span> <span class="op">+</span> <span class="number">1</span>,
-    <span class="kw">_</span> <span class="op">=</span> <span class="ident">b</span> =&gt; <span class="number">0</span>,
+<span class="kw">let</span> <span class="ident">res</span> = <span class="macro">select!</span> {
+    <span class="ident">a_res</span> = <span class="ident">a</span> =&gt; <span class="ident">a_res</span> + <span class="number">1</span>,
+    <span class="kw">_</span> = <span class="ident">b</span> =&gt; <span class="number">0</span>,
 };
 <span class="macro">assert_eq!</span>(<span class="ident">res</span>, <span class="number">5</span>);</code></pre></div>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures::future</span>;
 <span class="kw">use</span> <span class="ident">futures::stream</span>::{<span class="self">self</span>, <span class="ident">StreamExt</span>};
 <span class="kw">use</span> <span class="ident">futures::select</span>;
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">stream::iter</span>(<span class="macro">vec!</span>[<span class="number">2</span>]).<span class="ident">fuse</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">future::pending</span>::<span class="op">&lt;</span>()<span class="op">&gt;</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">st</span> = <span class="ident">stream::iter</span>(<span class="macro">vec!</span>[<span class="number">2</span>]).<span class="ident">fuse</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fut</span> = <span class="ident">future::pending</span>::&lt;()&gt;();
 
 <span class="macro">select!</span> {
-    <span class="ident">x</span> <span class="op">=</span> <span class="ident">st</span>.<span class="ident">next</span>() =&gt; <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>), <span class="ident">x</span>),
-    <span class="kw">_</span> <span class="op">=</span> <span class="ident">fut</span> =&gt; <span class="macro">panic!</span>(),
+    <span class="ident">x</span> = <span class="ident">st</span>.<span class="ident">next</span>() =&gt; <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>), <span class="ident">x</span>),
+    <span class="kw">_</span> = <span class="ident">fut</span> =&gt; <span class="macro">panic!</span>(),
 };</code></pre></div>
 <p>As described earlier, <code>select</code> can directly select on expressions
 which return <code>Future</code>s - even if those do not implement <code>Unpin</code>:</p>
@@ -56,11 +56,11 @@ which return <code>Future</code>s - even if those do not implement <code>Unpin</
     <span class="ident">arg</span>
 }
 
-<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">select!</span> {
-    <span class="ident">a_res</span> <span class="op">=</span> <span class="ident">async_identity_fn</span>(<span class="number">62</span>).<span class="ident">fuse</span>() =&gt; <span class="ident">a_res</span> <span class="op">+</span> <span class="number">1</span>,
-    <span class="ident">b_res</span> <span class="op">=</span> <span class="ident">async_identity_fn</span>(<span class="number">13</span>).<span class="ident">fuse</span>() =&gt; <span class="ident">b_res</span>,
+<span class="kw">let</span> <span class="ident">res</span> = <span class="macro">select!</span> {
+    <span class="ident">a_res</span> = <span class="ident">async_identity_fn</span>(<span class="number">62</span>).<span class="ident">fuse</span>() =&gt; <span class="ident">a_res</span> + <span class="number">1</span>,
+    <span class="ident">b_res</span> = <span class="ident">async_identity_fn</span>(<span class="number">13</span>).<span class="ident">fuse</span>() =&gt; <span class="ident">b_res</span>,
 };
-<span class="macro">assert!</span>(<span class="ident">res</span> <span class="op">==</span> <span class="number">63</span> <span class="op">|</span><span class="op">|</span> <span class="ident">res</span> <span class="op">==</span> <span class="number">13</span>);</code></pre></div>
+<span class="macro">assert!</span>(<span class="ident">res</span> == <span class="number">63</span> || <span class="ident">res</span> == <span class="number">13</span>);</code></pre></div>
 <p>If a similar async function is called outside of <code>select</code> to produce
 a <code>Future</code>, the <code>Future</code> must be pinned in order to be able to pass
 it to <code>select</code>. This can be achieved via <code>Box::pin</code> for pinning a
@@ -77,16 +77,16 @@ on the stack.</p>
     <span class="ident">arg</span>
 }
 
-<span class="kw">let</span> <span class="ident">fut_1</span> <span class="op">=</span> <span class="ident">async_identity_fn</span>(<span class="number">1</span>).<span class="ident">fuse</span>();
-<span class="kw">let</span> <span class="ident">fut_2</span> <span class="op">=</span> <span class="ident">async_identity_fn</span>(<span class="number">2</span>).<span class="ident">fuse</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fut_1</span> <span class="op">=</span> <span class="ident">Box::pin</span>(<span class="ident">fut_1</span>); <span class="comment">// Pins the Future on the heap</span>
+<span class="kw">let</span> <span class="ident">fut_1</span> = <span class="ident">async_identity_fn</span>(<span class="number">1</span>).<span class="ident">fuse</span>();
+<span class="kw">let</span> <span class="ident">fut_2</span> = <span class="ident">async_identity_fn</span>(<span class="number">2</span>).<span class="ident">fuse</span>();
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fut_1</span> = <span class="ident">Box::pin</span>(<span class="ident">fut_1</span>); <span class="comment">// Pins the Future on the heap</span>
 <span class="macro">pin_mut!</span>(<span class="ident">fut_2</span>); <span class="comment">// Pins the Future on the stack</span>
 
-<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">select!</span> {
-    <span class="ident">a_res</span> <span class="op">=</span> <span class="ident">fut_1</span> =&gt; <span class="ident">a_res</span>,
-    <span class="ident">b_res</span> <span class="op">=</span> <span class="ident">fut_2</span> =&gt; <span class="ident">b_res</span>,
+<span class="kw">let</span> <span class="ident">res</span> = <span class="macro">select!</span> {
+    <span class="ident">a_res</span> = <span class="ident">fut_1</span> =&gt; <span class="ident">a_res</span>,
+    <span class="ident">b_res</span> = <span class="ident">fut_2</span> =&gt; <span class="ident">b_res</span>,
 };
-<span class="macro">assert!</span>(<span class="ident">res</span> <span class="op">==</span> <span class="number">1</span> <span class="op">|</span><span class="op">|</span> <span class="ident">res</span> <span class="op">==</span> <span class="number">2</span>);</code></pre></div>
+<span class="macro">assert!</span>(<span class="ident">res</span> == <span class="number">1</span> || <span class="ident">res</span> == <span class="number">2</span>);</code></pre></div>
 <p><code>select</code> also accepts a <code>complete</code> branch and a <code>default</code> branch.
 <code>complete</code> will run if all futures and streams have already been
 exhausted. <code>default</code> will run if no futures or streams are
@@ -98,14 +98,14 @@ demonstrated in the following example:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures::future</span>;
 <span class="kw">use</span> <span class="ident">futures::select</span>;
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_fut</span> <span class="op">=</span> <span class="ident">future::ready</span>(<span class="number">4</span>);
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b_fut</span> <span class="op">=</span> <span class="ident">future::ready</span>(<span class="number">6</span>);
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> <span class="op">=</span> <span class="number">0</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_fut</span> = <span class="ident">future::ready</span>(<span class="number">4</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b_fut</span> = <span class="ident">future::ready</span>(<span class="number">6</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> = <span class="number">0</span>;
 
 <span class="kw">loop</span> {
     <span class="macro">select!</span> {
-        <span class="ident">a</span> <span class="op">=</span> <span class="ident">a_fut</span> =&gt; <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">a</span>,
-        <span class="ident">b</span> <span class="op">=</span> <span class="ident">b_fut</span> =&gt; <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">b</span>,
+        <span class="ident">a</span> = <span class="ident">a_fut</span> =&gt; <span class="ident">total</span> += <span class="ident">a</span>,
+        <span class="ident">b</span> = <span class="ident">b_fut</span> =&gt; <span class="ident">total</span> += <span class="ident">b</span>,
         <span class="ident">complete</span> =&gt; <span class="kw">break</span>,
         <span class="ident">default</span> =&gt; <span class="macro">panic!</span>(), <span class="comment">// never runs (futures run first, then complete)</span>
     };
@@ -115,4 +115,4 @@ demonstrated in the following example:</p>
 from inside the <code>select!</code> block’s branches. This can be used to implement
 more complex behavior such as timer resets or writing into the head of
 a stream.</p>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

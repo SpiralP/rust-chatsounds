@@ -725,7 +725,7 @@
 <span id="725">725</span>
 <span id="726">726</span>
 <span id="727">727</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;sync&quot;</span>), <span class="ident">allow</span>(<span class="ident">unreachable_pub</span>, <span class="ident">dead_code</span>))]</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;sync&quot;</span>), <span class="ident">allow</span>(<span class="ident">unreachable_pub</span>, <span class="ident">dead_code</span>))]</span>
 <span class="doccomment">//! # Implementation Details.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! The semaphore is implemented using an intrusive linked list of waiters. An</span>
@@ -746,7 +746,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::loom::sync::atomic::AtomicUsize</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::loom::sync</span>::{<span class="ident">Mutex</span>, <span class="ident">MutexGuard</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::linked_list</span>::{<span class="self">self</span>, <span class="ident">LinkedList</span>};
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::trace</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::WakeList</span>;
 
@@ -761,15 +761,15 @@
 
 <span class="doccomment">/// An asynchronous counting semaphore which permits waiting on multiple permits at once.</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Semaphore</span> {
-    <span class="ident">waiters</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">Waitlist</span><span class="op">&gt;</span>,
+    <span class="ident">waiters</span>: <span class="ident">Mutex</span>&lt;<span class="ident">Waitlist</span>&gt;,
     <span class="doccomment">/// The current number of available permits in the semaphore.</span>
     <span class="ident">permits</span>: <span class="ident">AtomicUsize</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
     <span class="ident">resource_span</span>: <span class="ident">tracing::Span</span>,
 }
 
 <span class="kw">struct</span> <span class="ident">Waitlist</span> {
-    <span class="ident">queue</span>: <span class="ident">LinkedList</span><span class="op">&lt;</span><span class="ident">Waiter</span>, <span class="op">&lt;</span><span class="ident">Waiter</span> <span class="kw">as</span> <span class="ident">linked_list::Link</span><span class="op">&gt;</span><span class="ident">::Target</span><span class="op">&gt;</span>,
+    <span class="ident">queue</span>: <span class="ident">LinkedList</span>&lt;<span class="ident">Waiter</span>, &lt;<span class="ident">Waiter</span> <span class="kw">as</span> <span class="ident">linked_list::Link</span>&gt;<span class="ident">::Target</span>&gt;,
     <span class="ident">closed</span>: <span class="ident">bool</span>,
 }
 
@@ -796,7 +796,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AcquireError</span>(());
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="ident">node</span>: <span class="ident">Waiter</span>,
     <span class="ident">semaphore</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Semaphore</span>,
     <span class="ident">num_permits</span>: <span class="ident">u32</span>,
@@ -816,7 +816,7 @@
     <span class="doccomment">/// # Safety</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This may only be accessed while the wait queue is locked.</span>
-    <span class="ident">waker</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Waker</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">waker</span>: <span class="ident">UnsafeCell</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Waker</span>&gt;&gt;,
 
     <span class="doccomment">/// Intrusive linked-list pointers.</span>
     <span class="doccomment">///</span>
@@ -830,9 +830,9 @@
     <span class="doccomment">/// references to `Pointers`, and `UnsafeCell` requires that checked access</span>
     <span class="doccomment">/// take place inside a closure. We should consider changing `Pointers` to</span>
     <span class="doccomment">/// use `UnsafeCell` internally.</span>
-    <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>,
+    <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers</span>&lt;<span class="ident">Waiter</span>&gt;,
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
     <span class="ident">ctx</span>: <span class="ident">trace::AsyncOpTracingCtx</span>,
 
     <span class="doccomment">/// Should not be `Unpin`.</span>
@@ -847,49 +847,49 @@
     <span class="doccomment">/// implementation used three bits, so we will continue to reserve them to</span>
     <span class="doccomment">/// avoid a breaking change if additional flags need to be added in the</span>
     <span class="doccomment">/// future.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MAX_PERMITS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">std::usize::MAX</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">3</span>;
-    <span class="kw">const</span> <span class="ident">CLOSED</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">1</span>;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MAX_PERMITS</span>: <span class="ident">usize</span> = <span class="ident">std::usize::MAX</span> &gt;&gt; <span class="number">3</span>;
+    <span class="kw">const</span> <span class="ident">CLOSED</span>: <span class="ident">usize</span> = <span class="number">1</span>;
     <span class="comment">// The least-significant bit in the number of permits is reserved to use</span>
     <span class="comment">// as a flag indicating that the semaphore has been closed. Consequently</span>
     <span class="comment">// PERMIT_SHIFT is used to leave that bit for that purpose.</span>
-    <span class="kw">const</span> <span class="ident">PERMIT_SHIFT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">1</span>;
+    <span class="kw">const</span> <span class="ident">PERMIT_SHIFT</span>: <span class="ident">usize</span> = <span class="number">1</span>;
 
     <span class="doccomment">/// Creates a new semaphore with the initial number of permits</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Maximum number of permits on 32-bit platforms is `1&lt;&lt;29`.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">permits</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
         <span class="macro">assert!</span>(
-            <span class="ident">permits</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
+            <span class="ident">permits</span> &lt;= <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
             <span class="string">&quot;a semaphore may not have more than MAX_PERMITS permits ({})&quot;</span>,
             <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>
         );
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">resource_span</span> <span class="op">=</span> {
-            <span class="kw">let</span> <span class="ident">resource_span</span> <span class="op">=</span> <span class="macro">tracing::trace_span!</span>(
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">let</span> <span class="ident">resource_span</span> = {
+            <span class="kw">let</span> <span class="ident">resource_span</span> = <span class="macro">tracing::trace_span!</span>(
                 <span class="string">&quot;runtime.resource&quot;</span>,
-                <span class="ident">concrete_type</span> <span class="op">=</span> <span class="string">&quot;Semaphore&quot;</span>,
-                <span class="ident">kind</span> <span class="op">=</span> <span class="string">&quot;Sync&quot;</span>,
-                <span class="ident">is_internal</span> <span class="op">=</span> <span class="bool-val">true</span>
+                <span class="ident">concrete_type</span> = <span class="string">&quot;Semaphore&quot;</span>,
+                <span class="ident">kind</span> = <span class="string">&quot;Sync&quot;</span>,
+                <span class="ident">is_internal</span> = <span class="bool-val">true</span>
             );
 
-            <span class="ident">resource_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="ident">resource_span</span>.<span class="ident">in_scope</span>(|| {
                 <span class="macro">tracing::trace!</span>(
                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::state_update&quot;</span>,
-                    <span class="ident">permits</span> <span class="op">=</span> <span class="ident">permits</span>,
-                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;override&quot;</span>,
+                    <span class="ident">permits</span> = <span class="ident">permits</span>,
+                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;override&quot;</span>,
                 )
             });
             <span class="ident">resource_span</span>
         };
 
         <span class="self">Self</span> {
-            <span class="ident">permits</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">permits</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>),
+            <span class="ident">permits</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">permits</span> &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>),
             <span class="ident">waiters</span>: <span class="ident">Mutex::new</span>(<span class="ident">Waitlist</span> {
                 <span class="ident">queue</span>: <span class="ident">LinkedList::new</span>(),
                 <span class="ident">closed</span>: <span class="bool-val">false</span>,
             }),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
             <span class="ident">resource_span</span>,
         }
     }
@@ -900,33 +900,33 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// If the specified number of permits exceeds the maximum permit amount</span>
     <span class="doccomment">/// Then the value will get clamped to the maximum number of permits.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parking_lot&quot;</span>, <span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">loom</span>, <span class="ident">test</span>))))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;parking_lot&quot;</span>, <span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">loom</span>, <span class="ident">test</span>))))]</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">const_new</span>(<span class="kw-2">mut</span> <span class="ident">permits</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// NOTE: assertions and by extension panics are still being worked on: https://github.com/rust-lang/rust/issues/74925</span>
         <span class="comment">// currently we just clamp the permit count when it exceeds the max</span>
-        <span class="ident">permits</span> <span class="op">&amp;=</span> <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>;
+        <span class="ident">permits</span> &amp;= <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>;
 
         <span class="self">Self</span> {
-            <span class="ident">permits</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">permits</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>),
+            <span class="ident">permits</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">permits</span> &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>),
             <span class="ident">waiters</span>: <span class="ident">Mutex::const_new</span>(<span class="ident">Waitlist</span> {
                 <span class="ident">queue</span>: <span class="ident">LinkedList::new</span>(),
                 <span class="ident">closed</span>: <span class="bool-val">false</span>,
             }),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
             <span class="ident">resource_span</span>: <span class="ident">tracing::Span::none</span>(),
         }
     }
 
     <span class="doccomment">/// Returns the current number of available permits.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">available_permits</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
+        <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) &gt;&gt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
     }
 
     <span class="doccomment">/// Adds `added` new permits to the semaphore.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// The maximum number of permits is `usize::MAX &gt;&gt; 3`, and this function will panic if the limit is exceeded.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">release</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">added</span>: <span class="ident">usize</span>) {
-        <span class="kw">if</span> <span class="ident">added</span> <span class="op">==</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="ident">added</span> == <span class="number">0</span> {
             <span class="kw">return</span>;
         }
 
@@ -937,7 +937,7 @@
     <span class="doccomment">/// Closes the semaphore. This prevents the semaphore from issuing new</span>
     <span class="doccomment">/// permits and notifies all pending waiters.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
         <span class="comment">// If the semaphore&#39;s permits counter has enough permits for an</span>
         <span class="comment">// unqueued waiter to acquire all the permits it needs immediately,</span>
         <span class="comment">// it won&#39;t touch the wait list. Therefore, we have to set a bit on</span>
@@ -946,10 +946,10 @@
         <span class="comment">// to acquire the lock we&#39;ll enter an inconsistent state where the</span>
         <span class="comment">// permit counter is closed, but the wait list is not.</span>
         <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">fetch_or</span>(<span class="ident"><span class="self">Self</span>::CLOSED</span>, <span class="ident">Release</span>);
-        <span class="ident">waiters</span>.<span class="ident">closed</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">waiter</span>) <span class="op">=</span> <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">pop_back</span>() {
-            <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>().<span class="ident">waker</span>.<span class="ident">with_mut</span>(<span class="op">|</span><span class="ident">waker</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">waker</span>).<span class="ident">take</span>()) };
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span> <span class="ident">waker</span> {
+        <span class="ident">waiters</span>.<span class="ident">closed</span> = <span class="bool-val">true</span>;
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">waiter</span>) = <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">pop_back</span>() {
+            <span class="kw">let</span> <span class="ident">waker</span> = <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>().<span class="ident">waker</span>.<span class="ident">with_mut</span>(|<span class="ident">waker</span>| (<span class="kw-2">*</span><span class="ident">waker</span>).<span class="ident">take</span>()) };
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) = <span class="ident">waker</span> {
                 <span class="ident">waker</span>.<span class="ident">wake</span>();
             }
         }
@@ -957,41 +957,41 @@
 
     <span class="doccomment">/// Returns true if the semaphore is closed.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">is_closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) <span class="op">&amp;</span> <span class="ident"><span class="self">Self</span>::CLOSED</span> <span class="op">==</span> <span class="ident"><span class="self">Self</span>::CLOSED</span>
+        <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) &amp; <span class="ident"><span class="self">Self</span>::CLOSED</span> == <span class="ident"><span class="self">Self</span>::CLOSED</span>
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">try_acquire</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">num_permits</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">TryAcquireError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">try_acquire</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">num_permits</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">TryAcquireError</span>&gt; {
         <span class="macro">assert!</span>(
-            <span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
+            <span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span> &lt;= <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
             <span class="string">&quot;a semaphore may not have more than MAX_PERMITS permits ({})&quot;</span>,
             <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>
         );
-        <span class="kw">let</span> <span class="ident">num_permits</span> <span class="op">=</span> (<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
+        <span class="kw">let</span> <span class="ident">num_permits</span> = (<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span>) &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
         <span class="kw">loop</span> {
             <span class="comment">// Has the semaphore closed?</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">&amp;</span> <span class="ident"><span class="self">Self</span>::CLOSED</span> <span class="op">==</span> <span class="ident"><span class="self">Self</span>::CLOSED</span> {
+            <span class="kw">if</span> <span class="ident">curr</span> &amp; <span class="ident"><span class="self">Self</span>::CLOSED</span> == <span class="ident"><span class="self">Self</span>::CLOSED</span> {
                 <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">TryAcquireError::Closed</span>);
             }
 
             <span class="comment">// Are there enough permits remaining?</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">&lt;</span> <span class="ident">num_permits</span> {
+            <span class="kw">if</span> <span class="ident">curr</span> &lt; <span class="ident">num_permits</span> {
                 <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">TryAcquireError::NoPermits</span>);
             }
 
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">-</span> <span class="ident">num_permits</span>;
+            <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">curr</span> - <span class="ident">num_permits</span>;
 
             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">AcqRel</span>, <span class="ident">Acquire</span>) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
                     <span class="comment">// TODO: Instrument once issue has been solved}</span>
                     <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>,
+                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> = <span class="ident">actual</span>,
             }
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">acquire</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">num_permits</span>: <span class="ident">u32</span>) -&gt; <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">acquire</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">num_permits</span>: <span class="ident">u32</span>) -&gt; <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="ident">Acquire::new</span>(<span class="self">self</span>, <span class="ident">num_permits</span>)
     }
 
@@ -1000,62 +1000,62 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// If `rem` exceeds the number of permits needed by the wait list, the</span>
     <span class="doccomment">/// remainder are assigned back to the semaphore.</span>
-    <span class="kw">fn</span> <span class="ident">add_permits_locked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">rem</span>: <span class="ident">usize</span>, <span class="ident">waiters</span>: <span class="ident">MutexGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">Waitlist</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">wakers</span> <span class="op">=</span> <span class="ident">WakeList::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">waiters</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">is_empty</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">while</span> <span class="ident">rem</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="ident">lock</span>.<span class="ident">take</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>());
+    <span class="kw">fn</span> <span class="ident">add_permits_locked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">rem</span>: <span class="ident">usize</span>, <span class="ident">waiters</span>: <span class="ident">MutexGuard</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">Waitlist</span>&gt;) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">wakers</span> = <span class="ident">WakeList::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> = <span class="prelude-val">Some</span>(<span class="ident">waiters</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">is_empty</span> = <span class="bool-val">false</span>;
+        <span class="kw">while</span> <span class="ident">rem</span> &gt; <span class="number">0</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="ident">lock</span>.<span class="ident">take</span>().<span class="ident">unwrap_or_else</span>(|| <span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>());
             <span class="lifetime">&#39;inner</span>: <span class="kw">while</span> <span class="ident">wakers</span>.<span class="ident">can_push</span>() {
                 <span class="comment">// Was the waiter assigned enough permits to wake it?</span>
                 <span class="kw">match</span> <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">last</span>() {
                     <span class="prelude-val">Some</span>(<span class="ident">waiter</span>) =&gt; {
-                        <span class="kw">if</span> <span class="op">!</span><span class="ident">waiter</span>.<span class="ident">assign_permits</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rem</span>) {
+                        <span class="kw">if</span> !<span class="ident">waiter</span>.<span class="ident">assign_permits</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rem</span>) {
                             <span class="kw">break</span> <span class="lifetime">&#39;inner</span>;
                         }
                     }
                     <span class="prelude-val">None</span> =&gt; {
-                        <span class="ident">is_empty</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="ident">is_empty</span> = <span class="bool-val">true</span>;
                         <span class="comment">// If we assigned permits to all the waiters in the queue, and there are</span>
                         <span class="comment">// still permits left over, assign them back to the semaphore.</span>
                         <span class="kw">break</span> <span class="lifetime">&#39;inner</span>;
                     }
                 };
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiter</span> <span class="op">=</span> <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">pop_back</span>().<span class="ident">unwrap</span>();
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) <span class="op">=</span>
-                    <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>().<span class="ident">waker</span>.<span class="ident">with_mut</span>(<span class="op">|</span><span class="ident">waker</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">waker</span>).<span class="ident">take</span>()) }
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiter</span> = <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">pop_back</span>().<span class="ident">unwrap</span>();
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">waker</span>) =
+                    <span class="kw">unsafe</span> { <span class="ident">waiter</span>.<span class="ident">as_mut</span>().<span class="ident">waker</span>.<span class="ident">with_mut</span>(|<span class="ident">waker</span>| (<span class="kw-2">*</span><span class="ident">waker</span>).<span class="ident">take</span>()) }
                 {
                     <span class="ident">wakers</span>.<span class="ident">push</span>(<span class="ident">waker</span>);
                 }
             }
 
-            <span class="kw">if</span> <span class="ident">rem</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">is_empty</span> {
-                <span class="kw">let</span> <span class="ident">permits</span> <span class="op">=</span> <span class="ident">rem</span>;
+            <span class="kw">if</span> <span class="ident">rem</span> &gt; <span class="number">0</span> &amp;&amp; <span class="ident">is_empty</span> {
+                <span class="kw">let</span> <span class="ident">permits</span> = <span class="ident">rem</span>;
                 <span class="macro">assert!</span>(
-                    <span class="ident">permits</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
+                    <span class="ident">permits</span> &lt;= <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
                     <span class="string">&quot;cannot add more than MAX_PERMITS permits ({})&quot;</span>,
                     <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>
                 );
-                <span class="kw">let</span> <span class="ident">prev</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">fetch_add</span>(<span class="ident">rem</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>, <span class="ident">Release</span>);
-                <span class="kw">let</span> <span class="ident">prev</span> <span class="op">=</span> <span class="ident">prev</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>;
+                <span class="kw">let</span> <span class="ident">prev</span> = <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">fetch_add</span>(<span class="ident">rem</span> &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>, <span class="ident">Release</span>);
+                <span class="kw">let</span> <span class="ident">prev</span> = <span class="ident">prev</span> &gt;&gt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>;
                 <span class="macro">assert!</span>(
-                    <span class="ident">prev</span> <span class="op">+</span> <span class="ident">permits</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
+                    <span class="ident">prev</span> + <span class="ident">permits</span> &lt;= <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>,
                     <span class="string">&quot;number of added permits ({}) would overflow MAX_PERMITS ({})&quot;</span>,
                     <span class="ident">rem</span>,
                     <span class="ident"><span class="self">Self</span>::MAX_PERMITS</span>
                 );
 
                 <span class="comment">// add remaining permits back</span>
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-                <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+                <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(|| {
                     <span class="macro">tracing::trace!</span>(
                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::state_update&quot;</span>,
-                    <span class="ident">permits</span> <span class="op">=</span> <span class="ident">rem</span>,
-                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;add&quot;</span>,
+                    <span class="ident">permits</span> = <span class="ident">rem</span>,
+                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;add&quot;</span>,
                     )
                 });
 
-                <span class="ident">rem</span> <span class="op">=</span> <span class="number">0</span>;
+                <span class="ident">rem</span> = <span class="number">0</span>;
             }
 
             <span class="ident">drop</span>(<span class="ident">waiters</span>); <span class="comment">// release the lock</span>
@@ -1068,42 +1068,42 @@
 
     <span class="kw">fn</span> <span class="ident">poll_acquire</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+        <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;,
         <span class="ident">num_permits</span>: <span class="ident">u32</span>,
-        <span class="ident">node</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">Waiter</span><span class="op">&gt;</span>,
+        <span class="ident">node</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">Waiter</span>&gt;,
         <span class="ident">queued</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">AcquireError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acquired</span> <span class="op">=</span> <span class="number">0</span>;
+    ) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="ident">AcquireError</span>&gt;&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acquired</span> = <span class="number">0</span>;
 
-        <span class="kw">let</span> <span class="ident">needed</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">queued</span> {
-            <span class="ident">node</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
+        <span class="kw">let</span> <span class="ident">needed</span> = <span class="kw">if</span> <span class="ident">queued</span> {
+            <span class="ident">node</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>) &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
         } <span class="kw">else</span> {
-            (<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
+            (<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span>) &lt;&lt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>
         };
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> = <span class="prelude-val">None</span>;
         <span class="comment">// First, try to take the requested number of permits from the</span>
         <span class="comment">// semaphore.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="kw">loop</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="kw">loop</span> {
             <span class="comment">// Has the semaphore closed?</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">&amp;</span> <span class="ident"><span class="self">Self</span>::CLOSED</span> <span class="op">&gt;</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">curr</span> &amp; <span class="ident"><span class="self">Self</span>::CLOSED</span> &gt; <span class="number">0</span> {
                 <span class="kw">return</span> <span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">AcquireError::closed</span>()));
             }
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">remaining</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">let</span> <span class="ident">total</span> <span class="op">=</span> <span class="ident">curr</span>
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">remaining</span> = <span class="number">0</span>;
+            <span class="kw">let</span> <span class="ident">total</span> = <span class="ident">curr</span>
                 .<span class="ident">checked_add</span>(<span class="ident">acquired</span>)
                 .<span class="ident">expect</span>(<span class="string">&quot;number of permits must not overflow&quot;</span>);
-            <span class="kw">let</span> (<span class="ident">next</span>, <span class="ident">acq</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">total</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">needed</span> {
-                <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">-</span> (<span class="ident">needed</span> <span class="op">-</span> <span class="ident">acquired</span>);
-                (<span class="ident">next</span>, <span class="ident">needed</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>)
+            <span class="kw">let</span> (<span class="ident">next</span>, <span class="ident">acq</span>) = <span class="kw">if</span> <span class="ident">total</span> &gt;= <span class="ident">needed</span> {
+                <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">curr</span> - (<span class="ident">needed</span> - <span class="ident">acquired</span>);
+                (<span class="ident">next</span>, <span class="ident">needed</span> &gt;&gt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>)
             } <span class="kw">else</span> {
-                <span class="ident">remaining</span> <span class="op">=</span> (<span class="ident">needed</span> <span class="op">-</span> <span class="ident">acquired</span>) <span class="op">-</span> <span class="ident">curr</span>;
-                (<span class="number">0</span>, <span class="ident">curr</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>)
+                <span class="ident">remaining</span> = (<span class="ident">needed</span> - <span class="ident">acquired</span>) - <span class="ident">curr</span>;
+                (<span class="number">0</span>, <span class="ident">curr</span> &gt;&gt; <span class="ident"><span class="self">Self</span>::PERMIT_SHIFT</span>)
             };
 
-            <span class="kw">if</span> <span class="ident">remaining</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">lock</span>.<span class="ident">is_none</span>() {
+            <span class="kw">if</span> <span class="ident">remaining</span> &gt; <span class="number">0</span> &amp;&amp; <span class="ident">lock</span>.<span class="ident">is_none</span>() {
                 <span class="comment">// No permits were immediately available, so this permit will</span>
                 <span class="comment">// (probably) need to wait. We&#39;ll need to acquire a lock on the</span>
                 <span class="comment">// wait queue before continuing. We need to do this _before_ the</span>
@@ -1111,25 +1111,25 @@
                 <span class="comment">// counter. Otherwise, if we subtract the permits and then</span>
                 <span class="comment">// acquire the lock, we might miss additional permits being</span>
                 <span class="comment">// added while waiting for the lock.</span>
-                <span class="ident">lock</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>());
+                <span class="ident">lock</span> = <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>());
             }
 
             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">permits</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">AcqRel</span>, <span class="ident">Acquire</span>) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="ident">acquired</span> <span class="op">+</span><span class="op">=</span> <span class="ident">acq</span>;
-                    <span class="kw">if</span> <span class="ident">remaining</span> <span class="op">==</span> <span class="number">0</span> {
-                        <span class="kw">if</span> <span class="op">!</span><span class="ident">queued</span> {
-                            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-                            <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+                    <span class="ident">acquired</span> += <span class="ident">acq</span>;
+                    <span class="kw">if</span> <span class="ident">remaining</span> == <span class="number">0</span> {
+                        <span class="kw">if</span> !<span class="ident">queued</span> {
+                            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+                            <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(|| {
                                 <span class="macro">tracing::trace!</span>(
                                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::state_update&quot;</span>,
-                                    <span class="ident">permits</span> <span class="op">=</span> <span class="ident">acquired</span>,
-                                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;sub&quot;</span>,
+                                    <span class="ident">permits</span> = <span class="ident">acquired</span>,
+                                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;sub&quot;</span>,
                                 );
                                 <span class="macro">tracing::trace!</span>(
                                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::async_op::state_update&quot;</span>,
-                                    <span class="ident">permits_obtained</span> <span class="op">=</span> <span class="ident">acquired</span>,
-                                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;add&quot;</span>,
+                                    <span class="ident">permits_obtained</span> = <span class="ident">acquired</span>,
+                                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;add&quot;</span>,
                                 )
                             });
 
@@ -1140,7 +1140,7 @@
                     }
                     <span class="kw">break</span> <span class="ident">lock</span>.<span class="ident">expect</span>(<span class="string">&quot;lock must be acquired before waiting&quot;</span>);
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>,
+                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> = <span class="ident">actual</span>,
             }
         };
 
@@ -1148,12 +1148,12 @@
             <span class="kw">return</span> <span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">AcquireError::closed</span>()));
         }
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="self">self</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(|| {
             <span class="macro">tracing::trace!</span>(
                 <span class="ident">target</span>: <span class="string">&quot;runtime::resource::state_update&quot;</span>,
-                <span class="ident">permits</span> <span class="op">=</span> <span class="ident">acquired</span>,
-                <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;sub&quot;</span>,
+                <span class="ident">permits</span> = <span class="ident">acquired</span>,
+                <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;sub&quot;</span>,
             )
         });
 
@@ -1165,23 +1165,23 @@
         <span class="macro">assert_eq!</span>(<span class="ident">acquired</span>, <span class="number">0</span>);
 
         <span class="comment">// Otherwise, register the waker &amp; enqueue the node.</span>
-        <span class="ident">node</span>.<span class="ident">waker</span>.<span class="ident">with_mut</span>(<span class="op">|</span><span class="ident">waker</span><span class="op">|</span> {
+        <span class="ident">node</span>.<span class="ident">waker</span>.<span class="ident">with_mut</span>(|<span class="ident">waker</span>| {
             <span class="comment">// Safety: the wait list is locked, so we may modify the waker.</span>
-            <span class="kw">let</span> <span class="ident">waker</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">waker</span> };
+            <span class="kw">let</span> <span class="ident">waker</span> = <span class="kw">unsafe</span> { <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">waker</span> };
             <span class="comment">// Do we need to register the new waker?</span>
             <span class="kw">if</span> <span class="ident">waker</span>
                 .<span class="ident">as_ref</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">waker</span><span class="op">|</span> <span class="op">!</span><span class="ident">waker</span>.<span class="ident">will_wake</span>(<span class="ident">cx</span>.<span class="ident">waker</span>()))
+                .<span class="ident">map</span>(|<span class="ident">waker</span>| !<span class="ident">waker</span>.<span class="ident">will_wake</span>(<span class="ident">cx</span>.<span class="ident">waker</span>()))
                 .<span class="ident">unwrap_or</span>(<span class="bool-val">true</span>)
             {
-                <span class="kw-2">*</span><span class="ident">waker</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">cx</span>.<span class="ident">waker</span>().<span class="ident">clone</span>());
+                <span class="kw-2">*</span><span class="ident">waker</span> = <span class="prelude-val">Some</span>(<span class="ident">cx</span>.<span class="ident">waker</span>().<span class="ident">clone</span>());
             }
         });
 
         <span class="comment">// If the waiter is not already in the wait queue, enqueue it.</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">queued</span> {
-            <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">Pin::into_inner_unchecked</span>(<span class="ident">node</span>) <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span>;
+        <span class="kw">if</span> !<span class="ident">queued</span> {
+            <span class="kw">let</span> <span class="ident">node</span> = <span class="kw">unsafe</span> {
+                <span class="kw">let</span> <span class="ident">node</span> = <span class="ident">Pin::into_inner_unchecked</span>(<span class="ident">node</span>) <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span>;
                 <span class="ident">NonNull::new_unchecked</span>(<span class="ident">node</span>)
             };
 
@@ -1193,7 +1193,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Semaphore</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Semaphore&quot;</span>)
             .<span class="ident">field</span>(<span class="string">&quot;permits&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">available_permits</span>())
             .<span class="ident">finish</span>()
@@ -1203,13 +1203,13 @@
 <span class="kw">impl</span> <span class="ident">Waiter</span> {
     <span class="kw">fn</span> <span class="ident">new</span>(
         <span class="ident">num_permits</span>: <span class="ident">u32</span>,
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span> <span class="ident">ctx</span>: <span class="ident">trace::AsyncOpTracingCtx</span>,
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span> <span class="ident">ctx</span>: <span class="ident">trace::AsyncOpTracingCtx</span>,
     ) -&gt; <span class="self">Self</span> {
         <span class="ident">Waiter</span> {
             <span class="ident">waker</span>: <span class="ident">UnsafeCell::new</span>(<span class="prelude-val">None</span>),
             <span class="ident">state</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span>),
             <span class="ident">pointers</span>: <span class="ident">linked_list::Pointers::new</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
             <span class="ident">ctx</span>,
             <span class="ident">_p</span>: <span class="ident">PhantomPinned</span>,
         }
@@ -1219,76 +1219,76 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns `true` if the waiter should be removed from the queue</span>
     <span class="kw">fn</span> <span class="ident">assign_permits</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">n</span>: <span class="kw-2">&amp;mut</span> <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
         <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="ident">assign</span> <span class="op">=</span> <span class="ident">cmp::min</span>(<span class="ident">curr</span>, <span class="kw-2">*</span><span class="ident">n</span>);
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">-</span> <span class="ident">assign</span>;
+            <span class="kw">let</span> <span class="ident">assign</span> = <span class="ident">cmp::min</span>(<span class="ident">curr</span>, <span class="kw-2">*</span><span class="ident">n</span>);
+            <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">curr</span> - <span class="ident">assign</span>;
             <span class="kw">match</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">AcqRel</span>, <span class="ident">Acquire</span>) {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="kw-2">*</span><span class="ident">n</span> <span class="op">-</span><span class="op">=</span> <span class="ident">assign</span>;
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-                    <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">async_op_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+                    <span class="kw-2">*</span><span class="ident">n</span> -= <span class="ident">assign</span>;
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+                    <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">async_op_span</span>.<span class="ident">in_scope</span>(|| {
                         <span class="macro">tracing::trace!</span>(
                             <span class="ident">target</span>: <span class="string">&quot;runtime::resource::async_op::state_update&quot;</span>,
-                            <span class="ident">permits_obtained</span> <span class="op">=</span> <span class="ident">assign</span>,
-                            <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;add&quot;</span>,
+                            <span class="ident">permits_obtained</span> = <span class="ident">assign</span>,
+                            <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;add&quot;</span>,
                         );
                     });
-                    <span class="kw">return</span> <span class="ident">next</span> <span class="op">==</span> <span class="number">0</span>;
+                    <span class="kw">return</span> <span class="ident">next</span> == <span class="number">0</span>;
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>,
+                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> = <span class="ident">actual</span>,
             }
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">AcquireError</span><span class="op">&gt;</span>;
+<span class="kw">impl</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">type</span> <span class="ident">Output</span> = <span class="prelude-ty">Result</span>&lt;(), <span class="ident">AcquireError</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">_resource_span</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">resource_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">_async_op_span</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">async_op_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">_async_op_poll_span</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">async_op_poll_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
+    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Poll</span>&lt;<span class="ident"><span class="self">Self</span>::Output</span>&gt; {
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">let</span> <span class="ident">_resource_span</span> = <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">resource_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">let</span> <span class="ident">_async_op_span</span> = <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">async_op_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">let</span> <span class="ident">_async_op_poll_span</span> = <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">ctx</span>.<span class="ident">async_op_poll_span</span>.<span class="ident">clone</span>().<span class="ident">entered</span>();
 
-        <span class="kw">let</span> (<span class="ident">node</span>, <span class="ident">semaphore</span>, <span class="ident">needed</span>, <span class="ident">queued</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+        <span class="kw">let</span> (<span class="ident">node</span>, <span class="ident">semaphore</span>, <span class="ident">needed</span>, <span class="ident">queued</span>) = <span class="self">self</span>.<span class="ident">project</span>();
 
         <span class="comment">// First, ensure the current task has enough budget to proceed.</span>
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">coop</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="macro">trace_poll_op!</span>(
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">let</span> <span class="ident">coop</span> = <span class="macro">ready!</span>(<span class="macro">trace_poll_op!</span>(
             <span class="string">&quot;poll_acquire&quot;</span>,
             <span class="ident"><span class="kw">crate</span>::coop::poll_proceed</span>(<span class="ident">cx</span>),
         ));
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>)))]</span>
-        <span class="kw">let</span> <span class="ident">coop</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident"><span class="kw">crate</span>::coop::poll_proceed</span>(<span class="ident">cx</span>));
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>)))]</span>
+        <span class="kw">let</span> <span class="ident">coop</span> = <span class="macro">ready!</span>(<span class="ident"><span class="kw">crate</span>::coop::poll_proceed</span>(<span class="ident">cx</span>));
 
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">semaphore</span>.<span class="ident">poll_acquire</span>(<span class="ident">cx</span>, <span class="ident">needed</span>, <span class="ident">node</span>, <span class="kw-2">*</span><span class="ident">queued</span>) {
+        <span class="kw">let</span> <span class="ident">result</span> = <span class="kw">match</span> <span class="ident">semaphore</span>.<span class="ident">poll_acquire</span>(<span class="ident">cx</span>, <span class="ident">needed</span>, <span class="ident">node</span>, <span class="kw-2">*</span><span class="ident">queued</span>) {
             <span class="ident">Pending</span> =&gt; {
-                <span class="kw-2">*</span><span class="ident">queued</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                <span class="kw-2">*</span><span class="ident">queued</span> = <span class="bool-val">true</span>;
                 <span class="ident">Pending</span>
             }
             <span class="ident">Ready</span>(<span class="ident">r</span>) =&gt; {
                 <span class="ident">coop</span>.<span class="ident">made_progress</span>();
                 <span class="ident">r</span><span class="question-mark">?</span>;
-                <span class="kw-2">*</span><span class="ident">queued</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                <span class="kw-2">*</span><span class="ident">queued</span> = <span class="bool-val">false</span>;
                 <span class="ident">Ready</span>(<span class="prelude-val">Ok</span>(()))
             }
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
         <span class="kw">return</span> <span class="macro">trace_poll_op!</span>(<span class="string">&quot;poll_acquire&quot;</span>, <span class="ident">result</span>);
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>)))]</span>
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>)))]</span>
         <span class="kw">return</span> <span class="ident">result</span>;
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">semaphore</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Semaphore</span>, <span class="ident">num_permits</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">not</span>(<span class="ident">tokio_unstable</span>), <span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>)))]</span>
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">not</span>(<span class="ident">tokio_unstable</span>), <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>)))]</span>
         <span class="kw">return</span> <span class="self">Self</span> {
             <span class="ident">node</span>: <span class="ident">Waiter::new</span>(<span class="ident">num_permits</span>),
             <span class="ident">semaphore</span>,
@@ -1296,27 +1296,27 @@
             <span class="ident">queued</span>: <span class="bool-val">false</span>,
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tracing&quot;</span>))]</span>
-        <span class="kw">return</span> <span class="ident">semaphore</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">async_op_span</span> <span class="op">=</span>
-                <span class="macro">tracing::trace_span!</span>(<span class="string">&quot;runtime.resource.async_op&quot;</span>, <span class="ident">source</span> <span class="op">=</span> <span class="string">&quot;Acquire::new&quot;</span>);
-            <span class="kw">let</span> <span class="ident">async_op_poll_span</span> <span class="op">=</span> <span class="ident">async_op_span</span>.<span class="ident">in_scope</span>(<span class="op">|</span><span class="op">|</span> {
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">tokio_unstable</span>, <span class="ident">feature</span> = <span class="string">&quot;tracing&quot;</span>))]</span>
+        <span class="kw">return</span> <span class="ident">semaphore</span>.<span class="ident">resource_span</span>.<span class="ident">in_scope</span>(|| {
+            <span class="kw">let</span> <span class="ident">async_op_span</span> =
+                <span class="macro">tracing::trace_span!</span>(<span class="string">&quot;runtime.resource.async_op&quot;</span>, <span class="ident">source</span> = <span class="string">&quot;Acquire::new&quot;</span>);
+            <span class="kw">let</span> <span class="ident">async_op_poll_span</span> = <span class="ident">async_op_span</span>.<span class="ident">in_scope</span>(|| {
                 <span class="macro">tracing::trace!</span>(
                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::async_op::state_update&quot;</span>,
-                    <span class="ident">permits_requested</span> <span class="op">=</span> <span class="ident">num_permits</span>,
-                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;override&quot;</span>,
+                    <span class="ident">permits_requested</span> = <span class="ident">num_permits</span>,
+                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;override&quot;</span>,
                 );
 
                 <span class="macro">tracing::trace!</span>(
                     <span class="ident">target</span>: <span class="string">&quot;runtime::resource::async_op::state_update&quot;</span>,
-                    <span class="ident">permits_obtained</span> <span class="op">=</span> <span class="number">0usize</span>,
-                    <span class="ident">permits</span>.<span class="ident">op</span> <span class="op">=</span> <span class="string">&quot;override&quot;</span>,
+                    <span class="ident">permits_obtained</span> = <span class="number">0usize</span>,
+                    <span class="ident">permits</span>.<span class="ident">op</span> = <span class="string">&quot;override&quot;</span>,
                 );
 
                 <span class="macro">tracing::trace_span!</span>(<span class="string">&quot;runtime.resource.async_op.poll&quot;</span>)
             });
 
-            <span class="kw">let</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">trace::AsyncOpTracingCtx</span> {
+            <span class="kw">let</span> <span class="ident">ctx</span> = <span class="ident">trace::AsyncOpTracingCtx</span> {
                 <span class="ident">async_op_span</span>,
                 <span class="ident">async_op_poll_span</span>,
                 <span class="ident">resource_span</span>: <span class="ident">semaphore</span>.<span class="ident">resource_span</span>.<span class="ident">clone</span>(),
@@ -1331,16 +1331,16 @@
         });
     }
 
-    <span class="kw">fn</span> <span class="ident">project</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>) -&gt; (<span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">Waiter</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">Semaphore</span>, <span class="ident">u32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">bool</span>) {
-        <span class="kw">fn</span> <span class="ident">is_unpin</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Unpin</span><span class="op">&gt;</span>() {}
+    <span class="kw">fn</span> <span class="ident">project</span>(<span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;) -&gt; (<span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="ident">Waiter</span>&gt;, <span class="kw-2">&amp;</span><span class="ident">Semaphore</span>, <span class="ident">u32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">bool</span>) {
+        <span class="kw">fn</span> <span class="ident">is_unpin</span>&lt;<span class="ident">T</span>: <span class="ident">Unpin</span>&gt;() {}
         <span class="kw">unsafe</span> {
             <span class="comment">// Safety: all fields other than `node` are `Unpin`</span>
 
-            <span class="ident">is_unpin</span>::<span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Semaphore</span><span class="op">&gt;</span>();
-            <span class="ident">is_unpin</span>::<span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">bool</span><span class="op">&gt;</span>();
-            <span class="ident">is_unpin</span>::<span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>();
+            <span class="ident">is_unpin</span>::&lt;<span class="kw-2">&amp;</span><span class="ident">Semaphore</span>&gt;();
+            <span class="ident">is_unpin</span>::&lt;<span class="kw-2">&amp;mut</span> <span class="ident">bool</span>&gt;();
+            <span class="ident">is_unpin</span>::&lt;<span class="ident">u32</span>&gt;();
 
-            <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_unchecked_mut</span>();
+            <span class="kw">let</span> <span class="ident">this</span> = <span class="self">self</span>.<span class="ident">get_unchecked_mut</span>();
             (
                 <span class="ident">Pin::new_unchecked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="ident">node</span>),
                 <span class="ident">this</span>.<span class="ident">semaphore</span>,
@@ -1351,26 +1351,26 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="comment">// If the future is completed, there is no node in the wait list, so we</span>
         <span class="comment">// can skip acquiring the lock.</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">queued</span> {
+        <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">queued</span> {
             <span class="kw">return</span>;
         }
 
         <span class="comment">// This is where we ensure safety. The future is being dropped,</span>
         <span class="comment">// which means we must ensure that the waiter entry is no longer stored</span>
         <span class="comment">// in the linked list.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">semaphore</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">waiters</span> = <span class="self">self</span>.<span class="ident">semaphore</span>.<span class="ident">waiters</span>.<span class="ident">lock</span>();
 
         <span class="comment">// remove the entry from the list</span>
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">NonNull::from</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">node</span>);
+        <span class="kw">let</span> <span class="ident">node</span> = <span class="ident">NonNull::from</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">node</span>);
         <span class="comment">// Safety: we have locked the wait list.</span>
         <span class="kw">unsafe</span> { <span class="ident">waiters</span>.<span class="ident">queue</span>.<span class="ident">remove</span>(<span class="ident">node</span>) };
 
-        <span class="kw">let</span> <span class="ident">acquired_permits</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
-        <span class="kw">if</span> <span class="ident">acquired_permits</span> <span class="op">&gt;</span> <span class="number">0</span> {
+        <span class="kw">let</span> <span class="ident">acquired_permits</span> = <span class="self">self</span>.<span class="ident">num_permits</span> <span class="kw">as</span> <span class="ident">usize</span> - <span class="self">self</span>.<span class="ident">node</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">Acquire</span>);
+        <span class="kw">if</span> <span class="ident">acquired_permits</span> &gt; <span class="number">0</span> {
             <span class="self">self</span>.<span class="ident">semaphore</span>.<span class="ident">add_permits_locked</span>(<span class="ident">acquired_permits</span>, <span class="ident">waiters</span>);
         }
     }
@@ -1381,7 +1381,7 @@
 <span class="comment">// `UnsafeCell` is only accessed when the future is borrowed mutably (either in</span>
 <span class="comment">// `poll` or in `drop`). Therefore, it is safe (although not particularly</span>
 <span class="comment">// _useful_) for the future to be borrowed immutably across threads.</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Acquire</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Acquire</span>&lt;<span class="lifetime">&#39;_</span>&gt; {}
 
 <span class="comment">// ===== impl AcquireError ====</span>
 
@@ -1392,7 +1392,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">AcquireError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;semaphore closed&quot;</span>)
     }
 }
@@ -1417,7 +1417,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">TryAcquireError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">TryAcquireError::Closed</span> =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;semaphore closed&quot;</span>),
             <span class="ident">TryAcquireError::NoPermits</span> =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;no permits available&quot;</span>),
@@ -1437,20 +1437,20 @@
     <span class="comment">// type would require `Semaphore` to be generic over a lifetime. We can&#39;t</span>
     <span class="comment">// use `Pin&lt;*mut Waiter&gt;`, as raw pointers are `Unpin` regardless of whether</span>
     <span class="comment">// or not they dereference to an `!Unpin` target.</span>
-    <span class="kw">type</span> <span class="ident">Handle</span> <span class="op">=</span> <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="ident">Waiter</span>;
+    <span class="kw">type</span> <span class="ident">Handle</span> = <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;;
+    <span class="kw">type</span> <span class="ident">Target</span> = <span class="ident">Waiter</span>;
 
-    <span class="kw">fn</span> <span class="ident">as_raw</span>(<span class="ident">handle</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Handle</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">as_raw</span>(<span class="ident">handle</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Handle</span>) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt; {
         <span class="kw-2">*</span><span class="ident">handle</span>
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_raw</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span> {
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_raw</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt; {
         <span class="ident">ptr</span>
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pointers</span>(<span class="kw-2">mut</span> <span class="ident">target</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span>) -&gt; <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">linked_list::Pointers</span><span class="op">&lt;</span><span class="ident">Waiter</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pointers</span>(<span class="kw-2">mut</span> <span class="ident">target</span>: <span class="ident">NonNull</span>&lt;<span class="ident">Waiter</span>&gt;) -&gt; <span class="ident">NonNull</span>&lt;<span class="ident">linked_list::Pointers</span>&lt;<span class="ident">Waiter</span>&gt;&gt; {
         <span class="ident">NonNull::from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">target</span>.<span class="ident">as_mut</span>().<span class="ident">pointers</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

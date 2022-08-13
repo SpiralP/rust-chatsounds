@@ -57,17 +57,17 @@ some additional context besides what’s in the formatted message:</p>
 <div class='information'><div class='tooltip edition' data-edition="2018">ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition"><code><span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">info</span>, <span class="ident">warn</span>, <span class="ident">as_serde</span>, <span class="ident">as_error</span>};
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">shave_the_yak</span>(<span class="ident">yak</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Yak</span>) {
-    <span class="macro">info!</span>(<span class="ident">target</span>: <span class="string">&quot;yak_events&quot;</span>, <span class="ident">yak</span> <span class="op">=</span> <span class="macro">as_serde!</span>(<span class="ident">yak</span>); <span class="string">&quot;Commencing yak shaving&quot;</span>);
+    <span class="macro">info!</span>(<span class="ident">target</span>: <span class="string">&quot;yak_events&quot;</span>, <span class="ident">yak</span> = <span class="macro">as_serde!</span>(<span class="ident">yak</span>); <span class="string">&quot;Commencing yak shaving&quot;</span>);
 
     <span class="kw">loop</span> {
         <span class="kw">match</span> <span class="ident">find_a_razor</span>() {
             <span class="prelude-val">Ok</span>(<span class="ident">razor</span>) =&gt; {
-                <span class="macro">info!</span>(<span class="ident">razor</span> <span class="op">=</span> <span class="ident">razor</span>; <span class="string">&quot;Razor located&quot;</span>);
+                <span class="macro">info!</span>(<span class="ident">razor</span> = <span class="ident">razor</span>; <span class="string">&quot;Razor located&quot;</span>);
                 <span class="ident">yak</span>.<span class="ident">shave</span>(<span class="ident">razor</span>);
                 <span class="kw">break</span>;
             }
             <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
-                <span class="macro">warn!</span>(<span class="ident">err</span> <span class="op">=</span> <span class="macro">as_error!</span>(<span class="ident">err</span>); <span class="string">&quot;Unable to locate a razor, retrying&quot;</span>);
+                <span class="macro">warn!</span>(<span class="ident">err</span> = <span class="macro">as_error!</span>(<span class="ident">err</span>); <span class="string">&quot;Unable to locate a razor, retrying&quot;</span>);
             }
         }
     }
@@ -126,7 +126,7 @@ logs all messages at the <a href="enum.Level.html"><code>Error</code></a>, <a hr
 
 <span class="kw">impl</span> <span class="ident">log::Log</span> <span class="kw">for</span> <span class="ident">SimpleLogger</span> {
     <span class="kw">fn</span> <span class="ident">enabled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">metadata</span>: <span class="kw-2">&amp;</span><span class="ident">Metadata</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">metadata</span>.<span class="ident">level</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">Level::Info</span>
+        <span class="ident">metadata</span>.<span class="ident">level</span>() &lt;= <span class="ident">Level::Info</span>
     }
 
     <span class="kw">fn</span> <span class="ident">log</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">record</span>: <span class="kw-2">&amp;</span><span class="ident">Record</span>) {
@@ -151,11 +151,11 @@ provide a function that wraps a call to <a href="fn.set_logger.html"><code>set_l
 
 <div class='information'><div class='tooltip edition' data-edition="2018">ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition"><code><span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">SetLoggerError</span>, <span class="ident">LevelFilter</span>};
 
-<span class="kw">static</span> <span class="ident">LOGGER</span>: <span class="ident">SimpleLogger</span> <span class="op">=</span> <span class="ident">SimpleLogger</span>;
+<span class="kw">static</span> <span class="ident">LOGGER</span>: <span class="ident">SimpleLogger</span> = <span class="ident">SimpleLogger</span>;
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">init</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SetLoggerError</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">init</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">SetLoggerError</span>&gt; {
     <span class="ident">log::set_logger</span>(<span class="kw-2">&amp;</span><span class="ident">LOGGER</span>)
-        .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">log::set_max_level</span>(<span class="ident">LevelFilter::Info</span>))
+        .<span class="ident">map</span>(|()| <span class="ident">log::set_max_level</span>(<span class="ident">LevelFilter::Info</span>))
 }</code></pre></div>
 <p>Implementations that adjust their configurations at runtime should take care
 to adjust the maximum log level as well.</p>
@@ -166,9 +166,9 @@ obtain if your logger depends on some runtime configuration. The
 identical to <code>set_logger</code> except that it takes a <code>Box&lt;Log&gt;</code> rather than a
 <code>&amp;'static Log</code>:</p>
 
-<div class='information'><div class='tooltip edition' data-edition="2018">ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition"><code><span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">init</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SetLoggerError</span><span class="op">&gt;</span> {
+<div class='information'><div class='tooltip edition' data-edition="2018">ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered edition"><code><span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">init</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">SetLoggerError</span>&gt; {
     <span class="ident">log::set_boxed_logger</span>(<span class="ident">Box::new</span>(<span class="ident">SimpleLogger</span>))
-        .<span class="ident">map</span>(<span class="op">|</span>()<span class="op">|</span> <span class="ident">log::set_max_level</span>(<span class="ident">LevelFilter::Info</span>))
+        .<span class="ident">map</span>(|()| <span class="ident">log::set_max_level</span>(<span class="ident">LevelFilter::Info</span>))
 }</code></pre></div>
 <h2 id="compile-time-filters"><a href="#compile-time-filters">Compile time filters</a></h2>
 <p>Log levels can be statically disabled at compile time via Cargo features. Log invocations at
@@ -232,4 +232,4 @@ be logged.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.set_logger.html" title="log::set_logger fn">set_logger</a></div><div class="item-right docblock-short"><p>Sets the global logger to a <code>&amp;'static Log</code>.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.set_logger_racy.html" title="log::set_logger_racy fn">set_logger_racy</a><a title="unsafe function" href="#"><sup>⚠</sup></a></div><div class="item-right docblock-short"><p>A thread-unsafe version of <a href="fn.set_logger.html"><code>set_logger</code></a>.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.set_max_level.html" title="log::set_max_level fn">set_max_level</a></div><div class="item-right docblock-short"><p>Sets the global maximum log level.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="log" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="log" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

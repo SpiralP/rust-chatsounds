@@ -22,8 +22,8 @@ subsequent calls to <code>borrow</code>.</p>
 <span class="kw">struct</span> <span class="ident">State</span> {
     <span class="ident">counter</span>: <span class="ident">usize</span>,
 }
-<span class="kw">let</span> (<span class="ident">state_tx</span>, <span class="ident">state_rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="ident">State</span> { <span class="ident">counter</span>: <span class="number">0</span> });
-<span class="ident">state_tx</span>.<span class="ident">send_modify</span>(<span class="op">|</span><span class="ident">state</span><span class="op">|</span> <span class="ident">state</span>.<span class="ident">counter</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>);
+<span class="kw">let</span> (<span class="ident">state_tx</span>, <span class="ident">state_rx</span>) = <span class="ident">watch::channel</span>(<span class="ident">State</span> { <span class="ident">counter</span>: <span class="number">0</span> });
+<span class="ident">state_tx</span>.<span class="ident">send_modify</span>(|<span class="ident">state</span>| <span class="ident">state</span>.<span class="ident">counter</span> += <span class="number">1</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">state_rx</span>.<span class="ident">borrow</span>().<span class="ident">counter</span>, <span class="number">1</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send_if_modified" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/watch.rs.html#716-756">source</a></span><h4 class="code-header">pub fn <a href="#method.send_if_modified" class="fnname">send_if_modified</a>&lt;F&gt;(&amp;self, modify: F) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>T) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,&nbsp;</span></h4></section></summary><div class="docblock"><p>Modifies the watched value <strong>conditionally</strong> in-place,
 notifying all receivers only if modified.</p>
@@ -52,10 +52,10 @@ subsequent calls to <code>borrow</code>.</p>
 <span class="kw">struct</span> <span class="ident">State</span> {
     <span class="ident">counter</span>: <span class="ident">usize</span>,
 }
-<span class="kw">let</span> (<span class="ident">state_tx</span>, <span class="kw-2">mut</span> <span class="ident">state_rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="ident">State</span> { <span class="ident">counter</span>: <span class="number">1</span> });
-<span class="kw">let</span> <span class="ident">inc_counter_if_odd</span> <span class="op">=</span> <span class="op">|</span><span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">State</span><span class="op">|</span> {
-    <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">counter</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">1</span> {
-        <span class="ident">state</span>.<span class="ident">counter</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+<span class="kw">let</span> (<span class="ident">state_tx</span>, <span class="kw-2">mut</span> <span class="ident">state_rx</span>) = <span class="ident">watch::channel</span>(<span class="ident">State</span> { <span class="ident">counter</span>: <span class="number">1</span> });
+<span class="kw">let</span> <span class="ident">inc_counter_if_odd</span> = |<span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">State</span>| {
+    <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">counter</span> % <span class="number">2</span> == <span class="number">1</span> {
+        <span class="ident">state</span>.<span class="ident">counter</span> += <span class="number">1</span>;
         <span class="kw">return</span> <span class="bool-val">true</span>;
     }
     <span class="bool-val">false</span>
@@ -63,14 +63,14 @@ subsequent calls to <code>borrow</code>.</p>
 
 <span class="macro">assert_eq!</span>(<span class="ident">state_rx</span>.<span class="ident">borrow</span>().<span class="ident">counter</span>, <span class="number">1</span>);
 
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
+<span class="macro">assert!</span>(!<span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
 <span class="macro">assert!</span>(<span class="ident">state_tx</span>.<span class="ident">send_if_modified</span>(<span class="ident">inc_counter_if_odd</span>));
 <span class="macro">assert!</span>(<span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
 <span class="macro">assert_eq!</span>(<span class="ident">state_rx</span>.<span class="ident">borrow_and_update</span>().<span class="ident">counter</span>, <span class="number">2</span>);
 
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">state_tx</span>.<span class="ident">send_if_modified</span>(<span class="ident">inc_counter_if_odd</span>));
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
+<span class="macro">assert!</span>(!<span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
+<span class="macro">assert!</span>(!<span class="ident">state_tx</span>.<span class="ident">send_if_modified</span>(<span class="ident">inc_counter_if_odd</span>));
+<span class="macro">assert!</span>(!<span class="ident">state_rx</span>.<span class="ident">has_changed</span>().<span class="ident">unwrap</span>());
 <span class="macro">assert_eq!</span>(<span class="ident">state_rx</span>.<span class="ident">borrow_and_update</span>().<span class="ident">counter</span>, <span class="number">2</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send_replace" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/watch.rs.html#774-779">source</a></span><h4 class="code-header">pub fn <a href="#method.send_replace" class="fnname">send_replace</a>(&amp;self, value: T) -&gt; T</h4></section></summary><div class="docblock"><p>Sends a new value via the channel, notifying all receivers and returning
 the previous value in the channel.</p>
@@ -80,7 +80,7 @@ receivers.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::watch</span>;
 
-<span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="number">1</span>);
+<span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) = <span class="ident">watch::channel</span>(<span class="number">1</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">send_replace</span>(<span class="number">2</span>), <span class="number">1</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">send_replace</span>(<span class="number">3</span>), <span class="number">2</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.borrow" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/watch.rs.html#795-802">source</a></span><h4 class="code-header">pub fn <a href="#method.borrow" class="fnname">borrow</a>(&amp;self) -&gt; <a class="struct" href="struct.Ref.html" title="struct tokio::sync::watch::Ref">Ref</a>&lt;'_, T&gt;</h4></section></summary><div class="docblock"><p>Returns a reference to the most recently sent value</p>
@@ -90,13 +90,13 @@ as short lived as possible.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::watch</span>;
 
-<span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
+<span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw">_</span>) = <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
 <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">tx</span>.<span class="ident">borrow</span>(), <span class="string">&quot;hello&quot;</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/watch.rs.html#816-818">source</a></span><h4 class="code-header">pub fn <a href="#method.is_closed" class="fnname">is_closed</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks if the channel has been closed. This happens when all receivers
 have dropped.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">tokio::sync::watch::channel</span>(());
-<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">tx</span>.<span class="ident">is_closed</span>());
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">tokio::sync::watch::channel</span>(());
+<span class="macro">assert!</span>(!<span class="ident">tx</span>.<span class="ident">is_closed</span>());
 
 <span class="ident">drop</span>(<span class="ident">rx</span>);
 <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">is_closed</span>());</code></pre></div>
@@ -111,7 +111,7 @@ forever and all future calls to <code>closed</code> will return immediately.</p>
 
 <span class="attribute">#[<span class="ident">tokio::main</span>]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
 
     <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
         <span class="comment">// use `rx`</span>
@@ -134,11 +134,11 @@ case, the channel is reopened.</p>
 
 <span class="attribute">#[<span class="ident">tokio::main</span>]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="number">0u64</span>);
+    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) = <span class="ident">watch::channel</span>(<span class="number">0u64</span>);
 
     <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">5</span>).<span class="ident">unwrap</span>();
 
-    <span class="kw">let</span> <span class="ident">rx</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">subscribe</span>();
+    <span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">tx</span>.<span class="ident">subscribe</span>();
     <span class="macro">assert_eq!</span>(<span class="number">5</span>, <span class="kw-2">*</span><span class="ident">rx</span>.<span class="ident">borrow</span>());
 
     <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">10</span>).<span class="ident">unwrap</span>();
@@ -152,9 +152,9 @@ is guaranteed to pass.</p>
 
 <span class="attribute">#[<span class="ident">tokio::main</span>]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="number">0u64</span>);
+    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">_rx</span>) = <span class="ident">watch::channel</span>(<span class="number">0u64</span>);
     <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">5</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rx</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">subscribe</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rx</span> = <span class="ident">tx</span>.<span class="ident">subscribe</span>();
 
     <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
         <span class="comment">// by spawning and sleeping, the message is sent after `main`</span>
@@ -172,11 +172,11 @@ is guaranteed to pass.</p>
 
 <span class="attribute">#[<span class="ident">tokio::main</span>]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx1</span>) <span class="op">=</span> <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx1</span>) = <span class="ident">watch::channel</span>(<span class="string">&quot;hello&quot;</span>);
 
     <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="ident">tx</span>.<span class="ident">receiver_count</span>());
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">_rx2</span> <span class="op">=</span> <span class="ident">rx1</span>.<span class="ident">clone</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">_rx2</span> = <span class="ident">rx1</span>.<span class="ident">clone</span>();
 
     <span class="macro">assert_eq!</span>(<span class="number">2</span>, <span class="ident">tx</span>.<span class="ident">receiver_count</span>());
 }</code></pre></div>
@@ -193,4 +193,4 @@ is guaranteed to pass.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

@@ -97,14 +97,14 @@
 <span class="doccomment">/// An optimization to try to take a full body if immediately available.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This is currently limited to *only* `hyper::Body`s.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;http1&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">take_full_data</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">HttpBody</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span>(<span class="ident">body</span>: <span class="kw-2">&amp;mut</span> <span class="ident">T</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Data</span><span class="op">&gt;</span> {
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">take_full_data</span>&lt;<span class="ident">T</span>: <span class="ident">HttpBody</span> + <span class="lifetime">&#39;static</span>&gt;(<span class="ident">body</span>: <span class="kw-2">&amp;mut</span> <span class="ident">T</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">T::Data</span>&gt; {
     <span class="kw">use</span> <span class="ident">std::any</span>::{<span class="ident">Any</span>, <span class="ident">TypeId</span>};
 
     <span class="comment">// This static type check can be optimized at compile-time.</span>
-    <span class="kw">if</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>() <span class="op">==</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">full</span> <span class="op">=</span> (<span class="ident">body</span> <span class="kw">as</span> <span class="kw-2">&amp;mut</span> <span class="kw">dyn</span> <span class="ident">Any</span>)
-            .<span class="ident">downcast_mut</span>::<span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span>()
+    <span class="kw">if</span> <span class="ident">TypeId::of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="ident">TypeId::of</span>::&lt;<span class="ident">Body</span>&gt;() {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">full</span> = (<span class="ident">body</span> <span class="kw">as</span> <span class="kw-2">&amp;mut</span> <span class="kw">dyn</span> <span class="ident">Any</span>)
+            .<span class="ident">downcast_mut</span>::&lt;<span class="ident">Body</span>&gt;()
             .<span class="ident">expect</span>(<span class="string">&quot;must be Body&quot;</span>)
             .<span class="ident">take_full_data</span>();
         <span class="comment">// This second cast is required to make the type system happy.</span>
@@ -113,7 +113,7 @@
         <span class="comment">//</span>
         <span class="comment">// It&#39;s still a measurable win!</span>
         (<span class="kw-2">&amp;mut</span> <span class="ident">full</span> <span class="kw">as</span> <span class="kw-2">&amp;mut</span> <span class="kw">dyn</span> <span class="ident">Any</span>)
-            .<span class="ident">downcast_mut</span>::<span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Data</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+            .<span class="ident">downcast_mut</span>::&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T::Data</span>&gt;&gt;()
             .<span class="ident">expect</span>(<span class="string">&quot;must be T::Data&quot;</span>)
             .<span class="ident">take</span>()
     } <span class="kw">else</span> {
@@ -122,11 +122,11 @@
 }
 
 <span class="kw">fn</span> <span class="ident">_assert_send_sync</span>() {
-    <span class="kw">fn</span> <span class="ident">_assert_send</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Send</span><span class="op">&gt;</span>() {}
-    <span class="kw">fn</span> <span class="ident">_assert_sync</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Sync</span><span class="op">&gt;</span>() {}
+    <span class="kw">fn</span> <span class="ident">_assert_send</span>&lt;<span class="ident">T</span>: <span class="ident">Send</span>&gt;() {}
+    <span class="kw">fn</span> <span class="ident">_assert_sync</span>&lt;<span class="ident">T</span>: <span class="ident">Sync</span>&gt;() {}
 
-    <span class="ident">_assert_send</span>::<span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span>();
-    <span class="ident">_assert_sync</span>::<span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span>();
+    <span class="ident">_assert_send</span>::&lt;<span class="ident">Body</span>&gt;();
+    <span class="ident">_assert_sync</span>::&lt;<span class="ident">Body</span>&gt;();
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

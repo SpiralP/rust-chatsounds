@@ -140,26 +140,26 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">cvt</span>, <span class="ident">cvt_p</span>};
 
 <span class="doccomment">/// A type used to derive a shared secret between two keys.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">*mut</span> <span class="ident">ffi::EVP_PKEY_CTX</span>, <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> ()<span class="op">&gt;</span>);
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">*mut</span> <span class="ident">ffi::EVP_PKEY_CTX</span>, <span class="ident">PhantomData</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> ()&gt;);
 
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt; {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt; {}
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::len_without_is_empty</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// Creates a new `Deriver` using the provided private key.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This corresponds to [`EVP_PKEY_derive_init`].</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`EVP_PKEY_derive_init`]: https://www.openssl.org/docs/man1.0.2/crypto/EVP_PKEY_derive_init.html</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">PKeyRef</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">ErrorStack</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>&lt;<span class="ident">T</span>&gt;(<span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">PKeyRef</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt;, <span class="ident">ErrorStack</span>&gt;
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">HasPrivate</span>,
     {
         <span class="kw">unsafe</span> {
             <span class="ident">cvt_p</span>(<span class="ident">ffi::EVP_PKEY_CTX_new</span>(<span class="ident">key</span>.<span class="ident">as_ptr</span>(), <span class="ident">ptr::null_mut</span>()))
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">Deriver</span>(<span class="ident">p</span>, <span class="ident">PhantomData</span>))
-                .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive_init</span>(<span class="ident">ctx</span>.<span class="number">0</span>)).<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">ctx</span>))
+                .<span class="ident">map</span>(|<span class="ident">p</span>| <span class="ident">Deriver</span>(<span class="ident">p</span>, <span class="ident">PhantomData</span>))
+                .<span class="ident">and_then</span>(|<span class="ident">ctx</span>| <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive_init</span>(<span class="ident">ctx</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">ctx</span>))
         }
     }
 
@@ -168,11 +168,11 @@
     <span class="doccomment">/// This corresponds to [`EVP_PKEY_derive_set_peer`]:</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`EVP_PKEY_derive_set_peer`]: https://www.openssl.org/docs/man1.0.2/crypto/EVP_PKEY_derive_init.html</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_peer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">PKeyRef</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ErrorStack</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_peer</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">PKeyRef</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">ErrorStack</span>&gt;
     <span class="kw">where</span>
         <span class="ident">T</span>: <span class="ident">HasPublic</span>,
     {
-        <span class="kw">unsafe</span> { <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive_set_peer</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">key</span>.<span class="ident">as_ptr</span>())).<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> ()) }
+        <span class="kw">unsafe</span> { <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive_set_peer</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">key</span>.<span class="ident">as_ptr</span>())).<span class="ident">map</span>(|<span class="kw">_</span>| ()) }
     }
 
     <span class="doccomment">/// Returns the size of the shared secret.</span>
@@ -183,10 +183,10 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`Deriver::derive`]: #method.derive</span>
     <span class="doccomment">/// [`EVP_PKEY_derive`]: https://www.openssl.org/docs/man1.0.2/crypto/EVP_PKEY_derive_init.html</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">ErrorStack</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">ErrorStack</span>&gt; {
         <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">ptr::null_mut</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">len</span>)).<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">len</span>)
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> = <span class="number">0</span>;
+            <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">ptr::null_mut</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">len</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">len</span>)
         }
     }
 
@@ -197,15 +197,15 @@
     <span class="doccomment">/// This corresponds to [`EVP_PKEY_derive`].</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`EVP_PKEY_derive`]: https://www.openssl.org/docs/man1.0.2/crypto/EVP_PKEY_derive_init.html</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">derive</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">ErrorStack</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">len</span>();
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">derive</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">ErrorStack</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> = <span class="ident">buf</span>.<span class="ident">len</span>();
         <span class="kw">unsafe</span> {
             <span class="ident">cvt</span>(<span class="ident">ffi::EVP_PKEY_derive</span>(
                 <span class="self">self</span>.<span class="number">0</span>,
                 <span class="ident">buf</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span>,
                 <span class="kw-2">&amp;mut</span> <span class="ident">len</span>,
             ))
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">len</span>)
+            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">len</span>)
         }
     }
 
@@ -215,16 +215,16 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`Deriver::len`]: #method.len</span>
     <span class="doccomment">/// [`Deriver::derive`]: #method.derive</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">derive_to_vec</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">ErrorStack</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">len</span>];
-        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">derive</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">derive_to_vec</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">ErrorStack</span>&gt; {
+        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">len</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">len</span>];
+        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">derive</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span>;
         <span class="ident">buf</span>.<span class="ident">truncate</span>(<span class="ident">len</span>);
         <span class="prelude-val">Ok</span>(<span class="ident">buf</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Deriver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Deriver</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="kw">unsafe</span> {
             <span class="ident">ffi::EVP_PKEY_CTX_free</span>(<span class="self">self</span>.<span class="number">0</span>);
@@ -242,25 +242,25 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">derive_without_peer</span>() {
-        <span class="kw">let</span> <span class="ident">group</span> <span class="op">=</span> <span class="ident">EcGroup::from_curve_name</span>(<span class="ident">Nid::X9_62_PRIME256V1</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">ec_key</span> <span class="op">=</span> <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">pkey</span> <span class="op">=</span> <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deriver</span> <span class="op">=</span> <span class="ident">Deriver::new</span>(<span class="kw-2">&amp;</span><span class="ident">pkey</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">group</span> = <span class="ident">EcGroup::from_curve_name</span>(<span class="ident">Nid::X9_62_PRIME256V1</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">ec_key</span> = <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">pkey</span> = <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deriver</span> = <span class="ident">Deriver::new</span>(<span class="kw-2">&amp;</span><span class="ident">pkey</span>).<span class="ident">unwrap</span>();
         <span class="ident">deriver</span>.<span class="ident">derive_to_vec</span>().<span class="ident">unwrap_err</span>();
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_ec_key_derive</span>() {
-        <span class="kw">let</span> <span class="ident">group</span> <span class="op">=</span> <span class="ident">EcGroup::from_curve_name</span>(<span class="ident">Nid::X9_62_PRIME256V1</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">ec_key</span> <span class="op">=</span> <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">ec_key2</span> <span class="op">=</span> <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">pkey</span> <span class="op">=</span> <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">pkey2</span> <span class="op">=</span> <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key2</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deriver</span> <span class="op">=</span> <span class="ident">Deriver::new</span>(<span class="kw-2">&amp;</span><span class="ident">pkey</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">group</span> = <span class="ident">EcGroup::from_curve_name</span>(<span class="ident">Nid::X9_62_PRIME256V1</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">ec_key</span> = <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">ec_key2</span> = <span class="ident">EcKey::generate</span>(<span class="kw-2">&amp;</span><span class="ident">group</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">pkey</span> = <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">pkey2</span> = <span class="ident">PKey::from_ec_key</span>(<span class="ident">ec_key2</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">deriver</span> = <span class="ident">Deriver::new</span>(<span class="kw-2">&amp;</span><span class="ident">pkey</span>).<span class="ident">unwrap</span>();
         <span class="ident">deriver</span>.<span class="ident">set_peer</span>(<span class="kw-2">&amp;</span><span class="ident">pkey2</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">shared</span> <span class="op">=</span> <span class="ident">deriver</span>.<span class="ident">derive_to_vec</span>().<span class="ident">unwrap</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">shared</span>.<span class="ident">is_empty</span>());
+        <span class="kw">let</span> <span class="ident">shared</span> = <span class="ident">deriver</span>.<span class="ident">derive_to_vec</span>().<span class="ident">unwrap</span>();
+        <span class="macro">assert!</span>(!<span class="ident">shared</span>.<span class="ident">is_empty</span>());
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

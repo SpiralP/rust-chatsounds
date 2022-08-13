@@ -73,54 +73,54 @@
 <span id="73">73</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::inner</span>::{<span class="ident">do_alloc</span>, <span class="ident">Allocator</span>, <span class="ident">Global</span>};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;nightly&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">inner</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alloc::alloc::Layout</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alloc::alloc</span>::{<span class="ident">Allocator</span>, <span class="ident">Global</span>};
     <span class="kw">use</span> <span class="ident">core::ptr::NonNull</span>;
 
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::map_err_ignore</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_alloc</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">alloc</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_alloc</span>&lt;<span class="ident">A</span>: <span class="ident">Allocator</span>&gt;(<span class="ident">alloc</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, ()&gt; {
         <span class="kw">match</span> <span class="ident">alloc</span>.<span class="ident">allocate</span>(<span class="ident">layout</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">ptr</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">ptr</span>.<span class="ident">as_non_null_ptr</span>()),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(()),
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;bumpalo&quot;</span>)]</span>
-    <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Allocator</span> <span class="kw">for</span> <span class="ident"><span class="kw">crate</span>::BumpWrapper</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;bumpalo&quot;</span>)]</span>
+    <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Allocator</span> <span class="kw">for</span> <span class="ident"><span class="kw">crate</span>::BumpWrapper</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="attribute">#[<span class="ident">inline</span>]</span>
-        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">core::alloc::AllocError</span><span class="op">&gt;</span> {
+        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;[<span class="ident">u8</span>]&gt;, <span class="ident">core::alloc::AllocError</span>&gt; {
             <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">try_alloc_layout</span>(<span class="ident">layout</span>) {
                 <span class="prelude-val">Ok</span>(<span class="ident">ptr</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">NonNull::slice_from_raw_parts</span>(<span class="ident">ptr</span>, <span class="ident">layout</span>.<span class="ident">size</span>())),
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">core::alloc::AllocError</span>),
             }
         }
         <span class="attribute">#[<span class="ident">inline</span>]</span>
-        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">_layout</span>: <span class="ident">Layout</span>) {}
+        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">_layout</span>: <span class="ident">Layout</span>) {}
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;nightly&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">inner</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alloc::alloc</span>::{<span class="ident">alloc</span>, <span class="ident">dealloc</span>, <span class="ident">Layout</span>};
     <span class="kw">use</span> <span class="ident">core::ptr::NonNull</span>;
 
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::missing_safety_doc</span>)]</span> <span class="comment">// not exposed outside of this crate</span>
     <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">Allocator</span> {
-        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span>;
-        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>);
+        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, ()&gt;;
+        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">layout</span>: <span class="ident">Layout</span>);
     }
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Global</span>;
     <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Allocator</span> <span class="kw">for</span> <span class="ident">Global</span> {
         <span class="attribute">#[<span class="ident">inline</span>]</span>
-        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span> {
+        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, ()&gt; {
             <span class="kw">unsafe</span> { <span class="ident">NonNull::new</span>(<span class="ident">alloc</span>(<span class="ident">layout</span>)).<span class="ident">ok_or</span>(()) }
         }
         <span class="attribute">#[<span class="ident">inline</span>]</span>
-        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) {
+        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">layout</span>: <span class="ident">Layout</span>) {
             <span class="ident">dealloc</span>(<span class="ident">ptr</span>.<span class="ident">as_ptr</span>(), <span class="ident">layout</span>);
         }
     }
@@ -131,18 +131,18 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_alloc</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">alloc</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_alloc</span>&lt;<span class="ident">A</span>: <span class="ident">Allocator</span>&gt;(<span class="ident">alloc</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, ()&gt; {
         <span class="ident">alloc</span>.<span class="ident">allocate</span>(<span class="ident">layout</span>)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;bumpalo&quot;</span>)]</span>
-    <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Allocator</span> <span class="kw">for</span> <span class="ident"><span class="kw">crate</span>::BumpWrapper</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;bumpalo&quot;</span>)]</span>
+    <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Allocator</span> <span class="kw">for</span> <span class="ident"><span class="kw">crate</span>::BumpWrapper</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::map_err_ignore</span>)]</span>
-        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span> {
-            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">try_alloc_layout</span>(<span class="ident">layout</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> ())
+        <span class="kw">fn</span> <span class="ident">allocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">layout</span>: <span class="ident">Layout</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, ()&gt; {
+            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">try_alloc_layout</span>(<span class="ident">layout</span>).<span class="ident">map_err</span>(|<span class="kw">_</span>| ())
         }
-        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">_layout</span>: <span class="ident">Layout</span>) {}
+        <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">_layout</span>: <span class="ident">Layout</span>) {}
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hashbrown" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hashbrown" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

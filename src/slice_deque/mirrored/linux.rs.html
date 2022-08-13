@@ -165,9 +165,9 @@
     <span class="ident">MAP_FAILED</span>, <span class="ident">MAP_FIXED</span>, <span class="ident">MAP_SHARED</span>, <span class="ident">PROT_READ</span>, <span class="ident">PROT_WRITE</span>, <span class="ident">_SC_PAGESIZE</span>,
 };
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">libc::__errno</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">libc::__errno_location</span>;
 
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ptr</span>, <span class="ident">AllocError</span>};
@@ -188,11 +188,11 @@
 
 <span class="doccomment">/// Reads `errno`.</span>
 <span class="kw">fn</span> <span class="ident">errno</span>() -&gt; <span class="ident">c_int</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>))]</span>
     <span class="kw">unsafe</span> {
         <span class="kw-2">*</span><span class="ident">__errno_location</span>()
     }
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;android&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>)]</span>
     <span class="kw">unsafe</span> {
         <span class="kw-2">*</span><span class="ident">__errno</span>()
     }
@@ -215,70 +215,70 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// If `size` is zero or `size / 2` is not a multiple of the</span>
 <span class="doccomment">/// allocation granularity.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">allocate_mirrored</span>(<span class="ident">size</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">AllocError</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">allocate_mirrored</span>(<span class="ident">size</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">AllocError</span>&gt; {
     <span class="kw">unsafe</span> {
-        <span class="kw">let</span> <span class="ident">half_size</span> <span class="op">=</span> <span class="ident">size</span> <span class="op">/</span> <span class="number">2</span>;
-        <span class="macro">assert!</span>(<span class="ident">size</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>);
-        <span class="macro">assert!</span>(<span class="ident">half_size</span> <span class="op">%</span> <span class="ident">allocation_granularity</span>() <span class="op">==</span> <span class="number">0</span>);
+        <span class="kw">let</span> <span class="ident">half_size</span> = <span class="ident">size</span> / <span class="number">2</span>;
+        <span class="macro">assert!</span>(<span class="ident">size</span> != <span class="number">0</span>);
+        <span class="macro">assert!</span>(<span class="ident">half_size</span> % <span class="ident">allocation_granularity</span>() == <span class="number">0</span>);
 
         <span class="comment">// create temporary file</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fname</span> <span class="op">=</span> <span class="kw-2">*</span><span class="string">b&quot;/tmp/slice_deque_fileXXXXXX\0&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd</span>: <span class="ident">c_long</span> <span class="op">=</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fname</span> = <span class="kw-2">*</span><span class="string">b&quot;/tmp/slice_deque_fileXXXXXX\0&quot;</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fd</span>: <span class="ident">c_long</span> =
             <span class="ident">memfd_create</span>(<span class="ident">fname</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_char</span>, <span class="number">0</span>);
-        <span class="kw">if</span> <span class="ident">fd</span> <span class="op">==</span> <span class="op">-</span><span class="number">1</span> <span class="op">&amp;&amp;</span> <span class="ident">errno</span>() <span class="op">==</span> <span class="ident">ENOSYS</span> {
+        <span class="kw">if</span> <span class="ident">fd</span> == -<span class="number">1</span> &amp;&amp; <span class="ident">errno</span>() == <span class="ident">ENOSYS</span> {
             <span class="comment">// memfd_create is not implemented, use mkstemp instead:</span>
-            <span class="ident">fd</span> <span class="op">=</span> <span class="ident">c_long::from</span>(<span class="ident">mkstemp</span>(<span class="ident">fname</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_char</span>));
+            <span class="ident">fd</span> = <span class="ident">c_long::from</span>(<span class="ident">mkstemp</span>(<span class="ident">fname</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_char</span>));
         }
-        <span class="kw">if</span> <span class="ident">fd</span> <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+        <span class="kw">if</span> <span class="ident">fd</span> == -<span class="number">1</span> {
             <span class="ident">print_error</span>(<span class="string">&quot;memfd_create failed&quot;</span>);
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AllocError::Other</span>);
         }
-        <span class="kw">let</span> <span class="ident">fd</span> <span class="op">=</span> <span class="ident">fd</span> <span class="kw">as</span> <span class="ident">c_int</span>;
-        <span class="kw">if</span> <span class="ident">ftruncate</span>(<span class="ident">fd</span>, <span class="ident">half_size</span> <span class="kw">as</span> <span class="ident">off_t</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+        <span class="kw">let</span> <span class="ident">fd</span> = <span class="ident">fd</span> <span class="kw">as</span> <span class="ident">c_int</span>;
+        <span class="kw">if</span> <span class="ident">ftruncate</span>(<span class="ident">fd</span>, <span class="ident">half_size</span> <span class="kw">as</span> <span class="ident">off_t</span>) == -<span class="number">1</span> {
             <span class="ident">print_error</span>(<span class="string">&quot;ftruncate failed&quot;</span>);
-            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) == -<span class="number">1</span> {
                 <span class="ident">print_error</span>(<span class="string">&quot;@ftruncate: close failed&quot;</span>);
             }
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AllocError::Oom</span>);
         };
 
         <span class="comment">// mmap memory</span>
-        <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">mmap</span>(
+        <span class="kw">let</span> <span class="ident">ptr</span> = <span class="ident">mmap</span>(
             <span class="ident">ptr::null_mut</span>(),
             <span class="ident">size</span>,
-            <span class="ident">PROT_READ</span> <span class="op">|</span> <span class="ident">PROT_WRITE</span>,
+            <span class="ident">PROT_READ</span> | <span class="ident">PROT_WRITE</span>,
             <span class="ident">MAP_SHARED</span>,
             <span class="ident">fd</span>,
             <span class="number">0</span>,
         );
-        <span class="kw">if</span> <span class="ident">ptr</span> <span class="op">==</span> <span class="ident">MAP_FAILED</span> {
+        <span class="kw">if</span> <span class="ident">ptr</span> == <span class="ident">MAP_FAILED</span> {
             <span class="ident">print_error</span>(<span class="string">&quot;@first: mmap failed&quot;</span>);
-            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) == -<span class="number">1</span> {
                 <span class="ident">print_error</span>(<span class="string">&quot;@first: close failed&quot;</span>);
             }
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AllocError::Oom</span>);
         }
 
-        <span class="kw">let</span> <span class="ident">ptr2</span> <span class="op">=</span> <span class="ident">mmap</span>(
+        <span class="kw">let</span> <span class="ident">ptr2</span> = <span class="ident">mmap</span>(
             (<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>).<span class="ident">offset</span>(<span class="ident">half_size</span> <span class="kw">as</span> <span class="ident">isize</span>) <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_void</span>,
             <span class="ident">half_size</span>,
-            <span class="ident">PROT_READ</span> <span class="op">|</span> <span class="ident">PROT_WRITE</span>,
-            <span class="ident">MAP_SHARED</span> <span class="op">|</span> <span class="ident">MAP_FIXED</span>,
+            <span class="ident">PROT_READ</span> | <span class="ident">PROT_WRITE</span>,
+            <span class="ident">MAP_SHARED</span> | <span class="ident">MAP_FIXED</span>,
             <span class="ident">fd</span>,
             <span class="number">0</span>,
         );
-        <span class="kw">if</span> <span class="ident">ptr2</span> <span class="op">==</span> <span class="ident">MAP_FAILED</span> {
+        <span class="kw">if</span> <span class="ident">ptr2</span> == <span class="ident">MAP_FAILED</span> {
             <span class="ident">print_error</span>(<span class="string">&quot;@second: mmap failed&quot;</span>);
-            <span class="kw">if</span> <span class="ident">munmap</span>(<span class="ident">ptr</span>, <span class="ident">size</span> <span class="kw">as</span> <span class="ident">size_t</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+            <span class="kw">if</span> <span class="ident">munmap</span>(<span class="ident">ptr</span>, <span class="ident">size</span> <span class="kw">as</span> <span class="ident">size_t</span>) == -<span class="number">1</span> {
                 <span class="ident">print_error</span>(<span class="string">&quot;@second: munmap failed&quot;</span>);
             }
-            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+            <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) == -<span class="number">1</span> {
                 <span class="ident">print_error</span>(<span class="string">&quot;@second: close failed&quot;</span>);
             }
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AllocError::Other</span>);
         }
 
-        <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+        <span class="kw">if</span> <span class="ident">close</span>(<span class="ident">fd</span>) == -<span class="number">1</span> {
             <span class="ident">print_error</span>(<span class="string">&quot;@success: close failed&quot;</span>);
         }
         <span class="prelude-val">Ok</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>)
@@ -297,16 +297,16 @@
 <span class="doccomment">/// If `size` is zero or `size / 2` is not a multiple of the</span>
 <span class="doccomment">/// allocation granularity, or `ptr` is null.</span>
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">deallocate_mirrored</span>(<span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">size</span>: <span class="ident">usize</span>) {
-    <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">ptr</span>.<span class="ident">is_null</span>());
-    <span class="macro">assert!</span>(<span class="ident">size</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>);
-    <span class="macro">assert!</span>(<span class="ident">size</span> <span class="op">%</span> <span class="ident">allocation_granularity</span>() <span class="op">==</span> <span class="number">0</span>);
-    <span class="kw">if</span> <span class="ident">munmap</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_void</span>, <span class="ident">size</span> <span class="kw">as</span> <span class="ident">size_t</span>) <span class="op">==</span> <span class="op">-</span><span class="number">1</span> {
+    <span class="macro">assert!</span>(!<span class="ident">ptr</span>.<span class="ident">is_null</span>());
+    <span class="macro">assert!</span>(<span class="ident">size</span> != <span class="number">0</span>);
+    <span class="macro">assert!</span>(<span class="ident">size</span> % <span class="ident">allocation_granularity</span>() == <span class="number">0</span>);
+    <span class="kw">if</span> <span class="ident">munmap</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_void</span>, <span class="ident">size</span> <span class="kw">as</span> <span class="ident">size_t</span>) == -<span class="number">1</span> {
         <span class="ident">print_error</span>(<span class="string">&quot;deallocate munmap failed&quot;</span>);
     }
 }
 
 <span class="doccomment">/// Prints last os error at `location`.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">debug_assertions</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;use_std&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">debug_assertions</span>, <span class="ident">feature</span> = <span class="string">&quot;use_std&quot;</span>))]</span>
 <span class="kw">fn</span> <span class="ident">print_error</span>(<span class="ident">location</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {
     <span class="macro">eprintln!</span>(
         <span class="string">&quot;Error at {}: {}&quot;</span>,
@@ -316,7 +316,7 @@
 }
 
 <span class="doccomment">/// Prints last os error at `location`.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">debug_assertions</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;use_std&quot;</span>)))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">debug_assertions</span>, <span class="ident">feature</span> = <span class="string">&quot;use_std&quot;</span>)))]</span>
 <span class="kw">fn</span> <span class="ident">print_error</span>(<span class="ident">_location</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="slice_deque" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="slice_deque" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

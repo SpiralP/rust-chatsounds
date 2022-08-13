@@ -396,7 +396,7 @@
 
 <span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ParseError</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParseError::InvalidToken</span> { <span class="ident">pos</span>, <span class="ident">byte</span> } <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParseError::InvalidToken</span> { <span class="ident">pos</span>, <span class="ident">byte</span> } = <span class="kw-2">*</span><span class="self">self</span> {
             <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}, {:X} at position {}&quot;</span>, <span class="self">self</span>.<span class="ident">s</span>(), <span class="ident">byte</span>, <span class="ident">pos</span>)
         } <span class="kw">else</span> {
             <span class="ident">f</span>.<span class="ident">write_str</span>(<span class="self">self</span>.<span class="ident">s</span>())
@@ -412,21 +412,21 @@
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Mime</span>, <span class="ident">ParseError</span><span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">s</span> <span class="op">==</span> <span class="string">&quot;*/*&quot;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Mime</span>, <span class="ident">ParseError</span>&gt; {
+    <span class="kw">if</span> <span class="ident">s</span> == <span class="string">&quot;*/*&quot;</span> {
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">::STAR_STAR</span>);
     }
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">bytes</span>().<span class="ident">enumerate</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> = <span class="ident">s</span>.<span class="ident">bytes</span>().<span class="ident">enumerate</span>();
     <span class="comment">// toplevel</span>
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">start</span>;
     <span class="kw">let</span> <span class="ident">slash</span>;
     <span class="kw">loop</span> {
         <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
             <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">c</span>)) <span class="kw">if</span> <span class="ident">is_token</span>(<span class="ident">c</span>) =&gt; (),
-            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;/&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="number">0</span> =&gt; {
-                <span class="ident">slash</span> <span class="op">=</span> <span class="ident">i</span>;
-                <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;/&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="number">0</span> =&gt; {
+                <span class="ident">slash</span> = <span class="ident">i</span>;
+                <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                 <span class="kw">break</span>;
             },
             <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::MissingSlash</span>), <span class="comment">// EOF and no toplevel is no Mime</span>
@@ -439,14 +439,14 @@
     }
 
     <span class="comment">// sublevel</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">plus</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">plus</span> = <span class="prelude-val">None</span>;
     <span class="kw">loop</span> {
         <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;+&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="ident">start</span> =&gt; {
-                <span class="ident">plus</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>);
+            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;+&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="ident">start</span> =&gt; {
+                <span class="ident">plus</span> = <span class="prelude-val">Some</span>(<span class="ident">i</span>);
             },
-            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="ident">start</span> =&gt; {
-                <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span>;
+            <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="ident">start</span> =&gt; {
+                <span class="ident">start</span> = <span class="ident">i</span>;
                 <span class="kw">break</span>;
             },
             <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">c</span>)) <span class="kw">if</span> <span class="ident">is_token</span>(<span class="ident">c</span>) =&gt; (),
@@ -466,9 +466,9 @@
     }
 
     <span class="comment">// params</span>
-    <span class="kw">let</span> <span class="ident">params</span> <span class="op">=</span> <span class="ident">params_from_str</span>(<span class="ident">s</span>, <span class="kw-2">&amp;mut</span> <span class="ident">iter</span>, <span class="ident">start</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">params</span> = <span class="ident">params_from_str</span>(<span class="ident">s</span>, <span class="kw-2">&amp;mut</span> <span class="ident">iter</span>, <span class="ident">start</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">src</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">params</span> {
+    <span class="kw">let</span> <span class="ident">src</span> = <span class="kw">match</span> <span class="ident">params</span> {
         <span class="ident">ParamSource::Utf8</span>(<span class="kw">_</span>)  =&gt; <span class="ident">s</span>.<span class="ident">to_ascii_lowercase</span>(),
         <span class="ident">ParamSource::Custom</span>(<span class="ident">semicolon</span>, <span class="kw-2">ref</span> <span class="ident">indices</span>) =&gt; <span class="ident">lower_ascii_with_params</span>(<span class="ident">s</span>, <span class="ident">semicolon</span>, <span class="ident">indices</span>),
         <span class="ident">ParamSource::None</span> =&gt; {
@@ -486,23 +486,23 @@
 }
 
 
-<span class="kw">fn</span> <span class="ident">params_from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">iter</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Enumerate</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span>, <span class="kw-2">mut</span> <span class="ident">start</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ParamSource</span>, <span class="ident">ParseError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">semicolon</span> <span class="op">=</span> <span class="ident">start</span>;
-    <span class="ident">start</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">params</span> <span class="op">=</span> <span class="ident">ParamSource::None</span>;
-    <span class="lifetime">&#39;params</span>: <span class="kw">while</span> <span class="ident">start</span> <span class="op">&lt;</span> <span class="ident">s</span>.<span class="ident">len</span>() {
+<span class="kw">fn</span> <span class="ident">params_from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">iter</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Enumerate</span>&lt;<span class="ident">Bytes</span>&gt;, <span class="kw-2">mut</span> <span class="ident">start</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ParamSource</span>, <span class="ident">ParseError</span>&gt; {
+    <span class="kw">let</span> <span class="ident">semicolon</span> = <span class="ident">start</span>;
+    <span class="ident">start</span> += <span class="number">1</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">params</span> = <span class="ident">ParamSource::None</span>;
+    <span class="lifetime">&#39;params</span>: <span class="kw">while</span> <span class="ident">start</span> &lt; <span class="ident">s</span>.<span class="ident">len</span>() {
         <span class="kw">let</span> <span class="ident">name</span>;
         <span class="comment">// name</span>
         <span class="lifetime">&#39;name</span>: <span class="kw">loop</span> {
             <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-                <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39; &#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">==</span> <span class="ident">start</span> =&gt; {
-                    <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+                <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39; &#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> == <span class="ident">start</span> =&gt; {
+                    <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                     <span class="kw">continue</span> <span class="lifetime">&#39;params</span>;
                 },
                 <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">c</span>)) <span class="kw">if</span> <span class="ident">is_token</span>(<span class="ident">c</span>) =&gt; (),
-                <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;=&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="ident">start</span> =&gt; {
-                    <span class="ident">name</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
-                    <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+                <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;=&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="ident">start</span> =&gt; {
+                    <span class="ident">name</span> = <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
+                    <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                     <span class="kw">break</span> <span class="lifetime">&#39;name</span>;
                 },
                 <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::MissingEqual</span>),
@@ -515,13 +515,13 @@
 
         <span class="kw">let</span> <span class="ident">value</span>;
         <span class="comment">// values must be restrict-name-char or &quot;anything goes&quot;</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">is_quoted</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">is_quoted</span> = <span class="bool-val">false</span>;
 
         <span class="lifetime">&#39;value</span>: <span class="kw">loop</span> {
             <span class="kw">if</span> <span class="ident">is_quoted</span> {
                 <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;&quot;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="ident">start</span> =&gt; {
-                        <span class="ident">value</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
+                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;&quot;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="ident">start</span> =&gt; {
+                        <span class="ident">value</span> = <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
                         <span class="kw">break</span> <span class="lifetime">&#39;value</span>;
                     },
                     <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">c</span>)) <span class="kw">if</span> <span class="ident">is_restricted_quoted_char</span>(<span class="ident">c</span>) =&gt; (),
@@ -533,19 +533,19 @@
                 }
             } <span class="kw">else</span> {
                 <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;&quot;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">==</span> <span class="ident">start</span> =&gt; {
-                        <span class="ident">is_quoted</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                        <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;&quot;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> == <span class="ident">start</span> =&gt; {
+                        <span class="ident">is_quoted</span> = <span class="bool-val">true</span>;
+                        <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                     },
                     <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">c</span>)) <span class="kw">if</span> <span class="ident">is_token</span>(<span class="ident">c</span>) =&gt; (),
-                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> <span class="op">&gt;</span> <span class="ident">start</span> =&gt; {
-                        <span class="ident">value</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
-                        <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+                    <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;;&#39;</span>)) <span class="kw">if</span> <span class="ident">i</span> &gt; <span class="ident">start</span> =&gt; {
+                        <span class="ident">value</span> = <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">i</span>);
+                        <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                         <span class="kw">break</span> <span class="lifetime">&#39;value</span>;
                     }
                     <span class="prelude-val">None</span> =&gt; {
-                        <span class="ident">value</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">s</span>.<span class="ident">len</span>());
-                        <span class="ident">start</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">len</span>();
+                        <span class="ident">value</span> = <span class="ident">Indexed</span>(<span class="ident">start</span>, <span class="ident">s</span>.<span class="ident">len</span>());
+                        <span class="ident">start</span> = <span class="ident">s</span>.<span class="ident">len</span>();
                         <span class="kw">break</span> <span class="lifetime">&#39;value</span>;
                     },
 
@@ -562,7 +562,7 @@
                 <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
                     <span class="prelude-val">Some</span>((<span class="ident">i</span>, <span class="string">b&#39;;&#39;</span>)) =&gt; {
                         <span class="comment">// next param</span>
-                        <span class="ident">start</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>;
+                        <span class="ident">start</span> = <span class="ident">i</span> + <span class="number">1</span>;
                         <span class="kw">break</span> <span class="lifetime">&#39;ws</span>;
                     },
                     <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="string">b&#39; &#39;</span>)) =&gt; {
@@ -570,7 +570,7 @@
                     },
                     <span class="prelude-val">None</span> =&gt; {
                         <span class="comment">// eof</span>
-                        <span class="ident">start</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">len</span>();
+                        <span class="ident">start</span> = <span class="ident">s</span>.<span class="ident">len</span>();
                         <span class="kw">break</span> <span class="lifetime">&#39;ws</span>;
                     },
                     <span class="prelude-val">Some</span>((<span class="ident">pos</span>, <span class="ident">byte</span>)) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::InvalidToken</span> {
@@ -583,10 +583,10 @@
 
         <span class="kw">match</span> <span class="ident">params</span> {
             <span class="ident">ParamSource::Utf8</span>(<span class="ident">i</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">i</span> <span class="op">=</span> <span class="ident">i</span> <span class="op">+</span> <span class="number">2</span>;
-                <span class="kw">let</span> <span class="ident">charset</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">i</span>, <span class="string">&quot;charset&quot;</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">i</span>);
-                <span class="kw">let</span> <span class="ident">utf8</span> <span class="op">=</span> <span class="ident">Indexed</span>(<span class="ident">charset</span>.<span class="number">1</span> <span class="op">+</span> <span class="number">1</span>, <span class="ident">charset</span>.<span class="number">1</span> <span class="op">+</span> <span class="string">&quot;utf-8&quot;</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">1</span>);
-                <span class="ident">params</span> <span class="op">=</span> <span class="ident">ParamSource::Custom</span>(<span class="ident">semicolon</span>, <span class="macro">vec!</span>[
+                <span class="kw">let</span> <span class="ident">i</span> = <span class="ident">i</span> + <span class="number">2</span>;
+                <span class="kw">let</span> <span class="ident">charset</span> = <span class="ident">Indexed</span>(<span class="ident">i</span>, <span class="string">&quot;charset&quot;</span>.<span class="ident">len</span>() + <span class="ident">i</span>);
+                <span class="kw">let</span> <span class="ident">utf8</span> = <span class="ident">Indexed</span>(<span class="ident">charset</span>.<span class="number">1</span> + <span class="number">1</span>, <span class="ident">charset</span>.<span class="number">1</span> + <span class="string">&quot;utf-8&quot;</span>.<span class="ident">len</span>() + <span class="number">1</span>);
+                <span class="ident">params</span> = <span class="ident">ParamSource::Custom</span>(<span class="ident">semicolon</span>, <span class="macro">vec!</span>[
                     (<span class="ident">charset</span>, <span class="ident">utf8</span>),
                     (<span class="ident">name</span>, <span class="ident">value</span>),
                 ]);
@@ -595,13 +595,13 @@
                 <span class="ident">vec</span>.<span class="ident">push</span>((<span class="ident">name</span>, <span class="ident">value</span>));
             },
             <span class="ident">ParamSource::None</span> =&gt; {
-                <span class="kw">if</span> <span class="ident">semicolon</span> <span class="op">+</span> <span class="number">2</span> <span class="op">==</span> <span class="ident">name</span>.<span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">CHARSET</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">s</span>[<span class="ident">name</span>.<span class="number">0</span>..<span class="ident">name</span>.<span class="number">1</span>] {
-                    <span class="kw">if</span> <span class="ident">UTF_8</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">s</span>[<span class="ident">value</span>.<span class="number">0</span>..<span class="ident">value</span>.<span class="number">1</span>] {
-                        <span class="ident">params</span> <span class="op">=</span> <span class="ident">ParamSource::Utf8</span>(<span class="ident">semicolon</span>);
+                <span class="kw">if</span> <span class="ident">semicolon</span> + <span class="number">2</span> == <span class="ident">name</span>.<span class="number">0</span> &amp;&amp; <span class="ident">CHARSET</span> == <span class="kw-2">&amp;</span><span class="ident">s</span>[<span class="ident">name</span>.<span class="number">0</span>..<span class="ident">name</span>.<span class="number">1</span>] {
+                    <span class="kw">if</span> <span class="ident">UTF_8</span> == <span class="kw-2">&amp;</span><span class="ident">s</span>[<span class="ident">value</span>.<span class="number">0</span>..<span class="ident">value</span>.<span class="number">1</span>] {
+                        <span class="ident">params</span> = <span class="ident">ParamSource::Utf8</span>(<span class="ident">semicolon</span>);
                         <span class="kw">continue</span> <span class="lifetime">&#39;params</span>;
                     }
                 }
-                <span class="ident">params</span> <span class="op">=</span> <span class="ident">ParamSource::Custom</span>(<span class="ident">semicolon</span>, <span class="macro">vec!</span>[(<span class="ident">name</span>, <span class="ident">value</span>)]);
+                <span class="ident">params</span> = <span class="ident">ParamSource::Custom</span>(<span class="ident">semicolon</span>, <span class="macro">vec!</span>[(<span class="ident">name</span>, <span class="ident">value</span>)]);
             },
         }
     }
@@ -609,7 +609,7 @@
 }
 
 <span class="kw">fn</span> <span class="ident">lower_ascii_with_params</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">semi</span>: <span class="ident">usize</span>, <span class="ident">params</span>: <span class="kw-2">&amp;</span>[(<span class="ident">Indexed</span>, <span class="ident">Indexed</span>)]) -&gt; <span class="ident">String</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">owned</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">to_owned</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">owned</span> = <span class="ident">s</span>.<span class="ident">to_owned</span>();
     <span class="ident">owned</span>[..<span class="ident">semi</span>].<span class="ident">make_ascii_lowercase</span>();
 
     <span class="kw">for</span> <span class="kw-2">&amp;</span>(<span class="kw-2">ref</span> <span class="ident">name</span>, <span class="kw-2">ref</span> <span class="ident">value</span>) <span class="kw">in</span> <span class="ident">params</span> {
@@ -617,7 +617,7 @@
         <span class="comment">// Since we just converted this part of the string to lowercase,</span>
         <span class="comment">// we can skip the `Name == &amp;str` unicase check and do a faster</span>
         <span class="comment">// memcmp instead.</span>
-        <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">owned</span>[<span class="ident">name</span>.<span class="number">0</span>..<span class="ident">name</span>.<span class="number">1</span>] <span class="op">==</span> <span class="ident">CHARSET</span>.<span class="ident">source</span> {
+        <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">owned</span>[<span class="ident">name</span>.<span class="number">0</span>..<span class="ident">name</span>.<span class="number">1</span>] == <span class="ident">CHARSET</span>.<span class="ident">source</span> {
             <span class="ident">owned</span>[<span class="ident">value</span>.<span class="number">0</span>..<span class="ident">value</span>.<span class="number">1</span>].<span class="ident">make_ascii_lowercase</span>();
         }
     }
@@ -664,11 +664,11 @@
 
 <span class="macro">macro_rules!</span> <span class="ident">byte_map</span> {
     ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">flag</span>:<span class="ident">expr</span>,)<span class="kw-2">*</span>) =&gt; ([
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">flag</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>,)<span class="op">*</span>
+        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">flag</span> != <span class="number">0</span>,)*
     ])
 }
 
-<span class="kw">static</span> <span class="ident">TOKEN_MAP</span>: [<span class="ident">bool</span>; <span class="number">256</span>] <span class="op">=</span> <span class="macro">byte_map!</span>[
+<span class="kw">static</span> <span class="ident">TOKEN_MAP</span>: [<span class="ident">bool</span>; <span class="number">256</span>] = <span class="macro">byte_map!</span>[
     <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,
     <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,
     <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>,
@@ -692,32 +692,32 @@
 }
 
 <span class="kw">fn</span> <span class="ident">is_restricted_quoted_char</span>(<span class="ident">c</span>: <span class="ident">u8</span>) -&gt; <span class="ident">bool</span> {
-    <span class="ident">c</span> <span class="op">&gt;</span> <span class="number">31</span> <span class="op">&amp;&amp;</span> <span class="ident">c</span> <span class="op">!</span><span class="op">=</span> <span class="number">127</span>
+    <span class="ident">c</span> &gt; <span class="number">31</span> &amp;&amp; <span class="ident">c</span> != <span class="number">127</span>
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">warnings</span>)]</span> <span class="comment">// ... ranges deprecated</span>
 <span class="kw">fn</span> <span class="ident">test_lookup_tables</span>() {
     <span class="kw">for</span> (<span class="ident">i</span>, <span class="kw-2">&amp;</span><span class="ident">valid</span>) <span class="kw">in</span> <span class="ident">TOKEN_MAP</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-        <span class="kw">let</span> <span class="ident">i</span> <span class="op">=</span> <span class="ident">i</span> <span class="kw">as</span> <span class="ident">u8</span>;
-        <span class="kw">let</span> <span class="ident">should</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">i</span> {
-            <span class="string">b&#39;a&#39;</span>...<span class="string">b&#39;z&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;A&#39;</span>...<span class="string">b&#39;Z&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;0&#39;</span>...<span class="string">b&#39;9&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;!&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;#&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;$&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;%&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;&amp;&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;\&#39;&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;*&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;+&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;-&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;.&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;^&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;_&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;`&#39;</span> <span class="op">|</span>
-            <span class="string">b&#39;|&#39;</span> <span class="op">|</span>
+        <span class="kw">let</span> <span class="ident">i</span> = <span class="ident">i</span> <span class="kw">as</span> <span class="ident">u8</span>;
+        <span class="kw">let</span> <span class="ident">should</span> = <span class="kw">match</span> <span class="ident">i</span> {
+            <span class="string">b&#39;a&#39;</span>...<span class="string">b&#39;z&#39;</span> |
+            <span class="string">b&#39;A&#39;</span>...<span class="string">b&#39;Z&#39;</span> |
+            <span class="string">b&#39;0&#39;</span>...<span class="string">b&#39;9&#39;</span> |
+            <span class="string">b&#39;!&#39;</span> |
+            <span class="string">b&#39;#&#39;</span> |
+            <span class="string">b&#39;$&#39;</span> |
+            <span class="string">b&#39;%&#39;</span> |
+            <span class="string">b&#39;&amp;&#39;</span> |
+            <span class="string">b&#39;\&#39;&#39;</span> |
+            <span class="string">b&#39;*&#39;</span> |
+            <span class="string">b&#39;+&#39;</span> |
+            <span class="string">b&#39;-&#39;</span> |
+            <span class="string">b&#39;.&#39;</span> |
+            <span class="string">b&#39;^&#39;</span> |
+            <span class="string">b&#39;_&#39;</span> |
+            <span class="string">b&#39;`&#39;</span> |
+            <span class="string">b&#39;|&#39;</span> |
             <span class="string">b&#39;~&#39;</span> =&gt; <span class="bool-val">true</span>,
             <span class="kw">_</span> =&gt; <span class="bool-val">false</span>
         };
@@ -725,4 +725,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="mime" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="mime" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>

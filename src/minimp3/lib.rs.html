@@ -220,32 +220,32 @@
 <span class="kw">mod</span> <span class="ident">error</span>;
 
 <span class="doccomment">/// Maximum number of samples present in a MP3 frame.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_SAMPLES_PER_FRAME</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">ffi::MINIMP3_MAX_SAMPLES_PER_FRAME</span> <span class="kw">as</span> <span class="ident">usize</span>;
+<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_SAMPLES_PER_FRAME</span>: <span class="ident">usize</span> = <span class="ident">ffi::MINIMP3_MAX_SAMPLES_PER_FRAME</span> <span class="kw">as</span> <span class="ident">usize</span>;
 
-<span class="kw">const</span> <span class="ident">BUFFER_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">MAX_SAMPLES_PER_FRAME</span> <span class="op">*</span> <span class="number">15</span>;
-<span class="kw">const</span> <span class="ident">REFILL_TRIGGER</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">MAX_SAMPLES_PER_FRAME</span> <span class="op">*</span> <span class="number">8</span>;
+<span class="kw">const</span> <span class="ident">BUFFER_SIZE</span>: <span class="ident">usize</span> = <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">15</span>;
+<span class="kw">const</span> <span class="ident">REFILL_TRIGGER</span>: <span class="ident">usize</span> = <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">8</span>;
 
 <span class="doccomment">/// A MP3 decoder which consumes a reader and produces [`Frame`]s.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`Frame`]: ./struct.Frame.html</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
     <span class="ident">reader</span>: <span class="ident">R</span>,
-    <span class="ident">buffer</span>: <span class="ident">SliceDeque</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">buffer_refill</span>: <span class="ident">Box</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> <span class="op">*</span> <span class="number">5</span>]<span class="op">&gt;</span>,
-    <span class="ident">decoder</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">ffi::mp3dec_t</span><span class="op">&gt;</span>,
+    <span class="ident">buffer</span>: <span class="ident">SliceDeque</span>&lt;<span class="ident">u8</span>&gt;,
+    <span class="ident">buffer_refill</span>: <span class="ident">Box</span>&lt;[<span class="ident">u8</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">5</span>]&gt;,
+    <span class="ident">decoder</span>: <span class="ident">Box</span>&lt;<span class="ident">ffi::mp3dec_t</span>&gt;,
 }
 
 <span class="comment">// Explicitly impl [Send] for [Decoder]s. This isn&#39;t a great idea and should</span>
 <span class="comment">// probably be removed in the future. The only reason it&#39;s here is that</span>
 <span class="comment">// [SliceDeque] doesn&#39;t implement [Send] (since it uses raw pointers</span>
 <span class="comment">// internally), even though it&#39;s safe to send it across thread boundaries.</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Send</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Send</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {}
 
 <span class="doccomment">/// A MP3 frame, owning the decoded audio of that frame.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Frame</span> {
     <span class="doccomment">/// The decoded audio held by this frame. Channels are interleaved.</span>
-    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">i16</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;,
     <span class="doccomment">/// This frame&#39;s sample rate in hertz.</span>
     <span class="kw">pub</span> <span class="ident">sample_rate</span>: <span class="ident">i32</span>,
     <span class="doccomment">/// The number of channels in this frame.</span>
@@ -256,16 +256,16 @@
     <span class="kw">pub</span> <span class="ident">bitrate</span>: <span class="ident">i32</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
     <span class="doccomment">/// Creates a new decoder, consuming the `reader`.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">reader</span>: <span class="ident">R</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">minidec</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Box::new</span>(<span class="ident">mem::zeroed</span>()) };
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">minidec</span> = <span class="kw">unsafe</span> { <span class="ident">Box::new</span>(<span class="ident">mem::zeroed</span>()) };
         <span class="kw">unsafe</span> { <span class="ident">ffi::mp3dec_init</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">minidec</span>) }
 
         <span class="self">Self</span> {
             <span class="ident">reader</span>,
             <span class="ident">buffer</span>: <span class="ident">SliceDeque::with_capacity</span>(<span class="ident">BUFFER_SIZE</span>),
-            <span class="ident">buffer_refill</span>: <span class="ident">Box::new</span>([<span class="number">0</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> <span class="op">*</span> <span class="number">5</span>]),
+            <span class="ident">buffer_refill</span>: <span class="ident">Box::new</span>([<span class="number">0</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">5</span>]),
             <span class="ident">decoder</span>: <span class="ident">minidec</span>,
         }
     }
@@ -286,10 +286,10 @@
         <span class="self">self</span>.<span class="ident">reader</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">decode_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Frame</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">frame_info</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pcm</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">MAX_SAMPLES_PER_FRAME</span>);
-        <span class="kw">let</span> <span class="ident">samples</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+    <span class="kw">fn</span> <span class="ident">decode_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">frame_info</span> = <span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() };
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pcm</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">MAX_SAMPLES_PER_FRAME</span>);
+        <span class="kw">let</span> <span class="ident">samples</span>: <span class="ident">usize</span> = <span class="kw">unsafe</span> {
             <span class="ident">ffi::mp3dec_decode_frame</span>(
                 <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">decoder</span>,
                 <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">as_ptr</span>(),
@@ -299,13 +299,13 @@
             ) <span class="kw">as</span> <span class="kw">_</span>
         };
 
-        <span class="kw">if</span> <span class="ident">samples</span> <span class="op">&gt;</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="ident">samples</span> &gt; <span class="number">0</span> {
             <span class="kw">unsafe</span> {
-                <span class="ident">pcm</span>.<span class="ident">set_len</span>(<span class="ident">samples</span> <span class="op">*</span> <span class="ident">frame_info</span>.<span class="ident">channels</span> <span class="kw">as</span> <span class="ident">usize</span>);
+                <span class="ident">pcm</span>.<span class="ident">set_len</span>(<span class="ident">samples</span> * <span class="ident">frame_info</span>.<span class="ident">channels</span> <span class="kw">as</span> <span class="ident">usize</span>);
             }
         }
 
-        <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">Frame</span> {
+        <span class="kw">let</span> <span class="ident">frame</span> = <span class="ident">Frame</span> {
             <span class="ident">data</span>: <span class="ident">pcm</span>,
             <span class="ident">sample_rate</span>: <span class="ident">frame_info</span>.<span class="ident">hz</span>,
             <span class="ident">channels</span>: <span class="ident">frame_info</span>.<span class="ident">channels</span> <span class="kw">as</span> <span class="ident">usize</span>,
@@ -313,12 +313,12 @@
             <span class="ident">bitrate</span>: <span class="ident">frame_info</span>.<span class="ident">bitrate_kbps</span>,
         };
 
-        <span class="kw">let</span> <span class="ident">current_len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>();
+        <span class="kw">let</span> <span class="ident">current_len</span> = <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>();
         <span class="self">self</span>.<span class="ident">buffer</span>
-            .<span class="ident">truncate_front</span>(<span class="ident">current_len</span> <span class="op">-</span> <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> <span class="kw">as</span> <span class="ident">usize</span>);
+            .<span class="ident">truncate_front</span>(<span class="ident">current_len</span> - <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> <span class="kw">as</span> <span class="ident">usize</span>);
 
-        <span class="kw">if</span> <span class="ident">samples</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">if</span> <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> <span class="op">&gt;</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="ident">samples</span> == <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> &gt; <span class="number">0</span> {
                 <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>)
             } <span class="kw">else</span> {
                 <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>)
@@ -329,14 +329,14 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async_tokio&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">tokio::io::AsyncRead</span> <span class="op">+</span> <span class="ident">std::marker::Unpin</span><span class="op">&gt;</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async_tokio&quot;</span>)]</span>
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">tokio::io::AsyncRead</span> + <span class="ident">std::marker::Unpin</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
     <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)</span>
     <span class="doccomment">/// if one was found, or, otherwise, an `Err` explaining why not.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">next_frame_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Frame</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">next_frame_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
         <span class="kw">loop</span> {
             <span class="comment">// Keep our buffers full</span>
-            <span class="kw">let</span> <span class="ident">bytes_read</span> <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">REFILL_TRIGGER</span> {
+            <span class="kw">let</span> <span class="ident">bytes_read</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() &lt; <span class="ident">REFILL_TRIGGER</span> {
                 <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">refill_future</span>().<span class="kw">await</span><span class="question-mark">?</span>)
             } <span class="kw">else</span> {
                 <span class="prelude-val">None</span>
@@ -346,9 +346,9 @@
                 <span class="prelude-val">Ok</span>(<span class="ident">frame</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">frame</span>),
                 <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,</span>
                 <span class="comment">// just let the loop spin around another time.</span>
-                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) <span class="op">|</span> <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
+                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) | <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
                     <span class="comment">// If there are no more bytes to be read from the file, return EOF</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) <span class="op">=</span> <span class="ident">bytes_read</span> {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) = <span class="ident">bytes_read</span> {
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::Eof</span>);
                     }
                 }
@@ -357,10 +357,10 @@
         }
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">refill_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">io::Error</span><span class="op">&gt;</span> {
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">refill_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">io::Error</span>&gt; {
         <span class="kw">use</span> <span class="ident">tokio::io::AsyncReadExt</span>;
 
-        <span class="kw">let</span> <span class="ident">read_bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..]).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">read_bytes</span> = <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..]).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">buffer_refill</span>[..<span class="ident">read_bytes</span>].<span class="ident">iter</span>());
 
         <span class="prelude-val">Ok</span>(<span class="ident">read_bytes</span>)
@@ -370,13 +370,13 @@
 <span class="comment">// TODO FIXME do something about the code repetition. The only difference is the</span>
 <span class="comment">//  use of .await after IO reads...</span>
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">io::Read</span><span class="op">&gt;</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">io::Read</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
     <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)</span>
     <span class="doccomment">/// if one was found, or, otherwise, an `Err` explaining why not.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Frame</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
         <span class="kw">loop</span> {
             <span class="comment">// Keep our buffers full</span>
-            <span class="kw">let</span> <span class="ident">bytes_read</span> <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">REFILL_TRIGGER</span> {
+            <span class="kw">let</span> <span class="ident">bytes_read</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() &lt; <span class="ident">REFILL_TRIGGER</span> {
                 <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">refill</span>()<span class="question-mark">?</span>)
             } <span class="kw">else</span> {
                 <span class="prelude-val">None</span>
@@ -386,9 +386,9 @@
                 <span class="prelude-val">Ok</span>(<span class="ident">frame</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">frame</span>),
                 <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,</span>
                 <span class="comment">// just let the loop spin around another time.</span>
-                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) <span class="op">|</span> <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
+                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) | <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
                     <span class="comment">// If there are no more bytes to be read from the file, return EOF</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) <span class="op">=</span> <span class="ident">bytes_read</span> {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) = <span class="ident">bytes_read</span> {
                         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::Eof</span>);
                     }
                 }
@@ -397,12 +397,12 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">refill</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">io::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">read_bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..])<span class="question-mark">?</span>;
+    <span class="kw">fn</span> <span class="ident">refill</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">io::Error</span>&gt; {
+        <span class="kw">let</span> <span class="ident">read_bytes</span> = <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..])<span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">buffer_refill</span>[..<span class="ident">read_bytes</span>].<span class="ident">iter</span>());
 
         <span class="prelude-val">Ok</span>(<span class="ident">read_bytes</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimp3" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (4493a0f47 2022-08-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimp3" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
