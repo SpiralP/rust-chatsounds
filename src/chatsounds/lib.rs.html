@@ -238,6 +238,14 @@
 <span id="238">238</span>
 <span id="239">239</span>
 <span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
 </pre><pre class="rust"><code><span class="kw">mod </span>cache;
 <span class="kw">mod </span>error;
 <span class="kw">mod </span>fetching;
@@ -254,18 +262,26 @@
     sync::Arc,
 };
 
+<span class="kw">pub use </span>bytes::Bytes;
 <span class="kw">use </span>quick_error::ResultExt;
 <span class="kw">use </span>rand::prelude::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
 <span class="kw">use </span>rodio::{OutputStream, OutputStreamHandle};
 
-<span class="kw">pub use </span><span class="self">self</span>::error::Error;
+<span class="kw">pub use </span><span class="self">self</span>::{
+    error::Error,
+    fetching::{GitHubApiFileEntry, GitHubApiTrees, GitHubMsgpackEntries},
+    types::Chatsound,
+};
 <span class="kw">use </span><span class="self">self</span>::{
     error::Result,
     parsing::{parse, ModifierTrait},
-    types::{BoxSource, Chatsound, ChatsoundsSink},
+    types::{BoxSource, ChatsoundsSink},
 };
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
+<span class="kw">type </span>FsMemory = Arc&lt;async_lock::RwLock&lt;HashMap&lt;String, Bytes&gt;&gt;&gt;;
 
 <span class="kw">pub struct </span>Chatsounds {
     <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
@@ -285,8 +301,8 @@
     <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
     sinks: VecDeque&lt;Box&lt;<span class="kw">dyn </span>ChatsoundsSink&gt;&gt;,
 
-    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
-    fs_memory: HashMap&lt;String, bytes::Bytes&gt;,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
+    fs_memory: FsMemory,
 }
 
 <span class="comment">// TODO ???
@@ -320,8 +336,8 @@
             <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
             sinks: VecDeque::new(),
 
-            <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
-            fs_memory: HashMap::new(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
+            fs_memory: Default::default(),
         })
     }
 
@@ -453,8 +469,8 @@
             <span class="kw">let </span><span class="kw-2">mut </span>source: BoxSource = {
                 <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
                 <span class="kw">let </span>cache = <span class="kw-2">&amp;</span><span class="self">self</span>.cache_path;
-                <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
-                <span class="kw">let </span>cache = <span class="kw-2">&amp;mut </span><span class="self">self</span>.fs_memory;
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
+                <span class="kw">let </span>cache = <span class="self">self</span>.fs_memory.clone();
 
                 <span class="kw">let </span>bytes = chatsound.load(cache).<span class="kw">await</span><span class="question-mark">?</span>;
 
