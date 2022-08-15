@@ -144,13 +144,26 @@
 <span id="144">144</span>
 <span id="145">145</span>
 <span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::{Component, Path};
 
-<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>quick_error::ResultExt;
 <span class="kw">pub use </span>rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 <span class="kw">use </span>serde::Deserialize;
 
-<span class="kw">use crate</span>::{cache::download, types::Chatsound, Chatsounds};
+<span class="kw">use crate</span>::{
+    bail,
+    cache::download,
+    error::{Error, <span class="prelude-ty">Result</span>},
+    types::Chatsound,
+    Chatsounds,
+};
 
 <span class="attribute">#[derive(Deserialize)]</span>
 <span class="kw">pub struct </span>GitHubApiFileEntry {
@@ -190,7 +203,7 @@
             }
 
             <span class="kw">if let </span><span class="prelude-val">Ok</span>(err) = serde_json::from_slice::&lt;GitHubError&gt;(<span class="kw-2">&amp;</span>bytes) {
-                <span class="kw">let </span>error = <span class="macro">anyhow!</span>(<span class="string">&quot;GitHub Error: {}&quot;</span>, err.message);
+                <span class="kw">let </span>error = Error::GitHub(err.message.to_owned(), api_url.to_owned());
                 <span class="comment">// if we&#39;re rate limited, don&#39;t remove cached file
                 </span><span class="kw">if </span>err.message.starts_with(<span class="string">&quot;API rate limit exceeded&quot;</span>) {
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(error))
@@ -203,7 +216,7 @@
         })
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>trees: GitHubApiTrees = serde_json::from_slice(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
+        <span class="kw">let </span>trees: GitHubApiTrees = serde_json::from_slice(<span class="kw-2">&amp;</span>bytes).context(<span class="kw-2">&amp;</span>api_url)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(trees)
     }
@@ -260,7 +273,8 @@
 
         <span class="comment">// these raw links don&#39;t have a rate limit so we won&#39;t cache bad results
         </span><span class="kw">let </span>bytes = download(<span class="kw-2">&amp;</span>msgpack_url, cache, use_etag, |bytes| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(bytes))).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
+        <span class="kw">let </span>entries: GitHubMsgpackEntries =
+            rmp_serde::decode::from_slice(<span class="kw-2">&amp;</span>bytes).context(<span class="kw-2">&amp;</span>msgpack_url)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(entries)
     }

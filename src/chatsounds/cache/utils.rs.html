@@ -43,9 +43,25 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-</pre><pre class="rust"><code><span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>bytes::Bytes;
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+</pre><pre class="rust"><code><span class="kw">use </span>bytes::Bytes;
+<span class="kw">use </span>quick_error::ResultExt;
 <span class="kw">use </span>reqwest::Client;
+
+<span class="kw">use crate</span>::{
+    ensure,
+    error::{Error, <span class="prelude-ty">Result</span>},
+};
 
 <span class="kw">static </span>APP_USER_AGENT: <span class="kw-2">&amp;</span>str = <span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_PKG_NAME&quot;</span>), <span class="string">&quot;/&quot;</span>, <span class="macro">env!</span>(<span class="string">&quot;CARGO_PKG_VERSION&quot;</span>));
 
@@ -61,9 +77,15 @@
     }
 }
 
-<span class="kw">pub async fn </span>get&lt;S: AsRef&lt;str&gt;&gt;(url: S) -&gt; <span class="prelude-ty">Result</span>&lt;(Bytes, <span class="prelude-ty">Option</span>&lt;String&gt;)&gt; {
-    <span class="kw">let </span>client = make_client()<span class="question-mark">?</span>;
-    <span class="kw">let </span>response = client.get(url.as_ref()).send().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">pub async fn </span>get(url: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(Bytes, <span class="prelude-ty">Option</span>&lt;String&gt;)&gt; {
+    <span class="kw">let </span>client = make_client().map_err(Error::ReqwestMakeClient)<span class="question-mark">?</span>;
+    <span class="kw">let </span>response = client.get(url).send().<span class="kw">await</span>.context(url)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>status = response.status();
+    <span class="macro">ensure!</span>(
+        status.is_success(),
+        Error::ReqwestStatus(status, url.to_owned())
+    );
 
     <span class="kw">let </span>etag = response
         .headers()
@@ -71,14 +93,14 @@
         .and_then(|value| value.to_str().ok())
         .map(|value| value.to_string());
 
-    <span class="kw">let </span>bytes = response.bytes().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>bytes = response.bytes().<span class="kw">await</span>.context(url)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>((bytes, etag))
 }
 
-<span class="kw">pub async fn </span>head_etag&lt;S: AsRef&lt;str&gt;&gt;(url: S) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt; {
-    <span class="kw">let </span>client = make_client()<span class="question-mark">?</span>;
-    <span class="kw">let </span>response = client.head(url.as_ref()).send().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">pub async fn </span>head_etag(url: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt; {
+    <span class="kw">let </span>client = make_client().map_err(Error::ReqwestMakeClient)<span class="question-mark">?</span>;
+    <span class="kw">let </span>response = client.head(url).send().<span class="kw">await</span>.context(url)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>etag = response
         .headers()

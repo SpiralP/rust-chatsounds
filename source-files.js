@@ -1,14 +1,13 @@
 var sourcesIndex = JSON.parse('{\
 "alsa":["",[["direct",[],["ffi.rs","pcm.rs"]]],["card.rs","chmap.rs","ctl_int.rs","device_name.rs","direct.rs","error.rs","hctl.rs","io.rs","lib.rs","mixer.rs","pcm.rs","poll.rs","rawmidi.rs","seq.rs"]],\
 "alsa_sys":["",[],["generated.rs","lib.rs"]],\
-"anyhow":["",[],["backtrace.rs","chain.rs","context.rs","ensure.rs","error.rs","fmt.rs","kind.rs","lib.rs","macros.rs","ptr.rs","wrapper.rs"]],\
 "base64":["",[["read",[],["decoder.rs","mod.rs"]],["write",[],["encoder.rs","encoder_string_writer.rs","mod.rs"]]],["chunked_encoder.rs","decode.rs","display.rs","encode.rs","lib.rs","tables.rs"]],\
 "bitflags":["",[],["lib.rs"]],\
 "block_buffer":["",[],["lib.rs","sealed.rs"]],\
 "byteorder":["",[],["io.rs","lib.rs"]],\
 "bytes":["",[["buf",[],["buf_impl.rs","buf_mut.rs","chain.rs","iter.rs","limit.rs","mod.rs","reader.rs","take.rs","uninit_slice.rs","vec_deque.rs","writer.rs"]],["fmt",[],["debug.rs","hex.rs","mod.rs"]]],["bytes.rs","bytes_mut.rs","lib.rs","loom.rs"]],\
 "cfg_if":["",[],["lib.rs"]],\
-"chatsounds":["",[["cache",[],["fs.rs","mod.rs","utils.rs"]],["parsing",[["modifiers",[],["echo.rs","mod.rs","pitch.rs","volume.rs"]]],["mod.rs"]]],["fetching.rs","lib.rs","types.rs"]],\
+"chatsounds":["",[["cache",[],["fs.rs","mod.rs","utils.rs"]],["parsing",[["modifiers",[],["echo.rs","mod.rs","pitch.rs","volume.rs"]]],["mod.rs"]]],["error.rs","fetching.rs","lib.rs","types.rs"]],\
 "cpal":["",[["host",[["alsa",[],["enumerate.rs","mod.rs"]],["null",[],["mod.rs"]]],["mod.rs"]],["platform",[],["mod.rs"]]],["error.rs","lib.rs","samples_formats.rs","traits.rs"]],\
 "cpufeatures":["",[],["lib.rs","x86.rs"]],\
 "crossbeam_channel":["",[["flavors",[],["array.rs","at.rs","list.rs","mod.rs","never.rs","tick.rs","zero.rs"]]],["channel.rs","context.rs","counter.rs","err.rs","lib.rs","select.rs","select_macro.rs","utils.rs","waker.rs"]],\
@@ -80,6 +79,7 @@ var sourcesIndex = JSON.parse('{\
 "pin_utils":["",[],["lib.rs","projection.rs","stack_pin.rs"]],\
 "ppv_lite86":["",[["x86_64",[],["mod.rs","sse2.rs"]]],["lib.rs","soft.rs","types.rs"]],\
 "proc_macro2":["",[],["detection.rs","fallback.rs","lib.rs","marker.rs","parse.rs","rcvec.rs","wrapper.rs"]],\
+"quick_error":["",[],["lib.rs"]],\
 "quote":["",[],["ext.rs","format.rs","ident_fragment.rs","lib.rs","runtime.rs","spanned.rs","to_tokens.rs"]],\
 "rand":["",[["distributions",[],["bernoulli.rs","distribution.rs","float.rs","integer.rs","mod.rs","other.rs","slice.rs","uniform.rs","utils.rs","weighted.rs","weighted_index.rs"]],["rngs",[["adapter",[],["mod.rs","read.rs","reseeding.rs"]]],["mock.rs","mod.rs","std.rs","thread.rs"]],["seq",[],["index.rs","mod.rs"]]],["lib.rs","prelude.rs","rng.rs"]],\
 "rand_chacha":["",[],["chacha.rs","guts.rs","lib.rs"]],\
