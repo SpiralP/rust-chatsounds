@@ -23,34 +23,34 @@ particularly optimized implementation: if you <strong>actually</strong> want to
 sort for real, you should prefer <a href="../rayon/slice/trait.ParallelSliceMut.html#method.par_sort">the <code>par_sort</code> method</a> offered
 by Rayon).</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="macro">vec!</span>[<span class="number">5</span>, <span class="number">1</span>, <span class="number">8</span>, <span class="number">22</span>, <span class="number">0</span>, <span class="number">44</span>];
-<span class="ident">quick_sort</span>(<span class="kw-2">&amp;mut</span> <span class="ident">v</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">v</span>, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">5</span>, <span class="number">8</span>, <span class="number">22</span>, <span class="number">44</span>]);
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">5</span>, <span class="number">1</span>, <span class="number">8</span>, <span class="number">22</span>, <span class="number">0</span>, <span class="number">44</span>];
+quick_sort(<span class="kw-2">&amp;mut </span>v);
+<span class="macro">assert_eq!</span>(v, <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">5</span>, <span class="number">8</span>, <span class="number">22</span>, <span class="number">44</span>]);
 
-<span class="kw">fn</span> <span class="ident">quick_sort</span>&lt;<span class="ident">T</span>:<span class="ident">PartialOrd</span>+<span class="ident">Send</span>&gt;(<span class="ident">v</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>]) {
-   <span class="kw">if</span> <span class="ident">v</span>.<span class="ident">len</span>() &gt; <span class="number">1</span> {
-       <span class="kw">let</span> <span class="ident">mid</span> = <span class="ident">partition</span>(<span class="ident">v</span>);
-       <span class="kw">let</span> (<span class="ident">lo</span>, <span class="ident">hi</span>) = <span class="ident">v</span>.<span class="ident">split_at_mut</span>(<span class="ident">mid</span>);
-       <span class="ident">rayon::join</span>(|| <span class="ident">quick_sort</span>(<span class="ident">lo</span>),
-                   || <span class="ident">quick_sort</span>(<span class="ident">hi</span>));
+<span class="kw">fn </span>quick_sort&lt;T:PartialOrd+Send&gt;(v: <span class="kw-2">&amp;mut </span>[T]) {
+   <span class="kw">if </span>v.len() &gt; <span class="number">1 </span>{
+       <span class="kw">let </span>mid = partition(v);
+       <span class="kw">let </span>(lo, hi) = v.split_at_mut(mid);
+       rayon::join(|| quick_sort(lo),
+                   || quick_sort(hi));
    }
 }
 
-<span class="comment">// Partition rearranges all items `&lt;=` to the pivot</span>
-<span class="comment">// item (arbitrary selected to be the last item in the slice)</span>
-<span class="comment">// to the first half of the slice. It then returns the</span>
-<span class="comment">// &quot;dividing point&quot; where the pivot is placed.</span>
-<span class="kw">fn</span> <span class="ident">partition</span>&lt;<span class="ident">T</span>:<span class="ident">PartialOrd</span>+<span class="ident">Send</span>&gt;(<span class="ident">v</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>]) -&gt; <span class="ident">usize</span> {
-    <span class="kw">let</span> <span class="ident">pivot</span> = <span class="ident">v</span>.<span class="ident">len</span>() - <span class="number">1</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span> = <span class="number">0</span>;
-    <span class="kw">for</span> <span class="ident">j</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">pivot</span> {
-        <span class="kw">if</span> <span class="ident">v</span>[<span class="ident">j</span>] &lt;= <span class="ident">v</span>[<span class="ident">pivot</span>] {
-            <span class="ident">v</span>.<span class="ident">swap</span>(<span class="ident">i</span>, <span class="ident">j</span>);
-            <span class="ident">i</span> += <span class="number">1</span>;
+<span class="comment">// Partition rearranges all items `&lt;=` to the pivot
+// item (arbitrary selected to be the last item in the slice)
+// to the first half of the slice. It then returns the
+// &quot;dividing point&quot; where the pivot is placed.
+</span><span class="kw">fn </span>partition&lt;T:PartialOrd+Send&gt;(v: <span class="kw-2">&amp;mut </span>[T]) -&gt; usize {
+    <span class="kw">let </span>pivot = v.len() - <span class="number">1</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+    <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..pivot {
+        <span class="kw">if </span>v[j] &lt;= v[pivot] {
+            v.swap(i, j);
+            i += <span class="number">1</span>;
         }
     }
-    <span class="ident">v</span>.<span class="ident">swap</span>(<span class="ident">i</span>, <span class="ident">pivot</span>);
-    <span class="ident">i</span>
+    v.swap(i, pivot);
+    i
 }</code></pre></div>
 <h2 id="warning-about-blocking-io"><a href="#warning-about-blocking-io">Warning about blocking I/O</a></h2>
 <p>The assumption is that the closures given to <code>join()</code> are
@@ -66,4 +66,4 @@ a single closure panics, whether it be the first or second
 closure, that panic will be propagated and hence <code>join()</code> will
 panic with the same panic value. If both closures panic, <code>join()</code>
 will panic with the panic value from the first closure.</p>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

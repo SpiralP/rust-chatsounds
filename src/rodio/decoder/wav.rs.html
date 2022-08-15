@@ -195,202 +195,202 @@
 <span id="195">195</span>
 <span id="196">196</span>
 <span id="197">197</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>, <span class="ident">SeekFrom</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::io::{Read, Seek, SeekFrom};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Source</span>;
+<span class="kw">use </span><span class="kw">crate</span>::Source;
 
-<span class="kw">use</span> <span class="ident">hound</span>::{<span class="ident">SampleFormat</span>, <span class="ident">WavReader</span>};
+<span class="kw">use </span>hound::{SampleFormat, WavReader};
 
-<span class="doccomment">/// Decoder for the WAV format.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="doccomment">/// Decoder for the WAV format.
+</span><span class="kw">pub struct </span>WavDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="ident">reader</span>: <span class="ident">SamplesIterator</span>&lt;<span class="ident">R</span>&gt;,
-    <span class="ident">total_duration</span>: <span class="ident">Duration</span>,
-    <span class="ident">sample_rate</span>: <span class="ident">u32</span>,
-    <span class="ident">channels</span>: <span class="ident">u16</span>,
+    reader: SamplesIterator&lt;R&gt;,
+    total_duration: Duration,
+    sample_rate: u32,
+    channels: u16,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; WavDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="doccomment">/// Attempts to decode the data as WAV.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="kw-2">mut</span> <span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">R</span>&gt; {
-        <span class="kw">if</span> !<span class="ident">is_wave</span>(<span class="ident">data</span>.<span class="ident">by_ref</span>()) {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">data</span>);
+    <span class="doccomment">/// Attempts to decode the data as WAV.
+    </span><span class="kw">pub fn </span>new(<span class="kw-2">mut </span>data: R) -&gt; <span class="prelude-ty">Result</span>&lt;WavDecoder&lt;R&gt;, R&gt; {
+        <span class="kw">if </span>!is_wave(data.by_ref()) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(data);
         }
 
-        <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">WavReader::new</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">spec</span> = <span class="ident">reader</span>.<span class="ident">spec</span>();
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">reader</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-        <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">SamplesIterator</span> {
-            <span class="ident">reader</span>,
-            <span class="ident">samples_read</span>: <span class="number">0</span>,
+        <span class="kw">let </span>reader = WavReader::new(data).unwrap();
+        <span class="kw">let </span>spec = reader.spec();
+        <span class="kw">let </span>len = reader.len() <span class="kw">as </span>u64;
+        <span class="kw">let </span>reader = SamplesIterator {
+            reader,
+            samples_read: <span class="number">0</span>,
         };
 
-        <span class="kw">let</span> <span class="ident">sample_rate</span> = <span class="ident">spec</span>.<span class="ident">sample_rate</span>;
-        <span class="kw">let</span> <span class="ident">channels</span> = <span class="ident">spec</span>.<span class="ident">channels</span>;
-        <span class="kw">let</span> <span class="ident">total_duration</span> =
-            <span class="ident">Duration::from_micros</span>((<span class="number">1_000_000</span> * <span class="ident">len</span>) / (<span class="ident">sample_rate</span> <span class="kw">as</span> <span class="ident">u64</span> * <span class="ident">channels</span> <span class="kw">as</span> <span class="ident">u64</span>));
+        <span class="kw">let </span>sample_rate = spec.sample_rate;
+        <span class="kw">let </span>channels = spec.channels;
+        <span class="kw">let </span>total_duration =
+            Duration::from_micros((<span class="number">1_000_000 </span>* len) / (sample_rate <span class="kw">as </span>u64 * channels <span class="kw">as </span>u64));
 
-        <span class="prelude-val">Ok</span>(<span class="ident">WavDecoder</span> {
-            <span class="ident">reader</span>,
-            <span class="ident">total_duration</span>,
-            <span class="ident">sample_rate</span>,
-            <span class="ident">channels</span>,
+        <span class="prelude-val">Ok</span>(WavDecoder {
+            reader,
+            total_duration,
+            sample_rate,
+            channels,
         })
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">R</span> {
-        <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">reader</span>.<span class="ident">into_inner</span>()
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; R {
+        <span class="self">self</span>.reader.reader.into_inner()
     }
 }
 
-<span class="kw">struct</span> <span class="ident">SamplesIterator</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">struct </span>SamplesIterator&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="ident">reader</span>: <span class="ident">WavReader</span>&lt;<span class="ident">R</span>&gt;,
-    <span class="ident">samples_read</span>: <span class="ident">u32</span>,
+    reader: WavReader&lt;R&gt;,
+    samples_read: u32,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SamplesIterator</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Iterator <span class="kw">for </span>SamplesIterator&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">i16</span>;
+    <span class="kw">type </span>Item = i16;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i16</span>&gt; {
-        <span class="kw">let</span> <span class="ident">spec</span> = <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">spec</span>();
-        <span class="kw">match</span> (<span class="ident">spec</span>.<span class="ident">sample_format</span>, <span class="ident">spec</span>.<span class="ident">bits_per_sample</span>) {
-            (<span class="ident">SampleFormat::Float</span>, <span class="number">32</span>) =&gt; <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">samples</span>().<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">value</span>| {
-                <span class="self">self</span>.<span class="ident">samples_read</span> += <span class="number">1</span>;
-                <span class="ident">f32_to_i16</span>(<span class="ident">value</span>.<span class="ident">unwrap_or</span>(<span class="number">0.0</span>))
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i16&gt; {
+        <span class="kw">let </span>spec = <span class="self">self</span>.reader.spec();
+        <span class="kw">match </span>(spec.sample_format, spec.bits_per_sample) {
+            (SampleFormat::Float, <span class="number">32</span>) =&gt; <span class="self">self</span>.reader.samples().next().map(|value| {
+                <span class="self">self</span>.samples_read += <span class="number">1</span>;
+                f32_to_i16(value.unwrap_or(<span class="number">0.0</span>))
             }),
-            (<span class="ident">SampleFormat::Int</span>, <span class="number">8</span>) =&gt; <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">samples</span>().<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">value</span>| {
-                <span class="self">self</span>.<span class="ident">samples_read</span> += <span class="number">1</span>;
-                <span class="ident">i8_to_i16</span>(<span class="ident">value</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>))
+            (SampleFormat::Int, <span class="number">8</span>) =&gt; <span class="self">self</span>.reader.samples().next().map(|value| {
+                <span class="self">self</span>.samples_read += <span class="number">1</span>;
+                i8_to_i16(value.unwrap_or(<span class="number">0</span>))
             }),
-            (<span class="ident">SampleFormat::Int</span>, <span class="number">16</span>) =&gt; <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">samples</span>().<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">value</span>| {
-                <span class="self">self</span>.<span class="ident">samples_read</span> += <span class="number">1</span>;
-                <span class="ident">value</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>)
+            (SampleFormat::Int, <span class="number">16</span>) =&gt; <span class="self">self</span>.reader.samples().next().map(|value| {
+                <span class="self">self</span>.samples_read += <span class="number">1</span>;
+                value.unwrap_or(<span class="number">0</span>)
             }),
-            (<span class="ident">SampleFormat::Int</span>, <span class="number">24</span>) =&gt; <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">samples</span>().<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">value</span>| {
-                <span class="self">self</span>.<span class="ident">samples_read</span> += <span class="number">1</span>;
-                <span class="ident">i24_to_i16</span>(<span class="ident">value</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>))
+            (SampleFormat::Int, <span class="number">24</span>) =&gt; <span class="self">self</span>.reader.samples().next().map(|value| {
+                <span class="self">self</span>.samples_read += <span class="number">1</span>;
+                i24_to_i16(value.unwrap_or(<span class="number">0</span>))
             }),
-            (<span class="ident">SampleFormat::Int</span>, <span class="number">32</span>) =&gt; <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">samples</span>().<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">value</span>| {
-                <span class="self">self</span>.<span class="ident">samples_read</span> += <span class="number">1</span>;
-                <span class="ident">i32_to_i16</span>(<span class="ident">value</span>.<span class="ident">unwrap_or</span>(<span class="number">0</span>))
+            (SampleFormat::Int, <span class="number">32</span>) =&gt; <span class="self">self</span>.reader.samples().next().map(|value| {
+                <span class="self">self</span>.samples_read += <span class="number">1</span>;
+                i32_to_i16(value.unwrap_or(<span class="number">0</span>))
             }),
-            (<span class="ident">sample_format</span>, <span class="ident">bits_per_sample</span>) =&gt; <span class="macro">panic!</span>(
+            (sample_format, bits_per_sample) =&gt; <span class="macro">panic!</span>(
                 <span class="string">&quot;Unimplemented wav spec: {:?}, {}&quot;</span>,
-                <span class="ident">sample_format</span>, <span class="ident">bits_per_sample</span>
+                sample_format, bits_per_sample
             ),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="kw">let</span> <span class="ident">len</span> = (<span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">len</span>() - <span class="self">self</span>.<span class="ident">samples_read</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-        (<span class="ident">len</span>, <span class="prelude-val">Some</span>(<span class="ident">len</span>))
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">let </span>len = (<span class="self">self</span>.reader.len() - <span class="self">self</span>.samples_read) <span class="kw">as </span>usize;
+        (len, <span class="prelude-val">Some</span>(len))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">ExactSizeIterator</span> <span class="kw">for</span> <span class="ident">SamplesIterator</span>&lt;<span class="ident">R</span>&gt; <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span> {}
+<span class="kw">impl</span>&lt;R&gt; ExactSizeIterator <span class="kw">for </span>SamplesIterator&lt;R&gt; <span class="kw">where </span>R: Read + Seek {}
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Source <span class="kw">for </span>WavDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="prelude-val">None</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="prelude-val">None
+    </span>}
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.channels
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="ident">channels</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.sample_rate
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="self">self</span>.<span class="ident">sample_rate</span>
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">total_duration</span>)
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="prelude-val">Some</span>(<span class="self">self</span>.total_duration)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Iterator <span class="kw">for </span>WavDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">i16</span>;
+    <span class="kw">type </span>Item = i16;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i16</span>&gt; {
-        <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">next</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i16&gt; {
+        <span class="self">self</span>.reader.next()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">size_hint</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="self">self</span>.reader.size_hint()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">ExactSizeIterator</span> <span class="kw">for</span> <span class="ident">WavDecoder</span>&lt;<span class="ident">R</span>&gt; <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span> {}
+<span class="kw">impl</span>&lt;R&gt; ExactSizeIterator <span class="kw">for </span>WavDecoder&lt;R&gt; <span class="kw">where </span>R: Read + Seek {}
 
-<span class="doccomment">/// Returns true if the stream contains WAV data, then resets it to where it was.</span>
-<span class="kw">fn</span> <span class="ident">is_wave</span>&lt;<span class="ident">R</span>&gt;(<span class="kw-2">mut</span> <span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="ident">bool</span>
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="doccomment">/// Returns true if the stream contains WAV data, then resets it to where it was.
+</span><span class="kw">fn </span>is_wave&lt;R&gt;(<span class="kw-2">mut </span>data: R) -&gt; bool
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">let</span> <span class="ident">stream_pos</span> = <span class="ident">data</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Current</span>(<span class="number">0</span>)).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>stream_pos = data.seek(SeekFrom::Current(<span class="number">0</span>)).unwrap();
 
-    <span class="kw">if</span> <span class="ident">WavReader::new</span>(<span class="ident">data</span>.<span class="ident">by_ref</span>()).<span class="ident">is_err</span>() {
-        <span class="ident">data</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="ident">stream_pos</span>)).<span class="ident">unwrap</span>();
-        <span class="kw">return</span> <span class="bool-val">false</span>;
+    <span class="kw">if </span>WavReader::new(data.by_ref()).is_err() {
+        data.seek(SeekFrom::Start(stream_pos)).unwrap();
+        <span class="kw">return </span><span class="bool-val">false</span>;
     }
 
-    <span class="ident">data</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="ident">stream_pos</span>)).<span class="ident">unwrap</span>();
-    <span class="bool-val">true</span>
+    data.seek(SeekFrom::Start(stream_pos)).unwrap();
+    <span class="bool-val">true
+</span>}
+
+<span class="doccomment">/// Returns a 32 bit WAV float as an i16. WAV floats are typically in the range of
+/// [-1.0, 1.0] while i16s are in the range [-32768, 32767]. Note that this
+/// function definitely causes precision loss but hopefully this isn&#39;t too
+/// audiable when actually playing?
+</span><span class="kw">fn </span>f32_to_i16(f: f32) -&gt; i16 {
+    <span class="comment">// prefer to clip the input rather than be excessively loud.
+    </span>(f.max(-<span class="number">1.0</span>).min(<span class="number">1.0</span>) * i16::max_value() <span class="kw">as </span>f32) <span class="kw">as </span>i16
 }
 
-<span class="doccomment">/// Returns a 32 bit WAV float as an i16. WAV floats are typically in the range of</span>
-<span class="doccomment">/// [-1.0, 1.0] while i16s are in the range [-32768, 32767]. Note that this</span>
-<span class="doccomment">/// function definitely causes precision loss but hopefully this isn&#39;t too</span>
-<span class="doccomment">/// audiable when actually playing?</span>
-<span class="kw">fn</span> <span class="ident">f32_to_i16</span>(<span class="ident">f</span>: <span class="ident">f32</span>) -&gt; <span class="ident">i16</span> {
-    <span class="comment">// prefer to clip the input rather than be excessively loud.</span>
-    (<span class="ident">f</span>.<span class="ident">max</span>(-<span class="number">1.0</span>).<span class="ident">min</span>(<span class="number">1.0</span>) * <span class="ident">i16::max_value</span>() <span class="kw">as</span> <span class="ident">f32</span>) <span class="kw">as</span> <span class="ident">i16</span>
+<span class="doccomment">/// Returns an 8-bit WAV int as an i16. This scales the sample value by a factor
+/// of 256.
+</span><span class="kw">fn </span>i8_to_i16(i: i8) -&gt; i16 {
+    i <span class="kw">as </span>i16 * <span class="number">256
+</span>}
+
+<span class="doccomment">/// Returns a 24 bit WAV int as an i16. Note that this is a 24 bit integer, not a
+/// 32 bit one. 24 bit ints are in the range [−8,388,608, 8,388,607] while i16s
+/// are in the range [-32768, 32767]. Note that this function definitely causes
+/// precision loss but hopefully this isn&#39;t too audiable when actually playing?
+</span><span class="kw">fn </span>i24_to_i16(i: i32) -&gt; i16 {
+    (i &gt;&gt; <span class="number">8</span>) <span class="kw">as </span>i16
 }
 
-<span class="doccomment">/// Returns an 8-bit WAV int as an i16. This scales the sample value by a factor</span>
-<span class="doccomment">/// of 256.</span>
-<span class="kw">fn</span> <span class="ident">i8_to_i16</span>(<span class="ident">i</span>: <span class="ident">i8</span>) -&gt; <span class="ident">i16</span> {
-    <span class="ident">i</span> <span class="kw">as</span> <span class="ident">i16</span> * <span class="number">256</span>
-}
-
-<span class="doccomment">/// Returns a 24 bit WAV int as an i16. Note that this is a 24 bit integer, not a</span>
-<span class="doccomment">/// 32 bit one. 24 bit ints are in the range [−8,388,608, 8,388,607] while i16s</span>
-<span class="doccomment">/// are in the range [-32768, 32767]. Note that this function definitely causes</span>
-<span class="doccomment">/// precision loss but hopefully this isn&#39;t too audiable when actually playing?</span>
-<span class="kw">fn</span> <span class="ident">i24_to_i16</span>(<span class="ident">i</span>: <span class="ident">i32</span>) -&gt; <span class="ident">i16</span> {
-    (<span class="ident">i</span> &gt;&gt; <span class="number">8</span>) <span class="kw">as</span> <span class="ident">i16</span>
-}
-
-<span class="doccomment">/// Returns a 32 bit WAV int as an i16. 32 bit ints are in the range</span>
-<span class="doccomment">/// [-2,147,483,648, 2,147,483,647] while i16s are in the range [-32768, 32767].</span>
-<span class="doccomment">/// Note that this function definitely causes precision loss but hopefully this</span>
-<span class="doccomment">/// isn&#39;t too audiable when actually playing?</span>
-<span class="kw">fn</span> <span class="ident">i32_to_i16</span>(<span class="ident">i</span>: <span class="ident">i32</span>) -&gt; <span class="ident">i16</span> {
-    (<span class="ident">i</span> &gt;&gt; <span class="number">16</span>) <span class="kw">as</span> <span class="ident">i16</span>
+<span class="doccomment">/// Returns a 32 bit WAV int as an i16. 32 bit ints are in the range
+/// [-2,147,483,648, 2,147,483,647] while i16s are in the range [-32768, 32767].
+/// Note that this function definitely causes precision loss but hopefully this
+/// isn&#39;t too audiable when actually playing?
+</span><span class="kw">fn </span>i32_to_i16(i: i32) -&gt; i16 {
+    (i &gt;&gt; <span class="number">16</span>) <span class="kw">as </span>i16
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

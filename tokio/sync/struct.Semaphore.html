@@ -18,41 +18,41 @@ utility.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>Basic usage:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">Semaphore</span>, <span class="ident">TryAcquireError</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::{Semaphore, TryAcquireError};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Semaphore::new</span>(<span class="number">3</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Semaphore::new(<span class="number">3</span>);
 
-    <span class="kw">let</span> <span class="ident">a_permit</span> = <span class="ident">semaphore</span>.<span class="ident">acquire</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">two_permits</span> = <span class="ident">semaphore</span>.<span class="ident">acquire_many</span>(<span class="number">2</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">let </span>a_permit = semaphore.acquire().<span class="kw">await</span>.unwrap();
+    <span class="kw">let </span>two_permits = semaphore.acquire_many(<span class="number">2</span>).<span class="kw">await</span>.unwrap();
 
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">0</span>);
+    <span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">0</span>);
 
-    <span class="kw">let</span> <span class="ident">permit_attempt</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">permit_attempt</span>.<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::NoPermits</span>));
+    <span class="kw">let </span>permit_attempt = semaphore.try_acquire();
+    <span class="macro">assert_eq!</span>(permit_attempt.err(), <span class="prelude-val">Some</span>(TryAcquireError::NoPermits));
 }</code></pre></div>
 <p>Use <a href="struct.Semaphore.html#method.acquire_owned"><code>Semaphore::acquire_owned</code></a> to move permits across tasks:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Semaphore;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">3</span>));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">join_handles</span> = <span class="ident">Vec::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">3</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>join_handles = Vec::new();
 
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-        <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">semaphore</span>.<span class="ident">clone</span>().<span class="ident">acquire_owned</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="ident">join_handles</span>.<span class="ident">push</span>(<span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// perform task...</span>
-            <span class="comment">// explicitly own `permit` in the task</span>
-            <span class="ident">drop</span>(<span class="ident">permit</span>);
+    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
+        <span class="kw">let </span>permit = semaphore.clone().acquire_owned().<span class="kw">await</span>.unwrap();
+        join_handles.push(tokio::spawn(<span class="kw">async move </span>{
+            <span class="comment">// perform task...
+            // explicitly own `permit` in the task
+            </span>drop(permit);
         }));
     }
 
-    <span class="kw">for</span> <span class="ident">handle</span> <span class="kw">in</span> <span class="ident">join_handles</span> {
-        <span class="ident">handle</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">for </span>handle <span class="kw">in </span>join_handles {
+        handle.<span class="kw">await</span>.unwrap();
     }
 }</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Semaphore" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#125-614">source</a></span><a href="#impl-Semaphore" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.Semaphore.html" title="struct tokio::sync::Semaphore">Semaphore</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.new" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#128-155">source</a></span><h4 class="code-header">pub fn <a href="#method.new" class="fnname">new</a>(permits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new semaphore with the initial number of permits.</p>
@@ -68,20 +68,20 @@ acquired permit.</p>
 were requested. Cancelling a call to <code>acquire</code> makes you lose your place
 in the queue.</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Semaphore;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Semaphore::new</span>(<span class="number">2</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Semaphore::new(<span class="number">2</span>);
 
-    <span class="kw">let</span> <span class="ident">permit_1</span> = <span class="ident">semaphore</span>.<span class="ident">acquire</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+    <span class="kw">let </span>permit_1 = semaphore.acquire().<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 
-    <span class="kw">let</span> <span class="ident">permit_2</span> = <span class="ident">semaphore</span>.<span class="ident">acquire</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">0</span>);
+    <span class="kw">let </span>permit_2 = semaphore.acquire().<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">0</span>);
 
-    <span class="ident">drop</span>(<span class="ident">permit_1</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+    drop(permit_1);
+    <span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.acquire_many" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#275-293">source</a></span><h4 class="code-header">pub async fn <a href="#method.acquire_many" class="fnname">acquire_many</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.SemaphorePermit.html" title="struct tokio::sync::SemaphorePermit">SemaphorePermit</a>&lt;'_&gt;, <a class="struct" href="struct.AcquireError.html" title="struct tokio::sync::AcquireError">AcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Acquires <code>n</code> permits from the semaphore.</p>
 <p>If the semaphore has been closed, this returns an <a href="struct.AcquireError.html"><code>AcquireError</code></a>.
@@ -92,46 +92,46 @@ acquired permits.</p>
 were requested. Cancelling a call to <code>acquire_many</code> makes you lose your
 place in the queue.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Semaphore;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Semaphore::new</span>(<span class="number">5</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Semaphore::new(<span class="number">5</span>);
 
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">semaphore</span>.<span class="ident">acquire_many</span>(<span class="number">3</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">2</span>);
+    <span class="kw">let </span>permit = semaphore.acquire_many(<span class="number">3</span>).<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">2</span>);
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_acquire" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#323-331">source</a></span><h4 class="code-header">pub fn <a href="#method.try_acquire" class="fnname">try_acquire</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.SemaphorePermit.html" title="struct tokio::sync::SemaphorePermit">SemaphorePermit</a>&lt;'_&gt;, <a class="enum" href="enum.TryAcquireError.html" title="enum tokio::sync::TryAcquireError">TryAcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire a permit from the semaphore.</p>
 <p>If the semaphore has been closed, this returns a <a href="enum.TryAcquireError.html#variant.Closed"><code>TryAcquireError::Closed</code></a>
 and a <a href="enum.TryAcquireError.html#variant.NoPermits"><code>TryAcquireError::NoPermits</code></a> if there are no permits left. Otherwise,
 this returns a <a href="struct.SemaphorePermit.html"><code>SemaphorePermit</code></a> representing the acquired permits.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">Semaphore</span>, <span class="ident">TryAcquireError</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::{Semaphore, TryAcquireError};
 
-<span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Semaphore::new</span>(<span class="number">2</span>);
+<span class="kw">let </span>semaphore = Semaphore::new(<span class="number">2</span>);
 
-<span class="kw">let</span> <span class="ident">permit_1</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire</span>().<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+<span class="kw">let </span>permit_1 = semaphore.try_acquire().unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 
-<span class="kw">let</span> <span class="ident">permit_2</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire</span>().<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">0</span>);
+<span class="kw">let </span>permit_2 = semaphore.try_acquire().unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">0</span>);
 
-<span class="kw">let</span> <span class="ident">permit_3</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">permit_3</span>.<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::NoPermits</span>));</code></pre></div>
+<span class="kw">let </span>permit_3 = semaphore.try_acquire();
+<span class="macro">assert_eq!</span>(permit_3.err(), <span class="prelude-val">Some</span>(TryAcquireError::NoPermits));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_acquire_many" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#358-366">source</a></span><h4 class="code-header">pub fn <a href="#method.try_acquire_many" class="fnname">try_acquire_many</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.SemaphorePermit.html" title="struct tokio::sync::SemaphorePermit">SemaphorePermit</a>&lt;'_&gt;, <a class="enum" href="enum.TryAcquireError.html" title="enum tokio::sync::TryAcquireError">TryAcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire <code>n</code> permits from the semaphore.</p>
 <p>If the semaphore has been closed, this returns a <a href="enum.TryAcquireError.html#variant.Closed"><code>TryAcquireError::Closed</code></a>
 and a <a href="enum.TryAcquireError.html#variant.NoPermits"><code>TryAcquireError::NoPermits</code></a> if there are not enough permits left.
 Otherwise, this returns a <a href="struct.SemaphorePermit.html"><code>SemaphorePermit</code></a> representing the acquired permits.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">Semaphore</span>, <span class="ident">TryAcquireError</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::{Semaphore, TryAcquireError};
 
-<span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Semaphore::new</span>(<span class="number">4</span>);
+<span class="kw">let </span>semaphore = Semaphore::new(<span class="number">4</span>);
 
-<span class="kw">let</span> <span class="ident">permit_1</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire_many</span>(<span class="number">3</span>).<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+<span class="kw">let </span>permit_1 = semaphore.try_acquire_many(<span class="number">3</span>).unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 
-<span class="kw">let</span> <span class="ident">permit_2</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire_many</span>(<span class="number">2</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">permit_2</span>.<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::NoPermits</span>));</code></pre></div>
+<span class="kw">let </span>permit_2 = semaphore.try_acquire_many(<span class="number">2</span>);
+<span class="macro">assert_eq!</span>(permit_2.err(), <span class="prelude-val">Some</span>(TryAcquireError::NoPermits));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.acquire_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#410-427">source</a></span><h4 class="code-header">pub async fn <a href="#method.acquire_owned" class="fnname">acquire_owned</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;self: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Self&gt;<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedSemaphorePermit.html" title="struct tokio::sync::OwnedSemaphorePermit">OwnedSemaphorePermit</a>, <a class="struct" href="struct.AcquireError.html" title="struct tokio::sync::AcquireError">AcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Acquires a permit from the semaphore.</p>
 <p>The semaphore must be wrapped in an <a href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html"><code>Arc</code></a> to call this method.
 If the semaphore has been closed, this returns an <a href="struct.AcquireError.html"><code>AcquireError</code></a>.
@@ -142,25 +142,25 @@ acquired permit.</p>
 were requested. Cancelling a call to <code>acquire_owned</code> makes you lose your
 place in the queue.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Semaphore;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">3</span>));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">join_handles</span> = <span class="ident">Vec::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">3</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>join_handles = Vec::new();
 
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-        <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">semaphore</span>.<span class="ident">clone</span>().<span class="ident">acquire_owned</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="ident">join_handles</span>.<span class="ident">push</span>(<span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// perform task...</span>
-            <span class="comment">// explicitly own `permit` in the task</span>
-            <span class="ident">drop</span>(<span class="ident">permit</span>);
+    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
+        <span class="kw">let </span>permit = semaphore.clone().acquire_owned().<span class="kw">await</span>.unwrap();
+        join_handles.push(tokio::spawn(<span class="kw">async move </span>{
+            <span class="comment">// perform task...
+            // explicitly own `permit` in the task
+            </span>drop(permit);
         }));
     }
 
-    <span class="kw">for</span> <span class="ident">handle</span> <span class="kw">in</span> <span class="ident">join_handles</span> {
-        <span class="ident">handle</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">for </span>handle <span class="kw">in </span>join_handles {
+        handle.<span class="kw">await</span>.unwrap();
     }
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.acquire_many_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#471-491">source</a></span><h4 class="code-header">pub async fn <a href="#method.acquire_many_owned" class="fnname">acquire_many_owned</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;self: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Self&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedSemaphorePermit.html" title="struct tokio::sync::OwnedSemaphorePermit">OwnedSemaphorePermit</a>, <a class="struct" href="struct.AcquireError.html" title="struct tokio::sync::AcquireError">AcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Acquires <code>n</code> permits from the semaphore.</p>
@@ -173,25 +173,25 @@ acquired permit.</p>
 were requested. Cancelling a call to <code>acquire_many_owned</code> makes you lose
 your place in the queue.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Semaphore;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">10</span>));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">join_handles</span> = <span class="ident">Vec::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">10</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>join_handles = Vec::new();
 
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-        <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">semaphore</span>.<span class="ident">clone</span>().<span class="ident">acquire_many_owned</span>(<span class="number">2</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="ident">join_handles</span>.<span class="ident">push</span>(<span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// perform task...</span>
-            <span class="comment">// explicitly own `permit` in the task</span>
-            <span class="ident">drop</span>(<span class="ident">permit</span>);
+    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
+        <span class="kw">let </span>permit = semaphore.clone().acquire_many_owned(<span class="number">2</span>).<span class="kw">await</span>.unwrap();
+        join_handles.push(tokio::spawn(<span class="kw">async move </span>{
+            <span class="comment">// perform task...
+            // explicitly own `permit` in the task
+            </span>drop(permit);
         }));
     }
 
-    <span class="kw">for</span> <span class="ident">handle</span> <span class="kw">in</span> <span class="ident">join_handles</span> {
-        <span class="ident">handle</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">for </span>handle <span class="kw">in </span>join_handles {
+        handle.<span class="kw">await</span>.unwrap();
     }
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_acquire_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#525-533">source</a></span><h4 class="code-header">pub fn <a href="#method.try_acquire_owned" class="fnname">try_acquire_owned</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;self: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Self&gt;<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedSemaphorePermit.html" title="struct tokio::sync::OwnedSemaphorePermit">OwnedSemaphorePermit</a>, <a class="enum" href="enum.TryAcquireError.html" title="enum tokio::sync::TryAcquireError">TryAcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire a permit from the semaphore.</p>
@@ -201,19 +201,19 @@ and a <a href="enum.TryAcquireError.html#variant.NoPermits"><code>TryAcquireErro
 Otherwise, this returns a <a href="struct.OwnedSemaphorePermit.html"><code>OwnedSemaphorePermit</code></a> representing the
 acquired permit.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">Semaphore</span>, <span class="ident">TryAcquireError</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::{Semaphore, TryAcquireError};
 
-<span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">2</span>));
+<span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">2</span>));
 
-<span class="kw">let</span> <span class="ident">permit_1</span> = <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">semaphore</span>).<span class="ident">try_acquire_owned</span>().<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+<span class="kw">let </span>permit_1 = Arc::clone(<span class="kw-2">&amp;</span>semaphore).try_acquire_owned().unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 
-<span class="kw">let</span> <span class="ident">permit_2</span> = <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">semaphore</span>).<span class="ident">try_acquire_owned</span>().<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">0</span>);
+<span class="kw">let </span>permit_2 = Arc::clone(<span class="kw-2">&amp;</span>semaphore).try_acquire_owned().unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">0</span>);
 
-<span class="kw">let</span> <span class="ident">permit_3</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire_owned</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">permit_3</span>.<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::NoPermits</span>));</code></pre></div>
+<span class="kw">let </span>permit_3 = semaphore.try_acquire_owned();
+<span class="macro">assert_eq!</span>(permit_3.err(), <span class="prelude-val">Some</span>(TryAcquireError::NoPermits));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_acquire_many_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#564-575">source</a></span><h4 class="code-header">pub fn <a href="#method.try_acquire_many_owned" class="fnname">try_acquire_many_owned</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;self: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Self&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedSemaphorePermit.html" title="struct tokio::sync::OwnedSemaphorePermit">OwnedSemaphorePermit</a>, <a class="enum" href="enum.TryAcquireError.html" title="enum tokio::sync::TryAcquireError">TryAcquireError</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire <code>n</code> permits from the semaphore.</p>
 <p>The semaphore must be wrapped in an <a href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html"><code>Arc</code></a> to call this method. If
 the semaphore has been closed, this returns a <a href="enum.TryAcquireError.html#variant.Closed"><code>TryAcquireError::Closed</code></a>
@@ -221,39 +221,39 @@ and a <a href="enum.TryAcquireError.html#variant.NoPermits"><code>TryAcquireErro
 Otherwise, this returns a <a href="struct.OwnedSemaphorePermit.html"><code>OwnedSemaphorePermit</code></a> representing the
 acquired permit.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">Semaphore</span>, <span class="ident">TryAcquireError</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::{Semaphore, TryAcquireError};
 
-<span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">4</span>));
+<span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">4</span>));
 
-<span class="kw">let</span> <span class="ident">permit_1</span> = <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">semaphore</span>).<span class="ident">try_acquire_many_owned</span>(<span class="number">3</span>).<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">semaphore</span>.<span class="ident">available_permits</span>(), <span class="number">1</span>);
+<span class="kw">let </span>permit_1 = Arc::clone(<span class="kw-2">&amp;</span>semaphore).try_acquire_many_owned(<span class="number">3</span>).unwrap();
+<span class="macro">assert_eq!</span>(semaphore.available_permits(), <span class="number">1</span>);
 
-<span class="kw">let</span> <span class="ident">permit_2</span> = <span class="ident">semaphore</span>.<span class="ident">try_acquire_many_owned</span>(<span class="number">2</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">permit_2</span>.<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::NoPermits</span>));</code></pre></div>
+<span class="kw">let </span>permit_2 = semaphore.try_acquire_many_owned(<span class="number">2</span>);
+<span class="macro">assert_eq!</span>(permit_2.err(), <span class="prelude-val">Some</span>(TryAcquireError::NoPermits));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.close" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#606-608">source</a></span><h4 class="code-header">pub fn <a href="#method.close" class="fnname">close</a>(&amp;self)</h4></section></summary><div class="docblock"><p>Closes the semaphore.</p>
 <p>This prevents the semaphore from issuing new permits and notifies all pending waiters.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Semaphore</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::TryAcquireError</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Semaphore;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::TryAcquireError;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">semaphore</span> = <span class="ident">Arc::new</span>(<span class="ident">Semaphore::new</span>(<span class="number">1</span>));
-    <span class="kw">let</span> <span class="ident">semaphore2</span> = <span class="ident">semaphore</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(<span class="number">1</span>));
+    <span class="kw">let </span>semaphore2 = semaphore.clone();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">semaphore</span>.<span class="ident">acquire_many</span>(<span class="number">2</span>).<span class="kw">await</span>;
-        <span class="macro">assert!</span>(<span class="ident">permit</span>.<span class="ident">is_err</span>());
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">let </span>permit = semaphore.acquire_many(<span class="number">2</span>).<span class="kw">await</span>;
+        <span class="macro">assert!</span>(permit.is_err());
         <span class="macro">println!</span>(<span class="string">&quot;waiter received error&quot;</span>);
     });
 
     <span class="macro">println!</span>(<span class="string">&quot;closing semaphore&quot;</span>);
-    <span class="ident">semaphore2</span>.<span class="ident">close</span>();
+    semaphore2.close();
 
-    <span class="comment">// Cannot obtain more permits</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">semaphore2</span>.<span class="ident">try_acquire</span>().<span class="ident">err</span>(), <span class="prelude-val">Some</span>(<span class="ident">TryAcquireError::Closed</span>))
+    <span class="comment">// Cannot obtain more permits
+    </span><span class="macro">assert_eq!</span>(semaphore2.try_acquire().err(), <span class="prelude-val">Some</span>(TryAcquireError::Closed))
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#611-613">source</a></span><h4 class="code-header">pub fn <a href="#method.is_closed" class="fnname">is_closed</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns true if the semaphore is closed</p>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-Semaphore" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#78">source</a></span><a href="#impl-Debug-for-Semaphore" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Semaphore.html" title="struct tokio::sync::Semaphore">Semaphore</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/semaphore.rs.html#78">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
@@ -268,4 +268,4 @@ acquired permit.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Semaphore" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Semaphore" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

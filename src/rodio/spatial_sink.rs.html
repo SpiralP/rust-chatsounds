@@ -163,170 +163,170 @@
 <span id="163">163</span>
 <span id="164">164</span>
 <span id="165">165</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::f32</span>;
-<span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::f32;
+<span class="kw">use </span>std::fmt::Debug;
+<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Spatial</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stream</span>::{<span class="ident">OutputStreamHandle</span>, <span class="ident">PlayError</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Sample</span>, <span class="ident">Sink</span>, <span class="ident">Source</span>};
+<span class="kw">use </span><span class="kw">crate</span>::source::Spatial;
+<span class="kw">use </span><span class="kw">crate</span>::stream::{OutputStreamHandle, PlayError};
+<span class="kw">use crate</span>::{Sample, Sink, Source};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SpatialSink</span> {
-    <span class="ident">sink</span>: <span class="ident">Sink</span>,
-    <span class="ident">positions</span>: <span class="ident">Arc</span>&lt;<span class="ident">Mutex</span>&lt;<span class="ident">SoundPositions</span>&gt;&gt;,
+<span class="kw">pub struct </span>SpatialSink {
+    sink: Sink,
+    positions: Arc&lt;Mutex&lt;SoundPositions&gt;&gt;,
 }
 
-<span class="kw">struct</span> <span class="ident">SoundPositions</span> {
-    <span class="ident">emitter_position</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-    <span class="ident">left_ear</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-    <span class="ident">right_ear</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
+<span class="kw">struct </span>SoundPositions {
+    emitter_position: [f32; <span class="number">3</span>],
+    left_ear: [f32; <span class="number">3</span>],
+    right_ear: [f32; <span class="number">3</span>],
 }
 
-<span class="kw">impl</span> <span class="ident">SpatialSink</span> {
-    <span class="doccomment">/// Builds a new `SpatialSink`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_new</span>(
-        <span class="ident">stream</span>: <span class="kw-2">&amp;</span><span class="ident">OutputStreamHandle</span>,
-        <span class="ident">emitter_position</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-        <span class="ident">left_ear</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-        <span class="ident">right_ear</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">SpatialSink</span>, <span class="ident">PlayError</span>&gt; {
-        <span class="prelude-val">Ok</span>(<span class="ident">SpatialSink</span> {
-            <span class="ident">sink</span>: <span class="ident">Sink::try_new</span>(<span class="ident">stream</span>)<span class="question-mark">?</span>,
-            <span class="ident">positions</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SoundPositions</span> {
-                <span class="ident">emitter_position</span>,
-                <span class="ident">left_ear</span>,
-                <span class="ident">right_ear</span>,
+<span class="kw">impl </span>SpatialSink {
+    <span class="doccomment">/// Builds a new `SpatialSink`.
+    </span><span class="kw">pub fn </span>try_new(
+        stream: <span class="kw-2">&amp;</span>OutputStreamHandle,
+        emitter_position: [f32; <span class="number">3</span>],
+        left_ear: [f32; <span class="number">3</span>],
+        right_ear: [f32; <span class="number">3</span>],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;SpatialSink, PlayError&gt; {
+        <span class="prelude-val">Ok</span>(SpatialSink {
+            sink: Sink::try_new(stream)<span class="question-mark">?</span>,
+            positions: Arc::new(Mutex::new(SoundPositions {
+                emitter_position,
+                left_ear,
+                right_ear,
             })),
         })
     }
 
-    <span class="doccomment">/// Sets the position of the sound emitter in 3 dimensional space.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_emitter_position</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>]) {
-        <span class="self">self</span>.<span class="ident">positions</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">emitter_position</span> = <span class="ident">pos</span>;
+    <span class="doccomment">/// Sets the position of the sound emitter in 3 dimensional space.
+    </span><span class="kw">pub fn </span>set_emitter_position(<span class="kw-2">&amp;</span><span class="self">self</span>, pos: [f32; <span class="number">3</span>]) {
+        <span class="self">self</span>.positions.lock().unwrap().emitter_position = pos;
     }
 
-    <span class="doccomment">/// Sets the position of the left ear in 3 dimensional space.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_left_ear_position</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>]) {
-        <span class="self">self</span>.<span class="ident">positions</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">left_ear</span> = <span class="ident">pos</span>;
+    <span class="doccomment">/// Sets the position of the left ear in 3 dimensional space.
+    </span><span class="kw">pub fn </span>set_left_ear_position(<span class="kw-2">&amp;</span><span class="self">self</span>, pos: [f32; <span class="number">3</span>]) {
+        <span class="self">self</span>.positions.lock().unwrap().left_ear = pos;
     }
 
-    <span class="doccomment">/// Sets the position of the right ear in 3 dimensional space.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_right_ear_position</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>]) {
-        <span class="self">self</span>.<span class="ident">positions</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">right_ear</span> = <span class="ident">pos</span>;
+    <span class="doccomment">/// Sets the position of the right ear in 3 dimensional space.
+    </span><span class="kw">pub fn </span>set_right_ear_position(<span class="kw-2">&amp;</span><span class="self">self</span>, pos: [f32; <span class="number">3</span>]) {
+        <span class="self">self</span>.positions.lock().unwrap().right_ear = pos;
     }
 
-    <span class="doccomment">/// Appends a sound to the queue of sounds to play.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append</span>&lt;<span class="ident">S</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">S</span>)
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Source</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
-        <span class="ident">S::Item</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="ident">Debug</span>,
+    <span class="doccomment">/// Appends a sound to the queue of sounds to play.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>append&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: S)
+    <span class="kw">where
+        </span>S: Source + Send + <span class="lifetime">&#39;static</span>,
+        S::Item: Sample + Send + Debug,
     {
-        <span class="kw">let</span> <span class="ident">positions</span> = <span class="self">self</span>.<span class="ident">positions</span>.<span class="ident">clone</span>();
-        <span class="kw">let</span> <span class="ident">pos_lock</span> = <span class="self">self</span>.<span class="ident">positions</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">source</span> = <span class="ident">Spatial::new</span>(
-            <span class="ident">source</span>,
-            <span class="ident">pos_lock</span>.<span class="ident">emitter_position</span>,
-            <span class="ident">pos_lock</span>.<span class="ident">left_ear</span>,
-            <span class="ident">pos_lock</span>.<span class="ident">right_ear</span>,
+        <span class="kw">let </span>positions = <span class="self">self</span>.positions.clone();
+        <span class="kw">let </span>pos_lock = <span class="self">self</span>.positions.lock().unwrap();
+        <span class="kw">let </span>source = Spatial::new(
+            source,
+            pos_lock.emitter_position,
+            pos_lock.left_ear,
+            pos_lock.right_ear,
         )
-        .<span class="ident">periodic_access</span>(<span class="ident">Duration::from_millis</span>(<span class="number">10</span>), <span class="kw">move</span> |<span class="ident">i</span>| {
-            <span class="kw">let</span> <span class="ident">pos</span> = <span class="ident">positions</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-            <span class="ident">i</span>.<span class="ident">set_positions</span>(<span class="ident">pos</span>.<span class="ident">emitter_position</span>, <span class="ident">pos</span>.<span class="ident">left_ear</span>, <span class="ident">pos</span>.<span class="ident">right_ear</span>);
+        .periodic_access(Duration::from_millis(<span class="number">10</span>), <span class="kw">move </span>|i| {
+            <span class="kw">let </span>pos = positions.lock().unwrap();
+            i.set_positions(pos.emitter_position, pos.left_ear, pos.right_ear);
         });
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+        <span class="self">self</span>.sink.append(source);
     }
 
-    <span class="comment">// Gets the volume of the sound.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The value `1.0` is the &quot;normal&quot; volume (unfiltered input). Any value other than 1.0 will</span>
-    <span class="doccomment">/// multiply each sample by this value.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">f32</span> {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">volume</span>()
+    <span class="comment">// Gets the volume of the sound.
+    </span><span class="doccomment">///
+    /// The value `1.0` is the &quot;normal&quot; volume (unfiltered input). Any value other than 1.0 will
+    /// multiply each sample by this value.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>volume(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f32 {
+        <span class="self">self</span>.sink.volume()
     }
 
-    <span class="doccomment">/// Changes the volume of the sound.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The value `1.0` is the &quot;normal&quot; volume (unfiltered input). Any value other than 1.0 will</span>
-    <span class="doccomment">/// multiply each sample by this value.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">f32</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="ident">value</span>);
+    <span class="doccomment">/// Changes the volume of the sound.
+    ///
+    /// The value `1.0` is the &quot;normal&quot; volume (unfiltered input). Any value other than 1.0 will
+    /// multiply each sample by this value.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>set_volume(<span class="kw-2">&amp;</span><span class="self">self</span>, value: f32) {
+        <span class="self">self</span>.sink.set_volume(value);
     }
 
-    <span class="doccomment">/// Gets the speed of the sound.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The value `1.0` is the &quot;normal&quot; speed (unfiltered input). Any value other than `1.0` will</span>
-    <span class="doccomment">/// change the play speed of the sound.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">speed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">f32</span> {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">speed</span>()
+    <span class="doccomment">/// Gets the speed of the sound.
+    ///
+    /// The value `1.0` is the &quot;normal&quot; speed (unfiltered input). Any value other than `1.0` will
+    /// change the play speed of the sound.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>speed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f32 {
+        <span class="self">self</span>.sink.speed()
     }
 
-    <span class="doccomment">/// Changes the speed of the sound.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The value `1.0` is the &quot;normal&quot; speed (unfiltered input). Any value other than `1.0` will</span>
-    <span class="doccomment">/// change the play speed of the sound.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_speed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">f32</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">set_speed</span>(<span class="ident">value</span>)
+    <span class="doccomment">/// Changes the speed of the sound.
+    ///
+    /// The value `1.0` is the &quot;normal&quot; speed (unfiltered input). Any value other than `1.0` will
+    /// change the play speed of the sound.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>set_speed(<span class="kw-2">&amp;</span><span class="self">self</span>, value: f32) {
+        <span class="self">self</span>.sink.set_speed(value)
     }
 
-    <span class="doccomment">/// Resumes playback of a paused sound.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// No effect if not paused.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">play</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">play</span>();
+    <span class="doccomment">/// Resumes playback of a paused sound.
+    ///
+    /// No effect if not paused.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>play(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.sink.play();
     }
 
-    <span class="doccomment">/// Pauses playback of this sink.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// No effect if already paused.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// A paused sound can be resumed with `play()`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pause</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">pause</span>();
+    <span class="doccomment">/// Pauses playback of this sink.
+    ///
+    /// No effect if already paused.
+    ///
+    /// A paused sound can be resumed with `play()`.
+    </span><span class="kw">pub fn </span>pause(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.sink.pause();
     }
 
-    <span class="doccomment">/// Gets if a sound is paused</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Sounds can be paused and resumed using pause() and play(). This gets if a sound is paused.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_paused</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">is_paused</span>()
+    <span class="doccomment">/// Gets if a sound is paused
+    ///
+    /// Sounds can be paused and resumed using pause() and play(). This gets if a sound is paused.
+    </span><span class="kw">pub fn </span>is_paused(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.sink.is_paused()
     }
 
-    <span class="doccomment">/// Stops the sink by emptying the queue.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">stop</span>()
+    <span class="doccomment">/// Stops the sink by emptying the queue.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>stop(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.sink.stop()
     }
 
-    <span class="doccomment">/// Destroys the sink without stopping the sounds that are still playing.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">detach</span>(<span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">detach</span>();
+    <span class="doccomment">/// Destroys the sink without stopping the sounds that are still playing.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>detach(<span class="self">self</span>) {
+        <span class="self">self</span>.sink.detach();
     }
 
-    <span class="doccomment">/// Sleeps the current thread until the sound ends.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+    <span class="doccomment">/// Sleeps the current thread until the sound ends.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>sleep_until_end(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.sink.sleep_until_end();
     }
 
-    <span class="doccomment">/// Returns true if this sink has no more sounds to play.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">empty</span>()
+    <span class="doccomment">/// Returns true if this sink has no more sounds to play.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.sink.empty()
     }
 
-    <span class="doccomment">/// Returns the number of sounds currently in the queue.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">sink</span>.<span class="ident">len</span>()
+    <span class="doccomment">/// Returns the number of sounds currently in the queue.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.sink.len()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

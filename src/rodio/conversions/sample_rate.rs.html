@@ -371,378 +371,378 @@
 <span id="371">371</span>
 <span id="372">372</span>
 <span id="373">373</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::conversions::Sample</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::conversions::Sample;
 
-<span class="kw">use</span> <span class="ident">std::mem</span>;
+<span class="kw">use </span>std::mem;
 
-<span class="doccomment">/// Iterator that converts from a certain sample rate to another.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SampleRateConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
+<span class="doccomment">/// Iterator that converts from a certain sample rate to another.
+</span><span class="attribute">#[derive(Clone, Debug)]</span>
+<span class="kw">pub struct </span>SampleRateConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
 {
-    <span class="doccomment">/// The iterator that gives us samples.</span>
-    <span class="ident">input</span>: <span class="ident">I</span>,
-    <span class="doccomment">/// We convert chunks of `from` samples into chunks of `to` samples.</span>
-    <span class="ident">from</span>: <span class="ident">u32</span>,
-    <span class="doccomment">/// We convert chunks of `from` samples into chunks of `to` samples.</span>
-    <span class="ident">to</span>: <span class="ident">u32</span>,
-    <span class="doccomment">/// Number of channels in the stream</span>
-    <span class="ident">channels</span>: <span class="ident">cpal::ChannelCount</span>,
-    <span class="doccomment">/// One sample per channel, extracted from `input`.</span>
-    <span class="ident">current_frame</span>: <span class="ident">Vec</span>&lt;<span class="ident">I::Item</span>&gt;,
-    <span class="doccomment">/// Position of `current_sample` modulo `from`.</span>
-    <span class="ident">current_frame_pos_in_chunk</span>: <span class="ident">u32</span>,
-    <span class="doccomment">/// The samples right after `current_sample` (one per channel), extracted from `input`.</span>
-    <span class="ident">next_frame</span>: <span class="ident">Vec</span>&lt;<span class="ident">I::Item</span>&gt;,
-    <span class="doccomment">/// The position of the next sample that the iterator should return, modulo `to`.</span>
-    <span class="doccomment">/// This counter is incremented (modulo `to`) every time the iterator is called.</span>
-    <span class="ident">next_output_frame_pos_in_chunk</span>: <span class="ident">u32</span>,
-    <span class="doccomment">/// The buffer containing the samples waiting to be output.</span>
-    <span class="ident">output_buffer</span>: <span class="ident">Vec</span>&lt;<span class="ident">I::Item</span>&gt;,
+    <span class="doccomment">/// The iterator that gives us samples.
+    </span>input: I,
+    <span class="doccomment">/// We convert chunks of `from` samples into chunks of `to` samples.
+    </span>from: u32,
+    <span class="doccomment">/// We convert chunks of `from` samples into chunks of `to` samples.
+    </span>to: u32,
+    <span class="doccomment">/// Number of channels in the stream
+    </span>channels: cpal::ChannelCount,
+    <span class="doccomment">/// One sample per channel, extracted from `input`.
+    </span>current_frame: Vec&lt;I::Item&gt;,
+    <span class="doccomment">/// Position of `current_sample` modulo `from`.
+    </span>current_frame_pos_in_chunk: u32,
+    <span class="doccomment">/// The samples right after `current_sample` (one per channel), extracted from `input`.
+    </span>next_frame: Vec&lt;I::Item&gt;,
+    <span class="doccomment">/// The position of the next sample that the iterator should return, modulo `to`.
+    /// This counter is incremented (modulo `to`) every time the iterator is called.
+    </span>next_output_frame_pos_in_chunk: u32,
+    <span class="doccomment">/// The buffer containing the samples waiting to be output.
+    </span>output_buffer: Vec&lt;I::Item&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">SampleRateConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; SampleRateConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+    I::Item: Sample,
 {
-    <span class="doccomment">///</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panic</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Panics if `from` or `to` are equal to 0.</span>
-    <span class="doccomment">///</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="kw-2">mut</span> <span class="ident">input</span>: <span class="ident">I</span>,
-        <span class="ident">from</span>: <span class="ident">cpal::SampleRate</span>,
-        <span class="ident">to</span>: <span class="ident">cpal::SampleRate</span>,
-        <span class="ident">num_channels</span>: <span class="ident">cpal::ChannelCount</span>,
-    ) -&gt; <span class="ident">SampleRateConverter</span>&lt;<span class="ident">I</span>&gt; {
-        <span class="kw">let</span> <span class="ident">from</span> = <span class="ident">from</span>.<span class="number">0</span>;
-        <span class="kw">let</span> <span class="ident">to</span> = <span class="ident">to</span>.<span class="number">0</span>;
+    <span class="doccomment">///
+    ///
+    /// # Panic
+    ///
+    /// Panics if `from` or `to` are equal to 0.
+    ///
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>new(
+        <span class="kw-2">mut </span>input: I,
+        from: cpal::SampleRate,
+        to: cpal::SampleRate,
+        num_channels: cpal::ChannelCount,
+    ) -&gt; SampleRateConverter&lt;I&gt; {
+        <span class="kw">let </span>from = from.<span class="number">0</span>;
+        <span class="kw">let </span>to = to.<span class="number">0</span>;
 
-        <span class="macro">assert!</span>(<span class="ident">from</span> &gt;= <span class="number">1</span>);
-        <span class="macro">assert!</span>(<span class="ident">to</span> &gt;= <span class="number">1</span>);
+        <span class="macro">assert!</span>(from &gt;= <span class="number">1</span>);
+        <span class="macro">assert!</span>(to &gt;= <span class="number">1</span>);
 
-        <span class="comment">// finding greatest common divisor</span>
-        <span class="kw">let</span> <span class="ident">gcd</span> = {
-            <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">gcd</span>(<span class="ident">a</span>: <span class="ident">u32</span>, <span class="ident">b</span>: <span class="ident">u32</span>) -&gt; <span class="ident">u32</span> {
-                <span class="kw">if</span> <span class="ident">b</span> == <span class="number">0</span> {
-                    <span class="ident">a</span>
-                } <span class="kw">else</span> {
-                    <span class="ident">gcd</span>(<span class="ident">b</span>, <span class="ident">a</span> % <span class="ident">b</span>)
+        <span class="comment">// finding greatest common divisor
+        </span><span class="kw">let </span>gcd = {
+            <span class="attribute">#[inline]</span>
+            <span class="kw">fn </span>gcd(a: u32, b: u32) -&gt; u32 {
+                <span class="kw">if </span>b == <span class="number">0 </span>{
+                    a
+                } <span class="kw">else </span>{
+                    gcd(b, a % b)
                 }
             }
 
-            <span class="ident">gcd</span>(<span class="ident">from</span>, <span class="ident">to</span>)
+            gcd(from, to)
         };
 
-        <span class="kw">let</span> (<span class="ident">first_samples</span>, <span class="ident">next_samples</span>) = <span class="kw">if</span> <span class="ident">from</span> == <span class="ident">to</span> {
-            <span class="comment">// if `from` == `to` == 1, then we just pass through</span>
-            <span class="macro">debug_assert_eq!</span>(<span class="ident">from</span>, <span class="ident">gcd</span>);
-            (<span class="ident">Vec::new</span>(), <span class="ident">Vec::new</span>())
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">first</span> = <span class="ident">input</span>
-                .<span class="ident">by_ref</span>()
-                .<span class="ident">take</span>(<span class="ident">num_channels</span> <span class="kw">as</span> <span class="ident">usize</span>)
-                .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-            <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">input</span>
-                .<span class="ident">by_ref</span>()
-                .<span class="ident">take</span>(<span class="ident">num_channels</span> <span class="kw">as</span> <span class="ident">usize</span>)
-                .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-            (<span class="ident">first</span>, <span class="ident">next</span>)
+        <span class="kw">let </span>(first_samples, next_samples) = <span class="kw">if </span>from == to {
+            <span class="comment">// if `from` == `to` == 1, then we just pass through
+            </span><span class="macro">debug_assert_eq!</span>(from, gcd);
+            (Vec::new(), Vec::new())
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>first = input
+                .by_ref()
+                .take(num_channels <span class="kw">as </span>usize)
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>next = input
+                .by_ref()
+                .take(num_channels <span class="kw">as </span>usize)
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            (first, next)
         };
 
-        <span class="ident">SampleRateConverter</span> {
-            <span class="ident">input</span>,
-            <span class="ident">from</span>: <span class="ident">from</span> / <span class="ident">gcd</span>,
-            <span class="ident">to</span>: <span class="ident">to</span> / <span class="ident">gcd</span>,
-            <span class="ident">channels</span>: <span class="ident">num_channels</span>,
-            <span class="ident">current_frame_pos_in_chunk</span>: <span class="number">0</span>,
-            <span class="ident">next_output_frame_pos_in_chunk</span>: <span class="number">0</span>,
-            <span class="ident">current_frame</span>: <span class="ident">first_samples</span>,
-            <span class="ident">next_frame</span>: <span class="ident">next_samples</span>,
-            <span class="ident">output_buffer</span>: <span class="ident">Vec::with_capacity</span>(<span class="ident">num_channels</span> <span class="kw">as</span> <span class="ident">usize</span> - <span class="number">1</span>),
+        SampleRateConverter {
+            input,
+            from: from / gcd,
+            to: to / gcd,
+            channels: num_channels,
+            current_frame_pos_in_chunk: <span class="number">0</span>,
+            next_output_frame_pos_in_chunk: <span class="number">0</span>,
+            current_frame: first_samples,
+            next_frame: next_samples,
+            output_buffer: Vec::with_capacity(num_channels <span class="kw">as </span>usize - <span class="number">1</span>),
         }
     }
 
-    <span class="doccomment">/// Destroys this iterator and returns the underlying iterator.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">I</span> {
-        <span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Destroys this iterator and returns the underlying iterator.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; I {
+        <span class="self">self</span>.input
     }
 
-    <span class="kw">fn</span> <span class="ident">next_input_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> += <span class="number">1</span>;
+    <span class="kw">fn </span>next_input_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.current_frame_pos_in_chunk += <span class="number">1</span>;
 
-        <span class="ident">mem::swap</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">current_frame</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">next_frame</span>);
-        <span class="self">self</span>.<span class="ident">next_frame</span>.<span class="ident">clear</span>();
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="self">self</span>.<span class="ident">channels</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>() {
-                <span class="self">self</span>.<span class="ident">next_frame</span>.<span class="ident">push</span>(<span class="ident">i</span>);
-            } <span class="kw">else</span> {
+        mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.current_frame, <span class="kw-2">&amp;mut </span><span class="self">self</span>.next_frame);
+        <span class="self">self</span>.next_frame.clear();
+        <span class="kw">for _ in </span><span class="number">0</span>..<span class="self">self</span>.channels {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = <span class="self">self</span>.input.next() {
+                <span class="self">self</span>.next_frame.push(i);
+            } <span class="kw">else </span>{
                 <span class="kw">break</span>;
             }
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SampleRateConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span> + <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;I&gt; Iterator <span class="kw">for </span>SampleRateConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+    I::Item: Sample + Clone,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
+    <span class="kw">type </span>Item = I::Item;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">I::Item</span>&gt; {
-        <span class="comment">// the algorithm below doesn&#39;t work if `self.from == self.to`</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">from</span> == <span class="self">self</span>.<span class="ident">to</span> {
-            <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.<span class="ident">from</span>, <span class="number">1</span>);
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>();
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;I::Item&gt; {
+        <span class="comment">// the algorithm below doesn&#39;t work if `self.from == self.to`
+        </span><span class="kw">if </span><span class="self">self</span>.from == <span class="self">self</span>.to {
+            <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.from, <span class="number">1</span>);
+            <span class="kw">return </span><span class="self">self</span>.input.next();
         }
 
-        <span class="comment">// Short circuit if there are some samples waiting.</span>
-        <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">output_buffer</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">output_buffer</span>.<span class="ident">remove</span>(<span class="number">0</span>));
+        <span class="comment">// Short circuit if there are some samples waiting.
+        </span><span class="kw">if </span>!<span class="self">self</span>.output_buffer.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="self">self</span>.output_buffer.remove(<span class="number">0</span>));
         }
 
-        <span class="comment">// The frame we are going to return from this function will be a linear interpolation</span>
-        <span class="comment">// between `self.current_frame` and `self.next_frame`.</span>
+        <span class="comment">// The frame we are going to return from this function will be a linear interpolation
+        // between `self.current_frame` and `self.next_frame`.
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span> == <span class="self">self</span>.<span class="ident">to</span> {
-            <span class="comment">// If we jump to the next frame, we reset the whole state.</span>
-            <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span> = <span class="number">0</span>;
+        </span><span class="kw">if </span><span class="self">self</span>.next_output_frame_pos_in_chunk == <span class="self">self</span>.to {
+            <span class="comment">// If we jump to the next frame, we reset the whole state.
+            </span><span class="self">self</span>.next_output_frame_pos_in_chunk = <span class="number">0</span>;
 
-            <span class="self">self</span>.<span class="ident">next_input_frame</span>();
-            <span class="kw">while</span> <span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> != <span class="self">self</span>.<span class="ident">from</span> {
-                <span class="self">self</span>.<span class="ident">next_input_frame</span>();
+            <span class="self">self</span>.next_input_frame();
+            <span class="kw">while </span><span class="self">self</span>.current_frame_pos_in_chunk != <span class="self">self</span>.from {
+                <span class="self">self</span>.next_input_frame();
             }
-            <span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> = <span class="number">0</span>;
-        } <span class="kw">else</span> {
-            <span class="comment">// Finding the position of the first sample of the linear interpolation.</span>
-            <span class="kw">let</span> <span class="ident">req_left_sample</span> =
-                (<span class="self">self</span>.<span class="ident">from</span> * <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span> / <span class="self">self</span>.<span class="ident">to</span>) % <span class="self">self</span>.<span class="ident">from</span>;
+            <span class="self">self</span>.current_frame_pos_in_chunk = <span class="number">0</span>;
+        } <span class="kw">else </span>{
+            <span class="comment">// Finding the position of the first sample of the linear interpolation.
+            </span><span class="kw">let </span>req_left_sample =
+                (<span class="self">self</span>.from * <span class="self">self</span>.next_output_frame_pos_in_chunk / <span class="self">self</span>.to) % <span class="self">self</span>.from;
 
-            <span class="comment">// Advancing `self.current_frame`, `self.next_frame` and</span>
-            <span class="comment">// `self.current_frame_pos_in_chunk` until the latter variable</span>
-            <span class="comment">// matches `req_left_sample`.</span>
-            <span class="kw">while</span> <span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> != <span class="ident">req_left_sample</span> {
-                <span class="self">self</span>.<span class="ident">next_input_frame</span>();
-                <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> &lt; <span class="self">self</span>.<span class="ident">from</span>);
+            <span class="comment">// Advancing `self.current_frame`, `self.next_frame` and
+            // `self.current_frame_pos_in_chunk` until the latter variable
+            // matches `req_left_sample`.
+            </span><span class="kw">while </span><span class="self">self</span>.current_frame_pos_in_chunk != req_left_sample {
+                <span class="self">self</span>.next_input_frame();
+                <span class="macro">debug_assert!</span>(<span class="self">self</span>.current_frame_pos_in_chunk &lt; <span class="self">self</span>.from);
             }
         }
 
-        <span class="comment">// Merging `self.current_frame` and `self.next_frame` into `self.output_buffer`.</span>
-        <span class="comment">// Note that `self.output_buffer` can be truncated if there is not enough data in</span>
-        <span class="comment">// `self.next_frame`.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> = <span class="prelude-val">None</span>;
-        <span class="kw">let</span> <span class="ident">numerator</span> = (<span class="self">self</span>.<span class="ident">from</span> * <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span>) % <span class="self">self</span>.<span class="ident">to</span>;
-        <span class="kw">for</span> (<span class="ident">off</span>, (<span class="ident">cur</span>, <span class="ident">next</span>)) <span class="kw">in</span> <span class="self">self</span>
-            .<span class="ident">current_frame</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">next_frame</span>.<span class="ident">iter</span>())
-            .<span class="ident">enumerate</span>()
+        <span class="comment">// Merging `self.current_frame` and `self.next_frame` into `self.output_buffer`.
+        // Note that `self.output_buffer` can be truncated if there is not enough data in
+        // `self.next_frame`.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>result = <span class="prelude-val">None</span>;
+        <span class="kw">let </span>numerator = (<span class="self">self</span>.from * <span class="self">self</span>.next_output_frame_pos_in_chunk) % <span class="self">self</span>.to;
+        <span class="kw">for </span>(off, (cur, next)) <span class="kw">in </span><span class="self">self
+            </span>.current_frame
+            .iter()
+            .zip(<span class="self">self</span>.next_frame.iter())
+            .enumerate()
         {
-            <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">Sample::lerp</span>(<span class="kw-2">*</span><span class="ident">cur</span>, <span class="kw-2">*</span><span class="ident">next</span>, <span class="ident">numerator</span>, <span class="self">self</span>.<span class="ident">to</span>);
+            <span class="kw">let </span>sample = Sample::lerp(<span class="kw-2">*</span>cur, <span class="kw-2">*</span>next, numerator, <span class="self">self</span>.to);
 
-            <span class="kw">if</span> <span class="ident">off</span> == <span class="number">0</span> {
-                <span class="ident">result</span> = <span class="prelude-val">Some</span>(<span class="ident">sample</span>);
-            } <span class="kw">else</span> {
-                <span class="self">self</span>.<span class="ident">output_buffer</span>.<span class="ident">push</span>(<span class="ident">sample</span>);
+            <span class="kw">if </span>off == <span class="number">0 </span>{
+                result = <span class="prelude-val">Some</span>(sample);
+            } <span class="kw">else </span>{
+                <span class="self">self</span>.output_buffer.push(sample);
             }
         }
 
-        <span class="comment">// Incrementing the counter for the next iteration.</span>
-        <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span> += <span class="number">1</span>;
+        <span class="comment">// Incrementing the counter for the next iteration.
+        </span><span class="self">self</span>.next_output_frame_pos_in_chunk += <span class="number">1</span>;
 
-        <span class="kw">if</span> <span class="ident">result</span>.<span class="ident">is_some</span>() {
-            <span class="ident">result</span>
-        } <span class="kw">else</span> {
-            <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">next_frame</span>.<span class="ident">is_empty</span>());
+        <span class="kw">if </span>result.is_some() {
+            result
+        } <span class="kw">else </span>{
+            <span class="macro">debug_assert!</span>(<span class="self">self</span>.next_frame.is_empty());
 
-            <span class="comment">// draining `self.current_frame`</span>
-            <span class="kw">if</span> !<span class="self">self</span>.<span class="ident">current_frame</span>.<span class="ident">is_empty</span>() {
-                <span class="kw">let</span> <span class="ident">r</span> = <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">current_frame</span>.<span class="ident">remove</span>(<span class="number">0</span>));
-                <span class="ident">mem::swap</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">output_buffer</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">current_frame</span>);
-                <span class="self">self</span>.<span class="ident">current_frame</span>.<span class="ident">clear</span>();
-                <span class="ident">r</span>
-            } <span class="kw">else</span> {
-                <span class="prelude-val">None</span>
-            }
+            <span class="comment">// draining `self.current_frame`
+            </span><span class="kw">if </span>!<span class="self">self</span>.current_frame.is_empty() {
+                <span class="kw">let </span>r = <span class="prelude-val">Some</span>(<span class="self">self</span>.current_frame.remove(<span class="number">0</span>));
+                mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.output_buffer, <span class="kw-2">&amp;mut </span><span class="self">self</span>.current_frame);
+                <span class="self">self</span>.current_frame.clear();
+                r
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>}
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="kw">let</span> <span class="ident">apply</span> = |<span class="ident">samples</span>: <span class="ident">usize</span>| {
-            <span class="comment">// `samples_after_chunk` will contain the number of samples remaining after the chunk</span>
-            <span class="comment">// currently being processed</span>
-            <span class="kw">let</span> <span class="ident">samples_after_chunk</span> = <span class="ident">samples</span>;
-            <span class="comment">// adding the samples of the next chunk that may have already been read</span>
-            <span class="kw">let</span> <span class="ident">samples_after_chunk</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> == <span class="self">self</span>.<span class="ident">from</span> - <span class="number">1</span> {
-                <span class="ident">samples_after_chunk</span> + <span class="self">self</span>.<span class="ident">next_frame</span>.<span class="ident">len</span>()
-            } <span class="kw">else</span> {
-                <span class="ident">samples_after_chunk</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">let </span>apply = |samples: usize| {
+            <span class="comment">// `samples_after_chunk` will contain the number of samples remaining after the chunk
+            // currently being processed
+            </span><span class="kw">let </span>samples_after_chunk = samples;
+            <span class="comment">// adding the samples of the next chunk that may have already been read
+            </span><span class="kw">let </span>samples_after_chunk = <span class="kw">if </span><span class="self">self</span>.current_frame_pos_in_chunk == <span class="self">self</span>.from - <span class="number">1 </span>{
+                samples_after_chunk + <span class="self">self</span>.next_frame.len()
+            } <span class="kw">else </span>{
+                samples_after_chunk
             };
-            <span class="comment">// removing the samples of the current chunk that have not yet been read</span>
-            <span class="kw">let</span> <span class="ident">samples_after_chunk</span> = <span class="ident">samples_after_chunk</span>.<span class="ident">saturating_sub</span>(
-                <span class="self">self</span>.<span class="ident">from</span>
-                    .<span class="ident">saturating_sub</span>(<span class="self">self</span>.<span class="ident">current_frame_pos_in_chunk</span> + <span class="number">2</span>) <span class="kw">as</span> <span class="ident">usize</span>
-                    * <span class="ident">usize::from</span>(<span class="self">self</span>.<span class="ident">channels</span>),
+            <span class="comment">// removing the samples of the current chunk that have not yet been read
+            </span><span class="kw">let </span>samples_after_chunk = samples_after_chunk.saturating_sub(
+                <span class="self">self</span>.from
+                    .saturating_sub(<span class="self">self</span>.current_frame_pos_in_chunk + <span class="number">2</span>) <span class="kw">as </span>usize
+                    * usize::from(<span class="self">self</span>.channels),
             );
-            <span class="comment">// calculating the number of samples after the transformation</span>
-            <span class="comment">// TODO: this is wrong here \|/</span>
-            <span class="kw">let</span> <span class="ident">samples_after_chunk</span> = <span class="ident">samples_after_chunk</span> * <span class="self">self</span>.<span class="ident">to</span> <span class="kw">as</span> <span class="ident">usize</span> / <span class="self">self</span>.<span class="ident">from</span> <span class="kw">as</span> <span class="ident">usize</span>;
+            <span class="comment">// calculating the number of samples after the transformation
+            // TODO: this is wrong here \|/
+            </span><span class="kw">let </span>samples_after_chunk = samples_after_chunk * <span class="self">self</span>.to <span class="kw">as </span>usize / <span class="self">self</span>.from <span class="kw">as </span>usize;
 
-            <span class="comment">// `samples_current_chunk` will contain the number of samples remaining to be output</span>
-            <span class="comment">// for the chunk currently being processed</span>
-            <span class="kw">let</span> <span class="ident">samples_current_chunk</span> = (<span class="self">self</span>.<span class="ident">to</span> - <span class="self">self</span>.<span class="ident">next_output_frame_pos_in_chunk</span>) <span class="kw">as</span> <span class="ident">usize</span>
-                * <span class="ident">usize::from</span>(<span class="self">self</span>.<span class="ident">channels</span>);
+            <span class="comment">// `samples_current_chunk` will contain the number of samples remaining to be output
+            // for the chunk currently being processed
+            </span><span class="kw">let </span>samples_current_chunk = (<span class="self">self</span>.to - <span class="self">self</span>.next_output_frame_pos_in_chunk) <span class="kw">as </span>usize
+                * usize::from(<span class="self">self</span>.channels);
 
-            <span class="ident">samples_current_chunk</span> + <span class="ident">samples_after_chunk</span> + <span class="self">self</span>.<span class="ident">output_buffer</span>.<span class="ident">len</span>()
+            samples_current_chunk + samples_after_chunk + <span class="self">self</span>.output_buffer.len()
         };
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">from</span> == <span class="self">self</span>.<span class="ident">to</span> {
-            <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">size_hint</span>()
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> (<span class="ident">min</span>, <span class="ident">max</span>) = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">size_hint</span>();
-            (<span class="ident">apply</span>(<span class="ident">min</span>), <span class="ident">max</span>.<span class="ident">map</span>(<span class="ident">apply</span>))
+        <span class="kw">if </span><span class="self">self</span>.from == <span class="self">self</span>.to {
+            <span class="self">self</span>.input.size_hint()
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>(min, max) = <span class="self">self</span>.input.size_hint();
+            (apply(min), max.map(apply))
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">ExactSizeIterator</span> <span class="kw">for</span> <span class="ident">SampleRateConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">ExactSizeIterator</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span> + <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;I&gt; ExactSizeIterator <span class="kw">for </span>SampleRateConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: ExactSizeIterator,
+    I::Item: Sample + Clone,
 {
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::SampleRateConverter</span>;
-    <span class="kw">use</span> <span class="ident">core::time::Duration</span>;
-    <span class="kw">use</span> <span class="ident">cpal::SampleRate</span>;
-    <span class="kw">use</span> <span class="ident">quickcheck::quickcheck</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">super</span>::SampleRateConverter;
+    <span class="kw">use </span>core::time::Duration;
+    <span class="kw">use </span>cpal::SampleRate;
+    <span class="kw">use </span>quickcheck::quickcheck;
 
-    <span class="comment">// TODO: Remove once cpal 0.12.2 is released and the dependency is updated</span>
-    <span class="comment">//  (cpal#483 implemented ops::Mul on SampleRate)</span>
-    <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">multiply_rate</span>(<span class="ident">r</span>: <span class="ident">SampleRate</span>, <span class="ident">k</span>: <span class="ident">u32</span>) -&gt; <span class="ident">SampleRate</span> {
-        <span class="ident">SampleRate</span>(<span class="ident">k</span> * <span class="ident">r</span>.<span class="number">0</span>)
+    <span class="comment">// TODO: Remove once cpal 0.12.2 is released and the dependency is updated
+    //  (cpal#483 implemented ops::Mul on SampleRate)
+    </span><span class="kw">const fn </span>multiply_rate(r: SampleRate, k: u32) -&gt; SampleRate {
+        SampleRate(k * r.<span class="number">0</span>)
     }
 
     <span class="macro">quickcheck!</span> {
-        <span class="doccomment">/// Check that resampling an empty input produces no output.</span>
-        <span class="kw">fn</span> <span class="ident">empty</span>(<span class="ident">from</span>: <span class="ident">u32</span>, <span class="ident">to</span>: <span class="ident">u32</span>, <span class="ident">n</span>: <span class="ident">u16</span>) -&gt; () {
-            <span class="kw">let</span> <span class="ident">from</span> = <span class="kw">if</span> <span class="ident">from</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">from</span>) };
-            <span class="kw">let</span> <span class="ident">to</span>   = <span class="kw">if</span>   <span class="ident">to</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">to</span>)   };
-            <span class="kw">if</span> <span class="ident">n</span> == <span class="number">0</span> { <span class="kw">return</span>; }
+        <span class="doccomment">/// Check that resampling an empty input produces no output.
+        </span><span class="kw">fn </span>empty(from: u32, to: u32, n: u16) -&gt; () {
+            <span class="kw">let </span>from = <span class="kw">if </span>from == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(from) };
+            <span class="kw">let </span>to   = <span class="kw">if   </span>to == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(to)   };
+            <span class="kw">if </span>n == <span class="number">0 </span>{ <span class="kw">return</span>; }
 
-            <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">u16</span>&gt; = <span class="ident">Vec::new</span>();
-            <span class="kw">let</span> <span class="ident">output</span> =
-                <span class="ident">SampleRateConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="ident">from</span>, <span class="ident">to</span>, <span class="ident">n</span>)
-                  .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>input: Vec&lt;u16&gt; = Vec::new();
+            <span class="kw">let </span>output =
+                SampleRateConverter::new(input.into_iter(), from, to, n)
+                  .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="macro">assert_eq!</span>(<span class="ident">output</span>, []);
+            <span class="macro">assert_eq!</span>(output, []);
         }
 
-        <span class="doccomment">/// Check that resampling to the same rate does not change the signal.</span>
-        <span class="kw">fn</span> <span class="ident">identity</span>(<span class="ident">from</span>: <span class="ident">u32</span>, <span class="ident">n</span>: <span class="ident">u16</span>, <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">u16</span>&gt;) -&gt; () {
-            <span class="kw">let</span> <span class="ident">from</span> = <span class="kw">if</span> <span class="ident">from</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">from</span>) };
-            <span class="kw">if</span> <span class="ident">n</span> == <span class="number">0</span> { <span class="kw">return</span>; }
+        <span class="doccomment">/// Check that resampling to the same rate does not change the signal.
+        </span><span class="kw">fn </span>identity(from: u32, n: u16, input: Vec&lt;u16&gt;) -&gt; () {
+            <span class="kw">let </span>from = <span class="kw">if </span>from == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(from) };
+            <span class="kw">if </span>n == <span class="number">0 </span>{ <span class="kw">return</span>; }
 
-            <span class="kw">let</span> <span class="ident">output</span> =
-                <span class="ident">SampleRateConverter::new</span>(<span class="ident">input</span>.<span class="ident">clone</span>().<span class="ident">into_iter</span>(), <span class="ident">from</span>, <span class="ident">from</span>, <span class="ident">n</span>)
-                  .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>output =
+                SampleRateConverter::new(input.clone().into_iter(), from, from, n)
+                  .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="macro">assert_eq!</span>(<span class="ident">input</span>, <span class="ident">output</span>);
+            <span class="macro">assert_eq!</span>(input, output);
         }
 
-        <span class="doccomment">/// Check that dividing the sample rate by k (integer) is the same as</span>
-        <span class="doccomment">///   dropping a sample from each channel.</span>
-        <span class="kw">fn</span> <span class="ident">divide_sample_rate</span>(<span class="ident">to</span>: <span class="ident">u32</span>, <span class="ident">k</span>: <span class="ident">u32</span>, <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">u16</span>&gt;, <span class="ident">n</span>: <span class="ident">u16</span>) -&gt; () {
-            <span class="kw">let</span> <span class="ident">to</span> = <span class="kw">if</span> <span class="ident">to</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">to</span>) };
-            <span class="kw">let</span> <span class="ident">from</span> = <span class="ident">multiply_rate</span>(<span class="ident">to</span>, <span class="ident">k</span>);
-            <span class="kw">if</span> <span class="ident">k</span> == <span class="number">0</span> || <span class="ident">n</span> == <span class="number">0</span> { <span class="kw">return</span>; }
+        <span class="doccomment">/// Check that dividing the sample rate by k (integer) is the same as
+        ///   dropping a sample from each channel.
+        </span><span class="kw">fn </span>divide_sample_rate(to: u32, k: u32, input: Vec&lt;u16&gt;, n: u16) -&gt; () {
+            <span class="kw">let </span>to = <span class="kw">if </span>to == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(to) };
+            <span class="kw">let </span>from = multiply_rate(to, k);
+            <span class="kw">if </span>k == <span class="number">0 </span>|| n == <span class="number">0 </span>{ <span class="kw">return</span>; }
 
-            <span class="comment">// Truncate the input, so it contains an integer number of frames.</span>
-            <span class="kw">let</span> <span class="ident">input</span> = {
-                <span class="kw">let</span> <span class="ident">ns</span> = <span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span> = <span class="ident">input</span>;
-                <span class="ident">i</span>.<span class="ident">truncate</span>(<span class="ident">ns</span> * (<span class="ident">i</span>.<span class="ident">len</span>() / <span class="ident">ns</span>));
-                <span class="ident">i</span>
+            <span class="comment">// Truncate the input, so it contains an integer number of frames.
+            </span><span class="kw">let </span>input = {
+                <span class="kw">let </span>ns = n <span class="kw">as </span>usize;
+                <span class="kw">let </span><span class="kw-2">mut </span>i = input;
+                i.truncate(ns * (i.len() / ns));
+                i
             };
 
-            <span class="kw">let</span> <span class="ident">output</span> =
-                <span class="ident">SampleRateConverter::new</span>(<span class="ident">input</span>.<span class="ident">clone</span>().<span class="ident">into_iter</span>(), <span class="ident">from</span>, <span class="ident">to</span>, <span class="ident">n</span>)
-                  .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>output =
+                SampleRateConverter::new(input.clone().into_iter(), from, to, n)
+                  .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="macro">assert_eq!</span>(<span class="ident">input</span>.<span class="ident">chunks_exact</span>(<span class="ident">n</span>.<span class="ident">into</span>())
-                         .<span class="ident">step_by</span>(<span class="ident">k</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;().<span class="ident">concat</span>(),
-                       <span class="ident">output</span>)
+            <span class="macro">assert_eq!</span>(input.chunks_exact(n.into())
+                         .step_by(k <span class="kw">as </span>usize).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().concat(),
+                       output)
         }
 
-        <span class="doccomment">/// Check that, after multiplying the sample rate by k, every k-th</span>
-        <span class="doccomment">///  sample in the output matches exactly with the input.</span>
-        <span class="kw">fn</span> <span class="ident">multiply_sample_rate</span>(<span class="ident">from</span>: <span class="ident">u32</span>, <span class="ident">k</span>: <span class="ident">u32</span>, <span class="ident">input</span>: <span class="ident">Vec</span>&lt;<span class="ident">u16</span>&gt;, <span class="ident">n</span>: <span class="ident">u16</span>) -&gt; () {
-            <span class="kw">let</span> <span class="ident">from</span> = <span class="kw">if</span> <span class="ident">from</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">from</span>) };
-            <span class="kw">let</span> <span class="ident">to</span> = <span class="ident">multiply_rate</span>(<span class="ident">from</span>, <span class="ident">k</span>);
-            <span class="kw">if</span> <span class="ident">k</span> == <span class="number">0</span> || <span class="ident">n</span> == <span class="number">0</span> { <span class="kw">return</span>; }
+        <span class="doccomment">/// Check that, after multiplying the sample rate by k, every k-th
+        ///  sample in the output matches exactly with the input.
+        </span><span class="kw">fn </span>multiply_sample_rate(from: u32, k: u32, input: Vec&lt;u16&gt;, n: u16) -&gt; () {
+            <span class="kw">let </span>from = <span class="kw">if </span>from == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(from) };
+            <span class="kw">let </span>to = multiply_rate(from, k);
+            <span class="kw">if </span>k == <span class="number">0 </span>|| n == <span class="number">0 </span>{ <span class="kw">return</span>; }
 
-            <span class="comment">// Truncate the input, so it contains an integer number of frames.</span>
-            <span class="kw">let</span> <span class="ident">input</span> = {
-                <span class="kw">let</span> <span class="ident">ns</span> = <span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span> = <span class="ident">input</span>;
-                <span class="ident">i</span>.<span class="ident">truncate</span>(<span class="ident">ns</span> * (<span class="ident">i</span>.<span class="ident">len</span>() / <span class="ident">ns</span>));
-                <span class="ident">i</span>
+            <span class="comment">// Truncate the input, so it contains an integer number of frames.
+            </span><span class="kw">let </span>input = {
+                <span class="kw">let </span>ns = n <span class="kw">as </span>usize;
+                <span class="kw">let </span><span class="kw-2">mut </span>i = input;
+                i.truncate(ns * (i.len() / ns));
+                i
             };
 
-            <span class="kw">let</span> <span class="ident">output</span> =
-                <span class="ident">SampleRateConverter::new</span>(<span class="ident">input</span>.<span class="ident">clone</span>().<span class="ident">into_iter</span>(), <span class="ident">from</span>, <span class="ident">to</span>, <span class="ident">n</span>)
-                  .<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>output =
+                SampleRateConverter::new(input.clone().into_iter(), from, to, n)
+                  .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="macro">assert_eq!</span>(<span class="ident">input</span>,
-                       <span class="ident">output</span>.<span class="ident">chunks_exact</span>(<span class="ident">n</span>.<span class="ident">into</span>())
-                         .<span class="ident">step_by</span>(<span class="ident">k</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;().<span class="ident">concat</span>()
+            <span class="macro">assert_eq!</span>(input,
+                       output.chunks_exact(n.into())
+                         .step_by(k <span class="kw">as </span>usize).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().concat()
             )
         }
 
-        <span class="attribute">#[<span class="ident">ignore</span>]</span>
-        <span class="doccomment">/// Check that resampling does not change the audio duration,</span>
-        <span class="doccomment">///  except by a negligible amount (± 1ms).  Reproduces #316.</span>
-        <span class="doccomment">/// Ignored, pending a bug fix.</span>
-        <span class="kw">fn</span> <span class="ident">preserve_durations</span>(<span class="ident">d</span>: <span class="ident">Duration</span>, <span class="ident">freq</span>: <span class="ident">f32</span>, <span class="ident">to</span>: <span class="ident">u32</span>) -&gt; () {
-            <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source</span>::{<span class="ident">SineWave</span>, <span class="ident">Source</span>};
+        <span class="attribute">#[ignore]</span>
+        <span class="doccomment">/// Check that resampling does not change the audio duration,
+        ///  except by a negligible amount (± 1ms).  Reproduces #316.
+        /// Ignored, pending a bug fix.
+        </span><span class="kw">fn </span>preserve_durations(d: Duration, freq: f32, to: u32) -&gt; () {
+            <span class="kw">use </span><span class="kw">crate</span>::source::{SineWave, Source};
 
-            <span class="kw">let</span> <span class="ident">to</span> = <span class="kw">if</span> <span class="ident">to</span> == <span class="number">0</span> { <span class="kw">return</span>; } <span class="kw">else</span> { <span class="ident">SampleRate</span>(<span class="ident">to</span>) };
-            <span class="kw">let</span> <span class="ident">source</span> = <span class="ident">SineWave::new</span>(<span class="ident">freq</span>).<span class="ident">take_duration</span>(<span class="ident">d</span>);
-            <span class="kw">let</span> <span class="ident">from</span> = <span class="ident">SampleRate</span>(<span class="ident">source</span>.<span class="ident">sample_rate</span>());
+            <span class="kw">let </span>to = <span class="kw">if </span>to == <span class="number">0 </span>{ <span class="kw">return</span>; } <span class="kw">else </span>{ SampleRate(to) };
+            <span class="kw">let </span>source = SineWave::new(freq).take_duration(d);
+            <span class="kw">let </span>from = SampleRate(source.sample_rate());
 
-            <span class="kw">let</span> <span class="ident">resampled</span> =
-                <span class="ident">SampleRateConverter::new</span>(<span class="ident">source</span>, <span class="ident">from</span>, <span class="ident">to</span>, <span class="number">1</span>);
-            <span class="kw">let</span> <span class="ident">duration</span> =
-                <span class="ident">Duration::from_secs_f32</span>(<span class="ident">resampled</span>.<span class="ident">count</span>() <span class="kw">as</span> <span class="ident">f32</span> / <span class="ident">to</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">f32</span>);
+            <span class="kw">let </span>resampled =
+                SampleRateConverter::new(source, from, to, <span class="number">1</span>);
+            <span class="kw">let </span>duration =
+                Duration::from_secs_f32(resampled.count() <span class="kw">as </span>f32 / to.<span class="number">0 </span><span class="kw">as </span>f32);
 
-            <span class="kw">let</span> <span class="ident">delta</span> = <span class="kw">if</span> <span class="ident">d</span> &lt; <span class="ident">duration</span> { <span class="ident">duration</span> - <span class="ident">d</span> } <span class="kw">else</span> { <span class="ident">d</span> - <span class="ident">duration</span> };
-            <span class="macro">assert!</span>(<span class="ident">delta</span> &lt; <span class="ident">Duration::from_millis</span>(<span class="number">1</span>),
+            <span class="kw">let </span>delta = <span class="kw">if </span>d &lt; duration { duration - d } <span class="kw">else </span>{ d - duration };
+            <span class="macro">assert!</span>(delta &lt; Duration::from_millis(<span class="number">1</span>),
                     <span class="string">&quot;Resampled duration ({:?}) is not close to original ({:?}); Δ = {:?}&quot;</span>,
-                    <span class="ident">duration</span>, <span class="ident">d</span>, <span class="ident">delta</span>);
+                    duration, d, delta);
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">upsample</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">2u16</span>, <span class="number">16</span>, <span class="number">4</span>, <span class="number">18</span>, <span class="number">6</span>, <span class="number">20</span>, <span class="number">8</span>, <span class="number">22</span>];
-        <span class="kw">let</span> <span class="ident">output</span> =
-            <span class="ident">SampleRateConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="ident">SampleRate</span>(<span class="number">2000</span>), <span class="ident">SampleRate</span>(<span class="number">3000</span>), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>.<span class="ident">len</span>(), <span class="number">12</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>upsample() {
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">2u16</span>, <span class="number">16</span>, <span class="number">4</span>, <span class="number">18</span>, <span class="number">6</span>, <span class="number">20</span>, <span class="number">8</span>, <span class="number">22</span>];
+        <span class="kw">let </span>output =
+            SampleRateConverter::new(input.into_iter(), SampleRate(<span class="number">2000</span>), SampleRate(<span class="number">3000</span>), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(output.len(), <span class="number">12</span>);
 
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">output</span>.<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>, [<span class="number">2</span>, <span class="number">16</span>, <span class="number">3</span>, <span class="number">17</span>, <span class="number">4</span>, <span class="number">18</span>, <span class="number">6</span>, <span class="number">20</span>, <span class="number">7</span>, <span class="number">21</span>, <span class="number">8</span>, <span class="number">22</span>]);
+        <span class="kw">let </span>output = output.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(output, [<span class="number">2</span>, <span class="number">16</span>, <span class="number">3</span>, <span class="number">17</span>, <span class="number">4</span>, <span class="number">18</span>, <span class="number">6</span>, <span class="number">20</span>, <span class="number">7</span>, <span class="number">21</span>, <span class="number">8</span>, <span class="number">22</span>]);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

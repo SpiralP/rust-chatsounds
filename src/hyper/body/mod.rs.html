@@ -63,70 +63,70 @@
 <span id="63">63</span>
 <span id="64">64</span>
 <span id="65">65</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Streaming bodies for Requests and Responses</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! For both [Clients](crate::client) and [Servers](crate::server), requests and</span>
-<span class="doccomment">//! responses use streaming bodies, instead of complete buffering. This</span>
-<span class="doccomment">//! allows applications to not use memory they don&#39;t need, and allows exerting</span>
-<span class="doccomment">//! back-pressure on connections by only reading when asked.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! There are two pieces to this in hyper:</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! - **The [`HttpBody`](HttpBody) trait** describes all possible bodies.</span>
-<span class="doccomment">//!   hyper allows any body type that implements `HttpBody`, allowing</span>
-<span class="doccomment">//!   applications to have fine-grained control over their streaming.</span>
-<span class="doccomment">//! - **The [`Body`](Body) concrete type**, which is an implementation of</span>
-<span class="doccomment">//!   `HttpBody`, and returned by hyper as a &quot;receive stream&quot; (so, for server</span>
-<span class="doccomment">//!   requests and client responses). It is also a decent default implementation</span>
-<span class="doccomment">//!   if you don&#39;t have very custom needs of your send streams.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Streaming bodies for Requests and Responses
+//!
+//! For both [Clients](crate::client) and [Servers](crate::server), requests and
+//! responses use streaming bodies, instead of complete buffering. This
+//! allows applications to not use memory they don&#39;t need, and allows exerting
+//! back-pressure on connections by only reading when asked.
+//!
+//! There are two pieces to this in hyper:
+//!
+//! - **The [`HttpBody`](HttpBody) trait** describes all possible bodies.
+//!   hyper allows any body type that implements `HttpBody`, allowing
+//!   applications to have fine-grained control over their streaming.
+//! - **The [`Body`](Body) concrete type**, which is an implementation of
+//!   `HttpBody`, and returned by hyper as a &quot;receive stream&quot; (so, for server
+//!   requests and client responses). It is also a decent default implementation
+//!   if you don&#39;t have very custom needs of your send streams.
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">Buf</span>, <span class="ident">Bytes</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">http_body::Body</span> <span class="kw">as</span> <span class="ident">HttpBody</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">http_body::SizeHint</span>;
+</span><span class="kw">pub use </span>bytes::{Buf, Bytes};
+<span class="kw">pub use </span>http_body::Body <span class="kw">as </span>HttpBody;
+<span class="kw">pub use </span>http_body::SizeHint;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::aggregate::aggregate</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::body</span>::{<span class="ident">Body</span>, <span class="ident">Sender</span>};
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::length::DecodedLength</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::to_bytes::to_bytes</span>;
+<span class="kw">pub use </span><span class="self">self</span>::aggregate::aggregate;
+<span class="kw">pub use </span><span class="self">self</span>::body::{Body, Sender};
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span><span class="self">self</span>::length::DecodedLength;
+<span class="kw">pub use </span><span class="self">self</span>::to_bytes::to_bytes;
 
-<span class="kw">mod</span> <span class="ident">aggregate</span>;
-<span class="kw">mod</span> <span class="ident">body</span>;
-<span class="kw">mod</span> <span class="ident">length</span>;
-<span class="kw">mod</span> <span class="ident">to_bytes</span>;
+<span class="kw">mod </span>aggregate;
+<span class="kw">mod </span>body;
+<span class="kw">mod </span>length;
+<span class="kw">mod </span>to_bytes;
 
-<span class="doccomment">/// An optimization to try to take a full body if immediately available.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is currently limited to *only* `hyper::Body`s.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">take_full_data</span>&lt;<span class="ident">T</span>: <span class="ident">HttpBody</span> + <span class="lifetime">&#39;static</span>&gt;(<span class="ident">body</span>: <span class="kw-2">&amp;mut</span> <span class="ident">T</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">T::Data</span>&gt; {
-    <span class="kw">use</span> <span class="ident">std::any</span>::{<span class="ident">Any</span>, <span class="ident">TypeId</span>};
+<span class="doccomment">/// An optimization to try to take a full body if immediately available.
+///
+/// This is currently limited to *only* `hyper::Body`s.
+</span><span class="attribute">#[cfg(feature = <span class="string">&quot;http1&quot;</span>)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>take_full_data&lt;T: HttpBody + <span class="lifetime">&#39;static</span>&gt;(body: <span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;T::Data&gt; {
+    <span class="kw">use </span>std::any::{Any, TypeId};
 
-    <span class="comment">// This static type check can be optimized at compile-time.</span>
-    <span class="kw">if</span> <span class="ident">TypeId::of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="ident">TypeId::of</span>::&lt;<span class="ident">Body</span>&gt;() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">full</span> = (<span class="ident">body</span> <span class="kw">as</span> <span class="kw-2">&amp;mut</span> <span class="kw">dyn</span> <span class="ident">Any</span>)
-            .<span class="ident">downcast_mut</span>::&lt;<span class="ident">Body</span>&gt;()
-            .<span class="ident">expect</span>(<span class="string">&quot;must be Body&quot;</span>)
-            .<span class="ident">take_full_data</span>();
-        <span class="comment">// This second cast is required to make the type system happy.</span>
-        <span class="comment">// Without it, the compiler cannot reason that the type is actually</span>
-        <span class="comment">// `T::Data`. Oh wells.</span>
-        <span class="comment">//</span>
-        <span class="comment">// It&#39;s still a measurable win!</span>
-        (<span class="kw-2">&amp;mut</span> <span class="ident">full</span> <span class="kw">as</span> <span class="kw-2">&amp;mut</span> <span class="kw">dyn</span> <span class="ident">Any</span>)
-            .<span class="ident">downcast_mut</span>::&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">T::Data</span>&gt;&gt;()
-            .<span class="ident">expect</span>(<span class="string">&quot;must be T::Data&quot;</span>)
-            .<span class="ident">take</span>()
-    } <span class="kw">else</span> {
-        <span class="prelude-val">None</span>
-    }
+    <span class="comment">// This static type check can be optimized at compile-time.
+    </span><span class="kw">if </span>TypeId::of::&lt;T&gt;() == TypeId::of::&lt;Body&gt;() {
+        <span class="kw">let </span><span class="kw-2">mut </span>full = (body <span class="kw">as </span><span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any)
+            .downcast_mut::&lt;Body&gt;()
+            .expect(<span class="string">&quot;must be Body&quot;</span>)
+            .take_full_data();
+        <span class="comment">// This second cast is required to make the type system happy.
+        // Without it, the compiler cannot reason that the type is actually
+        // `T::Data`. Oh wells.
+        //
+        // It&#39;s still a measurable win!
+        </span>(<span class="kw-2">&amp;mut </span>full <span class="kw">as </span><span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any)
+            .downcast_mut::&lt;<span class="prelude-ty">Option</span>&lt;T::Data&gt;&gt;()
+            .expect(<span class="string">&quot;must be T::Data&quot;</span>)
+            .take()
+    } <span class="kw">else </span>{
+        <span class="prelude-val">None
+    </span>}
 }
 
-<span class="kw">fn</span> <span class="ident">_assert_send_sync</span>() {
-    <span class="kw">fn</span> <span class="ident">_assert_send</span>&lt;<span class="ident">T</span>: <span class="ident">Send</span>&gt;() {}
-    <span class="kw">fn</span> <span class="ident">_assert_sync</span>&lt;<span class="ident">T</span>: <span class="ident">Sync</span>&gt;() {}
+<span class="kw">fn </span>_assert_send_sync() {
+    <span class="kw">fn </span>_assert_send&lt;T: Send&gt;() {}
+    <span class="kw">fn </span>_assert_sync&lt;T: Sync&gt;() {}
 
-    <span class="ident">_assert_send</span>::&lt;<span class="ident">Body</span>&gt;();
-    <span class="ident">_assert_sync</span>::&lt;<span class="ident">Body</span>&gt;();
+    _assert_send::&lt;Body&gt;();
+    _assert_sync::&lt;Body&gt;();
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -4,55 +4,55 @@
 <p>Encrypt some plaintext in chunks, then decrypt the ciphertext back into plaintext, in AES 128
 CBC mode.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">openssl::symm</span>::{<span class="ident">Cipher</span>, <span class="ident">Mode</span>, <span class="ident">Crypter</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>openssl::symm::{Cipher, Mode, Crypter};
 
-<span class="kw">let</span> <span class="ident">plaintexts</span>: [<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]; <span class="number">2</span>] = [<span class="string">b&quot;Some Stream of&quot;</span>, <span class="string">b&quot; Crypto Text&quot;</span>];
-<span class="kw">let</span> <span class="ident">key</span> = <span class="string">b&quot;\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F&quot;</span>;
-<span class="kw">let</span> <span class="ident">iv</span> = <span class="string">b&quot;\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07&quot;</span>;
-<span class="kw">let</span> <span class="ident">data_len</span> = <span class="ident">plaintexts</span>.<span class="ident">iter</span>().<span class="ident">fold</span>(<span class="number">0</span>, |<span class="ident">sum</span>, <span class="ident">x</span>| <span class="ident">sum</span> + <span class="ident">x</span>.<span class="ident">len</span>());
+<span class="kw">let </span>plaintexts: [<span class="kw-2">&amp;</span>[u8]; <span class="number">2</span>] = [<span class="string">b&quot;Some Stream of&quot;</span>, <span class="string">b&quot; Crypto Text&quot;</span>];
+<span class="kw">let </span>key = <span class="string">b&quot;\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F&quot;</span>;
+<span class="kw">let </span>iv = <span class="string">b&quot;\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07&quot;</span>;
+<span class="kw">let </span>data_len = plaintexts.iter().fold(<span class="number">0</span>, |sum, x| sum + x.len());
 
-<span class="comment">// Create a cipher context for encryption.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">encrypter</span> = <span class="ident">Crypter::new</span>(
-    <span class="ident">Cipher::aes_128_cbc</span>(),
-    <span class="ident">Mode::Encrypt</span>,
-    <span class="ident">key</span>,
-    <span class="prelude-val">Some</span>(<span class="ident">iv</span>)).<span class="ident">unwrap</span>();
+<span class="comment">// Create a cipher context for encryption.
+</span><span class="kw">let </span><span class="kw-2">mut </span>encrypter = Crypter::new(
+    Cipher::aes_128_cbc(),
+    Mode::Encrypt,
+    key,
+    <span class="prelude-val">Some</span>(iv)).unwrap();
 
-<span class="kw">let</span> <span class="ident">block_size</span> = <span class="ident">Cipher::aes_128_cbc</span>().<span class="ident">block_size</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ciphertext</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">data_len</span> + <span class="ident">block_size</span>];
+<span class="kw">let </span>block_size = Cipher::aes_128_cbc().block_size();
+<span class="kw">let </span><span class="kw-2">mut </span>ciphertext = <span class="macro">vec!</span>[<span class="number">0</span>; data_len + block_size];
 
-<span class="comment">// Encrypt 2 chunks of plaintexts successively.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> = <span class="ident">encrypter</span>.<span class="ident">update</span>(<span class="ident">plaintexts</span>[<span class="number">0</span>], <span class="kw-2">&amp;mut</span> <span class="ident">ciphertext</span>).<span class="ident">unwrap</span>();
-<span class="ident">count</span> += <span class="ident">encrypter</span>.<span class="ident">update</span>(<span class="ident">plaintexts</span>[<span class="number">1</span>], <span class="kw-2">&amp;mut</span> <span class="ident">ciphertext</span>[<span class="ident">count</span>..]).<span class="ident">unwrap</span>();
-<span class="ident">count</span> += <span class="ident">encrypter</span>.<span class="ident">finalize</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ciphertext</span>[<span class="ident">count</span>..]).<span class="ident">unwrap</span>();
-<span class="ident">ciphertext</span>.<span class="ident">truncate</span>(<span class="ident">count</span>);
+<span class="comment">// Encrypt 2 chunks of plaintexts successively.
+</span><span class="kw">let </span><span class="kw-2">mut </span>count = encrypter.update(plaintexts[<span class="number">0</span>], <span class="kw-2">&amp;mut </span>ciphertext).unwrap();
+count += encrypter.update(plaintexts[<span class="number">1</span>], <span class="kw-2">&amp;mut </span>ciphertext[count..]).unwrap();
+count += encrypter.finalize(<span class="kw-2">&amp;mut </span>ciphertext[count..]).unwrap();
+ciphertext.truncate(count);
 
 <span class="macro">assert_eq!</span>(
     <span class="string">b&quot;\x0F\x21\x83\x7E\xB2\x88\x04\xAF\xD9\xCC\xE2\x03\x49\xB4\x88\xF6\xC4\x61\x0E\x32\x1C\xF9\
       \x0D\x66\xB1\xE6\x2C\x77\x76\x18\x8D\x99&quot;</span>,
-    <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>[..]
+    <span class="kw-2">&amp;</span>ciphertext[..]
 );
 
 
-<span class="comment">// Let&#39;s pretend we don&#39;t know the plaintext, and now decrypt the ciphertext.</span>
-<span class="kw">let</span> <span class="ident">data_len</span> = <span class="ident">ciphertext</span>.<span class="ident">len</span>();
-<span class="kw">let</span> <span class="ident">ciphertexts</span> = [<span class="kw-2">&amp;</span><span class="ident">ciphertext</span>[..<span class="number">9</span>], <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>[<span class="number">9</span>..]];
+<span class="comment">// Let&#39;s pretend we don&#39;t know the plaintext, and now decrypt the ciphertext.
+</span><span class="kw">let </span>data_len = ciphertext.len();
+<span class="kw">let </span>ciphertexts = [<span class="kw-2">&amp;</span>ciphertext[..<span class="number">9</span>], <span class="kw-2">&amp;</span>ciphertext[<span class="number">9</span>..]];
 
-<span class="comment">// Create a cipher context for decryption.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decrypter</span> = <span class="ident">Crypter::new</span>(
-    <span class="ident">Cipher::aes_128_cbc</span>(),
-    <span class="ident">Mode::Decrypt</span>,
-    <span class="ident">key</span>,
-    <span class="prelude-val">Some</span>(<span class="ident">iv</span>)).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">plaintext</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">data_len</span> + <span class="ident">block_size</span>];
+<span class="comment">// Create a cipher context for decryption.
+</span><span class="kw">let </span><span class="kw-2">mut </span>decrypter = Crypter::new(
+    Cipher::aes_128_cbc(),
+    Mode::Decrypt,
+    key,
+    <span class="prelude-val">Some</span>(iv)).unwrap();
+<span class="kw">let </span><span class="kw-2">mut </span>plaintext = <span class="macro">vec!</span>[<span class="number">0</span>; data_len + block_size];
 
-<span class="comment">// Decrypt 2 chunks of ciphertexts successively.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> = <span class="ident">decrypter</span>.<span class="ident">update</span>(<span class="ident">ciphertexts</span>[<span class="number">0</span>], <span class="kw-2">&amp;mut</span> <span class="ident">plaintext</span>).<span class="ident">unwrap</span>();
-<span class="ident">count</span> += <span class="ident">decrypter</span>.<span class="ident">update</span>(<span class="ident">ciphertexts</span>[<span class="number">1</span>], <span class="kw-2">&amp;mut</span> <span class="ident">plaintext</span>[<span class="ident">count</span>..]).<span class="ident">unwrap</span>();
-<span class="ident">count</span> += <span class="ident">decrypter</span>.<span class="ident">finalize</span>(<span class="kw-2">&amp;mut</span> <span class="ident">plaintext</span>[<span class="ident">count</span>..]).<span class="ident">unwrap</span>();
-<span class="ident">plaintext</span>.<span class="ident">truncate</span>(<span class="ident">count</span>);
+<span class="comment">// Decrypt 2 chunks of ciphertexts successively.
+</span><span class="kw">let </span><span class="kw-2">mut </span>count = decrypter.update(ciphertexts[<span class="number">0</span>], <span class="kw-2">&amp;mut </span>plaintext).unwrap();
+count += decrypter.update(ciphertexts[<span class="number">1</span>], <span class="kw-2">&amp;mut </span>plaintext[count..]).unwrap();
+count += decrypter.finalize(<span class="kw-2">&amp;mut </span>plaintext[count..]).unwrap();
+plaintext.truncate(count);
 
-<span class="macro">assert_eq!</span>(<span class="string">b&quot;Some Stream of Crypto Text&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">plaintext</span>[..]);</code></pre></div>
+<span class="macro">assert_eq!</span>(<span class="string">b&quot;Some Stream of Crypto Text&quot;</span>, <span class="kw-2">&amp;</span>plaintext[..]);</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Crypter" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/openssl/symm.rs.html#466-592">source</a></span><a href="#impl-Crypter" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.Crypter.html" title="struct openssl::symm::Crypter">Crypter</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.new" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/openssl/symm.rs.html#474-505">source</a></span><h4 class="code-header">pub fn <a href="#method.new" class="fnname">new</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;t: <a class="struct" href="struct.Cipher.html" title="struct openssl::symm::Cipher">Cipher</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;mode: <a class="enum" href="enum.Mode.html" title="enum openssl::symm::Mode">Mode</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;key: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>],<br>&nbsp;&nbsp;&nbsp;&nbsp;iv: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]&gt;<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.Crypter.html" title="struct openssl::symm::Crypter">Crypter</a>, <a class="struct" href="../error/struct.ErrorStack.html" title="struct openssl::error::ErrorStack">ErrorStack</a>&gt;</h4></section></summary><div class="docblock"><p>Creates a new <code>Crypter</code>.  The initialisation vector, <code>iv</code>, is not necessary for certain
 types of <code>Cipher</code>.</p>
 <h5 id="panics"><a href="#panics">Panics</a></h5>
@@ -106,4 +106,4 @@ bytes, for example.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Crypter" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Crypter" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

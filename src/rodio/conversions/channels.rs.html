@@ -140,147 +140,147 @@
 <span id="140">140</span>
 <span id="141">141</span>
 <span id="142">142</span>
-</pre><pre class="rust"><code><span class="doccomment">/// Iterator that converts from a certain channel count to another.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ChannelCountConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
+</pre><pre class="rust"><code><span class="doccomment">/// Iterator that converts from a certain channel count to another.
+</span><span class="attribute">#[derive(Clone, Debug)]</span>
+<span class="kw">pub struct </span>ChannelCountConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
 {
-    <span class="ident">input</span>: <span class="ident">I</span>,
-    <span class="ident">from</span>: <span class="ident">cpal::ChannelCount</span>,
-    <span class="ident">to</span>: <span class="ident">cpal::ChannelCount</span>,
-    <span class="ident">sample_repeat</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">I::Item</span>&gt;,
-    <span class="ident">next_output_sample_pos</span>: <span class="ident">cpal::ChannelCount</span>,
+    input: I,
+    from: cpal::ChannelCount,
+    to: cpal::ChannelCount,
+    sample_repeat: <span class="prelude-ty">Option</span>&lt;I::Item&gt;,
+    next_output_sample_pos: cpal::ChannelCount,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">ChannelCountConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
+<span class="kw">impl</span>&lt;I&gt; ChannelCountConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
 {
-    <span class="doccomment">/// Initializes the iterator.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panic</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Panicks if `from` or `to` are equal to 0.</span>
-    <span class="doccomment">///</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">input</span>: <span class="ident">I</span>,
-        <span class="ident">from</span>: <span class="ident">cpal::ChannelCount</span>,
-        <span class="ident">to</span>: <span class="ident">cpal::ChannelCount</span>,
-    ) -&gt; <span class="ident">ChannelCountConverter</span>&lt;<span class="ident">I</span>&gt; {
-        <span class="macro">assert!</span>(<span class="ident">from</span> &gt;= <span class="number">1</span>);
-        <span class="macro">assert!</span>(<span class="ident">to</span> &gt;= <span class="number">1</span>);
+    <span class="doccomment">/// Initializes the iterator.
+    ///
+    /// # Panic
+    ///
+    /// Panicks if `from` or `to` are equal to 0.
+    ///
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>new(
+        input: I,
+        from: cpal::ChannelCount,
+        to: cpal::ChannelCount,
+    ) -&gt; ChannelCountConverter&lt;I&gt; {
+        <span class="macro">assert!</span>(from &gt;= <span class="number">1</span>);
+        <span class="macro">assert!</span>(to &gt;= <span class="number">1</span>);
 
-        <span class="ident">ChannelCountConverter</span> {
-            <span class="ident">input</span>,
-            <span class="ident">from</span>,
-            <span class="ident">to</span>,
-            <span class="ident">sample_repeat</span>: <span class="prelude-val">None</span>,
-            <span class="ident">next_output_sample_pos</span>: <span class="number">0</span>,
+        ChannelCountConverter {
+            input,
+            from,
+            to,
+            sample_repeat: <span class="prelude-val">None</span>,
+            next_output_sample_pos: <span class="number">0</span>,
         }
     }
 
-    <span class="doccomment">/// Destroys this iterator and returns the underlying iterator.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">I</span> {
-        <span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Destroys this iterator and returns the underlying iterator.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; I {
+        <span class="self">self</span>.input
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">ChannelCountConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;I&gt; Iterator <span class="kw">for </span>ChannelCountConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: Iterator,
+    I::Item: Clone,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
+    <span class="kw">type </span>Item = I::Item;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">I::Item</span>&gt; {
-        <span class="kw">let</span> <span class="ident">result</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> == <span class="self">self</span>.<span class="ident">from</span> - <span class="number">1</span> {
-            <span class="kw">let</span> <span class="ident">value</span> = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>();
-            <span class="self">self</span>.<span class="ident">sample_repeat</span> = <span class="ident">value</span>.<span class="ident">clone</span>();
-            <span class="ident">value</span>
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> &lt; <span class="self">self</span>.<span class="ident">from</span> {
-            <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>()
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">sample_repeat</span>.<span class="ident">clone</span>()
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;I::Item&gt; {
+        <span class="kw">let </span>result = <span class="kw">if </span><span class="self">self</span>.next_output_sample_pos == <span class="self">self</span>.from - <span class="number">1 </span>{
+            <span class="kw">let </span>value = <span class="self">self</span>.input.next();
+            <span class="self">self</span>.sample_repeat = value.clone();
+            value
+        } <span class="kw">else if </span><span class="self">self</span>.next_output_sample_pos &lt; <span class="self">self</span>.from {
+            <span class="self">self</span>.input.next()
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.sample_repeat.clone()
         };
 
-        <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> += <span class="number">1</span>;
+        <span class="self">self</span>.next_output_sample_pos += <span class="number">1</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> == <span class="self">self</span>.<span class="ident">to</span> {
-            <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> -= <span class="self">self</span>.<span class="ident">to</span>;
+        <span class="kw">if </span><span class="self">self</span>.next_output_sample_pos == <span class="self">self</span>.to {
+            <span class="self">self</span>.next_output_sample_pos -= <span class="self">self</span>.to;
 
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">from</span> &gt; <span class="self">self</span>.<span class="ident">to</span> {
-                <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">to</span>..<span class="self">self</span>.<span class="ident">from</span> {
-                    <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>(); <span class="comment">// discarding extra input</span>
-                }
+            <span class="kw">if </span><span class="self">self</span>.from &gt; <span class="self">self</span>.to {
+                <span class="kw">for _ in </span><span class="self">self</span>.to..<span class="self">self</span>.from {
+                    <span class="self">self</span>.input.next(); <span class="comment">// discarding extra input
+                </span>}
             }
         }
 
-        <span class="ident">result</span>
+        result
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="kw">let</span> (<span class="ident">min</span>, <span class="ident">max</span>) = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">size_hint</span>();
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">let </span>(min, max) = <span class="self">self</span>.input.size_hint();
 
-        <span class="kw">let</span> <span class="ident">min</span> =
-            (<span class="ident">min</span> / <span class="self">self</span>.<span class="ident">from</span> <span class="kw">as</span> <span class="ident">usize</span>) * <span class="self">self</span>.<span class="ident">to</span> <span class="kw">as</span> <span class="ident">usize</span> + <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> <span class="kw">as</span> <span class="ident">usize</span>;
-        <span class="kw">let</span> <span class="ident">max</span> = <span class="ident">max</span>.<span class="ident">map</span>(|<span class="ident">max</span>| {
-            (<span class="ident">max</span> / <span class="self">self</span>.<span class="ident">from</span> <span class="kw">as</span> <span class="ident">usize</span>) * <span class="self">self</span>.<span class="ident">to</span> <span class="kw">as</span> <span class="ident">usize</span> + <span class="self">self</span>.<span class="ident">next_output_sample_pos</span> <span class="kw">as</span> <span class="ident">usize</span>
+        <span class="kw">let </span>min =
+            (min / <span class="self">self</span>.from <span class="kw">as </span>usize) * <span class="self">self</span>.to <span class="kw">as </span>usize + <span class="self">self</span>.next_output_sample_pos <span class="kw">as </span>usize;
+        <span class="kw">let </span>max = max.map(|max| {
+            (max / <span class="self">self</span>.from <span class="kw">as </span>usize) * <span class="self">self</span>.to <span class="kw">as </span>usize + <span class="self">self</span>.next_output_sample_pos <span class="kw">as </span>usize
         });
 
-        (<span class="ident">min</span>, <span class="ident">max</span>)
+        (min, max)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">ExactSizeIterator</span> <span class="kw">for</span> <span class="ident">ChannelCountConverter</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">ExactSizeIterator</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;I&gt; ExactSizeIterator <span class="kw">for </span>ChannelCountConverter&lt;I&gt;
+<span class="kw">where
+    </span>I: ExactSizeIterator,
+    I::Item: Clone,
 {
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ChannelCountConverter</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">super</span>::ChannelCountConverter;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">remove_channels</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">3</span>, <span class="number">2</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>]);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>remove_channels() {
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">3</span>, <span class="number">2</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(output, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>]);
 
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">4</span>, <span class="number">1</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>, [<span class="number">1</span>, <span class="number">1</span>]);
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">4</span>, <span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(output, [<span class="number">1</span>, <span class="number">1</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">add_channels</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">2</span>, <span class="number">3</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>]);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>add_channels() {
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">2</span>, <span class="number">3</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(output, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>]);
 
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">2</span>, <span class="number">4</span>).<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>]);
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">2</span>, <span class="number">4</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(output, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">len_more</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">2</span>, <span class="number">3</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>.<span class="ident">len</span>(), <span class="number">6</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>len_more() {
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">2</span>, <span class="number">3</span>);
+        <span class="macro">assert_eq!</span>(output.len(), <span class="number">6</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">len_less</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
-        <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">ChannelCountConverter::new</span>(<span class="ident">input</span>.<span class="ident">into_iter</span>(), <span class="number">2</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">output</span>.<span class="ident">len</span>(), <span class="number">2</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>len_less() {
+        <span class="kw">let </span>input = <span class="macro">vec!</span>[<span class="number">1u16</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">2</span>];
+        <span class="kw">let </span>output = ChannelCountConverter::new(input.into_iter(), <span class="number">2</span>, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(output.len(), <span class="number">2</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

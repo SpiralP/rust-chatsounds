@@ -568,575 +568,575 @@
 <span id="568">568</span>
 <span id="569">569</span>
 <span id="570">570</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Decodes samples from an audio file.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Decodes samples from an audio file.
 
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::fmt</span>;
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_imports</span>)]</span>
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>, <span class="ident">SeekFrom</span>};
-<span class="kw">use</span> <span class="ident">std::mem</span>;
-<span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</span><span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::fmt;
+<span class="attribute">#[allow(unused_imports)]</span>
+<span class="kw">use </span>std::io::{Read, Seek, SeekFrom};
+<span class="kw">use </span>std::mem;
+<span class="kw">use </span>std::str::FromStr;
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Source</span>;
+<span class="kw">use </span><span class="kw">crate</span>::Source;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident"><span class="self">self</span>::read_seek_source::ReadSeekSource</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">::symphonia::core::io</span>::{<span class="ident">MediaSource</span>, <span class="ident">MediaSourceStream</span>};
+<span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+<span class="kw">use </span><span class="self">self</span>::read_seek_source::ReadSeekSource;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+<span class="kw">use </span>::symphonia::core::io::{MediaSource, MediaSourceStream};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-<span class="kw">mod</span> <span class="ident">flac</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-<span class="kw">mod</span> <span class="ident">mp3</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">read_seek_source</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">symphonia</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">vorbis</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-<span class="kw">mod</span> <span class="ident">wav</span>;
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+<span class="kw">mod </span>flac;
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+<span class="kw">mod </span>mp3;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+<span class="kw">mod </span>read_seek_source;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+<span class="kw">mod </span>symphonia;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+<span class="kw">mod </span>vorbis;
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+<span class="kw">mod </span>wav;
 
-<span class="doccomment">/// Source of audio samples from decoding a file.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Supports MP3, WAV, Vorbis and Flac.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;(<span class="ident">DecoderImpl</span>&lt;<span class="ident">R</span>&gt;)
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>;
+<span class="doccomment">/// Source of audio samples from decoding a file.
+///
+/// Supports MP3, WAV, Vorbis and Flac.
+</span><span class="kw">pub struct </span>Decoder&lt;R&gt;(DecoderImpl&lt;R&gt;)
+<span class="kw">where
+    </span>R: Read + Seek;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt;(<span class="ident">DecoderImpl</span>&lt;<span class="ident">R</span>&gt;)
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>;
+<span class="kw">pub struct </span>LoopedDecoder&lt;R&gt;(DecoderImpl&lt;R&gt;)
+<span class="kw">where
+    </span>R: Read + Seek;
 
-<span class="kw">enum</span> <span class="ident">DecoderImpl</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">enum </span>DecoderImpl&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-    <span class="ident">Wav</span>(<span class="ident">wav::WavDecoder</span>&lt;<span class="ident">R</span>&gt;),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-    <span class="ident">Vorbis</span>(<span class="ident">vorbis::VorbisDecoder</span>&lt;<span class="ident">R</span>&gt;),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-    <span class="ident">Flac</span>(<span class="ident">flac::FlacDecoder</span>&lt;<span class="ident">R</span>&gt;),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-    <span class="ident">Mp3</span>(<span class="ident">mp3::Mp3Decoder</span>&lt;<span class="ident">R</span>&gt;),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">Symphonia</span>(<span class="ident">symphonia::SymphoniaDecoder</span>),
-    <span class="prelude-val">None</span>(<span class="ident">::std::marker::PhantomData</span>&lt;<span class="ident">R</span>&gt;),
+    <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+    Wav(wav::WavDecoder&lt;R&gt;),
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+    Vorbis(vorbis::VorbisDecoder&lt;R&gt;),
+    <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+    Flac(flac::FlacDecoder&lt;R&gt;),
+    <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+    Mp3(mp3::Mp3Decoder&lt;R&gt;),
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    Symphonia(symphonia::SymphoniaDecoder),
+    <span class="prelude-val">None</span>(::std::marker::PhantomData&lt;R&gt;),
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;R&gt; Decoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="doccomment">/// Builds a new decoder.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Attempts to automatically detect the format of the source of data.</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-        <span class="kw">let</span> <span class="ident">data</span> = <span class="kw">match</span> <span class="ident">wav::WavDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">data</span>) =&gt; <span class="ident">data</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Wav</span>(<span class="ident">decoder</span>)));
+    <span class="doccomment">/// Builds a new decoder.
+    ///
+    /// Attempts to automatically detect the format of the source of data.
+    </span><span class="attribute">#[allow(unused_variables)]</span>
+    <span class="kw">pub fn </span>new(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+        <span class="kw">let </span>data = <span class="kw">match </span>wav::WavDecoder::new(data) {
+            <span class="prelude-val">Err</span>(data) =&gt; data,
+            <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Wav(decoder)));
             }
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-        <span class="kw">let</span> <span class="ident">data</span> = <span class="kw">match</span> <span class="ident">flac::FlacDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">data</span>) =&gt; <span class="ident">data</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Flac</span>(<span class="ident">decoder</span>)));
+        <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+        <span class="kw">let </span>data = <span class="kw">match </span>flac::FlacDecoder::new(data) {
+            <span class="prelude-val">Err</span>(data) =&gt; data,
+            <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Flac(decoder)));
             }
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">data</span> = <span class="kw">match</span> <span class="ident">vorbis::VorbisDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">data</span>) =&gt; <span class="ident">data</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">decoder</span>)));
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+        <span class="kw">let </span>data = <span class="kw">match </span>vorbis::VorbisDecoder::new(data) {
+            <span class="prelude-val">Err</span>(data) =&gt; data,
+            <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Vorbis(decoder)));
             }
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-        <span class="kw">let</span> <span class="ident">data</span> = <span class="kw">match</span> <span class="ident">mp3::Mp3Decoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">data</span>) =&gt; <span class="ident">data</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Mp3</span>(<span class="ident">decoder</span>)));
+        <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+        <span class="kw">let </span>data = <span class="kw">match </span>mp3::Mp3Decoder::new(data) {
+            <span class="prelude-val">Err</span>(data) =&gt; data,
+            <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Mp3(decoder)));
             }
         };
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
         {
-            <span class="kw">let</span> <span class="ident">mss</span> = <span class="ident">MediaSourceStream::new</span>(
-                <span class="ident">Box::new</span>(<span class="ident">ReadSeekSource::new</span>(<span class="ident">data</span>)) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">MediaSource</span>&gt;,
-                <span class="ident">Default::default</span>(),
+            <span class="kw">let </span>mss = MediaSourceStream::new(
+                Box::new(ReadSeekSource::new(data)) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>MediaSource&gt;,
+                Default::default(),
             );
 
-            <span class="kw">match</span> <span class="ident">symphonia::SymphoniaDecoder::new</span>(<span class="ident">mss</span>, <span class="prelude-val">None</span>) {
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">e</span>),
-                <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">decoder</span>)));
+            <span class="kw">match </span>symphonia::SymphoniaDecoder::new(mss, <span class="prelude-val">None</span>) {
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e),
+                <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Symphonia(decoder)));
                 }
             }
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>))]</span>
-        <span class="prelude-val">Err</span>(<span class="ident">DecoderError::UnrecognizedFormat</span>)
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;symphonia&quot;</span>))]</span>
+        <span class="prelude-val">Err</span>(DecoderError::UnrecognizedFormat)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_looped</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">data</span>).<span class="ident">map</span>(<span class="ident">LoopedDecoder::new</span>)
+    <span class="kw">pub fn </span>new_looped(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;LoopedDecoder&lt;R&gt;, DecoderError&gt; {
+        <span class="self">Self</span>::new(data).map(LoopedDecoder::new)
     }
 
-    <span class="doccomment">/// Builds a new decoder from wav data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_wav</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="kw">match</span> <span class="ident">wav::WavDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecoderError::UnrecognizedFormat</span>),
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Wav</span>(<span class="ident">decoder</span>))),
+    <span class="doccomment">/// Builds a new decoder from wav data.
+    </span><span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+    <span class="kw">pub fn </span>new_wav(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="kw">match </span>wav::WavDecoder::new(data) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(DecoderError::UnrecognizedFormat),
+            <span class="prelude-val">Ok</span>(decoder) =&gt; <span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Wav(decoder))),
         }
     }
 
-    <span class="doccomment">/// Builds a new decoder from wav data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_wav</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident">Decoder::new_symphonia</span>(<span class="ident">data</span>, <span class="string">&quot;wav&quot;</span>)
+    <span class="doccomment">/// Builds a new decoder from wav data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia-wav&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_wav(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        Decoder::new_symphonia(data, <span class="string">&quot;wav&quot;</span>)
     }
 
-    <span class="doccomment">/// Builds a new decoder from flac data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_flac</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="kw">match</span> <span class="ident">flac::FlacDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecoderError::UnrecognizedFormat</span>),
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Flac</span>(<span class="ident">decoder</span>))),
+    <span class="doccomment">/// Builds a new decoder from flac data.
+    </span><span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+    <span class="kw">pub fn </span>new_flac(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="kw">match </span>flac::FlacDecoder::new(data) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(DecoderError::UnrecognizedFormat),
+            <span class="prelude-val">Ok</span>(decoder) =&gt; <span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Flac(decoder))),
         }
     }
 
-    <span class="doccomment">/// Builds a new decoder from flac data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_flac</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident">Decoder::new_symphonia</span>(<span class="ident">data</span>, <span class="string">&quot;flac&quot;</span>)
+    <span class="doccomment">/// Builds a new decoder from flac data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia-flac&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_flac(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        Decoder::new_symphonia(data, <span class="string">&quot;flac&quot;</span>)
     }
 
-    <span class="doccomment">/// Builds a new decoder from vorbis data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_vorbis</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="kw">match</span> <span class="ident">vorbis::VorbisDecoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecoderError::UnrecognizedFormat</span>),
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">decoder</span>))),
+    <span class="doccomment">/// Builds a new decoder from vorbis data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_vorbis(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="kw">match </span>vorbis::VorbisDecoder::new(data) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(DecoderError::UnrecognizedFormat),
+            <span class="prelude-val">Ok</span>(decoder) =&gt; <span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Vorbis(decoder))),
         }
     }
 
-    <span class="doccomment">/// Builds a new decoder from mp3 data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_mp3</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="kw">match</span> <span class="ident">mp3::Mp3Decoder::new</span>(<span class="ident">data</span>) {
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecoderError::UnrecognizedFormat</span>),
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Mp3</span>(<span class="ident">decoder</span>))),
+    <span class="doccomment">/// Builds a new decoder from mp3 data.
+    </span><span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+    <span class="kw">pub fn </span>new_mp3(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="kw">match </span>mp3::Mp3Decoder::new(data) {
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(DecoderError::UnrecognizedFormat),
+            <span class="prelude-val">Ok</span>(decoder) =&gt; <span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Mp3(decoder))),
         }
     }
 
-    <span class="doccomment">/// Builds a new decoder from mp3 data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_mp3</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident">Decoder::new_symphonia</span>(<span class="ident">data</span>, <span class="string">&quot;mp3&quot;</span>)
+    <span class="doccomment">/// Builds a new decoder from mp3 data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_mp3(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        Decoder::new_symphonia(data, <span class="string">&quot;mp3&quot;</span>)
     }
 
-    <span class="doccomment">/// Builds a new decoder from aac data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-aac&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_aac</span>(<span class="ident">data</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident">Decoder::new_symphonia</span>(<span class="ident">data</span>, <span class="string">&quot;aac&quot;</span>)
+    <span class="doccomment">/// Builds a new decoder from aac data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia-aac&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_aac(data: R) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        Decoder::new_symphonia(data, <span class="string">&quot;aac&quot;</span>)
     }
 
-    <span class="doccomment">/// Builds a new decoder from mp4 data.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-isomp4&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_mp4</span>(<span class="ident">data</span>: <span class="ident">R</span>, <span class="ident">hint</span>: <span class="ident">Mp4Type</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="ident">Decoder::new_symphonia</span>(<span class="ident">data</span>, <span class="kw-2">&amp;</span><span class="ident">hint</span>.<span class="ident">to_string</span>())
+    <span class="doccomment">/// Builds a new decoder from mp4 data.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia-isomp4&quot;</span>)]</span>
+    <span class="kw">pub fn </span>new_mp4(data: R, hint: Mp4Type) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        Decoder::new_symphonia(data, <span class="kw-2">&amp;</span>hint.to_string())
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">new_symphonia</span>(<span class="ident">data</span>: <span class="ident">R</span>, <span class="ident">hint</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;, <span class="ident">DecoderError</span>&gt; {
-        <span class="kw">let</span> <span class="ident">mss</span> = <span class="ident">MediaSourceStream::new</span>(
-            <span class="ident">Box::new</span>(<span class="ident">ReadSeekSource::new</span>(<span class="ident">data</span>)) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">MediaSource</span>&gt;,
-            <span class="ident">Default::default</span>(),
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    <span class="kw">fn </span>new_symphonia(data: R, hint: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Decoder&lt;R&gt;, DecoderError&gt; {
+        <span class="kw">let </span>mss = MediaSourceStream::new(
+            Box::new(ReadSeekSource::new(data)) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>MediaSource&gt;,
+            Default::default(),
         );
 
-        <span class="kw">match</span> <span class="ident">symphonia::SymphoniaDecoder::new</span>(<span class="ident">mss</span>, <span class="prelude-val">Some</span>(<span class="ident">hint</span>)) {
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">e</span>),
-            <span class="prelude-val">Ok</span>(<span class="ident">decoder</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Decoder</span>(<span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">decoder</span>)));
+        <span class="kw">match </span>symphonia::SymphoniaDecoder::new(mss, <span class="prelude-val">Some</span>(hint)) {
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e),
+            <span class="prelude-val">Ok</span>(decoder) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Decoder(DecoderImpl::Symphonia(decoder)));
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Mp4Type</span> {
-    <span class="ident">Mp4</span>,
-    <span class="ident">M4a</span>,
-    <span class="ident">M4p</span>,
-    <span class="ident">M4b</span>,
-    <span class="ident">M4r</span>,
-    <span class="ident">M4v</span>,
-    <span class="ident">Mov</span>,
+<span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub enum </span>Mp4Type {
+    Mp4,
+    M4a,
+    M4p,
+    M4b,
+    M4r,
+    M4v,
+    Mov,
 }
 
-<span class="kw">impl</span> <span class="ident">FromStr</span> <span class="kw">for</span> <span class="ident">Mp4Type</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span> = <span class="ident">String</span>;
+<span class="kw">impl </span>FromStr <span class="kw">for </span>Mp4Type {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= String;
 
-    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Mp4Type</span>, <span class="ident"><span class="self">Self</span>::Err</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">to_lowercase</span>()[..] {
-            <span class="string">&quot;mp4&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::Mp4</span>),
-            <span class="string">&quot;m4a&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::M4a</span>),
-            <span class="string">&quot;m4p&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::M4p</span>),
-            <span class="string">&quot;m4b&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::M4b</span>),
-            <span class="string">&quot;m4r&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::M4r</span>),
-            <span class="string">&quot;m4v&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::M4v</span>),
-            <span class="string">&quot;mov&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Mp4Type::Mov</span>),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;{} is not a valid mp4 extension&quot;</span>, <span class="ident">input</span>)),
+    <span class="kw">fn </span>from_str(input: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Mp4Type, <span class="self">Self</span>::Err&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span>input.to_lowercase()[..] {
+            <span class="string">&quot;mp4&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::Mp4),
+            <span class="string">&quot;m4a&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::M4a),
+            <span class="string">&quot;m4p&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::M4p),
+            <span class="string">&quot;m4b&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::M4b),
+            <span class="string">&quot;m4r&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::M4r),
+            <span class="string">&quot;m4v&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::M4v),
+            <span class="string">&quot;mov&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mp4Type::Mov),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;{} is not a valid mp4 extension&quot;</span>, input)),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">Mp4Type</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">text</span> = <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Mp4Type::Mp4</span> =&gt; <span class="string">&quot;mp4&quot;</span>,
-            <span class="ident">Mp4Type::M4a</span> =&gt; <span class="string">&quot;m4a&quot;</span>,
-            <span class="ident">Mp4Type::M4p</span> =&gt; <span class="string">&quot;m4p&quot;</span>,
-            <span class="ident">Mp4Type::M4b</span> =&gt; <span class="string">&quot;m4b&quot;</span>,
-            <span class="ident">Mp4Type::M4r</span> =&gt; <span class="string">&quot;m4r&quot;</span>,
-            <span class="ident">Mp4Type::M4v</span> =&gt; <span class="string">&quot;m4v&quot;</span>,
-            <span class="ident">Mp4Type::Mov</span> =&gt; <span class="string">&quot;mov&quot;</span>,
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>Mp4Type {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="kw">let </span>text = <span class="kw">match </span><span class="self">self </span>{
+            Mp4Type::Mp4 =&gt; <span class="string">&quot;mp4&quot;</span>,
+            Mp4Type::M4a =&gt; <span class="string">&quot;m4a&quot;</span>,
+            Mp4Type::M4p =&gt; <span class="string">&quot;m4p&quot;</span>,
+            Mp4Type::M4b =&gt; <span class="string">&quot;m4b&quot;</span>,
+            Mp4Type::M4r =&gt; <span class="string">&quot;m4r&quot;</span>,
+            Mp4Type::M4v =&gt; <span class="string">&quot;m4v&quot;</span>,
+            Mp4Type::Mov =&gt; <span class="string">&quot;mov&quot;</span>,
         };
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">text</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, text)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; LoopedDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">decoder</span>: <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;) -&gt; <span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt; {
-        <span class="self">Self</span>(<span class="ident">decoder</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>new(decoder: Decoder&lt;R&gt;) -&gt; LoopedDecoder&lt;R&gt; {
+        <span class="self">Self</span>(decoder.<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Iterator <span class="kw">for </span>Decoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">i16</span>;
+    <span class="kw">type </span>Item = i16;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i16</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i16&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.next(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">size_hint</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">size_hint</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">size_hint</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">size_hint</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">size_hint</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; (<span class="number">0</span>, <span class="prelude-val">None</span>),
-        }
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
-{
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
-        }
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="number">0</span>,
-        }
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="number">1</span>,
-        }
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">total_duration</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">total_duration</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">total_duration</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">total_duration</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">total_duration</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">Duration::default</span>()),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.size_hint(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.size_hint(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.size_hint(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.size_hint(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.size_hint(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; (<span class="number">0</span>, <span class="prelude-val">None</span>),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Source <span class="kw">for </span>Decoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">i16</span>;
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.current_frame_len(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
+        }
+    }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i16</span>&gt; {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sample</span>) = <span class="kw">match</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">next</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.channels(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="number">0</span>,
+        }
+    }
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.sample_rate(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="number">1</span>,
+        }
+    }
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.total_duration(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.total_duration(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.total_duration(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.total_duration(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.total_duration(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(Duration::default()),
+        }
+    }
+}
+
+<span class="kw">impl</span>&lt;R&gt; Iterator <span class="kw">for </span>LoopedDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
+{
+    <span class="kw">type </span>Item = i16;
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i16&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(sample) = <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.next(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.next(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
         } {
-            <span class="prelude-val">Some</span>(<span class="ident">sample</span>)
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">decoder</span> = <span class="ident">mem::replace</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span>, <span class="ident">DecoderImpl::None</span>(<span class="ident">Default::default</span>()));
-            <span class="kw">let</span> (<span class="ident">decoder</span>, <span class="ident">sample</span>) = <span class="kw">match</span> <span class="ident">decoder</span> {
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-                <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">source</span>.<span class="ident">into_inner</span>();
-                    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">wav::WavDecoder::new</span>(<span class="ident">reader</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">source</span>.<span class="ident">next</span>();
-                    (<span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>), <span class="ident">sample</span>)
+            <span class="prelude-val">Some</span>(sample)
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>decoder = mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>, DecoderImpl::None(Default::default()));
+            <span class="kw">let </span>(decoder, sample) = <span class="kw">match </span>decoder {
+                <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+                DecoderImpl::Wav(source) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader = source.into_inner();
+                    reader.seek(SeekFrom::Start(<span class="number">0</span>)).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>source = wav::WavDecoder::new(reader).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>sample = source.next();
+                    (DecoderImpl::Wav(source), sample)
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-                <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; {
-                    <span class="kw">use</span> <span class="ident">lewton::inside_ogg::OggStreamReader</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">source</span>.<span class="ident">into_inner</span>().<span class="ident">into_inner</span>();
-                    <span class="ident">reader</span>.<span class="ident">seek_bytes</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">vorbis::VorbisDecoder::from_stream_reader</span>(
-                        <span class="ident">OggStreamReader::from_ogg_reader</span>(<span class="ident">reader</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>,
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+                DecoderImpl::Vorbis(source) =&gt; {
+                    <span class="kw">use </span>lewton::inside_ogg::OggStreamReader;
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader = source.into_inner().into_inner();
+                    reader.seek_bytes(SeekFrom::Start(<span class="number">0</span>)).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>source = vorbis::VorbisDecoder::from_stream_reader(
+                        OggStreamReader::from_ogg_reader(reader).ok()<span class="question-mark">?</span>,
                     );
-                    <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">source</span>.<span class="ident">next</span>();
-                    (<span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>), <span class="ident">sample</span>)
+                    <span class="kw">let </span>sample = source.next();
+                    (DecoderImpl::Vorbis(source), sample)
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-                <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">source</span>.<span class="ident">into_inner</span>();
-                    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">flac::FlacDecoder::new</span>(<span class="ident">reader</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">source</span>.<span class="ident">next</span>();
-                    (<span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>), <span class="ident">sample</span>)
+                <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+                DecoderImpl::Flac(source) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader = source.into_inner();
+                    reader.seek(SeekFrom::Start(<span class="number">0</span>)).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>source = flac::FlacDecoder::new(reader).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>sample = source.next();
+                    (DecoderImpl::Flac(source), sample)
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-                <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">source</span>.<span class="ident">into_inner</span>();
-                    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">mp3::Mp3Decoder::new</span>(<span class="ident">reader</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">source</span>.<span class="ident">next</span>();
-                    (<span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>), <span class="ident">sample</span>)
+                <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+                DecoderImpl::Mp3(source) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader = source.into_inner();
+                    reader.seek(SeekFrom::Start(<span class="number">0</span>)).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>source = mp3::Mp3Decoder::new(reader).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>sample = source.next();
+                    (DecoderImpl::Mp3(source), sample)
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-                <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> = <span class="ident">Box::new</span>(<span class="ident">source</span>).<span class="ident">into_inner</span>();
-                    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">symphonia::SymphoniaDecoder::new</span>(<span class="ident">reader</span>, <span class="prelude-val">None</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">sample</span> = <span class="ident">source</span>.<span class="ident">next</span>();
-                    (<span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>), <span class="ident">sample</span>)
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+                DecoderImpl::Symphonia(source) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader = Box::new(source).into_inner();
+                    reader.seek(SeekFrom::Start(<span class="number">0</span>)).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>source = symphonia::SymphoniaDecoder::new(reader, <span class="prelude-val">None</span>).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>sample = source.next();
+                    (DecoderImpl::Symphonia(source), sample)
                 }
-                <span class="ident">none</span> @ <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; (<span class="ident">none</span>, <span class="prelude-val">None</span>),
+                none @ DecoderImpl::None(<span class="kw">_</span>) =&gt; (none, <span class="prelude-val">None</span>),
             };
-            <span class="self">self</span>.<span class="number">0</span> = <span class="ident">decoder</span>;
-            <span class="ident">sample</span>
+            <span class="self">self</span>.<span class="number">0 </span>= decoder;
+            sample
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; (<span class="ident">source</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; (<span class="ident">source</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; (<span class="ident">source</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; (<span class="ident">source</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; (<span class="ident">source</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; (<span class="number">0</span>, <span class="prelude-val">None</span>),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; (source.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; (source.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; (source.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; (source.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; (source.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; (<span class="number">0</span>, <span class="prelude-val">None</span>),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">LoopedDecoder</span>&lt;<span class="ident">R</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>,
+<span class="kw">impl</span>&lt;R&gt; Source <span class="kw">for </span>LoopedDecoder&lt;R&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">current_frame_len</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.current_frame_len(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.current_frame_len(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">channels</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="number">0</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.channels(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.channels(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="number">0</span>,
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;wav&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Wav</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;vorbis&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Vorbis</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;flac&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Flac</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> = <span class="string">&quot;mp3&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
-            <span class="ident">DecoderImpl::Mp3</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderImpl::Symphonia</span>(<span class="ident">source</span>) =&gt; <span class="ident">source</span>.<span class="ident">sample_rate</span>(),
-            <span class="ident">DecoderImpl::None</span>(<span class="kw">_</span>) =&gt; <span class="number">1</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;wav&quot;</span>, not(feature = <span class="string">&quot;symphonia-wav&quot;</span>)))]</span>
+            DecoderImpl::Wav(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;vorbis&quot;</span>)]</span>
+            DecoderImpl::Vorbis(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;flac&quot;</span>, not(feature = <span class="string">&quot;symphonia-flac&quot;</span>)))]</span>
+            DecoderImpl::Flac(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(all(feature = <span class="string">&quot;mp3&quot;</span>, not(feature = <span class="string">&quot;symphonia-mp3&quot;</span>)))]</span>
+            DecoderImpl::Mp3(source) =&gt; source.sample_rate(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderImpl::Symphonia(source) =&gt; source.sample_rate(),
+            DecoderImpl::None(<span class="kw">_</span>) =&gt; <span class="number">1</span>,
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="prelude-val">None</span>
-    }
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="prelude-val">None
+    </span>}
 }
 
-<span class="doccomment">/// Error that can happen when creating a decoder.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DecoderError</span> {
-    <span class="doccomment">/// The format of the data has not been recognized.</span>
-    <span class="ident">UnrecognizedFormat</span>,
+<span class="doccomment">/// Error that can happen when creating a decoder.
+</span><span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">pub enum </span>DecoderError {
+    <span class="doccomment">/// The format of the data has not been recognized.
+    </span>UnrecognizedFormat,
 
-    <span class="doccomment">/// An IO error occured while reading, writing, or seeking the stream.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">IoError</span>(<span class="ident">String</span>),
+    <span class="doccomment">/// An IO error occured while reading, writing, or seeking the stream.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    IoError(String),
 
-    <span class="doccomment">/// The stream contained malformed data and could not be decoded or demuxed.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">DecodeError</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>),
+    <span class="doccomment">/// The stream contained malformed data and could not be decoded or demuxed.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    DecodeError(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
 
-    <span class="doccomment">/// A default or user-defined limit was reached while decoding or demuxing the stream. Limits</span>
-    <span class="doccomment">/// are used to prevent denial-of-service attacks from malicious streams.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">LimitError</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>),
+    <span class="doccomment">/// A default or user-defined limit was reached while decoding or demuxing the stream. Limits
+    /// are used to prevent denial-of-service attacks from malicious streams.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    LimitError(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
 
-    <span class="doccomment">/// The demuxer or decoder needs to be reset before continuing.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">ResetRequired</span>,
+    <span class="doccomment">/// The demuxer or decoder needs to be reset before continuing.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    ResetRequired,
 
-    <span class="doccomment">/// No streams were found by the decoder</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-    <span class="ident">NoStreams</span>,
+    <span class="doccomment">/// No streams were found by the decoder
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+    NoStreams,
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">DecoderError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">text</span> = <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">DecoderError::UnrecognizedFormat</span> =&gt; <span class="string">&quot;Unrecognized format&quot;</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderError::IoError</span>(<span class="ident">msg</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">msg</span>[..],
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderError::DecodeError</span>(<span class="ident">msg</span>) =&gt; <span class="ident">msg</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderError::LimitError</span>(<span class="ident">msg</span>) =&gt; <span class="ident">msg</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderError::ResetRequired</span> =&gt; <span class="string">&quot;Reset required&quot;</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;symphonia&quot;</span>)]</span>
-            <span class="ident">DecoderError::NoStreams</span> =&gt; <span class="string">&quot;No streams&quot;</span>,
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>DecoderError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span>text = <span class="kw">match </span><span class="self">self </span>{
+            DecoderError::UnrecognizedFormat =&gt; <span class="string">&quot;Unrecognized format&quot;</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderError::IoError(msg) =&gt; <span class="kw-2">&amp;</span>msg[..],
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderError::DecodeError(msg) =&gt; msg,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderError::LimitError(msg) =&gt; msg,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderError::ResetRequired =&gt; <span class="string">&quot;Reset required&quot;</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;symphonia&quot;</span>)]</span>
+            DecoderError::NoStreams =&gt; <span class="string">&quot;No streams&quot;</span>,
         };
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">text</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, text)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Error</span> <span class="kw">for</span> <span class="ident">DecoderError</span> {}
+<span class="kw">impl </span>Error <span class="kw">for </span>DecoderError {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

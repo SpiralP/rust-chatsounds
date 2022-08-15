@@ -42,49 +42,49 @@
 <span id="42">42</span>
 <span id="43">43</span>
 <span id="44">44</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::future::Future</span>;
-<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{Context, Poll};
 
-<span class="doccomment">/// Converts a function to a future that completes on poll.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">BlockingTask</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">func</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt;,
+<span class="doccomment">/// Converts a function to a future that completes on poll.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>BlockingTask&lt;T&gt; {
+    func: <span class="prelude-ty">Option</span>&lt;T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">BlockingTask</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="doccomment">/// Initializes a new blocking task from the given function.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">func</span>: <span class="ident">T</span>) -&gt; <span class="ident">BlockingTask</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="ident">BlockingTask</span> { <span class="ident">func</span>: <span class="prelude-val">Some</span>(<span class="ident">func</span>) }
+<span class="kw">impl</span>&lt;T&gt; BlockingTask&lt;T&gt; {
+    <span class="doccomment">/// Initializes a new blocking task from the given function.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(func: T) -&gt; BlockingTask&lt;T&gt; {
+        BlockingTask { func: <span class="prelude-val">Some</span>(func) }
     }
 }
 
-<span class="comment">// The closure `F` is never pinned</span>
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Unpin</span> <span class="kw">for</span> <span class="ident">BlockingTask</span>&lt;<span class="ident">T</span>&gt; {}
+<span class="comment">// The closure `F` is never pinned
+</span><span class="kw">impl</span>&lt;T&gt; Unpin <span class="kw">for </span>BlockingTask&lt;T&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">R</span>&gt; <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">BlockingTask</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">FnOnce</span>() -&gt; <span class="ident">R</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
-    <span class="ident">R</span>: <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;T, R&gt; Future <span class="kw">for </span>BlockingTask&lt;T&gt;
+<span class="kw">where
+    </span>T: FnOnce() -&gt; R + Send + <span class="lifetime">&#39;static</span>,
+    R: Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> = <span class="ident">R</span>;
+    <span class="kw">type </span>Output = R;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;, <span class="ident">_cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Poll</span>&lt;<span class="ident">R</span>&gt; {
-        <span class="kw">let</span> <span class="ident">me</span> = <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>;
-        <span class="kw">let</span> <span class="ident">func</span> = <span class="ident">me</span>
-            .<span class="ident">func</span>
-            .<span class="ident">take</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;[internal exception] blocking task ran twice.&quot;</span>);
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;R&gt; {
+        <span class="kw">let </span>me = <span class="kw-2">&amp;mut *</span><span class="self">self</span>;
+        <span class="kw">let </span>func = me
+            .func
+            .take()
+            .expect(<span class="string">&quot;[internal exception] blocking task ran twice.&quot;</span>);
 
-        <span class="comment">// This is a little subtle:</span>
-        <span class="comment">// For convenience, we&#39;d like _every_ call tokio ever makes to Task::poll() to be budgeted</span>
-        <span class="comment">// using coop. However, the way things are currently modeled, even running a blocking task</span>
-        <span class="comment">// currently goes through Task::poll(), and so is subject to budgeting. That isn&#39;t really</span>
-        <span class="comment">// what we want; a blocking task may itself want to run tasks (it might be a Worker!), so</span>
-        <span class="comment">// we want it to start without any budgeting.</span>
-        <span class="ident"><span class="kw">crate</span>::coop::stop</span>();
+        <span class="comment">// This is a little subtle:
+        // For convenience, we&#39;d like _every_ call tokio ever makes to Task::poll() to be budgeted
+        // using coop. However, the way things are currently modeled, even running a blocking task
+        // currently goes through Task::poll(), and so is subject to budgeting. That isn&#39;t really
+        // what we want; a blocking task may itself want to run tasks (it might be a Worker!), so
+        // we want it to start without any budgeting.
+        </span><span class="kw">crate</span>::coop::stop();
 
-        <span class="ident">Poll::Ready</span>(<span class="ident">func</span>())
+        Poll::Ready(func())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

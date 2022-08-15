@@ -51,58 +51,58 @@
 <span id="51">51</span>
 <span id="52">52</span>
 <span id="53">53</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::mem::MaybeUninit</span>;
-<span class="kw">use</span> <span class="ident">core::ptr</span>;
-<span class="kw">use</span> <span class="ident">std::task::Waker</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>core::mem::MaybeUninit;
+<span class="kw">use </span>core::ptr;
+<span class="kw">use </span>std::task::Waker;
 
-<span class="kw">const</span> <span class="ident">NUM_WAKERS</span>: <span class="ident">usize</span> = <span class="number">32</span>;
+<span class="kw">const </span>NUM_WAKERS: usize = <span class="number">32</span>;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">WakeList</span> {
-    <span class="ident">inner</span>: [<span class="ident">MaybeUninit</span>&lt;<span class="ident">Waker</span>&gt;; <span class="ident">NUM_WAKERS</span>],
-    <span class="ident">curr</span>: <span class="ident">usize</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>WakeList {
+    inner: [MaybeUninit&lt;Waker&gt;; NUM_WAKERS],
+    curr: usize,
 }
 
-<span class="kw">impl</span> <span class="ident">WakeList</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">inner</span>: <span class="kw">unsafe</span> {
-                <span class="comment">// safety: Create an uninitialized array of `MaybeUninit`. The</span>
-                <span class="comment">// `assume_init` is safe because the type we are claiming to</span>
-                <span class="comment">// have initialized here is a bunch of `MaybeUninit`s, which do</span>
-                <span class="comment">// not require initialization.</span>
-                <span class="ident">MaybeUninit::uninit</span>().<span class="ident">assume_init</span>()
+<span class="kw">impl </span>WakeList {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            inner: <span class="kw">unsafe </span>{
+                <span class="comment">// safety: Create an uninitialized array of `MaybeUninit`. The
+                // `assume_init` is safe because the type we are claiming to
+                // have initialized here is a bunch of `MaybeUninit`s, which do
+                // not require initialization.
+                </span>MaybeUninit::uninit().assume_init()
             },
-            <span class="ident">curr</span>: <span class="number">0</span>,
+            curr: <span class="number">0</span>,
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">can_push</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">curr</span> &lt; <span class="ident">NUM_WAKERS</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>can_push(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.curr &lt; NUM_WAKERS
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">push</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">val</span>: <span class="ident">Waker</span>) {
-        <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">can_push</span>());
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: Waker) {
+        <span class="macro">debug_assert!</span>(<span class="self">self</span>.can_push());
 
-        <span class="self">self</span>.<span class="ident">inner</span>[<span class="self">self</span>.<span class="ident">curr</span>] = <span class="ident">MaybeUninit::new</span>(<span class="ident">val</span>);
-        <span class="self">self</span>.<span class="ident">curr</span> += <span class="number">1</span>;
+        <span class="self">self</span>.inner[<span class="self">self</span>.curr] = MaybeUninit::new(val);
+        <span class="self">self</span>.curr += <span class="number">1</span>;
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">wake_all</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="macro">assert!</span>(<span class="self">self</span>.<span class="ident">curr</span> &lt;= <span class="ident">NUM_WAKERS</span>);
-        <span class="kw">while</span> <span class="self">self</span>.<span class="ident">curr</span> &gt; <span class="number">0</span> {
-            <span class="self">self</span>.<span class="ident">curr</span> -= <span class="number">1</span>;
-            <span class="kw">let</span> <span class="ident">waker</span> = <span class="kw">unsafe</span> { <span class="ident">ptr::read</span>(<span class="self">self</span>.<span class="ident">inner</span>[<span class="self">self</span>.<span class="ident">curr</span>].<span class="ident">as_mut_ptr</span>()) };
-            <span class="ident">waker</span>.<span class="ident">wake</span>();
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>wake_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="macro">assert!</span>(<span class="self">self</span>.curr &lt;= NUM_WAKERS);
+        <span class="kw">while </span><span class="self">self</span>.curr &gt; <span class="number">0 </span>{
+            <span class="self">self</span>.curr -= <span class="number">1</span>;
+            <span class="kw">let </span>waker = <span class="kw">unsafe </span>{ ptr::read(<span class="self">self</span>.inner[<span class="self">self</span>.curr].as_mut_ptr()) };
+            waker.wake();
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">WakeList</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">let</span> <span class="ident">slice</span> = <span class="ident">ptr::slice_from_raw_parts_mut</span>(<span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">Waker</span>, <span class="self">self</span>.<span class="ident">curr</span>);
-        <span class="kw">unsafe</span> { <span class="ident">ptr::drop_in_place</span>(<span class="ident">slice</span>) };
+<span class="kw">impl </span>Drop <span class="kw">for </span>WakeList {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span>slice = ptr::slice_from_raw_parts_mut(<span class="self">self</span>.inner.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>Waker, <span class="self">self</span>.curr);
+        <span class="kw">unsafe </span>{ ptr::drop_in_place(slice) };
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

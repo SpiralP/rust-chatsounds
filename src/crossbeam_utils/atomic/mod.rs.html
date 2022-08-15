@@ -35,42 +35,42 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Atomic types.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! * [`AtomicCell`], a thread-safe mutable memory location.</span>
-<span class="doccomment">//! * [`AtomicConsume`], for reading from primitive atomic types with &quot;consume&quot; ordering.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Atomic types.
+//!
+//! * [`AtomicCell`], a thread-safe mutable memory location.
+//! * [`AtomicConsume`], for reading from primitive atomic types with &quot;consume&quot; ordering.
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_no_atomic_cas</span>))]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_loom</span>))]</span>
+</span><span class="attribute">#[cfg(not(crossbeam_no_atomic_cas))]</span>
+<span class="attribute">#[cfg(not(crossbeam_loom))]</span>
 <span class="macro">cfg_if::cfg_if!</span> {
-    <span class="comment">// Use &quot;wide&quot; sequence lock if the pointer width &lt;= 32 for preventing its counter against wrap</span>
-    <span class="comment">// around.</span>
-    <span class="comment">//</span>
-    <span class="comment">// We are ignoring too wide architectures (pointer width &gt;= 256), since such a system will not</span>
-    <span class="comment">// appear in a conceivable future.</span>
-    <span class="comment">//</span>
-    <span class="comment">// In narrow architectures (pointer width &lt;= 16), the counter is still &lt;= 32-bit and may be</span>
-    <span class="comment">// vulnerable to wrap around. But it&#39;s mostly okay, since in such a primitive hardware, the</span>
-    <span class="comment">// counter will not be increased that fast.</span>
-    <span class="kw">if</span> <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_pointer_width</span> = <span class="string">&quot;64&quot;</span>, <span class="ident">target_pointer_width</span> = <span class="string">&quot;128&quot;</span>))]</span> {
-        <span class="kw">mod</span> <span class="ident">seq_lock</span>;
-    } <span class="kw">else</span> {
-        <span class="attribute">#[<span class="ident">path</span> = <span class="string">&quot;seq_lock_wide.rs&quot;</span>]</span>
-        <span class="kw">mod</span> <span class="ident">seq_lock</span>;
+    <span class="comment">// Use &quot;wide&quot; sequence lock if the pointer width &lt;= 32 for preventing its counter against wrap
+    // around.
+    //
+    // We are ignoring too wide architectures (pointer width &gt;= 256), since such a system will not
+    // appear in a conceivable future.
+    //
+    // In narrow architectures (pointer width &lt;= 16), the counter is still &lt;= 32-bit and may be
+    // vulnerable to wrap around. But it&#39;s mostly okay, since in such a primitive hardware, the
+    // counter will not be increased that fast.
+    </span><span class="kw">if </span><span class="attribute">#[cfg(any(target_pointer_width = <span class="string">&quot;64&quot;</span>, target_pointer_width = <span class="string">&quot;128&quot;</span>))]</span> {
+        <span class="kw">mod </span>seq_lock;
+    } <span class="kw">else </span>{
+        <span class="attribute">#[path = <span class="string">&quot;seq_lock_wide.rs&quot;</span>]</span>
+        <span class="kw">mod </span>seq_lock;
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_no_atomic_cas</span>))]</span>
-<span class="comment">// We cannot provide AtomicCell under cfg(crossbeam_loom) because loom&#39;s atomic</span>
-<span class="comment">// types have a different in-memory representation than the underlying type.</span>
-<span class="comment">// TODO: The latest loom supports fences, so fallback using seqlock may be available.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_loom</span>))]</span>
-<span class="kw">mod</span> <span class="ident">atomic_cell</span>;
-<span class="kw">mod</span> <span class="ident">consume</span>;
+<span class="attribute">#[cfg(not(crossbeam_no_atomic_cas))]</span>
+<span class="comment">// We cannot provide AtomicCell under cfg(crossbeam_loom) because loom&#39;s atomic
+// types have a different in-memory representation than the underlying type.
+// TODO: The latest loom supports fences, so fallback using seqlock may be available.
+</span><span class="attribute">#[cfg(not(crossbeam_loom))]</span>
+<span class="kw">mod </span>atomic_cell;
+<span class="kw">mod </span>consume;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_no_atomic_cas</span>))]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">crossbeam_loom</span>))]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::atomic_cell::AtomicCell</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::consume::AtomicConsume</span>;
+<span class="attribute">#[cfg(not(crossbeam_no_atomic_cas))]</span>
+<span class="attribute">#[cfg(not(crossbeam_loom))]</span>
+<span class="kw">pub use </span><span class="self">self</span>::atomic_cell::AtomicCell;
+<span class="kw">pub use </span><span class="self">self</span>::consume::AtomicConsume;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="crossbeam_utils" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

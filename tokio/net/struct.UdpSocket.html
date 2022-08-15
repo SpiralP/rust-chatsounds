@@ -20,40 +20,40 @@ at <a href="https://docs.rs/tokio-util/latest/tokio_util/udp/struct.UdpFramed.ht
 <h2 id="example-one-to-many-bind"><a href="#example-one-to-many-bind">Example: one to many (bind)</a></h2>
 <p>Using <code>bind</code> we can create a simple echo server that sends and recv’s with many different clients:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> (<span class="ident">len</span>, <span class="ident">addr</span>) = <span class="ident">sock</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, <span class="ident">len</span>, <span class="ident">addr</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>(len, addr) = sock.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, len, addr);
 
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">sock</span>.<span class="ident">send_to</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">len</span>], <span class="ident">addr</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, <span class="ident">len</span>);
+        <span class="kw">let </span>len = sock.send_to(<span class="kw-2">&amp;</span>buf[..len], addr).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, len);
     }
 }</code></pre></div>
 <h2 id="example-one-to-one-connect"><a href="#example-one-to-one-connect">Example: one to one (connect)</a></h2>
 <p>Or using <code>connect</code> we can echo with a single remote address using <code>send</code> and <code>recv</code>:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">remote_addr</span> = <span class="string">&quot;127.0.0.1:59611&quot;</span>;
-    <span class="ident">sock</span>.<span class="ident">connect</span>(<span class="ident">remote_addr</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">sock</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, <span class="ident">len</span>, <span class="ident">remote_addr</span>);
+    <span class="kw">let </span>remote_addr = <span class="string">&quot;127.0.0.1:59611&quot;</span>;
+    sock.connect(remote_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>len = sock.recv(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, len, remote_addr);
 
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">sock</span>.<span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">len</span>]).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, <span class="ident">len</span>);
+        <span class="kw">let </span>len = sock.send(<span class="kw-2">&amp;</span>buf[..len]).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, len);
     }
 }</code></pre></div>
 <h2 id="example-splitting-with-arc"><a href="#example-splitting-with-arc">Example: Splitting with <code>Arc</code></a></h2>
@@ -62,28 +62,28 @@ to use an <code>Arc&lt;UdpSocket&gt;</code> and share the references to multiple
 Here is a similar “echo” example that supports concurrent
 sending/receiving:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio</span>::{<span class="ident">net::UdpSocket</span>, <span class="ident">sync::mpsc</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">io</span>, <span class="ident">net::SocketAddr</span>, <span class="ident">sync::Arc</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::{net::UdpSocket, sync::mpsc};
+<span class="kw">use </span>std::{io, net::SocketAddr, sync::Arc};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">r</span> = <span class="ident">Arc::new</span>(<span class="ident">sock</span>);
-    <span class="kw">let</span> <span class="ident">s</span> = <span class="ident">r</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>::&lt;(<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;, <span class="ident">SocketAddr</span>)&gt;(<span class="number">1_000</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>r = Arc::new(sock);
+    <span class="kw">let </span>s = r.clone();
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel::&lt;(Vec&lt;u8&gt;, SocketAddr)&gt;(<span class="number">1_000</span>);
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">bytes</span>, <span class="ident">addr</span>)) = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-            <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">s</span>.<span class="ident">send_to</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="ident">addr</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-            <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, <span class="ident">len</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">while let </span><span class="prelude-val">Some</span>((bytes, addr)) = rx.recv().<span class="kw">await </span>{
+            <span class="kw">let </span>len = s.send_to(<span class="kw-2">&amp;</span>bytes, <span class="kw-2">&amp;</span>addr).<span class="kw">await</span>.unwrap();
+            <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes sent&quot;</span>, len);
         }
     });
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> (<span class="ident">len</span>, <span class="ident">addr</span>) = <span class="ident">r</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, <span class="ident">len</span>, <span class="ident">addr</span>);
-        <span class="ident">tx</span>.<span class="ident">send</span>((<span class="ident">buf</span>[..<span class="ident">len</span>].<span class="ident">to_vec</span>(), <span class="ident">addr</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>(len, addr) = r.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;{:?} bytes received from {:?}&quot;</span>, len, addr);
+        tx.send((buf[..len].to_vec(), addr)).<span class="kw">await</span>.unwrap();
     }
 }</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-UdpSocket" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#127-1571">source</a></span><a href="#impl-UdpSocket" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.UdpSocket.html" title="struct tokio::net::UdpSocket">UdpSocket</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.bind" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#149-166">source</a></span><h4 class="code-header">pub async fn <a href="#method.bind" class="fnname">bind</a>&lt;A:&nbsp;<a class="trait" href="trait.ToSocketAddrs.html" title="trait tokio::net::ToSocketAddrs">ToSocketAddrs</a>&gt;(addr: A) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="struct.UdpSocket.html" title="struct tokio::net::UdpSocket">UdpSocket</a>&gt;</h4></section></summary><div class="docblock"><p>This function will create a new UDP socket and attempt to bind it to
@@ -92,14 +92,14 @@ the <code>addr</code> provided.</p>
 to this listener. The port allocated can be queried via the <code>local_addr</code>
 method.</p>
 <h5 id="example"><a href="#example">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="comment">// use `sock`</span>
-    <span class="prelude-val">Ok</span>(())
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// use `sock`
+    </span><span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.from_std" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#213-216">source</a></span><h4 class="code-header">pub fn <a href="#method.from_std" class="fnname">from_std</a>(socket: <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/udp/struct.UdpSocket.html" title="struct std::net::udp::UdpSocket">UdpSocket</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="struct.UdpSocket.html" title="struct tokio::net::UdpSocket">UdpSocket</a>&gt;</h4></section></summary><div class="docblock"><p>Creates new <code>UdpSocket</code> from a previously bound <code>std::net::UdpSocket</code>.</p>
 <p>This function is intended to be used to wrap a UDP socket from the
@@ -115,58 +115,58 @@ configure a socket before it’s handed off, such as setting options like
 from a future driven by a tokio runtime, otherwise runtime can be set
 explicitly with <a href="../runtime/struct.Runtime.html#method.enter"><code>Runtime::enter</code></a> function.</p>
 <h5 id="example-1"><a href="#example-1">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">addr</span> = <span class="string">&quot;0.0.0.0:8080&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">std_sock</span> = <span class="ident">std::net::UdpSocket::bind</span>(<span class="ident">addr</span>)<span class="question-mark">?</span>;
-<span class="ident">std_sock</span>.<span class="ident">set_nonblocking</span>(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::from_std</span>(<span class="ident">std_sock</span>)<span class="question-mark">?</span>;
+<span class="kw">let </span>addr = <span class="string">&quot;0.0.0.0:8080&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap();
+<span class="kw">let </span>std_sock = std::net::UdpSocket::bind(addr)<span class="question-mark">?</span>;
+std_sock.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
+<span class="kw">let </span>sock = UdpSocket::from_std(std_sock)<span class="question-mark">?</span>;
 <span class="comment">// use `sock`</span></code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.into_std" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#240-258">source</a></span><h4 class="code-header">pub fn <a href="#method.into_std" class="fnname">into_std</a>(self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/net/udp/struct.UdpSocket.html" title="struct std::net::udp::UdpSocket">UdpSocket</a>&gt;</h4></section></summary><div class="docblock"><p>Turns a <a href="struct.UdpSocket.html"><code>tokio::net::UdpSocket</code></a> into a <a href="https://doc.rust-lang.org/nightly/std/net/udp/struct.UdpSocket.html"><code>std::net::UdpSocket</code></a>.</p>
 <p>The returned <a href="https://doc.rust-lang.org/nightly/std/net/udp/struct.UdpSocket.html"><code>std::net::UdpSocket</code></a> will have nonblocking mode set as
 <code>true</code>.  Use <a href="https://doc.rust-lang.org/nightly/std/net/udp/struct.UdpSocket.html#method.set_nonblocking"><code>set_nonblocking</code></a> to change the blocking mode if needed.</p>
 <h5 id="examples"><a href="#examples">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::error::Error</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::error::Error;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="ident">tokio_socket</span> = <span class="ident">tokio::net::UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">std_socket</span> = <span class="ident">tokio_socket</span>.<span class="ident">into_std</span>()<span class="question-mark">?</span>;
-    <span class="ident">std_socket</span>.<span class="ident">set_nonblocking</span>(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>tokio_socket = tokio::net::UdpSocket::bind(<span class="string">&quot;127.0.0.1:0&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>std_socket = tokio_socket.into_std()<span class="question-mark">?</span>;
+    std_socket.set_nonblocking(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.local_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#277-279">source</a></span><h4 class="code-header">pub fn <a href="#method.local_addr" class="fnname">local_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the local address that this socket is bound to.</p>
 <h5 id="example-2"><a href="#example-2">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">addr</span> = <span class="string">&quot;0.0.0.0:8080&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="comment">// the address the socket is bound to</span>
-<span class="kw">let</span> <span class="ident">local_addr</span> = <span class="ident">sock</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>;</code></pre></div>
+<span class="kw">let </span>addr = <span class="string">&quot;0.0.0.0:8080&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap();
+<span class="kw">let </span>sock = UdpSocket::bind(addr).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// the address the socket is bound to
+</span><span class="kw">let </span>local_addr = sock.local_addr()<span class="question-mark">?</span>;</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peer_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#299-301">source</a></span><h4 class="code-header">pub fn <a href="#method.peer_addr" class="fnname">peer_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/std/net/addr/enum.SocketAddr.html" title="enum std::net::addr::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the socket address of the remote peer this socket was connected to.</p>
 <h5 id="example-3"><a href="#example-3">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">addr</span> = <span class="string">&quot;0.0.0.0:8080&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">peer</span> = <span class="string">&quot;127.0.0.1:11100&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="ident">addr</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="ident">sock</span>.<span class="ident">connect</span>(<span class="ident">peer</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="macro">assert_eq!</span>(<span class="ident">peer</span>, <span class="ident">sock</span>.<span class="ident">peer_addr</span>()<span class="question-mark">?</span>);</code></pre></div>
+<span class="kw">let </span>addr = <span class="string">&quot;0.0.0.0:8080&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap();
+<span class="kw">let </span>peer = <span class="string">&quot;127.0.0.1:11100&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap();
+<span class="kw">let </span>sock = UdpSocket::bind(addr).<span class="kw">await</span><span class="question-mark">?</span>;
+sock.connect(peer).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="macro">assert_eq!</span>(peer, sock.peer_addr()<span class="question-mark">?</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.connect" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#327-344">source</a></span><h4 class="code-header">pub async fn <a href="#method.connect" class="fnname">connect</a>&lt;A:&nbsp;<a class="trait" href="trait.ToSocketAddrs.html" title="trait tokio::net::ToSocketAddrs">ToSocketAddrs</a>&gt;(&amp;self, addr: A) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Connects the UDP socket setting the default destination for send() and
 limiting packets that are read via recv from the address specified in
 <code>addr</code>.</p>
 <h5 id="example-4"><a href="#example-4">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap()).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">remote_addr</span> = <span class="string">&quot;127.0.0.1:59600&quot;</span>.<span class="ident">parse</span>::&lt;<span class="ident">SocketAddr</span>&gt;().<span class="ident">unwrap</span>();
-<span class="ident">sock</span>.<span class="ident">connect</span>(<span class="ident">remote_addr</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0u8</span>; <span class="number">32</span>];
-<span class="comment">// recv from remote_addr</span>
-<span class="kw">let</span> <span class="ident">len</span> = <span class="ident">sock</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="comment">// send to remote_addr</span>
-<span class="kw">let</span> <span class="ident">_len</span> = <span class="ident">sock</span>.<span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">len</span>]).<span class="kw">await</span><span class="question-mark">?</span>;</code></pre></div>
+<span class="kw">let </span>remote_addr = <span class="string">&quot;127.0.0.1:59600&quot;</span>.parse::&lt;SocketAddr&gt;().unwrap();
+sock.connect(remote_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0u8</span>; <span class="number">32</span>];
+<span class="comment">// recv from remote_addr
+</span><span class="kw">let </span>len = sock.recv(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// send to remote_addr
+</span><span class="kw">let </span>_len = sock.send(<span class="kw-2">&amp;</span>buf[..len]).<span class="kw">await</span><span class="question-mark">?</span>;</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.ready" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#412-415">source</a></span><h4 class="code-header">pub async fn <a href="#method.ready" class="fnname">ready</a>(&amp;self, interest: <a class="struct" href="../io/struct.Interest.html" title="struct tokio::io::Interest">Interest</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="../io/struct.Ready.html" title="struct tokio::io::Ready">Ready</a>&gt;</h4></section></summary><div class="docblock"><p>Waits for any of the requested ready states.</p>
 <p>This function is usually paired with <code>try_recv()</code> or <code>try_send()</code>. It
 can be used to concurrently recv / send to the same socket on a single
@@ -183,43 +183,43 @@ consumed by an attempt to read or write that fails with <code>WouldBlock</code> 
 <p>Concurrently receive from and send to the socket on the same task
 without splitting.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::io</span>::{<span class="self">self</span>, <span class="ident">Interest</span>};
-<span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::io::{<span class="self">self</span>, Interest};
+<span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">ready</span> = <span class="ident">socket</span>.<span class="ident">ready</span>(<span class="ident">Interest::READABLE</span> | <span class="ident">Interest::WRITABLE</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>ready = socket.ready(Interest::READABLE | Interest::WRITABLE).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_readable</span>() {
-            <span class="comment">// The buffer is **not** included in the async task and will only exist</span>
-            <span class="comment">// on the stack.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-            <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">data</span>[..]) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;received {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>[..<span class="ident">n</span>]);
+        <span class="kw">if </span>ready.is_readable() {
+            <span class="comment">// The buffer is **not** included in the async task and will only exist
+            // on the stack.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>data = [<span class="number">0</span>; <span class="number">1024</span>];
+            <span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>data[..]) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;received {:?}&quot;</span>, <span class="kw-2">&amp;</span>data[..n]);
                 }
-                <span class="comment">// False-positive, continue</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {}
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+                <span class="comment">// False-positive, continue
+                </span><span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {}
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
             }
         }
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_writable</span>() {
-            <span class="comment">// Write some data</span>
-            <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, <span class="ident">n</span>);
+        <span class="kw">if </span>ready.is_writable() {
+            <span class="comment">// Write some data
+            </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, n);
                 }
-                <span class="comment">// False-positive, continue</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {}
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+                <span class="comment">// False-positive, continue
+                </span><span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {}
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
             }
         }
@@ -237,30 +237,30 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to write that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Bind socket</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Bind socket
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to send data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to send data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -300,17 +300,17 @@ encountered error is returned.</p>
 <a href="../macro.select.html"><code>tokio::select!</code></a> statement and some other branch
 completes first, then it is guaranteed that the message was not sent.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::io</span>;
-<span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::io;
+<span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Bind socket</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Bind socket
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Send a message</span>
-    <span class="ident">socket</span>.<span class="ident">send</span>(<span class="string">b&quot;hello world&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Send a message
+    </span>socket.send(<span class="string">b&quot;hello world&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
@@ -339,32 +339,32 @@ returned. This function is usually paired with <code>writable()</code>.</p>
 sent. If the socket is not ready to send data,
 <code>Err(ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Bind a UDP socket</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Bind a UDP socket
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Connect to a peer</span>
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Connect to a peer
+    </span>socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to send data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to send data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -383,35 +383,35 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to read that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -452,19 +452,19 @@ This method will fail if the socket is not connected.</p>
 completes first, it is guaranteed that no messages were received on this
 socket.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Bind socket</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Bind socket
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">10</span>];
-    <span class="kw">let</span> <span class="ident">n</span> = <span class="ident">socket</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">10</span>];
+    <span class="kw">let </span>n = socket.recv(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;received {} bytes {:?}&quot;</span>, <span class="ident">n</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+    <span class="macro">println!</span>(<span class="string">&quot;received {} bytes {:?}&quot;</span>, n, <span class="kw-2">&amp;</span>buf[..n]);
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
@@ -493,35 +493,35 @@ supplied buffer, excess bytes may be discarded.</p>
 <p>When there is no pending data, <code>Err(io::ErrorKind::WouldBlock)</code> is
 returned. This function is usually paired with <code>readable()</code>.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -536,33 +536,33 @@ supplied buffer, excess bytes may be discarded.</p>
 <p>When there is no pending data, <code>Err(io::ErrorKind::WouldBlock)</code> is
 returned. This function is usually paired with <code>readable()</code>.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    socket.connect(<span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::with_capacity</span>(<span class="number">1024</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(<span class="number">1024</span>);
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_buf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_buf(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -577,32 +577,32 @@ supplied buffer, excess bytes may be discarded.</p>
 <p>When there is no pending data, <code>Err(io::ErrorKind::WouldBlock)</code> is
 returned. This function is usually paired with <code>readable()</code>.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::with_capacity</span>(<span class="number">1024</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(<span class="number">1024</span>);
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_buf_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>((<span class="ident">n</span>, <span class="ident">_addr</span>)) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_buf_from(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>((n, _addr)) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -622,15 +622,15 @@ not match that returned from <a href="trait.ToSocketAddrs.html"><code>ToSocketAd
 <a href="../macro.select.html"><code>tokio::select!</code></a> statement and some other branch
 completes first, then it is guaranteed that the message was not sent.</p>
 <h5 id="example-5"><a href="#example-5">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">socket</span>.<span class="ident">send_to</span>(<span class="string">b&quot;hello world&quot;</span>, <span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>len = socket.send_to(<span class="string">b&quot;hello world&quot;</span>, <span class="string">&quot;127.0.0.1:8081&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;Sent {} bytes&quot;</span>, <span class="ident">len</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Sent {} bytes&quot;</span>, len);
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
@@ -656,29 +656,29 @@ blocked this will return right away.</p>
 <a href="https://doc.rust-lang.org/nightly/std/io/error/enum.ErrorKind.html#variant.WouldBlock"><code>ErrorKind::WouldBlock</code></a> is properly handled. An error can also occur
 if the IP version of the socket does not match that of <code>target</code>.</p>
 <h5 id="example-6"><a href="#example-6">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">dst</span> = <span class="string">&quot;127.0.0.1:8081&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>;
+    <span class="kw">let </span>dst = <span class="string">&quot;127.0.0.1:8081&quot;</span>.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send_to</span>(<span class="kw-2">&amp;</span><span class="string">b&quot;hello world&quot;</span>[..], <span class="ident">dst</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">sent</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, <span class="ident">sent</span>);
+        <span class="kw">match </span>socket.try_send_to(<span class="kw-2">&amp;</span><span class="string">b&quot;hello world&quot;</span>[..], dst) {
+            <span class="prelude-val">Ok</span>(sent) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, sent);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                <span class="comment">// Writable false positive.</span>
-                <span class="kw">continue</span>;
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                <span class="comment">// Writable false positive.
+                </span><span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>()),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e.into()),
         }
     }
 
@@ -695,17 +695,17 @@ supplied buffer, excess bytes may be discarded.</p>
 completes first, it is guaranteed that no messages were received on this
 socket.</p>
 <h5 id="example-7"><a href="#example-7">Example</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">32</span>];
-    <span class="kw">let</span> (<span class="ident">len</span>, <span class="ident">addr</span>) = <span class="ident">socket</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">32</span>];
+    <span class="kw">let </span>(len, addr) = socket.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;received {:?} bytes from {:?}&quot;</span>, <span class="ident">len</span>, <span class="ident">addr</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;received {:?} bytes from {:?}&quot;</span>, len, addr);
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
@@ -730,34 +730,34 @@ supplied buffer, excess bytes may be discarded.</p>
 <p>When there is no pending data, <code>Err(io::ErrorKind::WouldBlock)</code> is
 returned. This function is usually paired with <code>readable()</code>.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>((<span class="ident">n</span>, <span class="ident">_addr</span>)) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_from(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>((n, _addr)) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -792,17 +792,17 @@ WSAEMSGSIZE(10040). The excess data is lost.
 Make sure to always use a sufficiently large buffer to hold the
 maximum UDP packet size, which can be up to 65536 bytes in size.</p>
 <h5 id="examples-10"><a href="#examples-10">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">32</span>];
-    <span class="kw">let</span> (<span class="ident">len</span>, <span class="ident">addr</span>) = <span class="ident">socket</span>.<span class="ident">peek_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">32</span>];
+    <span class="kw">let </span>(len, addr) = socket.peek_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;peeked {:?} bytes from {:?}&quot;</span>, <span class="ident">len</span>, <span class="ident">addr</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;peeked {:?} bytes from {:?}&quot;</span>, len, addr);
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
@@ -854,19 +854,19 @@ don’t leave the local network unless explicitly requested.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.ttl" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#1485-1487">source</a></span><h4 class="code-header">pub fn <a href="#method.ttl" class="fnname">ttl</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the value of the <code>IP_TTL</code> option for this socket.</p>
 <p>For more information about this option, see <a href="struct.UdpSocket.html#method.set_ttl"><code>set_ttl</code></a>.</p>
 <h5 id="examples-11"><a href="#examples-11">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">sock</span>.<span class="ident">ttl</span>()<span class="question-mark">?</span>);</code></pre></div>
+<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, sock.ttl()<span class="question-mark">?</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.set_ttl" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#1507-1509">source</a></span><h4 class="code-header">pub fn <a href="#method.set_ttl" class="fnname">set_ttl</a>(&amp;self, ttl: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Sets the value for the <code>IP_TTL</code> option on this socket.</p>
 <p>This value sets the time-to-live field that is used in every packet sent
 from this socket.</p>
 <h5 id="examples-12"><a href="#examples-12">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
 
-<span class="kw">let</span> <span class="ident">sock</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-<span class="ident">sock</span>.<span class="ident">set_ttl</span>(<span class="number">60</span>)<span class="question-mark">?</span>;
+<span class="kw">let </span>sock = UdpSocket::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+sock.set_ttl(<span class="number">60</span>)<span class="question-mark">?</span>;
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.join_multicast_v4" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#1518-1520">source</a></span><h4 class="code-header">pub fn <a href="#method.join_multicast_v4" class="fnname">join_multicast_v4</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;multiaddr: <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/ip/struct.Ipv4Addr.html" title="struct std::net::ip::Ipv4Addr">Ipv4Addr</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;interface: <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/ip/struct.Ipv4Addr.html" title="struct std::net::ip::Ipv4Addr">Ipv4Addr</a><br>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Executes an operation of the <code>IP_ADD_MEMBERSHIP</code> type.</p>
 <p>This function specifies a new multicast group for this socket to join.
@@ -884,16 +884,16 @@ index of the interface to join/leave (or 0 to indicate any interface).</p>
 <p>For more information about this option, see <a href="struct.UdpSocket.html#method.join_multicast_v6"><code>join_multicast_v6</code></a>.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.take_error" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/udp.rs.html#1568-1570">source</a></span><h4 class="code-header">pub fn <a href="#method.take_error" class="fnname">take_error</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the value of the <code>SO_ERROR</code> option.</p>
 <h5 id="examples-13"><a href="#examples-13">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UdpSocket</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UdpSocket;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Create a socket</span>
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UdpSocket::bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Create a socket
+    </span><span class="kw">let </span>socket = UdpSocket::bind(<span class="string">&quot;0.0.0.0:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">err</span>)) = <span class="ident">socket</span>.<span class="ident">take_error</span>() {
-        <span class="macro">println!</span>(<span class="string">&quot;Got error: {:?}&quot;</span>, <span class="ident">err</span>);
+    <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(err)) = socket.take_error() {
+        <span class="macro">println!</span>(<span class="string">&quot;Got error: {:?}&quot;</span>, err);
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -915,4 +915,4 @@ index of the interface to join/leave (or 0 to indicate any interface).</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from-1" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from-1" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-UdpSocket" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-UdpSocket" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-2" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-2" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

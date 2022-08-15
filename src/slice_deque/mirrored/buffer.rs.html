@@ -302,309 +302,309 @@
 <span id="302">302</span>
 <span id="303">303</span>
 <span id="304">304</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Implements a mirrored memory buffer.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Implements a mirrored memory buffer.
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Number of required memory allocation units to hold `bytes`.</span>
-<span class="kw">fn</span> <span class="ident">no_required_allocation_units</span>(<span class="ident">bytes</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-    <span class="kw">let</span> <span class="ident">ag</span> = <span class="ident">allocation_granularity</span>();
-    <span class="kw">let</span> <span class="ident">r</span> = ((<span class="ident">bytes</span> + <span class="ident">ag</span> - <span class="number">1</span>) / <span class="ident">ag</span>).<span class="ident">max</span>(<span class="number">1</span>);
-    <span class="kw">let</span> <span class="ident">r</span> = <span class="kw">if</span> <span class="ident">r</span> % <span class="number">2</span> == <span class="number">0</span> { <span class="ident">r</span> } <span class="kw">else</span> { <span class="ident">r</span> + <span class="number">1</span> };
-    <span class="macro">debug_assert!</span>(<span class="ident">r</span> * <span class="ident">ag</span> &gt;= <span class="ident">bytes</span>);
-    <span class="macro">debug_assert!</span>(<span class="ident">r</span> % <span class="number">2</span> == <span class="number">0</span>);
-    <span class="ident">r</span>
+<span class="doccomment">/// Number of required memory allocation units to hold `bytes`.
+</span><span class="kw">fn </span>no_required_allocation_units(bytes: usize) -&gt; usize {
+    <span class="kw">let </span>ag = allocation_granularity();
+    <span class="kw">let </span>r = ((bytes + ag - <span class="number">1</span>) / ag).max(<span class="number">1</span>);
+    <span class="kw">let </span>r = <span class="kw">if </span>r % <span class="number">2 </span>== <span class="number">0 </span>{ r } <span class="kw">else </span>{ r + <span class="number">1 </span>};
+    <span class="macro">debug_assert!</span>(r * ag &gt;= bytes);
+    <span class="macro">debug_assert!</span>(r % <span class="number">2 </span>== <span class="number">0</span>);
+    r
 }
 
-<span class="doccomment">/// Mirrored memory buffer of length `len`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The buffer elements in range `[0, len/2)` are mirrored into the range</span>
-<span class="doccomment">/// `[len/2, len)`.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="doccomment">/// Pointer to the first element in the buffer.</span>
-    <span class="ident">ptr</span>: <span class="ident">NonNull</span>&lt;<span class="ident">T</span>&gt;,
-    <span class="doccomment">/// Length of the buffer:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * it is NOT always a multiple of 2</span>
-    <span class="doccomment">/// * the elements in range `[0, len/2)` are mirrored into the range</span>
-    <span class="doccomment">/// `[len/2, len)`.</span>
-    <span class="ident">len</span>: <span class="ident">usize</span>,
+<span class="doccomment">/// Mirrored memory buffer of length `len`.
+///
+/// The buffer elements in range `[0, len/2)` are mirrored into the range
+/// `[len/2, len)`.
+</span><span class="kw">pub struct </span>Buffer&lt;T&gt; {
+    <span class="doccomment">/// Pointer to the first element in the buffer.
+    </span>ptr: NonNull&lt;T&gt;,
+    <span class="doccomment">/// Length of the buffer:
+    ///
+    /// * it is NOT always a multiple of 2
+    /// * the elements in range `[0, len/2)` are mirrored into the range
+    /// `[len/2, len)`.
+    </span>len: usize,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="doccomment">/// Number of elements in the buffer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>
+<span class="kw">impl</span>&lt;T&gt; Buffer&lt;T&gt; {
+    <span class="doccomment">/// Number of elements in the buffer.
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len
     }
 
-    <span class="doccomment">/// Is the buffer empty?</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">len</span>() == <span class="number">0</span>
+    <span class="doccomment">/// Is the buffer empty?
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.len() == <span class="number">0
+    </span>}
+
+    <span class="doccomment">/// Pointer to the first element in the buffer.
+    </span><span class="kw">pub unsafe fn </span>ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
+        <span class="self">self</span>.ptr.as_ptr()
     }
 
-    <span class="doccomment">/// Pointer to the first element in the buffer.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">ptr</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">T</span> {
-        <span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>()
+    <span class="doccomment">/// Interprets contents as a slice.
+    ///
+    /// Warning: Some memory might be uninitialized.
+    </span><span class="kw">pub unsafe fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[T] {
+        slice::from_raw_parts(<span class="self">self</span>.ptr.as_ptr(), <span class="self">self</span>.len())
     }
 
-    <span class="doccomment">/// Interprets contents as a slice.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Warning: Some memory might be uninitialized.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">as_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">T</span>] {
-        <span class="ident">slice::from_raw_parts</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>(), <span class="self">self</span>.<span class="ident">len</span>())
+    <span class="doccomment">/// Interprets contents as a mut slice.
+    ///
+    /// Warning: Some memory might be uninitialized.
+    </span><span class="kw">pub unsafe fn </span>as_mut_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[T] {
+        slice::from_raw_parts_mut(<span class="self">self</span>.ptr.as_ptr(), <span class="self">self</span>.len())
     }
 
-    <span class="doccomment">/// Interprets contents as a mut slice.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Warning: Some memory might be uninitialized.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">as_mut_slice</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>] {
-        <span class="ident">slice::from_raw_parts_mut</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>(), <span class="self">self</span>.<span class="ident">len</span>())
+    <span class="doccomment">/// Interprets content as a slice and access the `i`-th element.
+    ///
+    /// Warning: The memory of the `i`-th element might be uninitialized.
+    </span><span class="kw">pub unsafe fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; <span class="kw-2">&amp;</span>T {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.as_slice()[i]
     }
 
-    <span class="doccomment">/// Interprets content as a slice and access the `i`-th element.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Warning: The memory of the `i`-th element might be uninitialized.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">i</span>: <span class="ident">usize</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">T</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">as_slice</span>()[<span class="ident">i</span>]
+    <span class="doccomment">/// Interprets content as a mut slice and access the `i`-th element.
+    ///
+    /// Warning: The memory of the `i`-th element might be uninitialized.
+    </span><span class="kw">pub unsafe fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize) -&gt; <span class="kw-2">&amp;mut </span>T {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.as_mut_slice()[i]
     }
 
-    <span class="doccomment">/// Interprets content as a mut slice and access the `i`-th element.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Warning: The memory of the `i`-th element might be uninitialized.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">i</span>: <span class="ident">usize</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">as_mut_slice</span>()[<span class="ident">i</span>]
+    <span class="kw">fn </span>empty_len() -&gt; usize {
+        <span class="kw">if </span>mem::size_of::&lt;T&gt;() == <span class="number">0 </span>{
+            isize::max_value() <span class="kw">as </span>usize * <span class="number">2
+        </span>} <span class="kw">else </span>{
+            <span class="number">0
+        </span>}
     }
 
-    <span class="kw">fn</span> <span class="ident">empty_len</span>() -&gt; <span class="ident">usize</span> {
-        <span class="kw">if</span> <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="number">0</span> {
-            <span class="ident">isize::max_value</span>() <span class="kw">as</span> <span class="ident">usize</span> * <span class="number">2</span>
-        } <span class="kw">else</span> {
-            <span class="number">0</span>
+    <span class="doccomment">/// Creates a new empty `Buffer`.
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="comment">// Here `ptr` is initialized to a magic value but `len == 0`
+        // will ensure that it is never dereferenced in this state.
+        </span><span class="self">Self </span>{
+            ptr: NonNull::dangling(),
+            len: <span class="self">Self</span>::empty_len(),
         }
     }
 
-    <span class="doccomment">/// Creates a new empty `Buffer`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="comment">// Here `ptr` is initialized to a magic value but `len == 0`</span>
-        <span class="comment">// will ensure that it is never dereferenced in this state.</span>
-        <span class="self">Self</span> {
-            <span class="ident">ptr</span>: <span class="ident">NonNull::dangling</span>(),
-            <span class="ident">len</span>: <span class="ident"><span class="self">Self</span>::empty_len</span>(),
+    <span class="doccomment">/// Creates a new empty `Buffer` from a `ptr` and a `len`.
+    ///
+    /// # Panics
+    ///
+    /// If `ptr` is null.
+    </span><span class="kw">pub unsafe fn </span>from_raw_parts(ptr: <span class="kw-2">*mut </span>T, len: usize) -&gt; <span class="self">Self </span>{
+        <span class="macro">assert!</span>(len % <span class="number">2 </span>== <span class="number">0</span>);
+        <span class="macro">assert!</span>(!ptr.is_null());
+        <span class="kw">if </span>mem::size_of::&lt;T&gt;() == <span class="number">0 </span>{
+            <span class="macro">debug_assert_eq!</span>(len, <span class="self">Self</span>::empty_len());
+        }
+        <span class="self">Self </span>{
+            ptr: NonNull::new_unchecked(ptr),
+            len,
         }
     }
 
-    <span class="doccomment">/// Creates a new empty `Buffer` from a `ptr` and a `len`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If `ptr` is null.</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_raw_parts</span>(<span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident">T</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="macro">assert!</span>(<span class="ident">len</span> % <span class="number">2</span> == <span class="number">0</span>);
-        <span class="macro">assert!</span>(!<span class="ident">ptr</span>.<span class="ident">is_null</span>());
-        <span class="kw">if</span> <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="number">0</span> {
-            <span class="macro">debug_assert_eq!</span>(<span class="ident">len</span>, <span class="ident"><span class="self">Self</span>::empty_len</span>());
-        }
-        <span class="self">Self</span> {
-            <span class="ident">ptr</span>: <span class="ident">NonNull::new_unchecked</span>(<span class="ident">ptr</span>),
-            <span class="ident">len</span>,
-        }
-    }
-
-    <span class="doccomment">/// Total number of bytes in the buffer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size_in_bytes</span>(<span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">let</span> <span class="ident">v</span> = <span class="ident">no_required_allocation_units</span>(<span class="ident">len</span> * <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;())
-            * <span class="ident">allocation_granularity</span>();
+    <span class="doccomment">/// Total number of bytes in the buffer.
+    </span><span class="kw">pub fn </span>size_in_bytes(len: usize) -&gt; usize {
+        <span class="kw">let </span>v = no_required_allocation_units(len * mem::size_of::&lt;T&gt;())
+            * allocation_granularity();
         <span class="macro">debug_assert!</span>(
-            <span class="ident">v</span> &gt;= <span class="ident">len</span> * <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;(),
+            v &gt;= len * mem::size_of::&lt;T&gt;(),
             <span class="string">&quot;len: {}, so&lt;T&gt;: {}, v: {}&quot;</span>,
-            <span class="ident">len</span>,
-            <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;(),
-            <span class="ident">v</span>
+            len,
+            mem::size_of::&lt;T&gt;(),
+            v
         );
-        <span class="ident">v</span>
+        v
     }
 
-    <span class="doccomment">/// Create a mirrored buffer containing `len` `T`s where the first half of</span>
-    <span class="doccomment">/// the buffer is mirrored into the second half.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">uninitialized</span>(<span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">AllocError</span>&gt; {
-        <span class="comment">// Zero-sized types:</span>
-        <span class="kw">if</span> <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-                <span class="ident">ptr</span>: <span class="ident">NonNull::dangling</span>(),
-                <span class="ident">len</span>: <span class="ident"><span class="self">Self</span>::empty_len</span>(),
+    <span class="doccomment">/// Create a mirrored buffer containing `len` `T`s where the first half of
+    /// the buffer is mirrored into the second half.
+    </span><span class="kw">pub fn </span>uninitialized(len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, AllocError&gt; {
+        <span class="comment">// Zero-sized types:
+        </span><span class="kw">if </span>mem::size_of::&lt;T&gt;() == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+                ptr: NonNull::dangling(),
+                len: <span class="self">Self</span>::empty_len(),
             });
         }
-        <span class="comment">// The alignment requirements of `T` must be smaller than the</span>
-        <span class="comment">// allocation granularity.</span>
-        <span class="macro">assert!</span>(<span class="ident">mem::align_of</span>::&lt;<span class="ident">T</span>&gt;() &lt;= <span class="ident">allocation_granularity</span>());
-        <span class="comment">// To split the buffer in two halfs the number of elements must be a</span>
-        <span class="comment">// multiple of two, and greater than zero to be able to mirror</span>
-        <span class="comment">// something.</span>
-        <span class="kw">if</span> <span class="ident">len</span> == <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::new</span>());
+        <span class="comment">// The alignment requirements of `T` must be smaller than the
+        // allocation granularity.
+        </span><span class="macro">assert!</span>(mem::align_of::&lt;T&gt;() &lt;= allocation_granularity());
+        <span class="comment">// To split the buffer in two halfs the number of elements must be a
+        // multiple of two, and greater than zero to be able to mirror
+        // something.
+        </span><span class="kw">if </span>len == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>::new());
         }
-        <span class="macro">assert!</span>(<span class="ident">len</span> % <span class="number">2</span> == <span class="number">0</span>);
+        <span class="macro">assert!</span>(len % <span class="number">2 </span>== <span class="number">0</span>);
 
-        <span class="comment">// How much memory we need:</span>
-        <span class="kw">let</span> <span class="ident">alloc_size</span> = <span class="ident"><span class="self">Self</span>::size_in_bytes</span>(<span class="ident">len</span>);
-        <span class="macro">debug_assert!</span>(<span class="ident">alloc_size</span> &gt; <span class="number">0</span>);
-        <span class="macro">debug_assert!</span>(<span class="ident">alloc_size</span> % <span class="number">2</span> == <span class="number">0</span>);
-        <span class="macro">debug_assert!</span>(<span class="ident">alloc_size</span> % <span class="ident">allocation_granularity</span>() == <span class="number">0</span>);
-        <span class="macro">debug_assert!</span>(<span class="ident">alloc_size</span> &gt;= <span class="ident">len</span> * <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;());
+        <span class="comment">// How much memory we need:
+        </span><span class="kw">let </span>alloc_size = <span class="self">Self</span>::size_in_bytes(len);
+        <span class="macro">debug_assert!</span>(alloc_size &gt; <span class="number">0</span>);
+        <span class="macro">debug_assert!</span>(alloc_size % <span class="number">2 </span>== <span class="number">0</span>);
+        <span class="macro">debug_assert!</span>(alloc_size % allocation_granularity() == <span class="number">0</span>);
+        <span class="macro">debug_assert!</span>(alloc_size &gt;= len * mem::size_of::&lt;T&gt;());
 
-        <span class="kw">let</span> <span class="ident">ptr</span> = <span class="ident">allocate_mirrored</span>(<span class="ident">alloc_size</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">ptr</span>: <span class="kw">unsafe</span> { <span class="ident">NonNull::new_unchecked</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">T</span>) },
-            <span class="ident">len</span>: <span class="ident">alloc_size</span> / <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;(),
-            <span class="comment">// Note: len is not a multiple of two: debug_assert!(len % 2 == 0);</span>
-        })
+        <span class="kw">let </span>ptr = allocate_mirrored(alloc_size)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            ptr: <span class="kw">unsafe </span>{ NonNull::new_unchecked(ptr <span class="kw">as </span><span class="kw-2">*mut </span>T) },
+            len: alloc_size / mem::size_of::&lt;T&gt;(),
+            <span class="comment">// Note: len is not a multiple of two: debug_assert!(len % 2 == 0);
+        </span>})
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">if</span> <span class="ident">mem::size_of</span>::&lt;<span class="ident">T</span>&gt;() == <span class="number">0</span> {
-            <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.<span class="ident">len</span>, <span class="ident"><span class="self">Self</span>::empty_len</span>());
+<span class="kw">impl</span>&lt;T&gt; Drop <span class="kw">for </span>Buffer&lt;T&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if </span>mem::size_of::&lt;T&gt;() == <span class="number">0 </span>{
+            <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.len, <span class="self">Self</span>::empty_len());
             <span class="kw">return</span>;
         }
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">buffer_size_in_bytes</span> = <span class="ident"><span class="self">Self</span>::size_in_bytes</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">let</span> <span class="ident">first_half_ptr</span> = <span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>;
-        <span class="kw">unsafe</span> { <span class="ident">deallocate_mirrored</span>(<span class="ident">first_half_ptr</span>, <span class="ident">buffer_size_in_bytes</span>) };
+        <span class="kw">let </span>buffer_size_in_bytes = <span class="self">Self</span>::size_in_bytes(<span class="self">self</span>.len());
+        <span class="kw">let </span>first_half_ptr = <span class="self">self</span>.ptr.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8;
+        <span class="kw">unsafe </span>{ deallocate_mirrored(first_half_ptr, buffer_size_in_bytes) };
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Clone</span>,
+<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Buffer&lt;T&gt;
+<span class="kw">where
+    </span>T: Clone,
 {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">mid</span> = <span class="self">self</span>.<span class="ident">len</span>() / <span class="number">2</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span> = <span class="ident"><span class="self">Self</span>::uninitialized</span>(<span class="self">self</span>.<span class="ident">len</span>())
-                .<span class="ident">expect</span>(<span class="string">&quot;allocating a new mirrored buffer failed&quot;</span>);
-            <span class="kw">let</span> (<span class="ident">from</span>, <span class="kw">_</span>) = <span class="self">self</span>.<span class="ident">as_slice</span>().<span class="ident">split_at</span>(<span class="ident">mid</span>);
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span>mid = <span class="self">self</span>.len() / <span class="number">2</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>c = <span class="self">Self</span>::uninitialized(<span class="self">self</span>.len())
+                .expect(<span class="string">&quot;allocating a new mirrored buffer failed&quot;</span>);
+            <span class="kw">let </span>(from, <span class="kw">_</span>) = <span class="self">self</span>.as_slice().split_at(mid);
             {
-                <span class="kw">let</span> (<span class="ident">to</span>, <span class="kw">_</span>) = <span class="ident">c</span>.<span class="ident">as_mut_slice</span>().<span class="ident">split_at_mut</span>(<span class="ident">mid</span>);
-                <span class="ident">to</span>[..<span class="ident">mid</span>].<span class="ident">clone_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">from</span>[..<span class="ident">mid</span>]);
+                <span class="kw">let </span>(to, <span class="kw">_</span>) = c.as_mut_slice().split_at_mut(mid);
+                to[..mid].clone_from_slice(<span class="kw-2">&amp;</span>from[..mid]);
             }
-            <span class="ident">c</span>
+            c
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>()
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>Buffer&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new()
     }
 }
 
-<span class="comment">// Safe because it is possible to free this from a different thread</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">Send</span> {}
-<span class="comment">// Safe because this doesn&#39;t use any kind of interior mutability.</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Buffer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">Sync</span> {}
+<span class="comment">// Safe because it is possible to free this from a different thread
+</span><span class="kw">unsafe impl</span>&lt;T&gt; Send <span class="kw">for </span>Buffer&lt;T&gt; <span class="kw">where </span>T: Send {}
+<span class="comment">// Safe because this doesn&#39;t use any kind of interior mutability.
+</span><span class="kw">unsafe impl</span>&lt;T&gt; Sync <span class="kw">for </span>Buffer&lt;T&gt; <span class="kw">where </span>T: Sync {}
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">fn</span> <span class="ident">is_send_sync</span>&lt;<span class="ident">T</span>&gt;() -&gt; <span class="ident">bool</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Send</span> + <span class="ident">Sync</span>,
+    <span class="kw">fn </span>is_send_sync&lt;T&gt;() -&gt; bool
+    <span class="kw">where
+        </span>T: Send + Sync,
     {
-        <span class="bool-val">true</span>
+        <span class="bool-val">true
+    </span>}
+
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>buffer_send_sync() {
+        <span class="macro">assert!</span>(is_send_sync::&lt;Buffer&lt;usize&gt;&gt;());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">buffer_send_sync</span>() {
-        <span class="macro">assert!</span>(<span class="ident">is_send_sync</span>::&lt;<span class="ident">Buffer</span>&lt;<span class="ident">usize</span>&gt;&gt;());
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>test_new() {
+        <span class="kw">let </span>a = Buffer::&lt;u64&gt;::new();
+        <span class="macro">assert!</span>(a.is_empty());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_new</span>() {
-        <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">Buffer</span>::&lt;<span class="ident">u64</span>&gt;<span class="ident">::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">a</span>.<span class="ident">is_empty</span>());
-    }
-
-    <span class="kw">fn</span> <span class="ident">test_alloc</span>(<span class="ident">size</span>: <span class="ident">usize</span>) {
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> = <span class="ident">Buffer</span>::&lt;<span class="ident">u64</span>&gt;<span class="ident">::uninitialized</span>(<span class="ident">size</span>).<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">sz</span> = <span class="ident">a</span>.<span class="ident">len</span>();
-            <span class="macro">assert!</span>(<span class="ident">sz</span> &gt;= <span class="ident">size</span>);
+    <span class="kw">fn </span>test_alloc(size: usize) {
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>a = Buffer::&lt;u64&gt;::uninitialized(size).unwrap();
+            <span class="kw">let </span>sz = a.len();
+            <span class="macro">assert!</span>(sz &gt;= size);
             <span class="macro">assert_eq!</span>(
-                <span class="ident">sz</span>,
-                <span class="ident">Buffer</span>::&lt;<span class="ident">u64</span>&gt;<span class="ident">::size_in_bytes</span>(<span class="ident">size</span>) / <span class="ident">mem::size_of</span>::&lt;<span class="ident">u64</span>&gt;()
+                sz,
+                Buffer::&lt;u64&gt;::size_in_bytes(size) / mem::size_of::&lt;u64&gt;()
             );
 
-            <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">sz</span> / <span class="number">2</span> {
-                <span class="kw-2">*</span><span class="ident">a</span>.<span class="ident">get_mut</span>(<span class="ident">i</span>) = <span class="ident">i</span> <span class="kw">as</span> <span class="ident">u64</span>;
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..sz / <span class="number">2 </span>{
+                <span class="kw-2">*</span>a.get_mut(i) = i <span class="kw">as </span>u64;
             }
 
-            <span class="kw">let</span> (<span class="ident">first_half_mut</span>, <span class="ident">second_half_mut</span>) =
-                <span class="ident">a</span>.<span class="ident">as_mut_slice</span>().<span class="ident">split_at_mut</span>(<span class="ident">sz</span> / <span class="number">2</span>);
+            <span class="kw">let </span>(first_half_mut, second_half_mut) =
+                a.as_mut_slice().split_at_mut(sz / <span class="number">2</span>);
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span> = <span class="number">0</span>;
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">j</span>) <span class="kw">in</span> <span class="ident">first_half_mut</span>.<span class="ident">iter</span>().<span class="ident">zip</span>(<span class="ident">second_half_mut</span>) {
-                <span class="macro">assert_eq!</span>(<span class="ident">i</span>, <span class="ident">j</span>);
-                <span class="ident">c</span> += <span class="number">1</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>c = <span class="number">0</span>;
+            <span class="kw">for </span>(i, j) <span class="kw">in </span>first_half_mut.iter().zip(second_half_mut) {
+                <span class="macro">assert_eq!</span>(i, j);
+                c += <span class="number">1</span>;
             }
-            <span class="macro">assert_eq!</span>(<span class="ident">c</span>, <span class="ident">sz</span> / <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(c, sz / <span class="number">2</span>);
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">allocations</span>() {
-        <span class="kw">let</span> <span class="ident">elements_per_alloc_unit</span> =
-            <span class="ident">allocation_granularity</span>() / <span class="ident">mem::size_of</span>::&lt;<span class="ident">u64</span>&gt;();
-        <span class="kw">let</span> <span class="ident">sizes</span> = [
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>allocations() {
+        <span class="kw">let </span>elements_per_alloc_unit =
+            allocation_granularity() / mem::size_of::&lt;u64&gt;();
+        <span class="kw">let </span>sizes = [
             <span class="number">8</span>,
-            <span class="ident">elements_per_alloc_unit</span> / <span class="number">2</span>,
-            <span class="ident">elements_per_alloc_unit</span>,
-            <span class="ident">elements_per_alloc_unit</span> * <span class="number">4</span>,
+            elements_per_alloc_unit / <span class="number">2</span>,
+            elements_per_alloc_unit,
+            elements_per_alloc_unit * <span class="number">4</span>,
         ];
-        <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">i</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">sizes</span> {
-            <span class="ident">test_alloc</span>(<span class="ident">i</span>);
+        <span class="kw">for </span><span class="kw-2">&amp;</span>i <span class="kw">in </span><span class="kw-2">&amp;</span>sizes {
+            test_alloc(i);
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">no_alloc_units_required</span>() {
-        <span class="comment">// Up to the allocation unit size we always need two allocation units</span>
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>no_alloc_units_required() {
+        <span class="comment">// Up to the allocation unit size we always need two allocation units
+        </span><span class="macro">assert_eq!</span>(
+            no_required_allocation_units(allocation_granularity() / <span class="number">4</span>),
+            <span class="number">2
+        </span>);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="ident">allocation_granularity</span>() / <span class="number">4</span>),
-            <span class="number">2</span>
-        );
+            no_required_allocation_units(allocation_granularity() / <span class="number">2</span>),
+            <span class="number">2
+        </span>);
+        <span class="macro">assert_eq!</span>(no_required_allocation_units(allocation_granularity()), <span class="number">2</span>);
+        <span class="comment">// For sizes larger than the allocation units we always round up to the
+        // next even number of allocation units:
+        </span><span class="macro">assert_eq!</span>(
+            no_required_allocation_units(allocation_granularity() + <span class="number">1</span>),
+            <span class="number">2
+        </span>);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="ident">allocation_granularity</span>() / <span class="number">2</span>),
-            <span class="number">2</span>
-        );
-        <span class="macro">assert_eq!</span>(<span class="ident">no_required_allocation_units</span>(<span class="ident">allocation_granularity</span>()), <span class="number">2</span>);
-        <span class="comment">// For sizes larger than the allocation units we always round up to the</span>
-        <span class="comment">// next even number of allocation units:</span>
+            no_required_allocation_units(<span class="number">2 </span>* allocation_granularity()),
+            <span class="number">2
+        </span>);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="ident">allocation_granularity</span>() + <span class="number">1</span>),
-            <span class="number">2</span>
-        );
+            no_required_allocation_units(<span class="number">3 </span>* allocation_granularity()),
+            <span class="number">4
+        </span>);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="number">2</span> * <span class="ident">allocation_granularity</span>()),
-            <span class="number">2</span>
-        );
+            no_required_allocation_units(<span class="number">4 </span>* allocation_granularity()),
+            <span class="number">4
+        </span>);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="number">3</span> * <span class="ident">allocation_granularity</span>()),
-            <span class="number">4</span>
-        );
-        <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="number">4</span> * <span class="ident">allocation_granularity</span>()),
-            <span class="number">4</span>
-        );
-        <span class="macro">assert_eq!</span>(
-            <span class="ident">no_required_allocation_units</span>(<span class="number">5</span> * <span class="ident">allocation_granularity</span>()),
-            <span class="number">6</span>
-        );
+            no_required_allocation_units(<span class="number">5 </span>* allocation_granularity()),
+            <span class="number">6
+        </span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="slice_deque" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="slice_deque" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -1150,15 +1150,15 @@
 <span id="1150">1150</span>
 <span id="1151">1151</span>
 <span id="1152">1152</span>
-</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Licensed under MIT license, or Apache 2 license,</span>
-<span class="comment">// at your option. Please see the LICENSE file</span>
-<span class="comment">// attached to this source distribution for details.</span>
+</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust
+//
+// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Licensed under MIT license, or Apache 2 license,
+// at your option. Please see the LICENSE file
+// attached to this source distribution for details.
 
-<span class="doccomment">/*!
+</span><span class="doccomment">/*!
 Header decoding
 
 This module takes care of decoding of the three vorbis headers:
@@ -1170,163 +1170,163 @@ This module takes care of decoding of the three vorbis headers:
 It builds only on the internal bitpacking layer and the internal
 huffman tree handling mod. Everything else about the headers is
 decoded in this mod.
-*/</span>
+*/
 
-<span class="kw">use</span> <span class="ident">std::error</span>;
-<span class="kw">use</span> <span class="ident">std::fmt</span>;
-<span class="kw">use</span> <span class="ident">::bitpacking::BitpackCursor</span>;
-<span class="kw">use</span> <span class="ident">::huffman_tree</span>::{<span class="ident">VorbisHuffmanTree</span>, <span class="ident">HuffmanError</span>};
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Cursor</span>, <span class="ident">ErrorKind</span>, <span class="ident">Read</span>, <span class="ident">Error</span>};
-<span class="kw">use</span> <span class="ident">byteorder</span>::{<span class="ident">ReadBytesExt</span>, <span class="ident">LittleEndian</span>};
-<span class="kw">use</span> <span class="ident">std::string::FromUtf8Error</span>;
-<span class="kw">use</span> <span class="ident">header_cached</span>::{<span class="ident">CachedBlocksizeDerived</span>, <span class="ident">compute_bark_map_cos_omega</span>};
+</span><span class="kw">use </span>std::error;
+<span class="kw">use </span>std::fmt;
+<span class="kw">use </span>::bitpacking::BitpackCursor;
+<span class="kw">use </span>::huffman_tree::{VorbisHuffmanTree, HuffmanError};
+<span class="kw">use </span>std::io::{Cursor, ErrorKind, Read, Error};
+<span class="kw">use </span>byteorder::{ReadBytesExt, LittleEndian};
+<span class="kw">use </span>std::string::FromUtf8Error;
+<span class="kw">use </span>header_cached::{CachedBlocksizeDerived, compute_bark_map_cos_omega};
 
-<span class="doccomment">/// Errors that can occur during Header decoding</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HeaderReadError</span> {
-	<span class="ident">EndOfPacket</span>,
-	<span class="doccomment">/// If the passed data don&#39;t start with the &quot;vorbis&quot;</span>
-	<span class="doccomment">/// capture pattern, this error is returned.</span>
-	<span class="ident">NotVorbisHeader</span>,
-	<span class="ident">UnsupportedVorbisVersion</span>,
-	<span class="doccomment">/// If the header violates the vorbis spec</span>
-	<span class="ident">HeaderBadFormat</span>,
-	<span class="doccomment">/// The given packet indeed seems to be a vorbis header,</span>
-	<span class="doccomment">/// but it looks like it is a different header type than</span>
-	<span class="doccomment">/// the function it was passed to.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// It is not guaranteed that the type is a valid header type.</span>
-	<span class="ident">HeaderBadType</span>(<span class="ident">u8</span>),
-	<span class="doccomment">/// The given packet does not seem to be a header as per vorbis spec,</span>
-	<span class="doccomment">/// instead it seems to be an audio packet.</span>
-	<span class="ident">HeaderIsAudio</span>,
-	<span class="ident">Utf8DecodeError</span>,
-	<span class="doccomment">/// If the needed memory isn&#39;t addressable by us</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// This error is returned if a calculation yielded a higher value for</span>
-	<span class="doccomment">/// an internal buffer size that doesn&#39;t fit into the platform&#39;s address range.</span>
-	<span class="doccomment">/// Note that if we &quot;simply&quot; encounter an allocation failure (OOM, etc),</span>
-	<span class="doccomment">/// we do what libstd does in these cases: crash.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// This error is not automatically an error of the passed data,</span>
-	<span class="doccomment">/// but rather is due to insufficient decoder hardware.</span>
-	<span class="ident">BufferNotAddressable</span>,
+<span class="doccomment">/// Errors that can occur during Header decoding
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="attribute">#[derive(PartialEq)]</span>
+<span class="kw">pub enum </span>HeaderReadError {
+	EndOfPacket,
+	<span class="doccomment">/// If the passed data don&#39;t start with the &quot;vorbis&quot;
+	/// capture pattern, this error is returned.
+	</span>NotVorbisHeader,
+	UnsupportedVorbisVersion,
+	<span class="doccomment">/// If the header violates the vorbis spec
+	</span>HeaderBadFormat,
+	<span class="doccomment">/// The given packet indeed seems to be a vorbis header,
+	/// but it looks like it is a different header type than
+	/// the function it was passed to.
+	///
+	/// It is not guaranteed that the type is a valid header type.
+	</span>HeaderBadType(u8),
+	<span class="doccomment">/// The given packet does not seem to be a header as per vorbis spec,
+	/// instead it seems to be an audio packet.
+	</span>HeaderIsAudio,
+	Utf8DecodeError,
+	<span class="doccomment">/// If the needed memory isn&#39;t addressable by us
+	///
+	/// This error is returned if a calculation yielded a higher value for
+	/// an internal buffer size that doesn&#39;t fit into the platform&#39;s address range.
+	/// Note that if we &quot;simply&quot; encounter an allocation failure (OOM, etc),
+	/// we do what libstd does in these cases: crash.
+	///
+	/// This error is not automatically an error of the passed data,
+	/// but rather is due to insufficient decoder hardware.
+	</span>BufferNotAddressable,
 }
 
-<span class="comment">// For the () error type returned by the bitpacking layer</span>
-<span class="comment">// TODO that type choice was a bit unfortunate,</span>
-<span class="comment">// perhaps one day fix this</span>
-<span class="kw">impl</span> <span class="ident">From</span>&lt;()&gt; <span class="kw">for</span> <span class="ident">HeaderReadError</span> {
-	<span class="kw">fn</span> <span class="ident">from</span>(<span class="kw">_</span> :()) -&gt; <span class="ident">HeaderReadError</span> {
-		<span class="ident">HeaderReadError::EndOfPacket</span>
+<span class="comment">// For the () error type returned by the bitpacking layer
+// TODO that type choice was a bit unfortunate,
+// perhaps one day fix this
+</span><span class="kw">impl </span>From&lt;()&gt; <span class="kw">for </span>HeaderReadError {
+	<span class="kw">fn </span>from(<span class="kw">_ </span>:()) -&gt; HeaderReadError {
+		HeaderReadError::EndOfPacket
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">HuffmanError</span>&gt; <span class="kw">for</span> <span class="ident">HeaderReadError</span> {
-	<span class="kw">fn</span> <span class="ident">from</span>(<span class="kw">_</span> :<span class="ident">HuffmanError</span>) -&gt; <span class="ident">HeaderReadError</span> {
-		<span class="ident">HeaderReadError::HeaderBadFormat</span>
+<span class="kw">impl </span>From&lt;HuffmanError&gt; <span class="kw">for </span>HeaderReadError {
+	<span class="kw">fn </span>from(<span class="kw">_ </span>:HuffmanError) -&gt; HeaderReadError {
+		HeaderReadError::HeaderBadFormat
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">Error</span>&gt; <span class="kw">for</span> <span class="ident">HeaderReadError</span> {
-	<span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span> :<span class="ident">Error</span>) -&gt; <span class="ident">HeaderReadError</span> {
-		<span class="kw">match</span> <span class="ident">err</span>.<span class="ident">kind</span>() {
-			<span class="ident">ErrorKind::UnexpectedEof</span> =&gt; <span class="ident">HeaderReadError::EndOfPacket</span>,
-			<span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Non EOF Error occured when reading from Cursor&lt;&amp;[u8]&gt;: {}&quot;</span>, <span class="ident">err</span>),
+<span class="kw">impl </span>From&lt;Error&gt; <span class="kw">for </span>HeaderReadError {
+	<span class="kw">fn </span>from(err :Error) -&gt; HeaderReadError {
+		<span class="kw">match </span>err.kind() {
+			ErrorKind::UnexpectedEof =&gt; HeaderReadError::EndOfPacket,
+			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Non EOF Error occured when reading from Cursor&lt;&amp;[u8]&gt;: {}&quot;</span>, err),
 		}
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">FromUtf8Error</span>&gt; <span class="kw">for</span> <span class="ident">HeaderReadError</span> {
-	<span class="kw">fn</span> <span class="ident">from</span>(<span class="kw">_</span> :<span class="ident">FromUtf8Error</span>) -&gt; <span class="ident">HeaderReadError</span> {
-		<span class="ident">HeaderReadError::Utf8DecodeError</span>
+<span class="kw">impl </span>From&lt;FromUtf8Error&gt; <span class="kw">for </span>HeaderReadError {
+	<span class="kw">fn </span>from(<span class="kw">_ </span>:FromUtf8Error) -&gt; HeaderReadError {
+		HeaderReadError::Utf8DecodeError
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">HeaderReadError</span> {}
+<span class="kw">impl </span>error::Error <span class="kw">for </span>HeaderReadError {}
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">HeaderReadError</span> {
-	<span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">fmt::Error</span>&gt; {
-		<span class="kw">let</span> <span class="ident">description</span> = <span class="kw">match</span> <span class="self">self</span> {
-			<span class="ident">HeaderReadError::EndOfPacket</span> =&gt; <span class="string">&quot;End of packet reached.&quot;</span>,
-			<span class="ident">HeaderReadError::NotVorbisHeader</span> =&gt; <span class="string">&quot;The packet is not a vorbis header&quot;</span>,
-			<span class="ident">HeaderReadError::UnsupportedVorbisVersion</span> =&gt; <span class="string">&quot;The vorbis version is not supported&quot;</span>,
-			<span class="ident">HeaderReadError::HeaderBadFormat</span> =&gt; <span class="string">&quot;Invalid header&quot;</span>,
-			<span class="ident">HeaderReadError::HeaderBadType</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;Invalid/unexpected header type&quot;</span>,
-			<span class="ident">HeaderReadError::HeaderIsAudio</span> =&gt; <span class="string">&quot;Packet seems to be audio&quot;</span>,
-			<span class="ident">HeaderReadError::Utf8DecodeError</span> =&gt; <span class="string">&quot;UTF-8 decoding error&quot;</span>,
-			<span class="ident">HeaderReadError::BufferNotAddressable</span> =&gt; <span class="string">&quot;Requested to create buffer of non-addressable size&quot;</span>,
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>HeaderReadError {
+	<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+		<span class="kw">let </span>description = <span class="kw">match </span><span class="self">self </span>{
+			HeaderReadError::EndOfPacket =&gt; <span class="string">&quot;End of packet reached.&quot;</span>,
+			HeaderReadError::NotVorbisHeader =&gt; <span class="string">&quot;The packet is not a vorbis header&quot;</span>,
+			HeaderReadError::UnsupportedVorbisVersion =&gt; <span class="string">&quot;The vorbis version is not supported&quot;</span>,
+			HeaderReadError::HeaderBadFormat =&gt; <span class="string">&quot;Invalid header&quot;</span>,
+			HeaderReadError::HeaderBadType(<span class="kw">_</span>) =&gt; <span class="string">&quot;Invalid/unexpected header type&quot;</span>,
+			HeaderReadError::HeaderIsAudio =&gt; <span class="string">&quot;Packet seems to be audio&quot;</span>,
+			HeaderReadError::Utf8DecodeError =&gt; <span class="string">&quot;UTF-8 decoding error&quot;</span>,
+			HeaderReadError::BufferNotAddressable =&gt; <span class="string">&quot;Requested to create buffer of non-addressable size&quot;</span>,
 		};
-		<span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">description</span>)
+		<span class="macro">write!</span>(fmt, <span class="string">&quot;{}&quot;</span>, description)
 	}
 }
 
-<span class="doccomment">/// Macro to convert values of any unsigned integral non-usize type to</span>
-<span class="doccomment">/// usize, and then check whether there had been any losses due to conversion.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If there were, it will return the BufferNotAddressable error.</span>
-<span class="macro">macro_rules!</span> <span class="ident">convert_to_usize</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">val</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">val_type</span>:<span class="ident">ident</span> ) =&gt; { {
-	<span class="kw">let</span> <span class="ident">converted</span> :<span class="ident">usize</span> = <span class="macro-nonterminal">$</span><span class="macro-nonterminal">val</span> <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">val</span> != <span class="ident">converted</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">val_type</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::BufferNotAddressable</span>));
+<span class="doccomment">/// Macro to convert values of any unsigned integral non-usize type to
+/// usize, and then check whether there had been any losses due to conversion.
+///
+/// If there were, it will return the BufferNotAddressable error.
+</span><span class="macro">macro_rules!</span> convert_to_usize {
+( <span class="macro-nonterminal">$val</span>:expr, <span class="macro-nonterminal">$val_type</span>:ident ) =&gt; { {
+	<span class="kw">let </span>converted :usize = <span class="macro-nonterminal">$val </span><span class="kw">as </span>usize;
+	<span class="kw">if </span><span class="macro-nonterminal">$val </span>!= converted <span class="kw">as </span><span class="macro-nonterminal">$val_type </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::BufferNotAddressable));
 	}
-	<span class="ident">converted</span>
+	converted
 }}
 }
 
-<span class="comment">// Internal function, tries to find out whether the</span>
-<span class="comment">// data returned by rdr belong to a vorbis header</span>
-<span class="comment">// On success it returns Some(n) with n as packet type</span>
-<span class="comment">// (you must check that n from 1,3,5)</span>
-<span class="macro">macro_rules!</span> <span class="ident">read_header_begin_body</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>:<span class="ident">expr</span> ) =&gt; { {
-	<span class="kw">let</span> <span class="ident">res</span> = <span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="kw">if</span> <span class="ident">res</span> &amp; <span class="number">1</span> == <span class="number">0</span> {
-		<span class="comment">// This is an audio packet per vorbis spec, if anything.</span>
-		<span class="comment">// (audio packets have their first bit set to 0,</span>
-		<span class="comment">// header packets have it set to 1)</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderIsAudio</span>));
+<span class="comment">// Internal function, tries to find out whether the
+// data returned by rdr belong to a vorbis header
+// On success it returns Some(n) with n as packet type
+// (you must check that n from 1,3,5)
+</span><span class="macro">macro_rules!</span> read_header_begin_body {
+( <span class="macro-nonterminal">$rdr</span>:expr ) =&gt; { {
+	<span class="kw">let </span>res = <span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8());
+	<span class="kw">if </span>res &amp; <span class="number">1 </span>== <span class="number">0 </span>{
+		<span class="comment">// This is an audio packet per vorbis spec, if anything.
+		// (audio packets have their first bit set to 0,
+		// header packets have it set to 1)
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderIsAudio));
 	}
-	<span class="kw">let</span> <span class="ident">is_vorbis</span> =
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x76</span> &amp;&amp; <span class="comment">// &#39;v&#39;</span>
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x6f</span> &amp;&amp; <span class="comment">// &#39;o&#39;</span>
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x72</span> &amp;&amp; <span class="comment">// &#39;r&#39;</span>
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x62</span> &amp;&amp; <span class="comment">// &#39;b&#39;</span>
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x69</span> &amp;&amp; <span class="comment">// &#39;i&#39;</span>
-		<span class="macro">try!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rdr</span>.<span class="ident">read_u8</span>()) == <span class="number">0x73</span>;   <span class="comment">// &#39;s&#39;</span>
-	<span class="kw">if</span> !<span class="ident">is_vorbis</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::NotVorbisHeader</span>));
+	<span class="kw">let </span>is_vorbis =
+		<span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x76 </span>&amp;&amp; <span class="comment">// &#39;v&#39;
+		</span><span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x6f </span>&amp;&amp; <span class="comment">// &#39;o&#39;
+		</span><span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x72 </span>&amp;&amp; <span class="comment">// &#39;r&#39;
+		</span><span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x62 </span>&amp;&amp; <span class="comment">// &#39;b&#39;
+		</span><span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x69 </span>&amp;&amp; <span class="comment">// &#39;i&#39;
+		</span><span class="macro">try!</span>(<span class="macro-nonterminal">$rdr</span>.read_u8()) == <span class="number">0x73</span>;   <span class="comment">// &#39;s&#39;
+	</span><span class="kw">if </span>!is_vorbis {
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::NotVorbisHeader));
 	}
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">res</span>);
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(res);
 }}
 }
-<span class="kw">fn</span> <span class="ident">read_header_begin</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u8</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="macro">read_header_begin_body!</span>(<span class="ident">rdr</span>)
+<span class="kw">fn </span>read_header_begin(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor) -&gt; <span class="prelude-ty">Result</span>&lt;u8, HeaderReadError&gt; {
+	<span class="macro">read_header_begin_body!</span>(rdr)
 }
-<span class="kw">fn</span> <span class="ident">read_header_begin_cursor</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">Cursor</span>&lt;<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u8</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="macro">read_header_begin_body!</span>(<span class="ident">rdr</span>)
+<span class="kw">fn </span>read_header_begin_cursor(rdr :<span class="kw-2">&amp;mut </span>Cursor&lt;<span class="kw-2">&amp;</span>[u8]&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;u8, HeaderReadError&gt; {
+	<span class="macro">read_header_begin_body!</span>(rdr)
 }
 
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_read_hdr_begin</span>() {
-	<span class="comment">// Only tests flawed header begins, correct headers</span>
-	<span class="comment">// are tested later by the test methods for the headers</span>
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_read_hdr_begin() {
+	<span class="comment">// Only tests flawed header begins, correct headers
+	// are tested later by the test methods for the headers
 
-	<span class="comment">// Flawed ident header (see char before the /**/)</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x01</span>, <span class="number">0x76</span>, <span class="number">0x6f</span>, <span class="number">0x72</span>,
-	<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x72</span>, <span class="comment">/**/</span> <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x02</span>,
+	// Flawed ident header (see char before the /**/)
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0x01</span>, <span class="number">0x76</span>, <span class="number">0x6f</span>, <span class="number">0x72</span>,
+	<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x72</span>, <span class="comment">/**/ </span><span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x02</span>,
 	<span class="number">0x44</span>, <span class="number">0xac</span>, <span class="number">0x00</span>,      <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,
 	<span class="number">0x80</span>, <span class="number">0xb5</span>, <span class="number">0x01</span>,      <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,
 	<span class="number">0xb8</span>, <span class="number">0x01</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rdr</span> :<span class="ident">BitpackCursor</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">read_header_begin</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>), <span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::NotVorbisHeader</span>));
+	<span class="kw">let </span><span class="kw-2">mut </span>rdr :BitpackCursor = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(read_header_begin(<span class="kw-2">&amp;mut </span>rdr), <span class="prelude-val">Err</span>(HeaderReadError::NotVorbisHeader));
 }
 
-<span class="doccomment">/// The set of the three Vorbis headers</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HeaderSet</span> = (<span class="ident">IdentHeader</span>, <span class="ident">CommentHeader</span>, <span class="ident">SetupHeader</span>);
+<span class="doccomment">/// The set of the three Vorbis headers
+</span><span class="kw">pub type </span>HeaderSet = (IdentHeader, CommentHeader, SetupHeader);
 
 <span class="doccomment">/**
 Representation for the identification header
@@ -1335,30 +1335,30 @@ The identification header is the first of the three
 headers inside each vorbis stream.
 
 It covers basic information about the stream.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IdentHeader</span> {
-	<span class="doccomment">/// The number of audio channels in the stream</span>
-	<span class="kw">pub</span> <span class="ident">audio_channels</span> :<span class="ident">u8</span>,
-	<span class="doccomment">/// The sample rate of the stream</span>
-	<span class="kw">pub</span> <span class="ident">audio_sample_rate</span> :<span class="ident">u32</span>,
-	<span class="doccomment">/// The maximum bit rate of the stream</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Note that this value is only a hint</span>
-	<span class="doccomment">/// and may be off by a large amount.</span>
-	<span class="kw">pub</span> <span class="ident">bitrate_maximum</span> :<span class="ident">i32</span>,
-	<span class="doccomment">/// The nominal bit rate of the stream</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Note that this value is only a hint</span>
-	<span class="doccomment">/// and may be off by a large amount.</span>
-	<span class="kw">pub</span> <span class="ident">bitrate_nominal</span> :<span class="ident">i32</span>,
-	<span class="doccomment">/// The minimum bit rate of the stream</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Note that this value is only a hint</span>
-	<span class="doccomment">/// and may be off by a large amount.</span>
-	<span class="kw">pub</span> <span class="ident">bitrate_minimum</span> :<span class="ident">i32</span>,
-	<span class="kw">pub</span> <span class="ident">blocksize_0</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">blocksize_1</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">cached_bs_derived</span> :[<span class="ident">CachedBlocksizeDerived</span>; <span class="number">2</span>],
+*/
+</span><span class="kw">pub struct </span>IdentHeader {
+	<span class="doccomment">/// The number of audio channels in the stream
+	</span><span class="kw">pub </span>audio_channels :u8,
+	<span class="doccomment">/// The sample rate of the stream
+	</span><span class="kw">pub </span>audio_sample_rate :u32,
+	<span class="doccomment">/// The maximum bit rate of the stream
+	///
+	/// Note that this value is only a hint
+	/// and may be off by a large amount.
+	</span><span class="kw">pub </span>bitrate_maximum :i32,
+	<span class="doccomment">/// The nominal bit rate of the stream
+	///
+	/// Note that this value is only a hint
+	/// and may be off by a large amount.
+	</span><span class="kw">pub </span>bitrate_nominal :i32,
+	<span class="doccomment">/// The minimum bit rate of the stream
+	///
+	/// Note that this value is only a hint
+	/// and may be off by a large amount.
+	</span><span class="kw">pub </span>bitrate_minimum :i32,
+	<span class="kw">pub </span>blocksize_0 :u8,
+	<span class="kw">pub </span>blocksize_1 :u8,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) cached_bs_derived :[CachedBlocksizeDerived; <span class="number">2</span>],
 }
 
 <span class="doccomment">/**
@@ -1368,63 +1368,63 @@ If it returns Err(sth) when being called with the first packet in a stream,
 the whole stream is to be considered undecodable as per the Vorbis spec.
 The function returns Err(`HeaderReadError::HeaderBadType`) if the header type
 doesn&#39;t match the ident header.
-*/</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_header_ident</span>(<span class="ident">packet</span> :<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">IdentHeader</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rdr</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">packet</span>);
-	<span class="kw">let</span> <span class="ident">hd_id</span> = <span class="macro">try!</span>(<span class="ident">read_header_begin</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>));
-	<span class="kw">if</span> <span class="ident">hd_id</span> != <span class="number">1</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadType</span>(<span class="ident">hd_id</span>)));
+*/
+</span><span class="kw">pub fn </span>read_header_ident(packet :<span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;IdentHeader, HeaderReadError&gt; {
+	<span class="kw">let </span><span class="kw-2">mut </span>rdr = BitpackCursor::new(packet);
+	<span class="kw">let </span>hd_id = <span class="macro">try!</span>(read_header_begin(<span class="kw-2">&amp;mut </span>rdr));
+	<span class="kw">if </span>hd_id != <span class="number">1 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadType(hd_id)));
 	}
-	<span class="kw">let</span> <span class="ident">vorbis_version</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u32</span>());
-	<span class="kw">if</span> <span class="ident">vorbis_version</span> != <span class="number">0</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::UnsupportedVorbisVersion</span>));
+	<span class="kw">let </span>vorbis_version = <span class="macro">try!</span>(rdr.read_u32());
+	<span class="kw">if </span>vorbis_version != <span class="number">0 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::UnsupportedVorbisVersion));
 	}
-	<span class="kw">let</span> <span class="ident">audio_channels</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="kw">let</span> <span class="ident">audio_sample_rate</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u32</span>());
-	<span class="kw">let</span> <span class="ident">bitrate_maximum</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_i32</span>());
-	<span class="kw">let</span> <span class="ident">bitrate_nominal</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_i32</span>());
-	<span class="kw">let</span> <span class="ident">bitrate_minimum</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_i32</span>());
-	<span class="kw">let</span> <span class="ident">blocksize_0</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-	<span class="kw">let</span> <span class="ident">blocksize_1</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-	<span class="kw">let</span> <span class="ident">framing</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="kw">if</span> <span class="ident">blocksize_0</span> &lt; <span class="number">6</span> || <span class="ident">blocksize_0</span> &gt; <span class="number">13</span> ||
-			<span class="ident">blocksize_1</span> &lt; <span class="number">6</span> || <span class="ident">blocksize_1</span> &gt; <span class="number">13</span> ||
-			(<span class="ident">framing</span> != <span class="number">1</span>) || <span class="ident">blocksize_0</span> &gt; <span class="ident">blocksize_1</span> ||
-			<span class="ident">audio_channels</span> == <span class="number">0</span> || <span class="ident">audio_sample_rate</span> == <span class="number">0</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span>audio_channels = <span class="macro">try!</span>(rdr.read_u8());
+	<span class="kw">let </span>audio_sample_rate = <span class="macro">try!</span>(rdr.read_u32());
+	<span class="kw">let </span>bitrate_maximum = <span class="macro">try!</span>(rdr.read_i32());
+	<span class="kw">let </span>bitrate_nominal = <span class="macro">try!</span>(rdr.read_i32());
+	<span class="kw">let </span>bitrate_minimum = <span class="macro">try!</span>(rdr.read_i32());
+	<span class="kw">let </span>blocksize_0 = <span class="macro">try!</span>(rdr.read_u4());
+	<span class="kw">let </span>blocksize_1 = <span class="macro">try!</span>(rdr.read_u4());
+	<span class="kw">let </span>framing = <span class="macro">try!</span>(rdr.read_u8());
+	<span class="kw">if </span>blocksize_0 &lt; <span class="number">6 </span>|| blocksize_0 &gt; <span class="number">13 </span>||
+			blocksize_1 &lt; <span class="number">6 </span>|| blocksize_1 &gt; <span class="number">13 </span>||
+			(framing != <span class="number">1</span>) || blocksize_0 &gt; blocksize_1 ||
+			audio_channels == <span class="number">0 </span>|| audio_sample_rate == <span class="number">0 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">hdr</span> :<span class="ident">IdentHeader</span> = <span class="ident">IdentHeader</span> {
-		<span class="ident">audio_channels</span>,
-		<span class="ident">audio_sample_rate</span>,
-		<span class="ident">bitrate_maximum</span>,
-		<span class="ident">bitrate_nominal</span>,
-		<span class="ident">bitrate_minimum</span>,
-		<span class="ident">blocksize_0</span>,
-		<span class="ident">blocksize_1</span>,
-		<span class="ident">cached_bs_derived</span> : [
-			<span class="ident">CachedBlocksizeDerived::from_blocksize</span>(<span class="ident">blocksize_0</span>),
-			<span class="ident">CachedBlocksizeDerived::from_blocksize</span>(<span class="ident">blocksize_1</span>),
+	<span class="kw">let </span>hdr :IdentHeader = IdentHeader {
+		audio_channels,
+		audio_sample_rate,
+		bitrate_maximum,
+		bitrate_nominal,
+		bitrate_minimum,
+		blocksize_0,
+		blocksize_1,
+		cached_bs_derived : [
+			CachedBlocksizeDerived::from_blocksize(blocksize_0),
+			CachedBlocksizeDerived::from_blocksize(blocksize_1),
 		],
 	};
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">hdr</span>);
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(hdr);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_read_header_ident</span>() {
-	<span class="comment">// Valid ident header</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x01</span>, <span class="number">0x76</span>, <span class="number">0x6f</span>, <span class="number">0x72</span>,
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_read_header_ident() {
+	<span class="comment">// Valid ident header
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0x01</span>, <span class="number">0x76</span>, <span class="number">0x6f</span>, <span class="number">0x72</span>,
 	<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x73</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x02</span>,
 	<span class="number">0x44</span>, <span class="number">0xac</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,
 	<span class="number">0x80</span>, <span class="number">0xb5</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,
 	<span class="number">0xb8</span>, <span class="number">0x01</span>];
-	<span class="kw">let</span> <span class="ident">hdr</span> = <span class="ident">read_header_ident</span>(<span class="ident">test_arr</span>).<span class="ident">unwrap</span>();
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">audio_channels</span>, <span class="number">2</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">audio_sample_rate</span>, <span class="number">0x0000ac44</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">bitrate_maximum</span>, <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">bitrate_nominal</span>, <span class="number">0x0001b580</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">bitrate_minimum</span>, <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">blocksize_0</span>, <span class="number">8</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">hdr</span>.<span class="ident">blocksize_1</span>, <span class="number">11</span>);
+	<span class="kw">let </span>hdr = read_header_ident(test_arr).unwrap();
+	<span class="macro">assert_eq!</span>(hdr.audio_channels, <span class="number">2</span>);
+	<span class="macro">assert_eq!</span>(hdr.audio_sample_rate, <span class="number">0x0000ac44</span>);
+	<span class="macro">assert_eq!</span>(hdr.bitrate_maximum, <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(hdr.bitrate_nominal, <span class="number">0x0001b580</span>);
+	<span class="macro">assert_eq!</span>(hdr.bitrate_minimum, <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(hdr.blocksize_0, <span class="number">8</span>);
+	<span class="macro">assert_eq!</span>(hdr.blocksize_1, <span class="number">11</span>);
 }
 
 <span class="doccomment">/**
@@ -1436,16 +1436,16 @@ headers inside each vorbis stream.
 It contains text comment metadata
 about the stream, encoded as key-value pairs,
 and the vendor name.
-*/</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CommentHeader</span> {
-	<span class="doccomment">/// An identification string of the</span>
-	<span class="doccomment">/// software/library that encoded</span>
-	<span class="doccomment">/// the stream.</span>
-	<span class="kw">pub</span> <span class="ident">vendor</span> :<span class="ident">String</span>,
-	<span class="doccomment">/// A key-value list of the comments</span>
-	<span class="doccomment">/// attached to the stream.</span>
-	<span class="kw">pub</span> <span class="ident">comment_list</span> :<span class="ident">Vec</span>&lt;(<span class="ident">String</span>, <span class="ident">String</span>)&gt;,
+*/
+</span><span class="attribute">#[derive(Clone, PartialEq, Eq, Hash, Debug)]</span>
+<span class="kw">pub struct </span>CommentHeader {
+	<span class="doccomment">/// An identification string of the
+	/// software/library that encoded
+	/// the stream.
+	</span><span class="kw">pub </span>vendor :String,
+	<span class="doccomment">/// A key-value list of the comments
+	/// attached to the stream.
+	</span><span class="kw">pub </span>comment_list :Vec&lt;(String, String)&gt;,
 }
 
 <span class="doccomment">/**
@@ -1456,257 +1456,257 @@ You should call this function with the second packet in the stream.
 The function does not check whether the comment field names consist
 of characters `0x20` through `0x7D` (`0x3D` excluded), as the vorbis
 spec requires.
-*/</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_header_comment</span>(<span class="ident">packet</span> :<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">CommentHeader</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rdr</span> = <span class="ident">Cursor::new</span>(<span class="ident">packet</span>);
-	<span class="kw">let</span> <span class="ident">hd_id</span> = <span class="macro">try!</span>(<span class="ident">read_header_begin_cursor</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>));
-	<span class="kw">if</span> <span class="ident">hd_id</span> != <span class="number">3</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadType</span>(<span class="ident">hd_id</span>)));
+*/
+</span><span class="kw">pub fn </span>read_header_comment(packet :<span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;CommentHeader, HeaderReadError&gt; {
+	<span class="kw">let </span><span class="kw-2">mut </span>rdr = Cursor::new(packet);
+	<span class="kw">let </span>hd_id = <span class="macro">try!</span>(read_header_begin_cursor(<span class="kw-2">&amp;mut </span>rdr));
+	<span class="kw">if </span>hd_id != <span class="number">3 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadType(hd_id)));
 	}
-	<span class="comment">// First read the vendor string</span>
-	<span class="kw">let</span> <span class="ident">vendor_length</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;()) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vendor_buf</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">vendor_length</span>]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.</span>
-	<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="ident">vendor_buf</span>));
-	<span class="kw">let</span> <span class="ident">vendor</span> = <span class="macro">try!</span>(<span class="ident">String::from_utf8</span>(<span class="ident">vendor_buf</span>));
+	<span class="comment">// First read the vendor string
+	</span><span class="kw">let </span>vendor_length = <span class="macro">try!</span>(rdr.read_u32::&lt;LittleEndian&gt;()) <span class="kw">as </span>usize;
+	<span class="kw">let </span><span class="kw-2">mut </span>vendor_buf = <span class="macro">vec!</span>[<span class="number">0</span>; vendor_length]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.
+	</span><span class="macro">try!</span>(rdr.read_exact(<span class="kw-2">&amp;mut </span>vendor_buf));
+	<span class="kw">let </span>vendor = <span class="macro">try!</span>(String::from_utf8(vendor_buf));
 
-	<span class="comment">// Now read the comments</span>
-	<span class="kw">let</span> <span class="ident">comment_count</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;()) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">comment_list</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">comment_count</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">comment_count</span> {
-		<span class="kw">let</span> <span class="ident">comment_length</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;()) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">comment_buf</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">comment_length</span>]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.</span>
-		<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="ident">comment_buf</span>));
-		<span class="kw">let</span> <span class="ident">comment</span> = <span class="kw">match</span> <span class="ident">String::from_utf8</span>(<span class="ident">comment_buf</span>) {
-			<span class="prelude-val">Ok</span>(<span class="ident">comment</span>) =&gt; <span class="ident">comment</span>,
-			<span class="comment">// Uncomment for closer compliance with the spec.</span>
-			<span class="comment">// The spec explicitly states that the comment entries</span>
-			<span class="comment">// should be UTF-8 formatted, however it seems that other</span>
-			<span class="comment">// decoder libraries tolerate non-UTF-8 formatted strings</span>
-			<span class="comment">// in comments. This has led to some files circulating</span>
-			<span class="comment">// with such errors inside. If we deny to decode such files,</span>
-			<span class="comment">// lewton would be the odd one out. Thus we just</span>
-			<span class="comment">// gracefully ignore them.</span>
-			<span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
+	<span class="comment">// Now read the comments
+	</span><span class="kw">let </span>comment_count = <span class="macro">try!</span>(rdr.read_u32::&lt;LittleEndian&gt;()) <span class="kw">as </span>usize;
+	<span class="kw">let </span><span class="kw-2">mut </span>comment_list = Vec::with_capacity(comment_count);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. comment_count {
+		<span class="kw">let </span>comment_length = <span class="macro">try!</span>(rdr.read_u32::&lt;LittleEndian&gt;()) <span class="kw">as </span>usize;
+		<span class="kw">let </span><span class="kw-2">mut </span>comment_buf = <span class="macro">vec!</span>[<span class="number">0</span>; comment_length]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.
+		</span><span class="macro">try!</span>(rdr.read_exact(<span class="kw-2">&amp;mut </span>comment_buf));
+		<span class="kw">let </span>comment = <span class="kw">match </span>String::from_utf8(comment_buf) {
+			<span class="prelude-val">Ok</span>(comment) =&gt; comment,
+			<span class="comment">// Uncomment for closer compliance with the spec.
+			// The spec explicitly states that the comment entries
+			// should be UTF-8 formatted, however it seems that other
+			// decoder libraries tolerate non-UTF-8 formatted strings
+			// in comments. This has led to some files circulating
+			// with such errors inside. If we deny to decode such files,
+			// lewton would be the odd one out. Thus we just
+			// gracefully ignore them.
+			</span><span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
 		};
-		<span class="kw">let</span> <span class="ident">eq_idx</span> = <span class="kw">match</span> <span class="ident">comment</span>.<span class="ident">find</span>(<span class="string">&quot;=&quot;</span>) {
-			<span class="prelude-val">Some</span>(<span class="ident">k</span>) =&gt; <span class="ident">k</span>,
-			<span class="comment">// Uncomment for closer compliance with the spec.</span>
-			<span class="comment">// It appears that some ogg files have fields without a = sign in the comments.</span>
-			<span class="comment">// Well there is not much we can do but gracefully ignore their stuff.</span>
-			<span class="prelude-val">None</span> =&gt; <span class="kw">continue</span> <span class="comment">// try!(Err(HeaderReadError::HeaderBadFormat))</span>
-		};
-		<span class="kw">let</span> (<span class="ident">key_eq</span>, <span class="ident">val</span>) = <span class="ident">comment</span>.<span class="ident">split_at</span>(<span class="ident">eq_idx</span> + <span class="number">1</span>);
-		<span class="kw">let</span> (<span class="ident">key</span>, <span class="kw">_</span>) = <span class="ident">key_eq</span>.<span class="ident">split_at</span>(<span class="ident">eq_idx</span>);
-		<span class="ident">comment_list</span>.<span class="ident">push</span>((<span class="ident">String::from</span>(<span class="ident">key</span>), <span class="ident">String::from</span>(<span class="ident">val</span>)));
+		<span class="kw">let </span>eq_idx = <span class="kw">match </span>comment.find(<span class="string">&quot;=&quot;</span>) {
+			<span class="prelude-val">Some</span>(k) =&gt; k,
+			<span class="comment">// Uncomment for closer compliance with the spec.
+			// It appears that some ogg files have fields without a = sign in the comments.
+			// Well there is not much we can do but gracefully ignore their stuff.
+			</span><span class="prelude-val">None </span>=&gt; <span class="kw">continue </span><span class="comment">// try!(Err(HeaderReadError::HeaderBadFormat))
+		</span>};
+		<span class="kw">let </span>(key_eq, val) = comment.split_at(eq_idx + <span class="number">1</span>);
+		<span class="kw">let </span>(key, <span class="kw">_</span>) = key_eq.split_at(eq_idx);
+		comment_list.push((String::from(key), String::from(val)));
 	}
-	<span class="kw">let</span> <span class="ident">framing</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="kw">if</span> <span class="ident">framing</span> != <span class="number">1</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span>framing = <span class="macro">try!</span>(rdr.read_u8());
+	<span class="kw">if </span>framing != <span class="number">1 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">hdr</span> :<span class="ident">CommentHeader</span> = <span class="ident">CommentHeader</span> {
-		<span class="ident">vendor</span>,
-		<span class="ident">comment_list</span>,
+	<span class="kw">let </span>hdr :CommentHeader = CommentHeader {
+		vendor,
+		comment_list,
 	};
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">hdr</span>);
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(hdr);
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Codebook</span> {
-	<span class="kw">pub</span> <span class="ident">codebook_dimensions</span> :<span class="ident">u16</span>,
-	<span class="kw">pub</span> <span class="ident">codebook_entries</span> :<span class="ident">u32</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Codebook {
+	<span class="kw">pub </span>codebook_dimensions :u16,
+	<span class="kw">pub </span>codebook_entries :u32,
 
-	<span class="comment">// None if codebook_lookup_type == 0</span>
-	<span class="kw">pub</span> <span class="ident">codebook_vq_lookup_vec</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;&gt;,
+	<span class="comment">// None if codebook_lookup_type == 0
+	</span><span class="kw">pub </span>codebook_vq_lookup_vec :<span class="prelude-ty">Option</span>&lt;Vec&lt;f32&gt;&gt;,
 
-	<span class="kw">pub</span> <span class="ident">codebook_huffman_tree</span> :<span class="ident">VorbisHuffmanTree</span>,
+	<span class="kw">pub </span>codebook_huffman_tree :VorbisHuffmanTree,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Residue</span> {
-	<span class="kw">pub</span> <span class="ident">residue_type</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">residue_begin</span> :<span class="ident">u32</span>,
-	<span class="kw">pub</span> <span class="ident">residue_end</span> :<span class="ident">u32</span>,
-	<span class="kw">pub</span> <span class="ident">residue_partition_size</span> :<span class="ident">u32</span>,
-	<span class="kw">pub</span> <span class="ident">residue_classifications</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">residue_classbook</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">residue_books</span> :<span class="ident">Vec</span>&lt;<span class="ident">ResidueBook</span>&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Residue {
+	<span class="kw">pub </span>residue_type :u8,
+	<span class="kw">pub </span>residue_begin :u32,
+	<span class="kw">pub </span>residue_end :u32,
+	<span class="kw">pub </span>residue_partition_size :u32,
+	<span class="kw">pub </span>residue_classifications :u8,
+	<span class="kw">pub </span>residue_classbook :u8,
+	<span class="kw">pub </span>residue_books :Vec&lt;ResidueBook&gt;,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Mapping</span> {
-	<span class="kw">pub</span> <span class="ident">mapping_submaps</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">mapping_magnitudes</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">mapping_angles</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">mapping_mux</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">mapping_submap_floors</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">mapping_submap_residues</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Mapping {
+	<span class="kw">pub </span>mapping_submaps :u8,
+	<span class="kw">pub </span>mapping_magnitudes :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>mapping_angles :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>mapping_mux :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>mapping_submap_floors :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>mapping_submap_residues :Vec&lt;u8&gt;,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ModeInfo</span> {
-	<span class="kw">pub</span> <span class="ident">mode_blockflag</span> :<span class="ident">bool</span>,
-	<span class="kw">pub</span> <span class="ident">mode_mapping</span> :<span class="ident">u8</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ModeInfo {
+	<span class="kw">pub </span>mode_blockflag :bool,
+	<span class="kw">pub </span>mode_mapping :u8,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum</span> <span class="ident">Floor</span> {
-	<span class="ident">TypeZero</span>(<span class="ident">FloorTypeZero</span>),
-	<span class="ident">TypeOne</span>(<span class="ident">FloorTypeOne</span>),
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>Floor {
+	TypeZero(FloorTypeZero),
+	TypeOne(FloorTypeOne),
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">FloorTypeZero</span> {
-	<span class="kw">pub</span> <span class="ident">floor0_order</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_rate</span> :<span class="ident">u16</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_bark_map_size</span> :<span class="ident">u16</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_amplitude_bits</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_amplitude_offset</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_number_of_books</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">floor0_book_list</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">cached_bark_cos_omega</span> :[<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;; <span class="number">2</span>],
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>FloorTypeZero {
+	<span class="kw">pub </span>floor0_order :u8,
+	<span class="kw">pub </span>floor0_rate :u16,
+	<span class="kw">pub </span>floor0_bark_map_size :u16,
+	<span class="kw">pub </span>floor0_amplitude_bits :u8,
+	<span class="kw">pub </span>floor0_amplitude_offset :u8,
+	<span class="kw">pub </span>floor0_number_of_books :u8,
+	<span class="kw">pub </span>floor0_book_list :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>cached_bark_cos_omega :[Vec&lt;f32&gt;; <span class="number">2</span>],
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">FloorTypeOne</span> {
-	<span class="kw">pub</span> <span class="ident">floor1_multiplier</span> :<span class="ident">u8</span>,
-	<span class="kw">pub</span> <span class="ident">floor1_partition_class</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_class_dimensions</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_class_subclasses</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_subclass_books</span> :<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_class_masterbooks</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_x_list</span> :<span class="ident">Vec</span>&lt;<span class="ident">u32</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">floor1_x_list_sorted</span> :<span class="ident">Vec</span>&lt;(<span class="ident">usize</span>, <span class="ident">u32</span>)&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>FloorTypeOne {
+	<span class="kw">pub </span>floor1_multiplier :u8,
+	<span class="kw">pub </span>floor1_partition_class :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>floor1_class_dimensions :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>floor1_class_subclasses :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>floor1_subclass_books :Vec&lt;Vec&lt;i16&gt;&gt;,
+	<span class="kw">pub </span>floor1_class_masterbooks :Vec&lt;u8&gt;,
+	<span class="kw">pub </span>floor1_x_list :Vec&lt;u32&gt;,
+	<span class="kw">pub </span>floor1_x_list_sorted :Vec&lt;(usize, u32)&gt;,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ResidueBook</span> {
-	<span class="ident">vals_used</span> :<span class="ident">u8</span>,
-	<span class="ident">val_i</span> :[<span class="ident">u8</span>; <span class="number">8</span>],
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ResidueBook {
+	vals_used :u8,
+	val_i :[u8; <span class="number">8</span>],
 }
 
-<span class="kw">impl</span> <span class="ident">ResidueBook</span> {
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_val</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">i</span> :<span class="ident">u8</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u8</span>&gt; {
-		<span class="kw">if</span> <span class="ident">i</span> &gt;= <span class="number">8</span> {
-			<span class="comment">// This is a precondition...</span>
-			<span class="macro">panic!</span>(<span class="string">&quot;Tried to get ResidueBook value out of bounds (index = {})&quot;</span>,
-				<span class="ident">i</span>);
+<span class="kw">impl </span>ResidueBook {
+	<span class="kw">pub fn </span>get_val(<span class="kw-2">&amp;</span><span class="self">self</span>, i :u8) -&gt; <span class="prelude-ty">Option</span>&lt;u8&gt; {
+		<span class="kw">if </span>i &gt;= <span class="number">8 </span>{
+			<span class="comment">// This is a precondition...
+			</span><span class="macro">panic!</span>(<span class="string">&quot;Tried to get ResidueBook value out of bounds (index = {})&quot;</span>,
+				i);
 		}
-		<span class="kw">return</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">vals_used</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="ident">i</span>) &gt; <span class="number">0</span> {
-			<span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">val_i</span>[<span class="ident">i</span> <span class="kw">as</span> <span class="ident">usize</span>])
-		} <span class="kw">else</span> {
-			<span class="prelude-val">None</span>
-		};
+		<span class="kw">return if </span><span class="self">self</span>.vals_used &amp; (<span class="number">1 </span>&lt;&lt; i) &gt; <span class="number">0 </span>{
+			<span class="prelude-val">Some</span>(<span class="self">self</span>.val_i[i <span class="kw">as </span>usize])
+		} <span class="kw">else </span>{
+			<span class="prelude-val">None
+		</span>};
 	}
-	<span class="doccomment">/// Reads the `ResidueBook` from a `BitpackCursor`.</span>
-	<span class="kw">fn</span> <span class="ident">read_book</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>,
-			<span class="ident">vals_used</span> :<span class="ident">u8</span>, <span class="ident">codebooks</span> :<span class="kw-2">&amp;</span>[<span class="ident">Codebook</span>])
-			-&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">HeaderReadError</span>&gt; {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">val_i</span> :[<span class="ident">u8</span>; <span class="number">8</span>] = [<span class="number">0</span>; <span class="number">8</span>];
-		<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="number">7</span> {
-			<span class="kw">if</span> <span class="ident">vals_used</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="ident">i</span>) == <span class="number">0</span> {
+	<span class="doccomment">/// Reads the `ResidueBook` from a `BitpackCursor`.
+	</span><span class="kw">fn </span>read_book(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor,
+			vals_used :u8, codebooks :<span class="kw-2">&amp;</span>[Codebook])
+			-&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, HeaderReadError&gt; {
+		<span class="kw">let </span><span class="kw-2">mut </span>val_i :[u8; <span class="number">8</span>] = [<span class="number">0</span>; <span class="number">8</span>];
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. <span class="number">7 </span>{
+			<span class="kw">if </span>vals_used &amp; (<span class="number">1 </span>&lt;&lt; i) == <span class="number">0 </span>{
 				<span class="kw">continue</span>;
 			}
-			<span class="kw">let</span> <span class="ident">val_entry</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-			<span class="kw">if</span> <span class="kw">match</span> <span class="ident">codebooks</span>.<span class="ident">get</span>(<span class="ident">val_entry</span> <span class="kw">as</span> <span class="ident">usize</span>) {
-				<span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; <span class="ident">v</span>.<span class="ident">codebook_vq_lookup_vec</span>.<span class="ident">is_none</span>(),
-				<span class="prelude-val">None</span> =&gt; <span class="bool-val">true</span>,
+			<span class="kw">let </span>val_entry = <span class="macro">try!</span>(rdr.read_u8());
+			<span class="kw">if match </span>codebooks.get(val_entry <span class="kw">as </span>usize) {
+				<span class="prelude-val">Some</span>(v) =&gt; v.codebook_vq_lookup_vec.is_none(),
+				<span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
 			} {
-				<span class="comment">// Both of the cases are forbidden by spec</span>
-				<span class="comment">// (the codebook being out of bounds, or</span>
-				<span class="comment">// not having a value mapping)</span>
-				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>))
+				<span class="comment">// Both of the cases are forbidden by spec
+				// (the codebook being out of bounds, or
+				// not having a value mapping)
+				</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat))
 			}
-			<span class="ident">val_i</span>[<span class="ident">i</span>] = <span class="ident">val_entry</span>;
+			val_i[i] = val_entry;
 		}
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">ResidueBook</span> { <span class="ident">vals_used</span>, <span class="ident">val_i</span> });
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(ResidueBook { vals_used, val_i });
 	}
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SetupHeader</span> {
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">codebooks</span> :<span class="ident">Vec</span>&lt;<span class="ident">Codebook</span>&gt;,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">floors</span> :<span class="ident">Vec</span>&lt;<span class="ident">Floor</span>&gt;,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">residues</span> :<span class="ident">Vec</span>&lt;<span class="ident">Residue</span>&gt;,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">mappings</span> :<span class="ident">Vec</span>&lt;<span class="ident">Mapping</span>&gt;,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">modes</span> :<span class="ident">Vec</span>&lt;<span class="ident">ModeInfo</span>&gt;,
+<span class="kw">pub struct </span>SetupHeader {
+	<span class="kw">pub</span>(<span class="kw">crate</span>) codebooks :Vec&lt;Codebook&gt;,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) floors :Vec&lt;Floor&gt;,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) residues :Vec&lt;Residue&gt;,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) mappings :Vec&lt;Mapping&gt;,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) modes :Vec&lt;ModeInfo&gt;,
 }
 
-<span class="kw">struct</span> <span class="ident">CodebookVqLookup</span> {
-	<span class="ident">codebook_lookup_type</span> :<span class="ident">u8</span>,
-	<span class="ident">codebook_minimum_value</span> :<span class="ident">f32</span>,
-	<span class="ident">codebook_delta_value</span> :<span class="ident">f32</span>,
-	<span class="ident">codebook_sequence_p</span> :<span class="ident">bool</span>,
-	<span class="ident">codebook_multiplicands</span> :<span class="ident">Vec</span>&lt;<span class="ident">u32</span>&gt;,
+<span class="kw">struct </span>CodebookVqLookup {
+	codebook_lookup_type :u8,
+	codebook_minimum_value :f32,
+	codebook_delta_value :f32,
+	codebook_sequence_p :bool,
+	codebook_multiplicands :Vec&lt;u32&gt;,
 }
 
-<span class="doccomment">/// Vector value decode for lookup</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Prepares the VQ context vectors for later lookup</span>
-<span class="doccomment">/// by the codebook abstraction layer.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Returns `codebook_entries` many vectors,</span>
-<span class="doccomment">/// each being `codebook_dimensions` scalars wide),</span>
-<span class="doccomment">/// all stored in one Vec.</span>
-<span class="kw">fn</span> <span class="ident">lookup_vec_val_decode</span>(<span class="ident">lup</span> :<span class="kw-2">&amp;</span><span class="ident">CodebookVqLookup</span>, <span class="ident">codebook_entries</span> :<span class="ident">u32</span>, <span class="ident">codebook_dimensions</span> :<span class="ident">u16</span>) -&gt; <span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt; {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value_vectors</span> = <span class="ident">Vec::with_capacity</span>(
-		<span class="ident">codebook_entries</span> <span class="kw">as</span> <span class="ident">usize</span> * <span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">if</span> <span class="ident">lup</span>.<span class="ident">codebook_lookup_type</span> == <span class="number">1</span> {
-		<span class="kw">let</span> <span class="ident">codebook_lookup_values</span> = <span class="ident">lup</span>.<span class="ident">codebook_multiplicands</span>.<span class="ident">len</span>();
-		<span class="kw">for</span> <span class="ident">lookup_offset</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_entries</span> {
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> = <span class="number">0.</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">index_divisor</span> = <span class="number">1</span>;
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_dimensions</span> {
-				<span class="kw">let</span> <span class="ident">multiplicand_offset</span> = (<span class="ident">lookup_offset</span> / <span class="ident">index_divisor</span> <span class="kw">as</span> <span class="ident">u32</span>) <span class="kw">as</span> <span class="ident">usize</span> %
-					<span class="ident">codebook_lookup_values</span>;
-				<span class="kw">let</span> <span class="ident">vec_elem</span> = <span class="ident">lup</span>.<span class="ident">codebook_multiplicands</span>[<span class="ident">multiplicand_offset</span>] <span class="kw">as</span> <span class="ident">f32</span> *
-					<span class="ident">lup</span>.<span class="ident">codebook_delta_value</span> + <span class="ident">lup</span>.<span class="ident">codebook_minimum_value</span> + <span class="ident">last</span>;
-				<span class="kw">if</span> <span class="ident">lup</span>.<span class="ident">codebook_sequence_p</span> {
-					<span class="ident">last</span> = <span class="ident">vec_elem</span>;
+<span class="doccomment">/// Vector value decode for lookup
+///
+/// Prepares the VQ context vectors for later lookup
+/// by the codebook abstraction layer.
+///
+/// Returns `codebook_entries` many vectors,
+/// each being `codebook_dimensions` scalars wide),
+/// all stored in one Vec.
+</span><span class="kw">fn </span>lookup_vec_val_decode(lup :<span class="kw-2">&amp;</span>CodebookVqLookup, codebook_entries :u32, codebook_dimensions :u16) -&gt; Vec&lt;f32&gt; {
+	<span class="kw">let </span><span class="kw-2">mut </span>value_vectors = Vec::with_capacity(
+		codebook_entries <span class="kw">as </span>usize * codebook_dimensions <span class="kw">as </span>usize);
+	<span class="kw">if </span>lup.codebook_lookup_type == <span class="number">1 </span>{
+		<span class="kw">let </span>codebook_lookup_values = lup.codebook_multiplicands.len();
+		<span class="kw">for </span>lookup_offset <span class="kw">in </span><span class="number">0 </span>.. codebook_entries {
+			<span class="kw">let </span><span class="kw-2">mut </span>last = <span class="number">0.</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>index_divisor = <span class="number">1</span>;
+			<span class="kw">for _ in </span><span class="number">0 </span>.. codebook_dimensions {
+				<span class="kw">let </span>multiplicand_offset = (lookup_offset / index_divisor <span class="kw">as </span>u32) <span class="kw">as </span>usize %
+					codebook_lookup_values;
+				<span class="kw">let </span>vec_elem = lup.codebook_multiplicands[multiplicand_offset] <span class="kw">as </span>f32 *
+					lup.codebook_delta_value + lup.codebook_minimum_value + last;
+				<span class="kw">if </span>lup.codebook_sequence_p {
+					last = vec_elem;
 				}
-				<span class="ident">value_vectors</span>.<span class="ident">push</span>(<span class="ident">vec_elem</span>);
-				<span class="ident">index_divisor</span> <span class="kw-2">*</span>= <span class="ident">codebook_lookup_values</span>;
+				value_vectors.push(vec_elem);
+				index_divisor <span class="kw-2">*</span>= codebook_lookup_values;
 			}
 		}
-	} <span class="kw">else</span> {
-		<span class="kw">for</span> <span class="ident">lookup_offset</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_entries</span> {
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> = <span class="number">0.</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multiplicand_offset</span> :<span class="ident">usize</span> = <span class="ident">lookup_offset</span> <span class="kw">as</span> <span class="ident">usize</span> * <span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">usize</span>;
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_dimensions</span> {
-				<span class="kw">let</span> <span class="ident">vec_elem</span> = <span class="ident">lup</span>.<span class="ident">codebook_multiplicands</span>[<span class="ident">multiplicand_offset</span>] <span class="kw">as</span> <span class="ident">f32</span> *
-					<span class="ident">lup</span>.<span class="ident">codebook_delta_value</span> + <span class="ident">lup</span>.<span class="ident">codebook_minimum_value</span> + <span class="ident">last</span>;
-				<span class="kw">if</span> <span class="ident">lup</span>.<span class="ident">codebook_sequence_p</span> {
-					<span class="ident">last</span> = <span class="ident">vec_elem</span>;
+	} <span class="kw">else </span>{
+		<span class="kw">for </span>lookup_offset <span class="kw">in </span><span class="number">0 </span>.. codebook_entries {
+			<span class="kw">let </span><span class="kw-2">mut </span>last = <span class="number">0.</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>multiplicand_offset :usize = lookup_offset <span class="kw">as </span>usize * codebook_dimensions <span class="kw">as </span>usize;
+			<span class="kw">for _ in </span><span class="number">0 </span>.. codebook_dimensions {
+				<span class="kw">let </span>vec_elem = lup.codebook_multiplicands[multiplicand_offset] <span class="kw">as </span>f32 *
+					lup.codebook_delta_value + lup.codebook_minimum_value + last;
+				<span class="kw">if </span>lup.codebook_sequence_p {
+					last = vec_elem;
 				}
-				<span class="ident">value_vectors</span>.<span class="ident">push</span>(<span class="ident">vec_elem</span>);
-				<span class="ident">multiplicand_offset</span> += <span class="number">1</span>;
+				value_vectors.push(vec_elem);
+				multiplicand_offset += <span class="number">1</span>;
 			}
 		}
 	}
-	<span class="kw">return</span> <span class="ident">value_vectors</span>;
+	<span class="kw">return </span>value_vectors;
 }
 
 
-<span class="doccomment">/// Small Error type for `BitpackCursor::read_huffman_vq`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is in order to enable calling code to distinguish</span>
-<span class="doccomment">/// between the two cases of the enum. Esp. in some cases</span>
-<span class="doccomment">/// the decoder might have to reject packages with the</span>
-<span class="doccomment">/// NoVqLookupForCodebook variant, but have to treat EndOfPacket</span>
-<span class="doccomment">/// as normal occurence.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum</span> <span class="ident">HuffmanVqReadErr</span> {
-	<span class="ident">EndOfPacket</span>,
-	<span class="ident">NoVqLookupForCodebook</span>,
+<span class="doccomment">/// Small Error type for `BitpackCursor::read_huffman_vq`.
+///
+/// This is in order to enable calling code to distinguish
+/// between the two cases of the enum. Esp. in some cases
+/// the decoder might have to reject packages with the
+/// NoVqLookupForCodebook variant, but have to treat EndOfPacket
+/// as normal occurence.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>HuffmanVqReadErr {
+	EndOfPacket,
+	NoVqLookupForCodebook,
 }
 
-<span class="kw">impl</span> &lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">BitpackCursor</span> &lt;<span class="lifetime">&#39;a</span>&gt; {
-	<span class="doccomment">/// Reads a huffman word using the codebook abstraction via a VQ context</span>
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">read_huffman_vq</span>&lt;<span class="lifetime">&#39;b</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">b</span> :<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="ident">Codebook</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span>[<span class="ident">f32</span>], <span class="ident">HuffmanVqReadErr</span>&gt; {
+<span class="kw">impl </span>&lt;<span class="lifetime">&#39;a</span>&gt; BitpackCursor &lt;<span class="lifetime">&#39;a</span>&gt; {
+	<span class="doccomment">/// Reads a huffman word using the codebook abstraction via a VQ context
+	</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>read_huffman_vq&lt;<span class="lifetime">&#39;b</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, b :<span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span>Codebook) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span>[f32], HuffmanVqReadErr&gt; {
 
-		<span class="kw">let</span> <span class="ident">idx</span> = <span class="kw">match</span> <span class="self">self</span>.<span class="ident">read_huffman</span>(<span class="kw-2">&amp;</span><span class="ident">b</span>.<span class="ident">codebook_huffman_tree</span>) {
-			<span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="ident">v</span> <span class="kw">as</span> <span class="ident">usize</span>,
-			<span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">HuffmanVqReadErr::EndOfPacket</span>),
+		<span class="kw">let </span>idx = <span class="kw">match </span><span class="self">self</span>.read_huffman(<span class="kw-2">&amp;</span>b.codebook_huffman_tree) {
+			<span class="prelude-val">Ok</span>(v) =&gt; v <span class="kw">as </span>usize,
+			<span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(HuffmanVqReadErr::EndOfPacket),
 		};
-		<span class="kw">let</span> <span class="ident">codebook_vq_lookup_vec</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw">match</span> <span class="ident">b</span>.<span class="ident">codebook_vq_lookup_vec</span>.<span class="ident">as_ref</span>() {
-			<span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">v</span>) =&gt; <span class="ident">v</span>,
-			<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">HuffmanVqReadErr::NoVqLookupForCodebook</span>),
+		<span class="kw">let </span>codebook_vq_lookup_vec :<span class="kw-2">&amp;</span>[f32] = <span class="kw">match </span>b.codebook_vq_lookup_vec.as_ref() {
+			<span class="prelude-val">Some</span>(<span class="kw-2">ref </span>v) =&gt; v,
+			<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(HuffmanVqReadErr::NoVqLookupForCodebook),
 		};
-		<span class="kw">let</span> <span class="ident">dim</span> = <span class="ident">b</span>.<span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="kw-2">&amp;</span><span class="ident">codebook_vq_lookup_vec</span>[<span class="ident">idx</span> * <span class="ident">dim</span> .. (<span class="ident">idx</span> + <span class="number">1</span>) * <span class="ident">dim</span>]);
+		<span class="kw">let </span>dim = b.codebook_dimensions <span class="kw">as </span>usize;
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="kw-2">&amp;</span>codebook_vq_lookup_vec[idx * dim .. (idx + <span class="number">1</span>) * dim]);
 	}
 }
 
-<span class="kw">static</span> <span class="ident">MAX_BASES_WITHOUT_OVERFLOW</span> : <span class="kw-2">&amp;</span>[<span class="ident">u32</span>] = <span class="kw-2">&amp;</span>[
+<span class="kw">static </span>MAX_BASES_WITHOUT_OVERFLOW : <span class="kw-2">&amp;</span>[u32] = <span class="kw-2">&amp;</span>[
 	<span class="number">0xffffffff</span>, <span class="number">0xffffffff</span>, <span class="number">0x0000ffff</span>, <span class="number">0x00000659</span>,
 	<span class="number">0x000000ff</span>, <span class="number">0x00000054</span>, <span class="number">0x00000028</span>, <span class="number">0x00000017</span>,
 	<span class="number">0x0000000f</span>, <span class="number">0x0000000b</span>, <span class="number">0x00000009</span>, <span class="number">0x00000007</span>,
@@ -1716,7 +1716,7 @@ spec requires.
 	<span class="number">0x00000002</span>, <span class="number">0x00000002</span>, <span class="number">0x00000002</span>, <span class="number">0x00000002</span>,
 	<span class="number">0x00000002</span>, <span class="number">0x00000002</span>, <span class="number">0x00000002</span>, <span class="number">0x00000002</span>];
 
-<span class="kw">static</span> <span class="ident">MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW</span> : <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] = <span class="kw-2">&amp;</span>[
+<span class="kw">static </span>MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW : <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>[
 	<span class="number">0x1f</span>, <span class="number">0x1f</span>, <span class="number">0x0f</span>, <span class="number">0x0a</span>,
 	<span class="number">0x07</span>, <span class="number">0x06</span>, <span class="number">0x05</span>, <span class="number">0x04</span>,
 	<span class="number">0x03</span>, <span class="number">0x03</span>, <span class="number">0x03</span>, <span class="number">0x02</span>,
@@ -1726,389 +1726,389 @@ spec requires.
 	<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>,
 	<span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x01</span>];
 
-<span class="comment">// For this little function I won&#39;t include the num crate.</span>
-<span class="comment">// precondition: base ^ exponent must not overflow.</span>
-<span class="kw">fn</span> <span class="ident">exp_fast</span>(<span class="ident">base</span> :<span class="ident">u32</span>, <span class="ident">exponent</span>: <span class="ident">u8</span>) -&gt; <span class="ident">u32</span> {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> :<span class="ident">u32</span> = <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">selfmul</span> = <span class="ident">base</span>;
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="number">8</span> {
-		<span class="kw">if</span> (<span class="number">1</span> &lt;&lt; <span class="ident">i</span>) &amp; <span class="ident">exponent</span> &gt; <span class="number">0</span> {
-			<span class="ident">res</span> <span class="kw-2">*</span>= <span class="ident">selfmul</span>;
+<span class="comment">// For this little function I won&#39;t include the num crate.
+// precondition: base ^ exponent must not overflow.
+</span><span class="kw">fn </span>exp_fast(base :u32, exponent: u8) -&gt; u32 {
+	<span class="kw">let </span><span class="kw-2">mut </span>res :u32 = <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>selfmul = base;
+	<span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. <span class="number">8 </span>{
+		<span class="kw">if </span>(<span class="number">1 </span>&lt;&lt; i) &amp; exponent &gt; <span class="number">0 </span>{
+			res <span class="kw-2">*</span>= selfmul;
 		}
-		<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">newselfmul</span>) = <span class="ident">u32::checked_mul</span>(<span class="ident">selfmul</span>, <span class="ident">selfmul</span>) {
-			<span class="ident">selfmul</span> = <span class="ident">newselfmul</span>;
-		} <span class="kw">else</span> {
-			<span class="comment">// Okay, now we have to find out</span>
-			<span class="comment">// whether this matters or not.</span>
-			<span class="comment">// Check whether selfmul would have been needed.</span>
-			<span class="kw">if</span> <span class="ident">i</span> &lt; <span class="number">7</span> &amp;&amp; (<span class="ident">exponent</span> &gt;&gt; (<span class="ident">i</span> + <span class="number">1</span>)) &gt; <span class="number">0</span> {
+		<span class="kw">if let </span><span class="prelude-val">Some</span>(newselfmul) = u32::checked_mul(selfmul, selfmul) {
+			selfmul = newselfmul;
+		} <span class="kw">else </span>{
+			<span class="comment">// Okay, now we have to find out
+			// whether this matters or not.
+			// Check whether selfmul would have been needed.
+			</span><span class="kw">if </span>i &lt; <span class="number">7 </span>&amp;&amp; (exponent &gt;&gt; (i + <span class="number">1</span>)) &gt; <span class="number">0 </span>{
 				<span class="macro">panic!</span>(<span class="string">&quot;Overflow when squaring for exp_fast, \
 					precondition violated!&quot;</span>);
 			}
-			<span class="kw">return</span> <span class="ident">res</span>;
+			<span class="kw">return </span>res;
 		}
 	}
-	<span class="kw">return</span> <span class="ident">res</span>;
+	<span class="kw">return </span>res;
 }
 
-<span class="doccomment">/// Returns, as defined in the vorbis spec:</span>
-<span class="doccomment">/// &quot;the greatest integer for which to `[return_value]` the power of `[codebook_dimensions]` is less than or equal to `[codebook_entries]`&quot;</span>
-<span class="doccomment">/// Essentially an &quot;nth-root&quot; algorithm.</span>
-<span class="doccomment">/// About the speed:</span>
-<span class="doccomment">/// Probably its super-optimized as it uses no floats,</span>
-<span class="doccomment">/// probably smarter algorithms using floats would be faster here. No idea.</span>
-<span class="doccomment">/// Either way, stackoverflow gave the (great) motivation for the algorithm:</span>
-<span class="doccomment">/// http://stackoverflow.com/questions/7407752</span>
-<span class="kw">fn</span> <span class="ident">lookup1_values</span>(<span class="ident">codebook_entries</span> :<span class="ident">u32</span>, <span class="ident">codebook_dimensions</span> :<span class="ident">u16</span>) -&gt; <span class="ident">u32</span> {
-	<span class="kw">if</span> <span class="ident">codebook_dimensions</span> &gt;= <span class="number">32</span> {
-		<span class="comment">// For codebook_dimensions &gt;= 32 we&#39;d already overflow the u32 range if</span>
-		<span class="comment">// we computed 2 ^ codebook_dimensions.</span>
-		<span class="comment">// Therefore, the result must be less than 2.</span>
-		<span class="kw">return</span> <span class="kw">if</span> <span class="ident">codebook_entries</span> == <span class="number">0</span> { <span class="number">0</span> } <span class="kw">else</span> { <span class="number">1</span> };
+<span class="doccomment">/// Returns, as defined in the vorbis spec:
+/// &quot;the greatest integer for which to `[return_value]` the power of `[codebook_dimensions]` is less than or equal to `[codebook_entries]`&quot;
+/// Essentially an &quot;nth-root&quot; algorithm.
+/// About the speed:
+/// Probably its super-optimized as it uses no floats,
+/// probably smarter algorithms using floats would be faster here. No idea.
+/// Either way, stackoverflow gave the (great) motivation for the algorithm:
+/// http://stackoverflow.com/questions/7407752
+</span><span class="kw">fn </span>lookup1_values(codebook_entries :u32, codebook_dimensions :u16) -&gt; u32 {
+	<span class="kw">if </span>codebook_dimensions &gt;= <span class="number">32 </span>{
+		<span class="comment">// For codebook_dimensions &gt;= 32 we&#39;d already overflow the u32 range if
+		// we computed 2 ^ codebook_dimensions.
+		// Therefore, the result must be less than 2.
+		</span><span class="kw">return if </span>codebook_entries == <span class="number">0 </span>{ <span class="number">0 </span>} <span class="kw">else </span>{ <span class="number">1 </span>};
 	}
-	<span class="comment">// Now do a binary search.</span>
-	<span class="comment">// We use two static helper arrays here. Both take the</span>
-	<span class="comment">// exponent (codebook_dimensions here) as index.</span>
-	<span class="comment">// The first array, MAX_BASES_WITHOUT_OVERFLOW contains</span>
-	<span class="comment">// the base that doesn&#39;t generate an overflow for the</span>
-	<span class="comment">// given exponent.</span>
-	<span class="comment">// The second array MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW</span>
-	<span class="comment">// contains the number of the highest set bit in</span>
-	<span class="comment">// the corresponding entry in MAX_BASES_WITHOUT_OVERFLOW.</span>
-	<span class="comment">// This is the first bit that is &quot;disputed&quot; in the binary</span>
-	<span class="comment">// search to follow: we check the bases to support the</span>
-	<span class="comment">// claim by manual exponentiation.</span>
-	<span class="kw">let</span> <span class="ident">max_base_bits</span> = <span class="ident">MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW</span>[
-		<span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">usize</span>];
-	<span class="kw">let</span> <span class="ident">max_base</span> = <span class="ident">MAX_BASES_WITHOUT_OVERFLOW</span>[<span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">usize</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">base_bits</span> :<span class="ident">u32</span> = <span class="number">0</span>;
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">max_base_bits</span> + <span class="number">1</span> {
-		<span class="kw">let</span> <span class="ident">cur_disputed_bit</span> :<span class="ident">u32</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">max_base_bits</span> - <span class="ident">i</span>);
-		<span class="ident">base_bits</span> |= <span class="ident">cur_disputed_bit</span>;
-		<span class="kw">if</span> <span class="ident">max_base</span> &lt; <span class="ident">base_bits</span> ||
-				<span class="ident">exp_fast</span>(<span class="ident">base_bits</span>, <span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">u8</span>) &gt; <span class="ident">codebook_entries</span> {
-			<span class="ident">base_bits</span> &amp;= !<span class="ident">cur_disputed_bit</span>;
+	<span class="comment">// Now do a binary search.
+	// We use two static helper arrays here. Both take the
+	// exponent (codebook_dimensions here) as index.
+	// The first array, MAX_BASES_WITHOUT_OVERFLOW contains
+	// the base that doesn&#39;t generate an overflow for the
+	// given exponent.
+	// The second array MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW
+	// contains the number of the highest set bit in
+	// the corresponding entry in MAX_BASES_WITHOUT_OVERFLOW.
+	// This is the first bit that is &quot;disputed&quot; in the binary
+	// search to follow: we check the bases to support the
+	// claim by manual exponentiation.
+	</span><span class="kw">let </span>max_base_bits = MAX_BASE_MAX_BITS_WITHOUT_OVERFLOW[
+		codebook_dimensions <span class="kw">as </span>usize];
+	<span class="kw">let </span>max_base = MAX_BASES_WITHOUT_OVERFLOW[codebook_dimensions <span class="kw">as </span>usize];
+	<span class="kw">let </span><span class="kw-2">mut </span>base_bits :u32 = <span class="number">0</span>;
+	<span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. max_base_bits + <span class="number">1 </span>{
+		<span class="kw">let </span>cur_disputed_bit :u32 = <span class="number">1 </span>&lt;&lt; (max_base_bits - i);
+		base_bits |= cur_disputed_bit;
+		<span class="kw">if </span>max_base &lt; base_bits ||
+				exp_fast(base_bits, codebook_dimensions <span class="kw">as </span>u8) &gt; codebook_entries {
+			base_bits &amp;= !cur_disputed_bit;
 		}
 	}
-	<span class="kw">return</span> <span class="ident">base_bits</span>;
+	<span class="kw">return </span>base_bits;
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_lookup1_values</span>() {
-	<span class="comment">// First, with base two:</span>
-	<span class="comment">// 2 ^ 10 = 1024</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">1025</span>, <span class="number">10</span>), <span class="number">2</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">1024</span>, <span class="number">10</span>), <span class="number">2</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">1023</span>, <span class="number">10</span>), <span class="number">1</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_lookup1_values() {
+	<span class="comment">// First, with base two:
+	// 2 ^ 10 = 1024
+	</span><span class="macro">assert_eq!</span>(lookup1_values(<span class="number">1025</span>, <span class="number">10</span>), <span class="number">2</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">1024</span>, <span class="number">10</span>), <span class="number">2</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">1023</span>, <span class="number">10</span>), <span class="number">1</span>);
 
-	<span class="comment">// Now, the searched base is five:</span>
-	<span class="comment">// 5 ^ 5 = 3125</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">3126</span>, <span class="number">5</span>), <span class="number">5</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">3125</span>, <span class="number">5</span>), <span class="number">5</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">3124</span>, <span class="number">5</span>), <span class="number">4</span>);
+	<span class="comment">// Now, the searched base is five:
+	// 5 ^ 5 = 3125
+	</span><span class="macro">assert_eq!</span>(lookup1_values(<span class="number">3126</span>, <span class="number">5</span>), <span class="number">5</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">3125</span>, <span class="number">5</span>), <span class="number">5</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">3124</span>, <span class="number">5</span>), <span class="number">4</span>);
 
-	<span class="comment">// Now some exotic tests (edge cases :p):</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">1</span>, <span class="number">1</span>), <span class="number">1</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">0</span>, <span class="number">15</span>), <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">0</span>, <span class="number">0</span>), <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">1</span>, <span class="number">0</span>), <span class="ident">std::u32::MAX</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">lookup1_values</span>(<span class="number">400</span>, <span class="number">0</span>), <span class="ident">std::u32::MAX</span>);
+	<span class="comment">// Now some exotic tests (edge cases :p):
+	</span><span class="macro">assert_eq!</span>(lookup1_values(<span class="number">1</span>, <span class="number">1</span>), <span class="number">1</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">0</span>, <span class="number">15</span>), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">0</span>, <span class="number">0</span>), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">1</span>, <span class="number">0</span>), std::u32::MAX);
+	<span class="macro">assert_eq!</span>(lookup1_values(<span class="number">400</span>, <span class="number">0</span>), std::u32::MAX);
 }
 
-<span class="doccomment">/// Reads a codebook which is part of the setup header packet.</span>
-<span class="kw">fn</span> <span class="ident">read_codebook</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Codebook</span>, <span class="ident">HeaderReadError</span>&gt; {
+<span class="doccomment">/// Reads a codebook which is part of the setup header packet.
+</span><span class="kw">fn </span>read_codebook(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor) -&gt; <span class="prelude-ty">Result</span>&lt;Codebook, HeaderReadError&gt; {
 
-	<span class="comment">// 1. Read the sync pattern</span>
-	<span class="kw">let</span> <span class="ident">sync_pattern</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u24</span>());
-	<span class="kw">if</span> <span class="ident">sync_pattern</span> != <span class="number">0x564342</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="comment">// 1. Read the sync pattern
+	</span><span class="kw">let </span>sync_pattern = <span class="macro">try!</span>(rdr.read_u24());
+	<span class="kw">if </span>sync_pattern != <span class="number">0x564342 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
 
-	<span class="comment">// 2. Read the _dimension, _entries fields and the ordered bitflag</span>
-	<span class="kw">let</span> <span class="ident">codebook_dimensions</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">let</span> <span class="ident">codebook_entries</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u24</span>());
-	<span class="kw">let</span> <span class="ident">ordered</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
+	<span class="comment">// 2. Read the _dimension, _entries fields and the ordered bitflag
+	</span><span class="kw">let </span>codebook_dimensions = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">let </span>codebook_entries = <span class="macro">try!</span>(rdr.read_u24());
+	<span class="kw">let </span>ordered = <span class="macro">try!</span>(rdr.read_bit_flag());
 
-	<span class="comment">// 3. Read the codeword lengths</span>
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codebook_codeword_lengths</span> = <span class="ident">Vec::with_capacity</span>(
-		<span class="macro">convert_to_usize!</span>(<span class="ident">codebook_entries</span>, <span class="ident">u32</span>));
-	<span class="kw">if</span> !<span class="ident">ordered</span> {
-		<span class="kw">let</span> <span class="ident">sparse</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-		<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_entries</span> {
-			<span class="kw">let</span> <span class="ident">length</span> = <span class="kw">if</span> <span class="ident">sparse</span> {
-				<span class="kw">let</span> <span class="ident">flag</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-				<span class="kw">if</span> <span class="ident">flag</span> {
-					<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u5</span>()) + <span class="number">1</span>
-				} <span class="kw">else</span> {
+	<span class="comment">// 3. Read the codeword lengths
+	</span><span class="kw">let </span><span class="kw-2">mut </span>codebook_codeword_lengths = Vec::with_capacity(
+		<span class="macro">convert_to_usize!</span>(codebook_entries, u32));
+	<span class="kw">if </span>!ordered {
+		<span class="kw">let </span>sparse = <span class="macro">try!</span>(rdr.read_bit_flag());
+		<span class="kw">for _ in </span><span class="number">0 </span>.. codebook_entries {
+			<span class="kw">let </span>length = <span class="kw">if </span>sparse {
+				<span class="kw">let </span>flag = <span class="macro">try!</span>(rdr.read_bit_flag());
+				<span class="kw">if </span>flag {
+					<span class="macro">try!</span>(rdr.read_u5()) + <span class="number">1
+				</span>} <span class="kw">else </span>{
 					<span class="comment">/* The spec here asks that we should mark that the
 					entry is unused. But 0 already fulfills this purpose,
 					as everywhere else its guaranteed that the length is &gt; 0.
-					No messing with Option&lt;T&gt; needed here :) */</span>
-					<span class="number">0</span>
-				}
-			} <span class="kw">else</span> {
-				<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u5</span>()) + <span class="number">1</span>
-			};
-			<span class="ident">codebook_codeword_lengths</span>.<span class="ident">push</span>(<span class="ident">length</span>);
+					No messing with Option&lt;T&gt; needed here :) */
+					</span><span class="number">0
+				</span>}
+			} <span class="kw">else </span>{
+				<span class="macro">try!</span>(rdr.read_u5()) + <span class="number">1
+			</span>};
+			codebook_codeword_lengths.push(length);
 		}
-	} <span class="kw">else</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">current_entry</span> :<span class="ident">u32</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">current_length</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u5</span>()) + <span class="number">1</span>;
-		<span class="kw">while</span> <span class="ident">current_entry</span> &lt; <span class="ident">codebook_entries</span> {
-			<span class="kw">let</span> <span class="ident">number</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_dyn_u32</span>(
-				<span class="ident">::ilog</span>((<span class="ident">codebook_entries</span> - <span class="ident">current_entry</span>) <span class="kw">as</span> <span class="ident">u64</span>)));
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="ident">current_entry</span> .. <span class="ident">current_entry</span> + <span class="ident">number</span> {
-				<span class="ident">codebook_codeword_lengths</span>.<span class="ident">push</span>(<span class="ident">current_length</span>);
+	} <span class="kw">else </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>current_entry :u32 = <span class="number">0</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>current_length = <span class="macro">try!</span>(rdr.read_u5()) + <span class="number">1</span>;
+		<span class="kw">while </span>current_entry &lt; codebook_entries {
+			<span class="kw">let </span>number = <span class="macro">try!</span>(rdr.read_dyn_u32(
+				::ilog((codebook_entries - current_entry) <span class="kw">as </span>u64)));
+			<span class="kw">for _ in </span>current_entry .. current_entry + number {
+				codebook_codeword_lengths.push(current_length);
 			}
-			<span class="ident">current_entry</span> += <span class="ident">number</span>;
-			<span class="ident">current_length</span> += <span class="number">1</span>;
-			<span class="kw">if</span> <span class="ident">current_entry</span> <span class="kw">as</span> <span class="ident">u32</span> &gt; <span class="ident">codebook_entries</span> {
-				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+			current_entry += number;
+			current_length += <span class="number">1</span>;
+			<span class="kw">if </span>current_entry <span class="kw">as </span>u32 &gt; codebook_entries {
+				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 			}
 		}
 	}
 
-	<span class="comment">// 4. Read the vector lookup table</span>
-	<span class="kw">let</span> <span class="ident">codebook_lookup_type</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-	<span class="kw">if</span> <span class="ident">codebook_lookup_type</span> &gt; <span class="number">2</span> {
-		<span class="comment">// Not decodable per vorbis spec</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="comment">// 4. Read the vector lookup table
+	</span><span class="kw">let </span>codebook_lookup_type = <span class="macro">try!</span>(rdr.read_u4());
+	<span class="kw">if </span>codebook_lookup_type &gt; <span class="number">2 </span>{
+		<span class="comment">// Not decodable per vorbis spec
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">codebook_lookup</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">CodebookVqLookup</span>&gt; =
-	<span class="kw">if</span> <span class="ident">codebook_lookup_type</span> == <span class="number">0</span> {
-		<span class="prelude-val">None</span>
-	} <span class="kw">else</span> {
-		<span class="kw">let</span> <span class="ident">codebook_minimum_value</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_f32</span>());
-		<span class="kw">let</span> <span class="ident">codebook_delta_value</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_f32</span>());
-		<span class="kw">let</span> <span class="ident">codebook_value_bits</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>()) + <span class="number">1</span>;
-		<span class="kw">let</span> <span class="ident">codebook_sequence_p</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-		<span class="kw">let</span> <span class="ident">codebook_lookup_values</span> :<span class="ident">u64</span> = <span class="kw">if</span> <span class="ident">codebook_lookup_type</span> == <span class="number">1</span> {
-			 <span class="ident">lookup1_values</span>(<span class="ident">codebook_entries</span>, <span class="ident">codebook_dimensions</span>) <span class="kw">as</span> <span class="ident">u64</span>
-		} <span class="kw">else</span> {
-			<span class="ident">codebook_entries</span> <span class="kw">as</span> <span class="ident">u64</span> * <span class="ident">codebook_dimensions</span> <span class="kw">as</span> <span class="ident">u64</span>
+	<span class="kw">let </span>codebook_lookup :<span class="prelude-ty">Option</span>&lt;CodebookVqLookup&gt; =
+	<span class="kw">if </span>codebook_lookup_type == <span class="number">0 </span>{
+		<span class="prelude-val">None
+	</span>} <span class="kw">else </span>{
+		<span class="kw">let </span>codebook_minimum_value = <span class="macro">try!</span>(rdr.read_f32());
+		<span class="kw">let </span>codebook_delta_value = <span class="macro">try!</span>(rdr.read_f32());
+		<span class="kw">let </span>codebook_value_bits = <span class="macro">try!</span>(rdr.read_u4()) + <span class="number">1</span>;
+		<span class="kw">let </span>codebook_sequence_p = <span class="macro">try!</span>(rdr.read_bit_flag());
+		<span class="kw">let </span>codebook_lookup_values :u64 = <span class="kw">if </span>codebook_lookup_type == <span class="number">1 </span>{
+			 lookup1_values(codebook_entries, codebook_dimensions) <span class="kw">as </span>u64
+		} <span class="kw">else </span>{
+			codebook_entries <span class="kw">as </span>u64 * codebook_dimensions <span class="kw">as </span>u64
 		};
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codebook_multiplicands</span> = <span class="ident">Vec::with_capacity</span>(
-			<span class="macro">convert_to_usize!</span>(<span class="ident">codebook_lookup_values</span>, <span class="ident">u64</span>));
-		<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">codebook_lookup_values</span> {
-			<span class="ident">codebook_multiplicands</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_dyn_u32</span>(<span class="ident">codebook_value_bits</span>)));
+		<span class="kw">let </span><span class="kw-2">mut </span>codebook_multiplicands = Vec::with_capacity(
+			<span class="macro">convert_to_usize!</span>(codebook_lookup_values, u64));
+		<span class="kw">for _ in </span><span class="number">0 </span>.. codebook_lookup_values {
+			codebook_multiplicands.push(<span class="macro">try!</span>(rdr.read_dyn_u32(codebook_value_bits)));
 		}
-		<span class="prelude-val">Some</span>(<span class="ident">CodebookVqLookup</span> {
-			<span class="ident">codebook_lookup_type</span>,
-			<span class="ident">codebook_minimum_value</span>,
-			<span class="ident">codebook_delta_value</span>,
-			<span class="ident">codebook_sequence_p</span>,
-			<span class="ident">codebook_multiplicands</span>,
+		<span class="prelude-val">Some</span>(CodebookVqLookup {
+			codebook_lookup_type,
+			codebook_minimum_value,
+			codebook_delta_value,
+			codebook_sequence_p,
+			codebook_multiplicands,
 		})
 	};
-	<span class="kw">let</span> <span class="ident">codebook_vq_lookup_vec</span> = <span class="ident">codebook_lookup</span>.<span class="ident">as_ref</span>().<span class="ident">map</span>(|<span class="ident">lup</span>| {
-		<span class="ident">lookup_vec_val_decode</span>(<span class="ident">lup</span>,
-			<span class="ident">codebook_entries</span>, <span class="ident">codebook_dimensions</span>)
+	<span class="kw">let </span>codebook_vq_lookup_vec = codebook_lookup.as_ref().map(|lup| {
+		lookup_vec_val_decode(lup,
+			codebook_entries, codebook_dimensions)
 	});
 
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Codebook</span> {
-		<span class="ident">codebook_dimensions</span>,
-		<span class="ident">codebook_entries</span>,
-		<span class="ident">codebook_vq_lookup_vec</span>,
-		<span class="ident">codebook_huffman_tree</span> : <span class="macro">try!</span>(<span class="ident">VorbisHuffmanTree::load_from_array</span>(<span class="kw-2">&amp;</span><span class="ident">codebook_codeword_lengths</span>)),
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(Codebook {
+		codebook_dimensions,
+		codebook_entries,
+		codebook_vq_lookup_vec,
+		codebook_huffman_tree : <span class="macro">try!</span>(VorbisHuffmanTree::load_from_array(<span class="kw-2">&amp;</span>codebook_codeword_lengths)),
 	});
 }
 
-<span class="doccomment">/// Reads a Floor which is part of the setup header packet.</span>
-<span class="doccomment">/// The `codebook_cnt` param is required to check for compliant streams</span>
-<span class="kw">fn</span> <span class="ident">read_floor</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>, <span class="ident">codebook_cnt</span> :<span class="ident">u16</span>, <span class="ident">blocksizes</span> :(<span class="ident">u8</span>, <span class="ident">u8</span>)) -&gt;
-		<span class="prelude-ty">Result</span>&lt;<span class="ident">Floor</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">floor_type</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">match</span> <span class="ident">floor_type</span> {
-		<span class="number">0</span> =&gt; {
-			<span class="kw">let</span> <span class="ident">floor0_order</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-			<span class="kw">let</span> <span class="ident">floor0_rate</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-			<span class="kw">let</span> <span class="ident">floor0_bark_map_size</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-			<span class="kw">let</span> <span class="ident">floor0_amplitude_bits</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>());
-			<span class="kw">if</span> <span class="ident">floor0_amplitude_bits</span> &gt; <span class="number">64</span> {
-				<span class="comment">// Unfortunately the audio decoder part</span>
-				<span class="comment">// doesn&#39;t support values &gt; 64 because rust has no</span>
-				<span class="comment">// 128 bit integers yet.</span>
-				<span class="comment">// TODO when support is added, remove this</span>
-				<span class="comment">// check.</span>
-				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+<span class="doccomment">/// Reads a Floor which is part of the setup header packet.
+/// The `codebook_cnt` param is required to check for compliant streams
+</span><span class="kw">fn </span>read_floor(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor, codebook_cnt :u16, blocksizes :(u8, u8)) -&gt;
+		<span class="prelude-ty">Result</span>&lt;Floor, HeaderReadError&gt; {
+	<span class="kw">let </span>floor_type = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">match </span>floor_type {
+		<span class="number">0 </span>=&gt; {
+			<span class="kw">let </span>floor0_order = <span class="macro">try!</span>(rdr.read_u8());
+			<span class="kw">let </span>floor0_rate = <span class="macro">try!</span>(rdr.read_u16());
+			<span class="kw">let </span>floor0_bark_map_size = <span class="macro">try!</span>(rdr.read_u16());
+			<span class="kw">let </span>floor0_amplitude_bits = <span class="macro">try!</span>(rdr.read_u6());
+			<span class="kw">if </span>floor0_amplitude_bits &gt; <span class="number">64 </span>{
+				<span class="comment">// Unfortunately the audio decoder part
+				// doesn&#39;t support values &gt; 64 because rust has no
+				// 128 bit integers yet.
+				// TODO when support is added, remove this
+				// check.
+				</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 			}
-			<span class="kw">let</span> <span class="ident">floor0_amplitude_offset</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-			<span class="kw">let</span> <span class="ident">floor0_number_of_books</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>()) + <span class="number">1</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor0_book_list</span> = <span class="ident">Vec::with_capacity</span>(
-				<span class="macro">convert_to_usize!</span>(<span class="ident">floor0_number_of_books</span>, <span class="ident">u8</span>));
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">floor0_number_of_books</span> {
-				<span class="kw">let</span> <span class="ident">value</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-				<span class="kw">if</span> <span class="ident">value</span> <span class="kw">as</span> <span class="ident">u16</span> &gt; <span class="ident">codebook_cnt</span> {
-					<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+			<span class="kw">let </span>floor0_amplitude_offset = <span class="macro">try!</span>(rdr.read_u8());
+			<span class="kw">let </span>floor0_number_of_books = <span class="macro">try!</span>(rdr.read_u4()) + <span class="number">1</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>floor0_book_list = Vec::with_capacity(
+				<span class="macro">convert_to_usize!</span>(floor0_number_of_books, u8));
+			<span class="kw">for _ in </span><span class="number">0 </span>.. floor0_number_of_books {
+				<span class="kw">let </span>value = <span class="macro">try!</span>(rdr.read_u8());
+				<span class="kw">if </span>value <span class="kw">as </span>u16 &gt; codebook_cnt {
+					<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 				}
-				<span class="ident">floor0_book_list</span>.<span class="ident">push</span>(<span class="ident">value</span>);
+				floor0_book_list.push(value);
 			}
-			<span class="prelude-val">Ok</span>(<span class="ident">Floor::TypeZero</span>(<span class="ident">FloorTypeZero</span> {
-				<span class="ident">floor0_order</span>,
-				<span class="ident">floor0_rate</span>,
-				<span class="ident">floor0_bark_map_size</span>,
-				<span class="ident">floor0_amplitude_bits</span>,
-				<span class="ident">floor0_amplitude_offset</span>,
-				<span class="ident">floor0_number_of_books</span>,
-				<span class="ident">floor0_book_list</span>,
-				<span class="ident">cached_bark_cos_omega</span> : [
-					<span class="ident">compute_bark_map_cos_omega</span>(<span class="number">1</span> &lt;&lt; (<span class="ident">blocksizes</span>.<span class="number">0</span> - <span class="number">1</span>),
-						<span class="ident">floor0_rate</span>, <span class="ident">floor0_bark_map_size</span>),
-					<span class="ident">compute_bark_map_cos_omega</span>(<span class="number">1</span> &lt;&lt; (<span class="ident">blocksizes</span>.<span class="number">1</span> - <span class="number">1</span>),
-						<span class="ident">floor0_rate</span>, <span class="ident">floor0_bark_map_size</span>),
+			<span class="prelude-val">Ok</span>(Floor::TypeZero(FloorTypeZero {
+				floor0_order,
+				floor0_rate,
+				floor0_bark_map_size,
+				floor0_amplitude_bits,
+				floor0_amplitude_offset,
+				floor0_number_of_books,
+				floor0_book_list,
+				cached_bark_cos_omega : [
+					compute_bark_map_cos_omega(<span class="number">1 </span>&lt;&lt; (blocksizes.<span class="number">0 </span>- <span class="number">1</span>),
+						floor0_rate, floor0_bark_map_size),
+					compute_bark_map_cos_omega(<span class="number">1 </span>&lt;&lt; (blocksizes.<span class="number">1 </span>- <span class="number">1</span>),
+						floor0_rate, floor0_bark_map_size),
 				]
 			}))
 		},
-		<span class="number">1</span> =&gt; {
-			<span class="kw">let</span> <span class="ident">floor1_partitions</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u5</span>());
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">maximum_class</span> :<span class="ident">i8</span> = -<span class="number">1</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_partition_class_list</span> = <span class="ident">Vec::with_capacity</span>(
-				<span class="ident">floor1_partitions</span> <span class="kw">as</span> <span class="ident">usize</span>);
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">floor1_partitions</span> {
-				<span class="kw">let</span> <span class="ident">cur_class</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-				<span class="ident">maximum_class</span> = <span class="kw">if</span> <span class="ident">cur_class</span> <span class="kw">as</span> <span class="ident">i8</span> &gt; <span class="ident">maximum_class</span>
-					{ <span class="ident">cur_class</span> <span class="kw">as</span> <span class="ident">i8</span> } <span class="kw">else</span> { <span class="ident">maximum_class</span> };
-				<span class="ident">floor1_partition_class_list</span>.<span class="ident">push</span>(<span class="ident">cur_class</span>);
+		<span class="number">1 </span>=&gt; {
+			<span class="kw">let </span>floor1_partitions = <span class="macro">try!</span>(rdr.read_u5());
+			<span class="kw">let </span><span class="kw-2">mut </span>maximum_class :i8 = -<span class="number">1</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_partition_class_list = Vec::with_capacity(
+				floor1_partitions <span class="kw">as </span>usize);
+			<span class="kw">for _ in </span><span class="number">0 </span>.. floor1_partitions {
+				<span class="kw">let </span>cur_class = <span class="macro">try!</span>(rdr.read_u4());
+				maximum_class = <span class="kw">if </span>cur_class <span class="kw">as </span>i8 &gt; maximum_class
+					{ cur_class <span class="kw">as </span>i8 } <span class="kw">else </span>{ maximum_class };
+				floor1_partition_class_list.push(cur_class);
 			}
 
-			<span class="comment">// TODO one day try out whether its more performant</span>
-			<span class="comment">// to have these two arrays in one, its wasteful to allocate</span>
-			<span class="comment">// 16 bit so that one can store 5 bits.</span>
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_class_dimensions</span> = <span class="ident">Vec::with_capacity</span>((<span class="ident">maximum_class</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>);
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_class_subclasses</span> = <span class="ident">Vec::with_capacity</span>((<span class="ident">maximum_class</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>);
+			<span class="comment">// TODO one day try out whether its more performant
+			// to have these two arrays in one, its wasteful to allocate
+			// 16 bit so that one can store 5 bits.
+			</span><span class="kw">let </span><span class="kw-2">mut </span>floor1_class_dimensions = Vec::with_capacity((maximum_class + <span class="number">1</span>) <span class="kw">as </span>usize);
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_class_subclasses = Vec::with_capacity((maximum_class + <span class="number">1</span>) <span class="kw">as </span>usize);
 
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_subclass_books</span> = <span class="ident">Vec::with_capacity</span>((<span class="ident">maximum_class</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>);
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_subclass_books = Vec::with_capacity((maximum_class + <span class="number">1</span>) <span class="kw">as </span>usize);
 
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_class_masterbooks</span> = <span class="ident">Vec::with_capacity</span>((<span class="ident">maximum_class</span> + <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>);
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">maximum_class</span> + <span class="number">1</span> {
-				<span class="ident">floor1_class_dimensions</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u3</span>()) + <span class="number">1</span>);
-				<span class="kw">let</span> <span class="ident">cur_subclass</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u2</span>());
-				<span class="ident">floor1_class_subclasses</span>.<span class="ident">push</span>(<span class="ident">cur_subclass</span>);
-				<span class="kw">if</span> <span class="ident">cur_subclass</span> != <span class="number">0</span> {
-					<span class="kw">let</span> <span class="ident">cur_masterbook</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-					<span class="kw">if</span> <span class="ident">cur_masterbook</span> <span class="kw">as</span> <span class="ident">u16</span> &gt;= <span class="ident">codebook_cnt</span> {
-						<span class="comment">// undecodable as per spec</span>
-						<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_class_masterbooks = Vec::with_capacity((maximum_class + <span class="number">1</span>) <span class="kw">as </span>usize);
+			<span class="kw">for _ in </span><span class="number">0 </span>.. maximum_class + <span class="number">1 </span>{
+				floor1_class_dimensions.push(<span class="macro">try!</span>(rdr.read_u3()) + <span class="number">1</span>);
+				<span class="kw">let </span>cur_subclass = <span class="macro">try!</span>(rdr.read_u2());
+				floor1_class_subclasses.push(cur_subclass);
+				<span class="kw">if </span>cur_subclass != <span class="number">0 </span>{
+					<span class="kw">let </span>cur_masterbook = <span class="macro">try!</span>(rdr.read_u8());
+					<span class="kw">if </span>cur_masterbook <span class="kw">as </span>u16 &gt;= codebook_cnt {
+						<span class="comment">// undecodable as per spec
+						</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 					}
-					<span class="ident">floor1_class_masterbooks</span>.<span class="ident">push</span>(<span class="ident">cur_masterbook</span>);
-				} <span class="kw">else</span> {
-					<span class="comment">// Some value... This never gets read,</span>
-					<span class="comment">// but Rust requires everything to be initialized,</span>
-					<span class="comment">// we can&#39;t increase the counter without initialisation.</span>
-					<span class="ident">floor1_class_masterbooks</span>.<span class="ident">push</span>(<span class="number">0</span>);
+					floor1_class_masterbooks.push(cur_masterbook);
+				} <span class="kw">else </span>{
+					<span class="comment">// Some value... This never gets read,
+					// but Rust requires everything to be initialized,
+					// we can&#39;t increase the counter without initialisation.
+					</span>floor1_class_masterbooks.push(<span class="number">0</span>);
 				}
-				<span class="kw">let</span> <span class="ident">cur_books_cnt</span> :<span class="ident">u8</span> = <span class="number">1</span> &lt;&lt; <span class="ident">cur_subclass</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_books</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">cur_books_cnt</span> <span class="kw">as</span> <span class="ident">usize</span>);
-				<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">cur_books_cnt</span> {
-					<span class="comment">// The fact that we need i16 here (and shouldn&#39;t do</span>
-					<span class="comment">// wrapping sub) is only revealed if you read the</span>
-					<span class="comment">// &quot;packet decode&quot; part of the floor 1 spec...</span>
-					<span class="kw">let</span> <span class="ident">cur_book</span> = (<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>()) <span class="kw">as</span> <span class="ident">i16</span>) - <span class="number">1</span>;
-					<span class="kw">if</span> <span class="ident">cur_book</span> &gt;= <span class="ident">codebook_cnt</span> <span class="kw">as</span> <span class="ident">i16</span> {
-						<span class="comment">// undecodable as per spec</span>
-						<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+				<span class="kw">let </span>cur_books_cnt :u8 = <span class="number">1 </span>&lt;&lt; cur_subclass;
+				<span class="kw">let </span><span class="kw-2">mut </span>cur_books = Vec::with_capacity(cur_books_cnt <span class="kw">as </span>usize);
+				<span class="kw">for _ in </span><span class="number">0 </span>.. cur_books_cnt {
+					<span class="comment">// The fact that we need i16 here (and shouldn&#39;t do
+					// wrapping sub) is only revealed if you read the
+					// &quot;packet decode&quot; part of the floor 1 spec...
+					</span><span class="kw">let </span>cur_book = (<span class="macro">try!</span>(rdr.read_u8()) <span class="kw">as </span>i16) - <span class="number">1</span>;
+					<span class="kw">if </span>cur_book &gt;= codebook_cnt <span class="kw">as </span>i16 {
+						<span class="comment">// undecodable as per spec
+						</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 					}
-					<span class="ident">cur_books</span>.<span class="ident">push</span>(<span class="ident">cur_book</span>);
+					cur_books.push(cur_book);
 				}
-				<span class="ident">floor1_subclass_books</span>.<span class="ident">push</span>(<span class="ident">cur_books</span>);
+				floor1_subclass_books.push(cur_books);
 			}
-			<span class="kw">let</span> <span class="ident">floor1_multiplier</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u2</span>()) + <span class="number">1</span>;
-			<span class="kw">let</span> <span class="ident">rangebits</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_values</span> :<span class="ident">u16</span> = <span class="number">2</span>;
-			<span class="comment">// Calculate the count before doing anything else</span>
-			<span class="kw">for</span> <span class="ident">cur_class_num</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">floor1_partition_class_list</span> {
-				<span class="ident">floor1_values</span> += <span class="ident">floor1_class_dimensions</span>[<span class="kw-2">*</span><span class="ident">cur_class_num</span> <span class="kw">as</span> <span class="ident">usize</span>] <span class="kw">as</span> <span class="ident">u16</span>;
+			<span class="kw">let </span>floor1_multiplier = <span class="macro">try!</span>(rdr.read_u2()) + <span class="number">1</span>;
+			<span class="kw">let </span>rangebits = <span class="macro">try!</span>(rdr.read_u4());
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_values :u16 = <span class="number">2</span>;
+			<span class="comment">// Calculate the count before doing anything else
+			</span><span class="kw">for </span>cur_class_num <span class="kw">in </span><span class="kw-2">&amp;</span>floor1_partition_class_list {
+				floor1_values += floor1_class_dimensions[<span class="kw-2">*</span>cur_class_num <span class="kw">as </span>usize] <span class="kw">as </span>u16;
 			}
-			<span class="kw">if</span> <span class="ident">floor1_values</span> &gt; <span class="number">65</span> {
-				<span class="comment">// undecodable as per spec</span>
-				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+			<span class="kw">if </span>floor1_values &gt; <span class="number">65 </span>{
+				<span class="comment">// undecodable as per spec
+				</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 			}
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_x_list</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">floor1_values</span> <span class="kw">as</span> <span class="ident">usize</span>);
-			<span class="ident">floor1_x_list</span>.<span class="ident">push</span>(<span class="number">0</span>);
-			<span class="ident">floor1_x_list</span>.<span class="ident">push</span>(<span class="number">1u32</span> &lt;&lt; <span class="ident">rangebits</span>);
-			<span class="kw">for</span> <span class="ident">cur_class_num</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">floor1_partition_class_list</span> {
-				<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">floor1_class_dimensions</span>[<span class="kw-2">*</span><span class="ident">cur_class_num</span> <span class="kw">as</span> <span class="ident">usize</span>] {
-					<span class="ident">floor1_x_list</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_dyn_u32</span>(<span class="ident">rangebits</span>)));
+			<span class="kw">let </span><span class="kw-2">mut </span>floor1_x_list = Vec::with_capacity(floor1_values <span class="kw">as </span>usize);
+			floor1_x_list.push(<span class="number">0</span>);
+			floor1_x_list.push(<span class="number">1u32 </span>&lt;&lt; rangebits);
+			<span class="kw">for </span>cur_class_num <span class="kw">in </span><span class="kw-2">&amp;</span>floor1_partition_class_list {
+				<span class="kw">for _ in </span><span class="number">0 </span>.. floor1_class_dimensions[<span class="kw-2">*</span>cur_class_num <span class="kw">as </span>usize] {
+					floor1_x_list.push(<span class="macro">try!</span>(rdr.read_dyn_u32(rangebits)));
 				}
 			}
-			<span class="comment">// Now do an uniqueness check on floor1_x_list</span>
-			<span class="comment">// to check decodability.</span>
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor1_x_list_sorted</span> = <span class="ident">floor1_x_list</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()
-				.<span class="ident">enumerate</span>().<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;();
-			<span class="ident">floor1_x_list_sorted</span>.<span class="ident">sort_by</span>(|<span class="ident">a</span>, <span class="ident">b</span>| <span class="ident">a</span>.<span class="number">1</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">b</span>.<span class="number">1</span>));
-			<span class="comment">// 0 is guaranteed to be in the list,</span>
-			<span class="comment">// and due to sorting it will be first.</span>
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> = <span class="number">1</span>;
-			<span class="kw">for</span> <span class="ident">el</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">floor1_x_list_sorted</span> {
-				<span class="kw">if</span> <span class="ident">el</span>.<span class="number">1</span> == <span class="ident">last</span> {
-					<span class="comment">// duplicate entry found</span>
-					<span class="comment">// undecodable as per spec</span>
-					<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+			<span class="comment">// Now do an uniqueness check on floor1_x_list
+			// to check decodability.
+			</span><span class="kw">let </span><span class="kw-2">mut </span>floor1_x_list_sorted = floor1_x_list.iter().cloned()
+				.enumerate().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+			floor1_x_list_sorted.sort_by(|a, b| a.<span class="number">1</span>.cmp(<span class="kw-2">&amp;</span>b.<span class="number">1</span>));
+			<span class="comment">// 0 is guaranteed to be in the list,
+			// and due to sorting it will be first.
+			</span><span class="kw">let </span><span class="kw-2">mut </span>last = <span class="number">1</span>;
+			<span class="kw">for </span>el <span class="kw">in </span><span class="kw-2">&amp;</span>floor1_x_list_sorted {
+				<span class="kw">if </span>el.<span class="number">1 </span>== last {
+					<span class="comment">// duplicate entry found
+					// undecodable as per spec
+					</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 				}
-				<span class="ident">last</span> = <span class="ident">el</span>.<span class="number">1</span>;
+				last = el.<span class="number">1</span>;
 			}
 
-			<span class="comment">// Only now return the result</span>
-			<span class="prelude-val">Ok</span>(<span class="ident">Floor::TypeOne</span>(<span class="ident">FloorTypeOne</span> {
-				<span class="ident">floor1_multiplier</span>,
-				<span class="ident">floor1_partition_class</span> : <span class="ident">floor1_partition_class_list</span>,
-				<span class="ident">floor1_class_dimensions</span>,
-				<span class="ident">floor1_class_subclasses</span>,
-				<span class="ident">floor1_subclass_books</span>,
-				<span class="ident">floor1_class_masterbooks</span>,
-				<span class="ident">floor1_x_list</span>,
-				<span class="ident">floor1_x_list_sorted</span>,
+			<span class="comment">// Only now return the result
+			</span><span class="prelude-val">Ok</span>(Floor::TypeOne(FloorTypeOne {
+				floor1_multiplier,
+				floor1_partition_class : floor1_partition_class_list,
+				floor1_class_dimensions,
+				floor1_class_subclasses,
+				floor1_subclass_books,
+				floor1_class_masterbooks,
+				floor1_x_list,
+				floor1_x_list_sorted,
 
 			}))
 		},
-		<span class="comment">// Type greater than 1 is error condition per spec</span>
-		<span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>),
+		<span class="comment">// Type greater than 1 is error condition per spec
+		</span><span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat),
 	}
 }
 
-<span class="doccomment">/// Reads a Residue which is part of the setup header packet.</span>
-<span class="doccomment">/// The `codebook_cnt` param is required to check for compliant streams</span>
-<span class="kw">fn</span> <span class="ident">read_residue</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>, <span class="ident">codebooks</span> :<span class="kw-2">&amp;</span>[<span class="ident">Codebook</span>])
-		-&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Residue</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">residue_type</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">if</span> <span class="ident">residue_type</span> &gt; <span class="number">2</span> {
-		<span class="comment">// Undecodable by spec</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+<span class="doccomment">/// Reads a Residue which is part of the setup header packet.
+/// The `codebook_cnt` param is required to check for compliant streams
+</span><span class="kw">fn </span>read_residue(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor, codebooks :<span class="kw-2">&amp;</span>[Codebook])
+		-&gt; <span class="prelude-ty">Result</span>&lt;Residue, HeaderReadError&gt; {
+	<span class="kw">let </span>residue_type = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">if </span>residue_type &gt; <span class="number">2 </span>{
+		<span class="comment">// Undecodable by spec
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">residue_begin</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u24</span>());
-	<span class="kw">let</span> <span class="ident">residue_end</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u24</span>());
-	<span class="kw">if</span> <span class="ident">residue_begin</span> &gt; <span class="ident">residue_end</span> {
-		<span class="comment">// If residue_begin &lt; residue_end, we&#39;ll get</span>
-		<span class="comment">// errors in audio parsing code.</span>
-		<span class="comment">// As the idea of residue end being before begin</span>
-		<span class="comment">// sounds quite wrong anyway, we already error</span>
-		<span class="comment">// earlier, in header parsing code.</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span>residue_begin = <span class="macro">try!</span>(rdr.read_u24());
+	<span class="kw">let </span>residue_end = <span class="macro">try!</span>(rdr.read_u24());
+	<span class="kw">if </span>residue_begin &gt; residue_end {
+		<span class="comment">// If residue_begin &lt; residue_end, we&#39;ll get
+		// errors in audio parsing code.
+		// As the idea of residue end being before begin
+		// sounds quite wrong anyway, we already error
+		// earlier, in header parsing code.
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">residue_partition_size</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u24</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="ident">residue_classifications</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="ident">residue_classbook</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="comment">// Read the bitmap pattern:</span>
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">residue_cascade</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">residue_classifications</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">residue_classifications</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">high_bits</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="ident">low_bits</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u3</span>());
-		<span class="kw">let</span> <span class="ident">bitflag</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-		<span class="kw">if</span> <span class="ident">bitflag</span> {
-			<span class="ident">high_bits</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u5</span>());
+	<span class="kw">let </span>residue_partition_size = <span class="macro">try!</span>(rdr.read_u24()) + <span class="number">1</span>;
+	<span class="kw">let </span>residue_classifications = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">let </span>residue_classbook = <span class="macro">try!</span>(rdr.read_u8());
+	<span class="comment">// Read the bitmap pattern:
+	</span><span class="kw">let </span><span class="kw-2">mut </span>residue_cascade = Vec::with_capacity(residue_classifications <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. residue_classifications {
+		<span class="kw">let </span><span class="kw-2">mut </span>high_bits = <span class="number">0</span>;
+		<span class="kw">let </span>low_bits = <span class="macro">try!</span>(rdr.read_u3());
+		<span class="kw">let </span>bitflag = <span class="macro">try!</span>(rdr.read_bit_flag());
+		<span class="kw">if </span>bitflag {
+			high_bits = <span class="macro">try!</span>(rdr.read_u5());
 		}
-		<span class="ident">residue_cascade</span>.<span class="ident">push</span>((<span class="ident">high_bits</span> &lt;&lt; <span class="number">3</span>) | <span class="ident">low_bits</span>);
+		residue_cascade.push((high_bits &lt;&lt; <span class="number">3</span>) | low_bits);
 	}
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">residue_books</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">residue_classifications</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="comment">// Read the list of book numbers:</span>
-	<span class="kw">for</span> <span class="ident">cascade_entry</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">residue_cascade</span> {
-		<span class="ident">residue_books</span>.<span class="ident">push</span>(<span class="macro">try!</span>(
-			<span class="ident">ResidueBook::read_book</span>(<span class="ident">rdr</span>, <span class="kw-2">*</span><span class="ident">cascade_entry</span>, <span class="ident">codebooks</span>)));
+	<span class="kw">let </span><span class="kw-2">mut </span>residue_books = Vec::with_capacity(residue_classifications <span class="kw">as </span>usize);
+	<span class="comment">// Read the list of book numbers:
+	</span><span class="kw">for </span>cascade_entry <span class="kw">in </span><span class="kw-2">&amp;</span>residue_cascade {
+		residue_books.push(<span class="macro">try!</span>(
+			ResidueBook::read_book(rdr, <span class="kw-2">*</span>cascade_entry, codebooks)));
 	}
-	<span class="kw">if</span> <span class="ident">residue_classbook</span> <span class="kw">as</span> <span class="ident">usize</span> &gt;= <span class="ident">codebooks</span>.<span class="ident">len</span>() {
-		<span class="comment">// Undecodable because residue_classbook must be valid index</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">if </span>residue_classbook <span class="kw">as </span>usize &gt;= codebooks.len() {
+		<span class="comment">// Undecodable because residue_classbook must be valid index
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
 	<span class="comment">/*
 	// Currently we check below condition in audio decode, following the spec,
@@ -2118,189 +2118,189 @@ spec requires.
 	if codebooks[residue_classbook as usize].codebook_vq_lookup_vec.is_none() {
 		// Undecodable because residue_classbook must be valid index
 		try!(Err(HeaderReadError::HeaderBadFormat));
-	}*/</span>
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Residue</span> {
-		<span class="ident">residue_type</span> : <span class="ident">residue_type</span> <span class="kw">as</span> <span class="ident">u8</span>,
-		<span class="ident">residue_begin</span>,
-		<span class="ident">residue_end</span>,
-		<span class="ident">residue_partition_size</span>,
-		<span class="ident">residue_classifications</span>,
-		<span class="ident">residue_classbook</span>,
-		<span class="ident">residue_books</span>,
+	}*/
+	</span><span class="kw">return </span><span class="prelude-val">Ok</span>(Residue {
+		residue_type : residue_type <span class="kw">as </span>u8,
+		residue_begin,
+		residue_end,
+		residue_partition_size,
+		residue_classifications,
+		residue_classbook,
+		residue_books,
 	});
 }
 
-<span class="doccomment">/// Reads a &quot;Mapping&quot; which is part of the setup header packet.</span>
-<span class="kw">fn</span> <span class="ident">read_mapping</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>,
-		<span class="ident">audio_chan_ilog</span> :<span class="ident">u8</span>, <span class="ident">audio_channels</span> :<span class="ident">u8</span>,
-		<span class="ident">floor_count</span> :<span class="ident">u8</span>, <span class="ident">residue_count</span> :<span class="ident">u8</span>)
-		-&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Mapping</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">mapping_type</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">if</span> <span class="ident">mapping_type</span> &gt; <span class="number">0</span> {
-		<span class="comment">// Undecodable per spec</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+<span class="doccomment">/// Reads a &quot;Mapping&quot; which is part of the setup header packet.
+</span><span class="kw">fn </span>read_mapping(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor,
+		audio_chan_ilog :u8, audio_channels :u8,
+		floor_count :u8, residue_count :u8)
+		-&gt; <span class="prelude-ty">Result</span>&lt;Mapping, HeaderReadError&gt; {
+	<span class="kw">let </span>mapping_type = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">if </span>mapping_type &gt; <span class="number">0 </span>{
+		<span class="comment">// Undecodable per spec
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">mapping_submaps</span> = <span class="kw">match</span> <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>()) {
-		<span class="bool-val">true</span> =&gt; <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>()) + <span class="number">1</span>,
-		<span class="bool-val">false</span> =&gt; <span class="number">1</span>,
+	<span class="kw">let </span>mapping_submaps = <span class="kw">match </span><span class="macro">try!</span>(rdr.read_bit_flag()) {
+		<span class="bool-val">true </span>=&gt; <span class="macro">try!</span>(rdr.read_u4()) + <span class="number">1</span>,
+		<span class="bool-val">false </span>=&gt; <span class="number">1</span>,
 	};
-	<span class="kw">let</span> <span class="ident">mapping_coupling_steps</span> = <span class="kw">match</span> <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>()) {
-		<span class="bool-val">true</span> =&gt; <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>()) <span class="kw">as</span> <span class="ident">u16</span> + <span class="number">1</span>,
-		<span class="bool-val">false</span> =&gt; <span class="number">0</span>,
+	<span class="kw">let </span>mapping_coupling_steps = <span class="kw">match </span><span class="macro">try!</span>(rdr.read_bit_flag()) {
+		<span class="bool-val">true </span>=&gt; <span class="macro">try!</span>(rdr.read_u8()) <span class="kw">as </span>u16 + <span class="number">1</span>,
+		<span class="bool-val">false </span>=&gt; <span class="number">0</span>,
 	};
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mapping_magnitudes</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">mapping_coupling_steps</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mapping_angles</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">mapping_coupling_steps</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">mapping_coupling_steps</span> {
-		<span class="kw">let</span> <span class="ident">cur_mag</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_dyn_u8</span>(<span class="ident">audio_chan_ilog</span>));
-		<span class="kw">let</span> <span class="ident">cur_angle</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_dyn_u8</span>(<span class="ident">audio_chan_ilog</span>));
-		<span class="kw">if</span> (<span class="ident">cur_angle</span> == <span class="ident">cur_mag</span>) || (<span class="ident">cur_mag</span> &gt;= <span class="ident">audio_channels</span>)
-				|| (<span class="ident">cur_angle</span> &gt;= <span class="ident">audio_channels</span>) {
-			<span class="comment">// Undecodable per spec</span>
-			<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span><span class="kw-2">mut </span>mapping_magnitudes = Vec::with_capacity(mapping_coupling_steps <span class="kw">as </span>usize);
+	<span class="kw">let </span><span class="kw-2">mut </span>mapping_angles = Vec::with_capacity(mapping_coupling_steps <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. mapping_coupling_steps {
+		<span class="kw">let </span>cur_mag = <span class="macro">try!</span>(rdr.read_dyn_u8(audio_chan_ilog));
+		<span class="kw">let </span>cur_angle = <span class="macro">try!</span>(rdr.read_dyn_u8(audio_chan_ilog));
+		<span class="kw">if </span>(cur_angle == cur_mag) || (cur_mag &gt;= audio_channels)
+				|| (cur_angle &gt;= audio_channels) {
+			<span class="comment">// Undecodable per spec
+			</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 		}
-		<span class="ident">mapping_magnitudes</span>.<span class="ident">push</span>(<span class="ident">cur_mag</span>);
-		<span class="ident">mapping_angles</span>.<span class="ident">push</span>(<span class="ident">cur_angle</span>);
+		mapping_magnitudes.push(cur_mag);
+		mapping_angles.push(cur_angle);
 	}
-	<span class="kw">let</span> <span class="ident">reserved</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u2</span>());
-	<span class="kw">if</span> <span class="ident">reserved</span> != <span class="number">0</span> {
-		<span class="comment">// Undecodable per spec</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span>reserved = <span class="macro">try!</span>(rdr.read_u2());
+	<span class="kw">if </span>reserved != <span class="number">0 </span>{
+		<span class="comment">// Undecodable per spec
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">let</span> <span class="ident">mapping_mux</span> = <span class="kw">if</span> <span class="ident">mapping_submaps</span> &gt; <span class="number">1</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">m</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">audio_channels</span> <span class="kw">as</span> <span class="ident">usize</span>);
-		<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">audio_channels</span> {
-			<span class="kw">let</span> <span class="ident">val</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u4</span>());
-			<span class="kw">if</span> <span class="ident">val</span> &gt;= <span class="ident">mapping_submaps</span> {
-				<span class="comment">// Undecodable per spec</span>
-				<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span>mapping_mux = <span class="kw">if </span>mapping_submaps &gt; <span class="number">1 </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>m = Vec::with_capacity(audio_channels <span class="kw">as </span>usize);
+		<span class="kw">for _ in </span><span class="number">0 </span>.. audio_channels {
+			<span class="kw">let </span>val = <span class="macro">try!</span>(rdr.read_u4());
+			<span class="kw">if </span>val &gt;= mapping_submaps {
+				<span class="comment">// Undecodable per spec
+				</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 			}
-			<span class="ident">m</span>.<span class="ident">push</span>(<span class="ident">val</span>);
+			m.push(val);
 		};
-		<span class="ident">m</span>
-	} <span class="kw">else</span> {
-		<span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">audio_channels</span> <span class="kw">as</span> <span class="ident">usize</span>]
+		m
+	} <span class="kw">else </span>{
+		<span class="macro">vec!</span>[<span class="number">0</span>; audio_channels <span class="kw">as </span>usize]
 	};
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mapping_submap_floors</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">mapping_submaps</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mapping_submap_residues</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">mapping_submaps</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">mapping_submaps</span> {
-		<span class="comment">// To whom those reserved bits may concern.</span>
-		<span class="comment">// I have discarded them!</span>
-		<span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-		<span class="kw">let</span> <span class="ident">cur_floor</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-		<span class="kw">let</span> <span class="ident">cur_residue</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-		<span class="kw">if</span> <span class="ident">cur_floor</span> &gt;= <span class="ident">floor_count</span> ||
-				<span class="ident">cur_residue</span> &gt;= <span class="ident">residue_count</span> {
-			<span class="comment">// Undecodable per spec</span>
-			<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="kw">let </span><span class="kw-2">mut </span>mapping_submap_floors = Vec::with_capacity(mapping_submaps <span class="kw">as </span>usize);
+	<span class="kw">let </span><span class="kw-2">mut </span>mapping_submap_residues = Vec::with_capacity(mapping_submaps <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. mapping_submaps {
+		<span class="comment">// To whom those reserved bits may concern.
+		// I have discarded them!
+		</span><span class="macro">try!</span>(rdr.read_u8());
+		<span class="kw">let </span>cur_floor = <span class="macro">try!</span>(rdr.read_u8());
+		<span class="kw">let </span>cur_residue = <span class="macro">try!</span>(rdr.read_u8());
+		<span class="kw">if </span>cur_floor &gt;= floor_count ||
+				cur_residue &gt;= residue_count {
+			<span class="comment">// Undecodable per spec
+			</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 		}
-		<span class="ident">mapping_submap_floors</span>.<span class="ident">push</span>(<span class="ident">cur_floor</span>);
-		<span class="ident">mapping_submap_residues</span>.<span class="ident">push</span>(<span class="ident">cur_residue</span>);
+		mapping_submap_floors.push(cur_floor);
+		mapping_submap_residues.push(cur_residue);
 	}
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Mapping</span> {
-		<span class="ident">mapping_submaps</span>,
-		<span class="ident">mapping_magnitudes</span>,
-		<span class="ident">mapping_angles</span>,
-		<span class="ident">mapping_mux</span>,
-		<span class="ident">mapping_submap_floors</span>,
-		<span class="ident">mapping_submap_residues</span>,
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(Mapping {
+		mapping_submaps,
+		mapping_magnitudes,
+		mapping_angles,
+		mapping_mux,
+		mapping_submap_floors,
+		mapping_submap_residues,
 	});
 }
 
-<span class="doccomment">/// Reads a ModeInfo which is part of the setup header packet.</span>
-<span class="kw">fn</span> <span class="ident">read_mode_info</span>(<span class="ident">rdr</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BitpackCursor</span>, <span class="ident">mapping_count</span> :<span class="ident">u8</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ModeInfo</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">mode_blockflag</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-	<span class="kw">let</span> <span class="ident">mode_windowtype</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">let</span> <span class="ident">mode_transformtype</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>());
-	<span class="kw">let</span> <span class="ident">mode_mapping</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>());
-	<span class="comment">// Verifying ranges</span>
-	<span class="kw">if</span> <span class="ident">mode_windowtype</span> != <span class="number">0</span> ||
-			<span class="ident">mode_transformtype</span> != <span class="number">0</span> ||
-			<span class="ident">mode_mapping</span> &gt;= <span class="ident">mapping_count</span> {
-		<span class="comment">// Undecodable per spec</span>
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+<span class="doccomment">/// Reads a ModeInfo which is part of the setup header packet.
+</span><span class="kw">fn </span>read_mode_info(rdr :<span class="kw-2">&amp;mut </span>BitpackCursor, mapping_count :u8) -&gt; <span class="prelude-ty">Result</span>&lt;ModeInfo, HeaderReadError&gt; {
+	<span class="kw">let </span>mode_blockflag = <span class="macro">try!</span>(rdr.read_bit_flag());
+	<span class="kw">let </span>mode_windowtype = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">let </span>mode_transformtype = <span class="macro">try!</span>(rdr.read_u16());
+	<span class="kw">let </span>mode_mapping = <span class="macro">try!</span>(rdr.read_u8());
+	<span class="comment">// Verifying ranges
+	</span><span class="kw">if </span>mode_windowtype != <span class="number">0 </span>||
+			mode_transformtype != <span class="number">0 </span>||
+			mode_mapping &gt;= mapping_count {
+		<span class="comment">// Undecodable per spec
+		</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">ModeInfo</span> {
-		<span class="ident">mode_blockflag</span>,
-		<span class="ident">mode_mapping</span>,
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(ModeInfo {
+		mode_blockflag,
+		mode_mapping,
 	});
 }
 
-<span class="doccomment">/// Reading the setup header.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The audio channel and blocksize info needed by the function</span>
-<span class="doccomment">/// can be obtained from the ident header.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_header_setup</span>(<span class="ident">packet</span> :<span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">audio_channels</span> :<span class="ident">u8</span>, <span class="ident">blocksizes</span> :(<span class="ident">u8</span>, <span class="ident">u8</span>)) -&gt;
-		<span class="prelude-ty">Result</span>&lt;<span class="ident">SetupHeader</span>, <span class="ident">HeaderReadError</span>&gt; {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rdr</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">packet</span>);
-	<span class="kw">let</span> <span class="ident">hd_id</span> = <span class="macro">try!</span>(<span class="ident">read_header_begin</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>));
-	<span class="kw">if</span> <span class="ident">hd_id</span> != <span class="number">5</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadType</span>(<span class="ident">hd_id</span>)));
+<span class="doccomment">/// Reading the setup header.
+///
+/// The audio channel and blocksize info needed by the function
+/// can be obtained from the ident header.
+</span><span class="kw">pub fn </span>read_header_setup(packet :<span class="kw-2">&amp;</span>[u8], audio_channels :u8, blocksizes :(u8, u8)) -&gt;
+		<span class="prelude-ty">Result</span>&lt;SetupHeader, HeaderReadError&gt; {
+	<span class="kw">let </span><span class="kw-2">mut </span>rdr = BitpackCursor::new(packet);
+	<span class="kw">let </span>hd_id = <span class="macro">try!</span>(read_header_begin(<span class="kw-2">&amp;mut </span>rdr));
+	<span class="kw">if </span>hd_id != <span class="number">5 </span>{
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadType(hd_id)));
 	}
 
-	<span class="comment">// Little preparation -- needed later</span>
-	<span class="kw">let</span> <span class="ident">audio_chan_ilog</span> = <span class="ident">::ilog</span>((<span class="ident">audio_channels</span> - <span class="number">1</span>) <span class="kw">as</span> <span class="ident">u64</span>);
+	<span class="comment">// Little preparation -- needed later
+	</span><span class="kw">let </span>audio_chan_ilog = ::ilog((audio_channels - <span class="number">1</span>) <span class="kw">as </span>u64);
 
-	<span class="comment">//::print_u8_slice(packet);</span>
+	<span class="comment">//::print_u8_slice(packet);
 
-	<span class="comment">// 1. Read the codebooks</span>
-	<span class="kw">let</span> <span class="ident">vorbis_codebook_count</span> :<span class="ident">u16</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u8</span>()) <span class="kw">as</span> <span class="ident">u16</span> + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">codebooks</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">vorbis_codebook_count</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_codebook_count</span> {
-		<span class="ident">codebooks</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">read_codebook</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>)));
+	// 1. Read the codebooks
+	</span><span class="kw">let </span>vorbis_codebook_count :u16 = <span class="macro">try!</span>(rdr.read_u8()) <span class="kw">as </span>u16 + <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>codebooks = Vec::with_capacity(vorbis_codebook_count <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_codebook_count {
+		codebooks.push(<span class="macro">try!</span>(read_codebook(<span class="kw-2">&amp;mut </span>rdr)));
 	}
 
-	<span class="comment">// 2. Read the time domain transforms</span>
-	<span class="kw">let</span> <span class="ident">vorbis_time_count</span> :<span class="ident">u8</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_time_count</span> {
-		<span class="kw">if</span> <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u16</span>()) != <span class="number">0</span> {
-			<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="comment">// 2. Read the time domain transforms
+	</span><span class="kw">let </span>vorbis_time_count :u8 = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_time_count {
+		<span class="kw">if </span><span class="macro">try!</span>(rdr.read_u16()) != <span class="number">0 </span>{
+			<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 		}
 	}
 
-	<span class="comment">// 3. Read the floor values</span>
-	<span class="kw">let</span> <span class="ident">vorbis_floor_count</span> :<span class="ident">u8</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floors</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">vorbis_floor_count</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_floor_count</span> {
-		<span class="ident">floors</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">read_floor</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>, <span class="ident">vorbis_codebook_count</span>, <span class="ident">blocksizes</span>)));
+	<span class="comment">// 3. Read the floor values
+	</span><span class="kw">let </span>vorbis_floor_count :u8 = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>floors = Vec::with_capacity(vorbis_floor_count <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_floor_count {
+		floors.push(<span class="macro">try!</span>(read_floor(<span class="kw-2">&amp;mut </span>rdr, vorbis_codebook_count, blocksizes)));
 	}
 
-	<span class="comment">// 4. Read the residue values</span>
-	<span class="kw">let</span> <span class="ident">vorbis_residue_count</span> :<span class="ident">u8</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">residues</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">vorbis_residue_count</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_residue_count</span> {
-		<span class="ident">residues</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">read_residue</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>, <span class="kw-2">&amp;</span><span class="ident">codebooks</span>)));
+	<span class="comment">// 4. Read the residue values
+	</span><span class="kw">let </span>vorbis_residue_count :u8 = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>residues = Vec::with_capacity(vorbis_residue_count <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_residue_count {
+		residues.push(<span class="macro">try!</span>(read_residue(<span class="kw-2">&amp;mut </span>rdr, <span class="kw-2">&amp;</span>codebooks)));
 	}
 
-	<span class="comment">// 5. Read the mappings</span>
-	<span class="kw">let</span> <span class="ident">vorbis_mapping_count</span> :<span class="ident">u8</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mappings</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">vorbis_mapping_count</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_mapping_count</span> {
-		<span class="ident">mappings</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">read_mapping</span>(&amp; <span class="kw-2">mut</span> <span class="ident">rdr</span>,
-			<span class="ident">audio_chan_ilog</span>, <span class="ident">audio_channels</span>,
-			<span class="ident">vorbis_floor_count</span>, <span class="ident">vorbis_residue_count</span>)));
+	<span class="comment">// 5. Read the mappings
+	</span><span class="kw">let </span>vorbis_mapping_count :u8 = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>mappings = Vec::with_capacity(vorbis_mapping_count <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_mapping_count {
+		mappings.push(<span class="macro">try!</span>(read_mapping(&amp; <span class="kw-2">mut </span>rdr,
+			audio_chan_ilog, audio_channels,
+			vorbis_floor_count, vorbis_residue_count)));
 	}
 
-	<span class="comment">// 6. Read the modes</span>
-	<span class="kw">let</span> <span class="ident">vorbis_mode_count</span> :<span class="ident">u8</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_u6</span>()) + <span class="number">1</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">modes</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">vorbis_mode_count</span> <span class="kw">as</span> <span class="ident">usize</span>);
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">vorbis_mode_count</span> {
-		<span class="ident">modes</span>.<span class="ident">push</span>(<span class="macro">try!</span>(<span class="ident">read_mode_info</span>(&amp; <span class="kw-2">mut</span> <span class="ident">rdr</span>, <span class="ident">vorbis_mapping_count</span>)));
+	<span class="comment">// 6. Read the modes
+	</span><span class="kw">let </span>vorbis_mode_count :u8 = <span class="macro">try!</span>(rdr.read_u6()) + <span class="number">1</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>modes = Vec::with_capacity(vorbis_mode_count <span class="kw">as </span>usize);
+	<span class="kw">for _ in </span><span class="number">0 </span>.. vorbis_mode_count {
+		modes.push(<span class="macro">try!</span>(read_mode_info(&amp; <span class="kw-2">mut </span>rdr, vorbis_mapping_count)));
 	}
 
-	<span class="comment">// Now we only have to make sure the framing bit is set,</span>
-	<span class="comment">// and we can successfully return the setup header!</span>
-	<span class="kw">let</span> <span class="ident">framing</span> :<span class="ident">bool</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_bit_flag</span>());
-	<span class="kw">if</span> !<span class="ident">framing</span> {
-		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">HeaderReadError::HeaderBadFormat</span>));
+	<span class="comment">// Now we only have to make sure the framing bit is set,
+	// and we can successfully return the setup header!
+	</span><span class="kw">let </span>framing :bool = <span class="macro">try!</span>(rdr.read_bit_flag());
+	<span class="kw">if </span>!framing {
+		<span class="macro">try!</span>(<span class="prelude-val">Err</span>(HeaderReadError::HeaderBadFormat));
 	}
 
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">SetupHeader</span> {
-		<span class="ident">codebooks</span>,
-		<span class="ident">floors</span>,
-		<span class="ident">residues</span>,
-		<span class="ident">mappings</span>,
-		<span class="ident">modes</span>,
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(SetupHeader {
+		codebooks,
+		floors,
+		residues,
+		mappings,
+		modes,
 	});
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

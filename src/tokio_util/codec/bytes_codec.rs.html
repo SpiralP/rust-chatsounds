@@ -84,91 +84,91 @@
 <span id="84">84</span>
 <span id="85">85</span>
 <span id="86">86</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::codec::decoder::Decoder</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::codec::encoder::Encoder</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::codec::decoder::Decoder;
+<span class="kw">use </span><span class="kw">crate</span>::codec::encoder::Encoder;
 
-<span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">BufMut</span>, <span class="ident">Bytes</span>, <span class="ident">BytesMut</span>};
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<span class="kw">use </span>bytes::{BufMut, Bytes, BytesMut};
+<span class="kw">use </span>std::io;
 
-<span class="doccomment">/// A simple [`Decoder`] and [`Encoder`] implementation that just ships bytes around.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Decoder`]: crate::codec::Decoder</span>
-<span class="doccomment">/// [`Encoder`]: crate::codec::Encoder</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Turn an [`AsyncRead`] into a stream of `Result&lt;`[`BytesMut`]`, `[`Error`]`&gt;`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`AsyncRead`]: tokio::io::AsyncRead</span>
-<span class="doccomment">/// [`BytesMut`]: bytes::BytesMut</span>
-<span class="doccomment">/// [`Error`]: std::io::Error</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// # mod hidden {</span>
-<span class="doccomment">/// # #[allow(unused_imports)]</span>
-<span class="doccomment">/// use tokio::fs::File;</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// use tokio::io::AsyncRead;</span>
-<span class="doccomment">/// use tokio_util::codec::{FramedRead, BytesCodec};</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # enum File {}</span>
-<span class="doccomment">/// # impl File {</span>
-<span class="doccomment">/// #     async fn open(_name: &amp;str) -&gt; Result&lt;impl AsyncRead, std::io::Error&gt; {</span>
-<span class="doccomment">/// #         use std::io::Cursor;</span>
-<span class="doccomment">/// #         Ok(Cursor::new(vec![0, 1, 2, 3, 4, 5]))</span>
-<span class="doccomment">/// #     }</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # #[tokio::main(flavor = &quot;current_thread&quot;)]</span>
-<span class="doccomment">/// # async fn main() -&gt; Result&lt;(), std::io::Error&gt; {</span>
-<span class="doccomment">/// let my_async_read = File::open(&quot;filename.txt&quot;).await?;</span>
-<span class="doccomment">/// let my_stream_of_bytes = FramedRead::new(my_async_read, BytesCodec::new());</span>
-<span class="doccomment">/// # Ok(())</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>, <span class="ident">Hash</span>, <span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BytesCodec</span>(());
+<span class="doccomment">/// A simple [`Decoder`] and [`Encoder`] implementation that just ships bytes around.
+///
+/// [`Decoder`]: crate::codec::Decoder
+/// [`Encoder`]: crate::codec::Encoder
+///
+/// # Example
+///
+/// Turn an [`AsyncRead`] into a stream of `Result&lt;`[`BytesMut`]`, `[`Error`]`&gt;`.
+///
+/// [`AsyncRead`]: tokio::io::AsyncRead
+/// [`BytesMut`]: bytes::BytesMut
+/// [`Error`]: std::io::Error
+///
+/// ```
+/// # mod hidden {
+/// # #[allow(unused_imports)]
+/// use tokio::fs::File;
+/// # }
+/// use tokio::io::AsyncRead;
+/// use tokio_util::codec::{FramedRead, BytesCodec};
+///
+/// # enum File {}
+/// # impl File {
+/// #     async fn open(_name: &amp;str) -&gt; Result&lt;impl AsyncRead, std::io::Error&gt; {
+/// #         use std::io::Cursor;
+/// #         Ok(Cursor::new(vec![0, 1, 2, 3, 4, 5]))
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = &quot;current_thread&quot;)]
+/// # async fn main() -&gt; Result&lt;(), std::io::Error&gt; {
+/// let my_async_read = File::open(&quot;filename.txt&quot;).await?;
+/// let my_stream_of_bytes = FramedRead::new(my_async_read, BytesCodec::new());
+/// # Ok(())
+/// # }
+/// ```
+///
+</span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]</span>
+<span class="kw">pub struct </span>BytesCodec(());
 
-<span class="kw">impl</span> <span class="ident">BytesCodec</span> {
-    <span class="doccomment">/// Creates a new `BytesCodec` for shipping around raw bytes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">BytesCodec</span> {
-        <span class="ident">BytesCodec</span>(())
+<span class="kw">impl </span>BytesCodec {
+    <span class="doccomment">/// Creates a new `BytesCodec` for shipping around raw bytes.
+    </span><span class="kw">pub fn </span>new() -&gt; BytesCodec {
+        BytesCodec(())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Decoder</span> <span class="kw">for</span> <span class="ident">BytesCodec</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">BytesMut</span>;
-    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">io::Error</span>;
+<span class="kw">impl </span>Decoder <span class="kw">for </span>BytesCodec {
+    <span class="kw">type </span>Item = BytesMut;
+    <span class="kw">type </span>Error = io::Error;
 
-    <span class="kw">fn</span> <span class="ident">decode</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> <span class="ident">BytesMut</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">BytesMut</span>&gt;, <span class="ident">io::Error</span>&gt; {
-        <span class="kw">if</span> !<span class="ident">buf</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">let</span> <span class="ident">len</span> = <span class="ident">buf</span>.<span class="ident">len</span>();
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">len</span>)))
-        } <span class="kw">else</span> {
+    <span class="kw">fn </span>decode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>BytesMut) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;BytesMut&gt;, io::Error&gt; {
+        <span class="kw">if </span>!buf.is_empty() {
+            <span class="kw">let </span>len = buf.len();
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(buf.split_to(len)))
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Encoder</span>&lt;<span class="ident">Bytes</span>&gt; <span class="kw">for</span> <span class="ident">BytesCodec</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">io::Error</span>;
+<span class="kw">impl </span>Encoder&lt;Bytes&gt; <span class="kw">for </span>BytesCodec {
+    <span class="kw">type </span>Error = io::Error;
 
-    <span class="kw">fn</span> <span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">Bytes</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> <span class="ident">BytesMut</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">io::Error</span>&gt; {
-        <span class="ident">buf</span>.<span class="ident">reserve</span>(<span class="ident">data</span>.<span class="ident">len</span>());
-        <span class="ident">buf</span>.<span class="ident">put</span>(<span class="ident">data</span>);
+    <span class="kw">fn </span>encode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Bytes, buf: <span class="kw-2">&amp;mut </span>BytesMut) -&gt; <span class="prelude-ty">Result</span>&lt;(), io::Error&gt; {
+        buf.reserve(data.len());
+        buf.put(data);
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Encoder</span>&lt;<span class="ident">BytesMut</span>&gt; <span class="kw">for</span> <span class="ident">BytesCodec</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">io::Error</span>;
+<span class="kw">impl </span>Encoder&lt;BytesMut&gt; <span class="kw">for </span>BytesCodec {
+    <span class="kw">type </span>Error = io::Error;
 
-    <span class="kw">fn</span> <span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">BytesMut</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> <span class="ident">BytesMut</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">io::Error</span>&gt; {
-        <span class="ident">buf</span>.<span class="ident">reserve</span>(<span class="ident">data</span>.<span class="ident">len</span>());
-        <span class="ident">buf</span>.<span class="ident">put</span>(<span class="ident">data</span>);
+    <span class="kw">fn </span>encode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: BytesMut, buf: <span class="kw-2">&amp;mut </span>BytesMut) -&gt; <span class="prelude-ty">Result</span>&lt;(), io::Error&gt; {
+        buf.reserve(data.len());
+        buf.put(data);
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio_util" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

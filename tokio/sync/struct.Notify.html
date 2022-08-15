@@ -20,60 +20,60 @@ complete immediately, but the one after will wait for a new permit.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>Basic usage.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">notify</span> = <span class="ident">Arc::new</span>(<span class="ident">Notify::new</span>());
-    <span class="kw">let</span> <span class="ident">notify2</span> = <span class="ident">notify</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>notify = Arc::new(Notify::new());
+    <span class="kw">let </span>notify2 = notify.clone();
 
-    <span class="kw">let</span> <span class="ident">handle</span> = <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">notify2</span>.<span class="ident">notified</span>().<span class="kw">await</span>;
+    <span class="kw">let </span>handle = tokio::spawn(<span class="kw">async move </span>{
+        notify2.notified().<span class="kw">await</span>;
         <span class="macro">println!</span>(<span class="string">&quot;received notification&quot;</span>);
     });
 
     <span class="macro">println!</span>(<span class="string">&quot;sending notification&quot;</span>);
-    <span class="ident">notify</span>.<span class="ident">notify_one</span>();
+    notify.notify_one();
 
-    <span class="comment">// Wait for task to receive notification.</span>
-    <span class="ident">handle</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// Wait for task to receive notification.
+    </span>handle.<span class="kw">await</span>.unwrap();
 }</code></pre></div>
 <p>Unbound multi-producer single-consumer (mpsc) channel.</p>
 <p>No wakeups can be lost when using this channel because the call to
 <code>notify_one()</code> will store a permit in the <code>Notify</code>, which the following call
 to <code>notified()</code> will consume.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
 
-<span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Mutex</span>;
+<span class="kw">use </span>std::collections::VecDeque;
+<span class="kw">use </span>std::sync::Mutex;
 
-<span class="kw">struct</span> <span class="ident">Channel</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">values</span>: <span class="ident">Mutex</span>&lt;<span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    <span class="ident">notify</span>: <span class="ident">Notify</span>,
+<span class="kw">struct </span>Channel&lt;T&gt; {
+    values: Mutex&lt;VecDeque&lt;T&gt;&gt;,
+    notify: Notify,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Channel</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">T</span>) {
-        <span class="self">self</span>.<span class="ident">values</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>()
-            .<span class="ident">push_back</span>(<span class="ident">value</span>);
+<span class="kw">impl</span>&lt;T&gt; Channel&lt;T&gt; {
+    <span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) {
+        <span class="self">self</span>.values.lock().unwrap()
+            .push_back(value);
 
-        <span class="comment">// Notify the consumer a value is available</span>
-        <span class="self">self</span>.<span class="ident">notify</span>.<span class="ident">notify_one</span>();
+        <span class="comment">// Notify the consumer a value is available
+        </span><span class="self">self</span>.notify.notify_one();
     }
 
-    <span class="comment">// This is a single-consumer channel, so several concurrent calls to</span>
-    <span class="comment">// `recv` are not allowed.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">recv</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">T</span> {
-        <span class="kw">loop</span> {
-            <span class="comment">// Drain values</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>) = <span class="self">self</span>.<span class="ident">values</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">pop_front</span>() {
-                <span class="kw">return</span> <span class="ident">value</span>;
+    <span class="comment">// This is a single-consumer channel, so several concurrent calls to
+    // `recv` are not allowed.
+    </span><span class="kw">pub async fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; T {
+        <span class="kw">loop </span>{
+            <span class="comment">// Drain values
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(value) = <span class="self">self</span>.values.lock().unwrap().pop_front() {
+                <span class="kw">return </span>value;
             }
 
-            <span class="comment">// Wait for values to be available</span>
-            <span class="self">self</span>.<span class="ident">notify</span>.<span class="ident">notified</span>().<span class="kw">await</span>;
+            <span class="comment">// Wait for values to be available
+            </span><span class="self">self</span>.notify.notified().<span class="kw">await</span>;
         }
     }
 }</code></pre></div>
@@ -97,66 +97,66 @@ to the <code>Notify</code>. This ensures that both futures are woken.</p>
 to <code>recv</code>. This is why the mpsc example above does not require a call to
 <code>enable</code>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
 
-<span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Mutex</span>;
+<span class="kw">use </span>std::collections::VecDeque;
+<span class="kw">use </span>std::sync::Mutex;
 
-<span class="kw">struct</span> <span class="ident">Channel</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="ident">messages</span>: <span class="ident">Mutex</span>&lt;<span class="ident">VecDeque</span>&lt;<span class="ident">T</span>&gt;&gt;,
-    <span class="ident">notify_on_sent</span>: <span class="ident">Notify</span>,
+<span class="kw">struct </span>Channel&lt;T&gt; {
+    messages: Mutex&lt;VecDeque&lt;T&gt;&gt;,
+    notify_on_sent: Notify,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Channel</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">T</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">locked_queue</span> = <span class="self">self</span>.<span class="ident">messages</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">locked_queue</span>.<span class="ident">push_back</span>(<span class="ident">msg</span>);
-        <span class="ident">drop</span>(<span class="ident">locked_queue</span>);
+<span class="kw">impl</span>&lt;T&gt; Channel&lt;T&gt; {
+    <span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: T) {
+        <span class="kw">let </span><span class="kw-2">mut </span>locked_queue = <span class="self">self</span>.messages.lock().unwrap();
+        locked_queue.push_back(msg);
+        drop(locked_queue);
 
-        <span class="comment">// Send a notification to one of the calls currently</span>
-        <span class="comment">// waiting in a call to `recv`.</span>
-        <span class="self">self</span>.<span class="ident">notify_on_sent</span>.<span class="ident">notify_one</span>();
+        <span class="comment">// Send a notification to one of the calls currently
+        // waiting in a call to `recv`.
+        </span><span class="self">self</span>.notify_on_sent.notify_one();
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_recv</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">locked_queue</span> = <span class="self">self</span>.<span class="ident">messages</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">locked_queue</span>.<span class="ident">pop_front</span>()
+    <span class="kw">pub fn </span>try_recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>locked_queue = <span class="self">self</span>.messages.lock().unwrap();
+        locked_queue.pop_front()
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">recv</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">T</span> {
-        <span class="kw">let</span> <span class="ident">future</span> = <span class="self">self</span>.<span class="ident">notify_on_sent</span>.<span class="ident">notified</span>();
-        <span class="macro">tokio::pin!</span>(<span class="ident">future</span>);
+    <span class="kw">pub async fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; T {
+        <span class="kw">let </span>future = <span class="self">self</span>.notify_on_sent.notified();
+        <span class="macro">tokio::pin!</span>(future);
 
-        <span class="kw">loop</span> {
-            <span class="comment">// Make sure that no wakeup is lost if we get</span>
-            <span class="comment">// `None` from `try_recv`.</span>
-            <span class="ident">future</span>.<span class="ident">as_mut</span>().<span class="ident">enable</span>();
+        <span class="kw">loop </span>{
+            <span class="comment">// Make sure that no wakeup is lost if we get
+            // `None` from `try_recv`.
+            </span>future.as_mut().enable();
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) = <span class="self">self</span>.<span class="ident">try_recv</span>() {
-                <span class="kw">return</span> <span class="ident">msg</span>;
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(msg) = <span class="self">self</span>.try_recv() {
+                <span class="kw">return </span>msg;
             }
 
-            <span class="comment">// Wait for a call to `notify_one`.</span>
-            <span class="comment">//</span>
-            <span class="comment">// This uses `.as_mut()` to avoid consuming the future,</span>
-            <span class="comment">// which lets us call `Pin::set` below.</span>
-            <span class="ident">future</span>.<span class="ident">as_mut</span>().<span class="kw">await</span>;
+            <span class="comment">// Wait for a call to `notify_one`.
+            //
+            // This uses `.as_mut()` to avoid consuming the future,
+            // which lets us call `Pin::set` below.
+            </span>future.as_mut().<span class="kw">await</span>;
 
-            <span class="comment">// Reset the future in case another call to</span>
-            <span class="comment">// `try_recv` got the message before us.</span>
-            <span class="ident">future</span>.<span class="ident">set</span>(<span class="self">self</span>.<span class="ident">notify_on_sent</span>.<span class="ident">notified</span>());
+            <span class="comment">// Reset the future in case another call to
+            // `try_recv` got the message before us.
+            </span>future.set(<span class="self">self</span>.notify_on_sent.notified());
         }
     }
 }</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Notify" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#291-554">source</a></span><a href="#impl-Notify" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.Notify.html" title="struct tokio::sync::Notify">Notify</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.new" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#301-306">source</a></span><h4 class="code-header">pub fn <a href="#method.new" class="fnname">new</a>() -&gt; <a class="struct" href="struct.Notify.html" title="struct tokio::sync::Notify">Notify</a></h4></section></summary><div class="docblock"><p>Create a new <code>Notify</code>, initialized without a permit.</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
 
-<span class="kw">let</span> <span class="ident">notify</span> = <span class="ident">Notify::new</span>();</code></pre></div>
+<span class="kw">let </span>notify = Notify::new();</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.notified" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#376-390">source</a></span><h4 class="code-header">pub fn <a href="#method.notified" class="fnname">notified</a>(&amp;self) -&gt; <a class="struct" href="futures/struct.Notified.html" title="struct tokio::sync::futures::Notified">Notified</a>&lt;'_&gt;<span class="notable-traits"><span class="notable-traits-tooltip">ⓘ<span class="notable-traits-tooltiptext"><span class="docblock"><span class="notable">Notable traits for <a class="struct" href="futures/struct.Notified.html" title="struct tokio::sync::futures::Notified">Notified</a>&lt;'_&gt;</span><code class="content"><span class="where fmt-newline">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a> for <a class="struct" href="futures/struct.Notified.html" title="struct tokio::sync::futures::Notified">Notified</a>&lt;'_&gt;</span><span class="where fmt-newline">    type <a href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" class="associatedtype">Output</a> = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>;</span></code></span></span></span></span></h4></section></summary><div class="docblock"><p>Wait for a notification.</p>
 <p>Equivalent to:</p>
 
-<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notified</span>(<span class="kw-2">&amp;</span><span class="self">self</span>);</code></pre></div>
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">async fn </span>notified(<span class="kw-2">&amp;</span><span class="self">self</span>);</code></pre></div>
 <p>Each <code>Notify</code> value holds a single permit. If a permit is available from
 an earlier call to <a href="struct.Notify.html#method.notify_one"><code>notify_one()</code></a>, then <code>notified().await</code> will complete
 immediately, consuming that permit. Otherwise, <code>notified().await</code> waits
@@ -172,21 +172,21 @@ yet been polled.</p>
 they were requested. Cancelling a call to <code>notified</code> makes you lose your
 place in the queue.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">notify</span> = <span class="ident">Arc::new</span>(<span class="ident">Notify::new</span>());
-    <span class="kw">let</span> <span class="ident">notify2</span> = <span class="ident">notify</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>notify = Arc::new(Notify::new());
+    <span class="kw">let </span>notify2 = notify.clone();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">notify2</span>.<span class="ident">notified</span>().<span class="kw">await</span>;
+    tokio::spawn(<span class="kw">async move </span>{
+        notify2.notified().<span class="kw">await</span>;
         <span class="macro">println!</span>(<span class="string">&quot;received notification&quot;</span>);
     });
 
     <span class="macro">println!</span>(<span class="string">&quot;sending notification&quot;</span>);
-    <span class="ident">notify</span>.<span class="ident">notify_one</span>();
+    notify.notify_one();
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.notify_one" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#428-460">source</a></span><h4 class="code-header">pub fn <a href="#method.notify_one" class="fnname">notify_one</a>(&amp;self)</h4></section></summary><div class="docblock"><p>Notifies a waiting task.</p>
 <p>If a task is currently waiting, that task is notified. Otherwise, a
@@ -198,21 +198,21 @@ available by this call to <code>notify_one()</code>.</p>
 <code>notified().await</code> will complete immediately, but the one after that
 will wait.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">notify</span> = <span class="ident">Arc::new</span>(<span class="ident">Notify::new</span>());
-    <span class="kw">let</span> <span class="ident">notify2</span> = <span class="ident">notify</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>notify = Arc::new(Notify::new());
+    <span class="kw">let </span>notify2 = notify.clone();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">notify2</span>.<span class="ident">notified</span>().<span class="kw">await</span>;
+    tokio::spawn(<span class="kw">async move </span>{
+        notify2.notified().<span class="kw">await</span>;
         <span class="macro">println!</span>(<span class="string">&quot;received notification&quot;</span>);
     });
 
     <span class="macro">println!</span>(<span class="string">&quot;sending notification&quot;</span>);
-    <span class="ident">notify</span>.<span class="ident">notify_one</span>();
+    notify.notify_one();
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.notify_waiters" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#494-553">source</a></span><h4 class="code-header">pub fn <a href="#method.notify_waiters" class="fnname">notify_waiters</a>(&amp;self)</h4></section></summary><div class="docblock"><p>Notifies all waiting tasks.</p>
 <p>If a task is currently waiting, that task is notified. Unlike with
@@ -221,24 +221,24 @@ will wait.</p>
 already registered waiters. Registering for notification is done by
 acquiring an instance of the <code>Notified</code> future via calling <code>notified()</code>.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::Notify</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::Notify;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">notify</span> = <span class="ident">Arc::new</span>(<span class="ident">Notify::new</span>());
-    <span class="kw">let</span> <span class="ident">notify2</span> = <span class="ident">notify</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>notify = Arc::new(Notify::new());
+    <span class="kw">let </span>notify2 = notify.clone();
 
-    <span class="kw">let</span> <span class="ident">notified1</span> = <span class="ident">notify</span>.<span class="ident">notified</span>();
-    <span class="kw">let</span> <span class="ident">notified2</span> = <span class="ident">notify</span>.<span class="ident">notified</span>();
+    <span class="kw">let </span>notified1 = notify.notified();
+    <span class="kw">let </span>notified2 = notify.notified();
 
-    <span class="kw">let</span> <span class="ident">handle</span> = <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
+    <span class="kw">let </span>handle = tokio::spawn(<span class="kw">async move </span>{
         <span class="macro">println!</span>(<span class="string">&quot;sending notifications&quot;</span>);
-        <span class="ident">notify2</span>.<span class="ident">notify_waiters</span>();
+        notify2.notify_waiters();
     });
 
-    <span class="ident">notified1</span>.<span class="kw">await</span>;
-    <span class="ident">notified2</span>.<span class="kw">await</span>;
+    notified1.<span class="kw">await</span>;
+    notified2.<span class="kw">await</span>;
     <span class="macro">println!</span>(<span class="string">&quot;received notifications&quot;</span>);
 }</code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-Notify" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#198">source</a></span><a href="#impl-Debug-for-Notify" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Notify.html" title="struct tokio::sync::Notify">Notify</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/sync/notify.rs.html#198">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
@@ -254,4 +254,4 @@ acquiring an instance of the <code>Notified</code> future via calling <code>noti
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Notify" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Notify" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -442,334 +442,334 @@
 <span id="442">442</span>
 <span id="443">443</span>
 </pre><pre class="rust"><code>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alsa</span>;
-<span class="kw">use</span> <span class="ident">std::ffi</span>::{<span class="ident">CStr</span>, <span class="ident">CString</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::error</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::mixer::MilliBel</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Round</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ptr</span>, <span class="ident">mem</span>, <span class="ident">fmt</span>, <span class="ident">cmp</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Card</span>, <span class="ident">poll</span>};
-<span class="kw">use</span> <span class="ident">std::cell::UnsafeCell</span>;
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_uint</span>, <span class="ident">c_void</span>, <span class="ident">size_t</span>, <span class="ident">c_long</span>, <span class="ident">c_int</span>, <span class="ident">pollfd</span>, <span class="ident">c_short</span>};
+<span class="kw">use </span><span class="kw">crate</span>::alsa;
+<span class="kw">use </span>std::ffi::{CStr, CString};
+<span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">super</span>::mixer::MilliBel;
+<span class="kw">use </span><span class="kw">super</span>::Round;
+<span class="kw">use </span>std::{ptr, mem, fmt, cmp};
+<span class="kw">use crate</span>::{Card, poll};
+<span class="kw">use </span>std::cell::UnsafeCell;
+<span class="kw">use </span>libc::{c_uint, c_void, size_t, c_long, c_int, pollfd, c_short};
 
-<span class="doccomment">/// We prefer not to allocate for every ElemId, ElemInfo or ElemValue.</span>
-<span class="doccomment">/// But we don&#39;t know if these will increase in the future or on other platforms.</span>
-<span class="doccomment">/// Unfortunately, Rust does not support alloca, so hard-code the sizes for now.</span>
+<span class="doccomment">/// We prefer not to allocate for every ElemId, ElemInfo or ElemValue.
+/// But we don&#39;t know if these will increase in the future or on other platforms.
+/// Unfortunately, Rust does not support alloca, so hard-code the sizes for now.
 
-<span class="kw">const</span> <span class="ident">ELEM_ID_SIZE</span>: <span class="ident">usize</span> = <span class="number">64</span>;
-<span class="comment">// const ELEM_VALUE_SIZE: usize = 1224;</span>
-<span class="comment">// const ELEM_INFO_SIZE: usize = 272;</span>
+</span><span class="kw">const </span>ELEM_ID_SIZE: usize = <span class="number">64</span>;
+<span class="comment">// const ELEM_VALUE_SIZE: usize = 1224;
+// const ELEM_INFO_SIZE: usize = 272;
 
-<span class="doccomment">/// [snd_ctl_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Ctl</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_t</span>);
+</span><span class="doccomment">/// [snd_ctl_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>Ctl(<span class="kw-2">*mut </span>alsa::snd_ctl_t);
 
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Ctl</span> {}
+<span class="kw">unsafe impl </span>Send <span class="kw">for </span>Ctl {}
 
-<span class="kw">impl</span> <span class="ident">Ctl</span> {
-    <span class="doccomment">/// Wrapper around open that takes a &amp;str instead of a &amp;CStr</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="ident"><span class="self">Self</span>::open</span>(<span class="kw-2">&amp;</span><span class="ident">CString::new</span>(<span class="ident">c</span>).<span class="ident">unwrap</span>(), <span class="ident">nonblock</span>)
+<span class="kw">impl </span>Ctl {
+    <span class="doccomment">/// Wrapper around open that takes a &amp;str instead of a &amp;CStr
+    </span><span class="kw">pub fn </span>new(c: <span class="kw-2">&amp;</span>str, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="self">Self</span>::open(<span class="kw-2">&amp;</span>CString::new(c).unwrap(), nonblock)
     }
 
-    <span class="doccomment">/// Open does not support async mode (it&#39;s not very Rustic anyway)</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Ctl</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="kw">let</span> <span class="ident">flags</span> = <span class="kw">if</span> <span class="ident">nonblock</span> { <span class="number">1</span> } <span class="kw">else</span> { <span class="number">0</span> }; <span class="comment">// FIXME: alsa::SND_CTL_NONBLOCK does not exist in alsa-sys</span>
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_open</span>(<span class="kw-2">&amp;mut</span> <span class="ident">r</span>, <span class="ident">c</span>.<span class="ident">as_ptr</span>(), <span class="ident">flags</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Ctl</span>(<span class="ident">r</span>))
+    <span class="doccomment">/// Open does not support async mode (it&#39;s not very Rustic anyway)
+    </span><span class="kw">pub fn </span>open(c: <span class="kw-2">&amp;</span>CStr, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Ctl&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>r = ptr::null_mut();
+        <span class="kw">let </span>flags = <span class="kw">if </span>nonblock { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>}; <span class="comment">// FIXME: alsa::SND_CTL_NONBLOCK does not exist in alsa-sys
+        </span><span class="macro">acheck!</span>(snd_ctl_open(<span class="kw-2">&amp;mut </span>r, c.as_ptr(), flags)).map(|<span class="kw">_</span>| Ctl(r))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_card</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">Card</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Ctl</span>&gt; {
-        <span class="kw">let</span> <span class="ident">s</span> = <span class="macro">format!</span>(<span class="string">&quot;hw:{}&quot;</span>, <span class="ident">c</span>.<span class="ident">get_index</span>());
-        <span class="ident">Ctl::open</span>(<span class="kw-2">&amp;</span><span class="ident">CString::new</span>(<span class="ident">s</span>).<span class="ident">unwrap</span>(), <span class="ident">nonblock</span>)
+    <span class="kw">pub fn </span>from_card(c: <span class="kw-2">&amp;</span>Card, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Ctl&gt; {
+        <span class="kw">let </span>s = <span class="macro">format!</span>(<span class="string">&quot;hw:{}&quot;</span>, c.get_index());
+        Ctl::open(<span class="kw-2">&amp;</span>CString::new(s).unwrap(), nonblock)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">card_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">CardInfo</span>&gt; { <span class="ident">CardInfo::new</span>().<span class="ident">and_then</span>(|<span class="ident">c</span>|
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_card_info</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">c</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">c</span>)) }
+    <span class="kw">pub fn </span>card_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;CardInfo&gt; { CardInfo::new().and_then(|c|
+        <span class="macro">acheck!</span>(snd_ctl_card_info(<span class="self">self</span>.<span class="number">0</span>, c.<span class="number">0</span>)).map(|<span class="kw">_</span>| c)) }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wait</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">timeout_ms</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">bool</span>&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_wait</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">timeout_ms</span>.<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> <span class="kw">as</span> <span class="ident">c_int</span>).<span class="ident">unwrap_or</span>(-<span class="number">1</span>))).<span class="ident">map</span>(|<span class="ident">i</span>| <span class="ident">i</span> == <span class="number">1</span>) }
+    <span class="kw">pub fn </span>wait(<span class="kw-2">&amp;</span><span class="self">self</span>, timeout_ms: <span class="prelude-ty">Option</span>&lt;u32&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+        <span class="macro">acheck!</span>(snd_ctl_wait(<span class="self">self</span>.<span class="number">0</span>, timeout_ms.map(|x| x <span class="kw">as </span>c_int).unwrap_or(-<span class="number">1</span>))).map(|i| i == <span class="number">1</span>) }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_db_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ElemId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">MilliBel</span>, <span class="ident">MilliBel</span>)&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">min</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_get_dB_range</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">elem_id_ptr</span>(<span class="ident">id</span>), <span class="kw-2">&amp;mut</span> <span class="ident">min</span>, <span class="kw-2">&amp;mut</span> <span class="ident">max</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| (<span class="ident">MilliBel</span>(<span class="ident">min</span> <span class="kw">as</span> <span class="ident">i64</span>), <span class="ident">MilliBel</span>(<span class="ident">max</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+    <span class="kw">pub fn </span>get_db_range(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ElemId) -&gt; <span class="prelude-ty">Result</span>&lt;(MilliBel, MilliBel)&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>min: c_long = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>max: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_ctl_get_dB_range(<span class="self">self</span>.<span class="number">0</span>, elem_id_ptr(id), <span class="kw-2">&amp;mut </span>min, <span class="kw-2">&amp;mut </span>max))
+            .map(|<span class="kw">_</span>| (MilliBel(min <span class="kw">as </span>i64), MilliBel(max <span class="kw">as </span>i64)))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">convert_to_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ElemId</span>, <span class="ident">volume</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">MilliBel</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">m</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_convert_to_dB</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">elem_id_ptr</span>(<span class="ident">id</span>), <span class="ident">volume</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="kw-2">&amp;mut</span> <span class="ident">m</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| (<span class="ident">MilliBel</span>(<span class="ident">m</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+    <span class="kw">pub fn </span>convert_to_db(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ElemId, volume: i64) -&gt; <span class="prelude-ty">Result</span>&lt;MilliBel&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>m: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_ctl_convert_to_dB(<span class="self">self</span>.<span class="number">0</span>, elem_id_ptr(id), volume <span class="kw">as </span>c_long, <span class="kw-2">&amp;mut </span>m))
+            .map(|<span class="kw">_</span>| (MilliBel(m <span class="kw">as </span>i64)))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">convert_from_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">ElemId</span>, <span class="ident">mb</span>: <span class="ident">MilliBel</span>, <span class="ident">dir</span>: <span class="ident">Round</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">i64</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">m</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_convert_from_dB</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">elem_id_ptr</span>(<span class="ident">id</span>), <span class="ident">mb</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="kw-2">&amp;mut</span> <span class="ident">m</span>, <span class="ident">dir</span> <span class="kw">as</span> <span class="ident">c_int</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">m</span> <span class="kw">as</span> <span class="ident">i64</span>)
+    <span class="kw">pub fn </span>convert_from_db(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ElemId, mb: MilliBel, dir: Round) -&gt; <span class="prelude-ty">Result</span>&lt;i64&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>m: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_ctl_convert_from_dB(<span class="self">self</span>.<span class="number">0</span>, elem_id_ptr(id), mb.<span class="number">0 </span><span class="kw">as </span>c_long, <span class="kw-2">&amp;mut </span>m, dir <span class="kw">as </span>c_int))
+            .map(|<span class="kw">_</span>| m <span class="kw">as </span>i64)
     }
 
-    <span class="doccomment">/// Note: According to alsa-lib documentation, you&#39;re also supposed to have functionality for</span>
-    <span class="doccomment">/// returning whether or not you are subscribed. This does not work in practice, so I&#39;m not</span>
-    <span class="doccomment">/// including that here.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">subscribe_events</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">subscribe</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_subscribe_events</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="kw">if</span> <span class="ident">subscribe</span> { <span class="number">1</span> } <span class="kw">else</span> { <span class="number">0</span> })).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="doccomment">/// Note: According to alsa-lib documentation, you&#39;re also supposed to have functionality for
+    /// returning whether or not you are subscribed. This does not work in practice, so I&#39;m not
+    /// including that here.
+    </span><span class="kw">pub fn </span>subscribe_events(<span class="kw-2">&amp;</span><span class="self">self</span>, subscribe: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_ctl_subscribe_events(<span class="self">self</span>.<span class="number">0</span>, <span class="kw">if </span>subscribe { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>})).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Event</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">e</span> = <span class="ident">event_new</span>()<span class="question-mark">?</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_read</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">e</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="ident">r</span>| <span class="kw">if</span> <span class="ident">r</span> == <span class="number">1</span> { <span class="prelude-val">Some</span>(<span class="ident">e</span>) } <span class="kw">else</span> { <span class="prelude-val">None</span> })
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Ctl</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_close</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
-}
-
-<span class="kw">impl</span> <span class="ident">poll::Descriptors</span> <span class="kw">for</span> <span class="ident">Ctl</span> {
-    <span class="kw">fn</span> <span class="ident">count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_poll_descriptors_count</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span> }
-    }
-    <span class="kw">fn</span> <span class="ident">fill</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_poll_descriptors</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_mut_ptr</span>(), <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_ctl_poll_descriptors&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">z</span> <span class="kw">as</span> <span class="ident">usize</span>)
-    }
-    <span class="kw">fn</span> <span class="ident">revents</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;</span>[<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">poll::Flags</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_poll_descriptors_revents</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">pollfd</span>, <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="kw-2">&amp;mut</span> <span class="ident">r</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_ctl_poll_descriptors_revents&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">poll::Flags::from_bits_truncate</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">c_short</span>))
+    <span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Event&gt;&gt; {
+        <span class="kw">let </span>e = event_new()<span class="question-mark">?</span>;
+        <span class="macro">acheck!</span>(snd_ctl_read(<span class="self">self</span>.<span class="number">0</span>, e.<span class="number">0</span>)).map(|r| <span class="kw">if </span>r == <span class="number">1 </span>{ <span class="prelude-val">Some</span>(e) } <span class="kw">else </span>{ <span class="prelude-val">None </span>})
     }
 }
 
-
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ctl_ptr</span>(<span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">Ctl</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_t</span> { <span class="ident">a</span>.<span class="number">0</span> }
-
-<span class="doccomment">/// [snd_ctl_card_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CardInfo</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_card_info_t</span>);
-
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">CardInfo</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_free</span>(<span class="self">self</span>.<span class="number">0</span>) }}
+<span class="kw">impl </span>Drop <span class="kw">for </span>Ctl {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_ctl_close(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
-<span class="kw">impl</span> <span class="ident">CardInfo</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">CardInfo</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_card_info_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">CardInfo</span>(<span class="ident">p</span>))
+<span class="kw">impl </span>poll::Descriptors <span class="kw">for </span>Ctl {
+    <span class="kw">fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">unsafe </span>{ alsa::snd_ctl_poll_descriptors_count(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>usize }
+    }
+    <span class="kw">fn </span>fill(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_ctl_poll_descriptors(<span class="self">self</span>.<span class="number">0</span>, p.as_mut_ptr(), p.len() <span class="kw">as </span>c_uint) };
+        from_code(<span class="string">&quot;snd_ctl_poll_descriptors&quot;</span>, z).map(|<span class="kw">_</span>| z <span class="kw">as </span>usize)
+    }
+    <span class="kw">fn </span>revents(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;</span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;poll::Flags&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>r = <span class="number">0</span>;
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_ctl_poll_descriptors_revents(<span class="self">self</span>.<span class="number">0</span>, p.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>pollfd, p.len() <span class="kw">as </span>c_uint, <span class="kw-2">&amp;mut </span>r) };
+        from_code(<span class="string">&quot;snd_ctl_poll_descriptors_revents&quot;</span>, z).map(|<span class="kw">_</span>| poll::Flags::from_bits_truncate(r <span class="kw">as </span>c_short))
+    }
+}
+
+
+<span class="kw">pub fn </span>ctl_ptr(a: <span class="kw-2">&amp;</span>Ctl) -&gt; <span class="kw-2">*mut </span>alsa::snd_ctl_t { a.<span class="number">0 </span>}
+
+<span class="doccomment">/// [snd_ctl_card_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>CardInfo(<span class="kw-2">*mut </span>alsa::snd_ctl_card_info_t);
+
+<span class="kw">impl </span>Drop <span class="kw">for </span>CardInfo {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_free(<span class="self">self</span>.<span class="number">0</span>) }}
+}
+
+<span class="kw">impl </span>CardInfo {
+    <span class="kw">fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;CardInfo&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+        <span class="macro">acheck!</span>(snd_ctl_card_info_malloc(<span class="kw-2">&amp;mut </span>p)).map(|<span class="kw">_</span>| CardInfo(p))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_id&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_id</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_driver</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_driver&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_driver</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_components</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_components&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_components</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_longname</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_longname&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_longname</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_name&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_name</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mixername</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_ctl_card_info_get_mixername&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_mixername</span>(<span class="self">self</span>.<span class="number">0</span>) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_card</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Card</span> { <span class="ident">Card::new</span>(<span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_card_info_get_card</span>(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_id&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_id(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_driver(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_driver&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_driver(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_components(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_components&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_components(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_longname(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_longname&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_longname(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_name&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_name(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_mixername(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_ctl_card_info_get_mixername&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_mixername(<span class="self">self</span>.<span class="number">0</span>) })}
+    <span class="kw">pub fn </span>get_card(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Card { Card::new(<span class="kw">unsafe </span>{ alsa::snd_ctl_card_info_get_card(<span class="self">self</span>.<span class="number">0</span>) })}
 }
 
 <span class="macro">alsa_enum!</span>(
-    <span class="doccomment">/// [SND_CTL_ELEM_IFACE_xxx](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) constants</span>
-    <span class="ident">ElemIface</span>, <span class="ident">ALL_ELEMIFACE</span>[<span class="number">7</span>],
+    <span class="doccomment">/// [SND_CTL_ELEM_IFACE_xxx](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) constants
+    </span>ElemIface, ALL_ELEMIFACE[<span class="number">7</span>],
 
-    <span class="ident">Card</span> = <span class="ident">SND_CTL_ELEM_IFACE_CARD</span>,
-    <span class="ident">Hwdep</span> = <span class="ident">SND_CTL_ELEM_IFACE_HWDEP</span>,
-    <span class="ident">Mixer</span> = <span class="ident">SND_CTL_ELEM_IFACE_MIXER</span>,
-    <span class="ident">PCM</span> = <span class="ident">SND_CTL_ELEM_IFACE_PCM</span>,
-    <span class="ident">Rawmidi</span> = <span class="ident">SND_CTL_ELEM_IFACE_RAWMIDI</span>,
-    <span class="ident">Timer</span> = <span class="ident">SND_CTL_ELEM_IFACE_TIMER</span>,
-    <span class="ident">Sequencer</span> = <span class="ident">SND_CTL_ELEM_IFACE_SEQUENCER</span>,
+    Card = SND_CTL_ELEM_IFACE_CARD,
+    Hwdep = SND_CTL_ELEM_IFACE_HWDEP,
+    Mixer = SND_CTL_ELEM_IFACE_MIXER,
+    PCM = SND_CTL_ELEM_IFACE_PCM,
+    Rawmidi = SND_CTL_ELEM_IFACE_RAWMIDI,
+    Timer = SND_CTL_ELEM_IFACE_TIMER,
+    Sequencer = SND_CTL_ELEM_IFACE_SEQUENCER,
 );
 
 <span class="macro">alsa_enum!</span>(
-    <span class="doccomment">/// [SND_CTL_ELEM_TYPE_xxx](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) constants</span>
-    <span class="ident">ElemType</span>, <span class="ident">ALL_ELEMTYPE</span>[<span class="number">7</span>],
+    <span class="doccomment">/// [SND_CTL_ELEM_TYPE_xxx](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) constants
+    </span>ElemType, ALL_ELEMTYPE[<span class="number">7</span>],
 
-    <span class="prelude-val">None</span> = <span class="ident">SND_CTL_ELEM_TYPE_NONE</span>,
-    <span class="ident">Boolean</span> = <span class="ident">SND_CTL_ELEM_TYPE_BOOLEAN</span>,
-    <span class="ident">Integer</span> = <span class="ident">SND_CTL_ELEM_TYPE_INTEGER</span>,
-    <span class="ident">Enumerated</span> = <span class="ident">SND_CTL_ELEM_TYPE_ENUMERATED</span>,
-    <span class="ident">Bytes</span> = <span class="ident">SND_CTL_ELEM_TYPE_BYTES</span>,
-    <span class="ident">IEC958</span> = <span class="ident">SND_CTL_ELEM_TYPE_IEC958</span>,
-    <span class="ident">Integer64</span> = <span class="ident">SND_CTL_ELEM_TYPE_INTEGER64</span>,
+    <span class="prelude-val">None </span>= SND_CTL_ELEM_TYPE_NONE,
+    Boolean = SND_CTL_ELEM_TYPE_BOOLEAN,
+    Integer = SND_CTL_ELEM_TYPE_INTEGER,
+    Enumerated = SND_CTL_ELEM_TYPE_ENUMERATED,
+    Bytes = SND_CTL_ELEM_TYPE_BYTES,
+    IEC958 = SND_CTL_ELEM_TYPE_IEC958,
+    Integer64 = SND_CTL_ELEM_TYPE_INTEGER64,
 );
 
-<span class="doccomment">/// [snd_ctl_elem_value_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ElemValue</span> {
-    <span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_value_t</span>,
-    <span class="ident">etype</span>: <span class="ident">ElemType</span>,
-    <span class="ident">count</span>: <span class="ident">u32</span>,
+<span class="doccomment">/// [snd_ctl_elem_value_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>ElemValue {
+    ptr: <span class="kw-2">*mut </span>alsa::snd_ctl_elem_value_t,
+    etype: ElemType,
+    count: u32,
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">ElemValue</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_free</span>(<span class="self">self</span>.<span class="ident">ptr</span>) }; }
+<span class="kw">impl </span>Drop <span class="kw">for </span>ElemValue {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_free(<span class="self">self</span>.ptr) }; }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_value_ptr</span>(<span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">ElemValue</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_value_t</span> { <span class="ident">a</span>.<span class="ident">ptr</span> }
+<span class="kw">pub fn </span>elem_value_ptr(a: <span class="kw-2">&amp;</span>ElemValue) -&gt; <span class="kw-2">*mut </span>alsa::snd_ctl_elem_value_t { a.ptr }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_value_new</span>(<span class="ident">t</span>: <span class="ident">ElemType</span>, <span class="ident">count</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ElemValue</span>&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-    <span class="macro">acheck!</span>(<span class="ident">snd_ctl_elem_value_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>))
-        .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">ElemValue</span> { <span class="ident">ptr</span>: <span class="ident">p</span>, <span class="ident">etype</span>: <span class="ident">t</span>, <span class="ident">count</span> })
+<span class="kw">pub fn </span>elem_value_new(t: ElemType, count: u32) -&gt; <span class="prelude-ty">Result</span>&lt;ElemValue&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+    <span class="macro">acheck!</span>(snd_ctl_elem_value_malloc(<span class="kw-2">&amp;mut </span>p))
+        .map(|<span class="kw">_</span>| ElemValue { ptr: p, etype: t, count })
 }
 
-<span class="kw">impl</span> <span class="ident">ElemValue</span> {
+<span class="kw">impl </span>ElemValue {
 
-    <span class="comment">// Note: The get_bytes hands out a reference to inside the object. Therefore, we can&#39;t treat</span>
-    <span class="comment">// the content as &quot;cell&quot;ed, but must take a &quot;&amp;mut self&quot; (to make sure the reference</span>
-    <span class="comment">// from get_bytes has been dropped when calling a set_* function).</span>
+    <span class="comment">// Note: The get_bytes hands out a reference to inside the object. Therefore, we can&#39;t treat
+    // the content as &quot;cell&quot;ed, but must take a &quot;&amp;mut self&quot; (to make sure the reference
+    // from get_bytes has been dropped when calling a set_* function).
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_boolean</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">bool</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Boolean</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_get_boolean</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>) } != <span class="number">0</span>) }
+    </span><span class="kw">pub fn </span>get_boolean(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Boolean || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_get_boolean(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint) } != <span class="number">0</span>) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_boolean</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>, <span class="ident">val</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Boolean</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_set_boolean</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="kw">if</span> <span class="ident">val</span> {<span class="number">1</span>} <span class="kw">else</span> {<span class="number">0</span>}) }; <span class="prelude-val">Some</span>(()) }
+    <span class="kw">pub fn </span>set_boolean(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: u32, val: bool) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Boolean || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_set_boolean(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint, <span class="kw">if </span>val {<span class="number">1</span>} <span class="kw">else </span>{<span class="number">0</span>}) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_integer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i32</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Integer</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_get_integer</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>) } <span class="kw">as</span> <span class="ident">i32</span>) }
+    <span class="kw">pub fn </span>get_integer(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Integer || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_get_integer(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint) } <span class="kw">as </span>i32) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_integer</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>, <span class="ident">val</span>: <span class="ident">i32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Integer</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_set_integer</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="ident">val</span> <span class="kw">as</span> <span class="ident">c_long</span>) }; <span class="prelude-val">Some</span>(()) }
+    <span class="kw">pub fn </span>set_integer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: u32, val: i32) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Integer || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_set_integer(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint, val <span class="kw">as </span>c_long) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_integer64</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">i64</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Integer64</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_get_integer64</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>) } <span class="kw">as</span> <span class="ident">i64</span>) }
+    <span class="kw">pub fn </span>get_integer64(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Option</span>&lt;i64&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Integer64 || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_get_integer64(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint) } <span class="kw">as </span>i64) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_integer64</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>, <span class="ident">val</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Integer</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_set_integer64</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="ident">val</span>) }; <span class="prelude-val">Some</span>(()) }
+    <span class="kw">pub fn </span>set_integer64(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: u32, val: i64) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Integer || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_set_integer64(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint, val) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_enumerated</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Enumerated</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_get_enumerated</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>) } <span class="kw">as</span> <span class="ident">u32</span>) }
+    <span class="kw">pub fn </span>get_enumerated(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Enumerated || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_get_enumerated(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint) } <span class="kw">as </span>u32) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_enumerated</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>, <span class="ident">val</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Enumerated</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_set_enumerated</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="ident">val</span> <span class="kw">as</span> <span class="ident">c_uint</span>) }; <span class="prelude-val">Some</span>(()) }
+    <span class="kw">pub fn </span>set_enumerated(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: u32, val: u32) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Enumerated || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_set_enumerated(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint, val <span class="kw">as </span>c_uint) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_byte</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u8</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Bytes</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_get_byte</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>) } <span class="kw">as</span> <span class="ident">u8</span>) }
+    <span class="kw">pub fn </span>get_byte(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Option</span>&lt;u8&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Bytes || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_get_byte(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint) } <span class="kw">as </span>u8) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_byte</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>, <span class="ident">val</span>: <span class="ident">u8</span>) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Bytes</span> || <span class="ident">idx</span> &gt;= <span class="self">self</span>.<span class="ident">count</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_set_byte</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="ident">val</span>) }; <span class="prelude-val">Some</span>(()) }
+    <span class="kw">pub fn </span>set_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: u32, val: u8) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Bytes || idx &gt;= <span class="self">self</span>.count { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_set_byte(<span class="self">self</span>.ptr, idx <span class="kw">as </span>c_uint, val) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Bytes</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>( <span class="kw">unsafe</span> { <span class="ident">::std::slice::from_raw_parts</span>(
-            <span class="ident">alsa::snd_ctl_elem_value_get_bytes</span>(<span class="self">self</span>.<span class="ident">ptr</span>) <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">u8</span>, <span class="self">self</span>.<span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span>) } ) }
+    <span class="kw">pub fn </span>get_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Bytes { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>( <span class="kw">unsafe </span>{ ::std::slice::from_raw_parts(
+            alsa::snd_ctl_elem_value_get_bytes(<span class="self">self</span>.ptr) <span class="kw">as </span><span class="kw-2">*const </span>u8, <span class="self">self</span>.count <span class="kw">as </span>usize) } ) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_bytes</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">val</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">etype</span> != <span class="ident">ElemType::Bytes</span> || <span class="ident">val</span>.<span class="ident">len</span>() != <span class="self">self</span>.<span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span> { <span class="prelude-val">None</span> }
+    <span class="kw">pub fn </span>set_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.etype != ElemType::Bytes || val.len() != <span class="self">self</span>.count <span class="kw">as </span>usize { <span class="prelude-val">None </span>}
 
-        <span class="comment">// Note: the alsa-lib function definition is broken. First, the pointer is declared as mut even</span>
-        <span class="comment">// though it&#39;s const, and second, there is a &quot;value&quot; missing between &quot;elem&quot; and &quot;set_bytes&quot;.</span>
-        <span class="kw">else</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_set_bytes</span>(<span class="self">self</span>.<span class="ident">ptr</span>, <span class="ident">val</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_void</span>, <span class="ident">val</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">size_t</span>) }; <span class="prelude-val">Some</span>(()) }
+        <span class="comment">// Note: the alsa-lib function definition is broken. First, the pointer is declared as mut even
+        // though it&#39;s const, and second, there is a &quot;value&quot; missing between &quot;elem&quot; and &quot;set_bytes&quot;.
+        </span><span class="kw">else </span>{ <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_set_bytes(<span class="self">self</span>.ptr, val.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>c_void, val.len() <span class="kw">as </span>size_t) }; <span class="prelude-val">Some</span>(()) }
     }
 
-    <span class="doccomment">/// Creates a new ElemValue.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">ElemType</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ElemValue</span>&gt; {
-        <span class="comment">// See max length in include/uapi/sound/asound.h in linux kernel for these values</span>
-        <span class="kw">let</span> <span class="ident">count</span> = <span class="kw">match</span> <span class="ident">t</span> {
-            <span class="ident">ElemType::None</span> =&gt; <span class="number">1</span>,
-            <span class="ident">ElemType::Boolean</span> =&gt; <span class="number">128</span>,
-            <span class="ident">ElemType::Integer</span> =&gt; <span class="number">128</span>,
-            <span class="ident">ElemType::Enumerated</span> =&gt; <span class="number">128</span>,
-            <span class="ident">ElemType::Bytes</span> =&gt; <span class="number">512</span>,
-            <span class="ident">ElemType::IEC958</span> =&gt; <span class="number">1</span>,
-            <span class="ident">ElemType::Integer64</span> =&gt; <span class="number">64</span>,
+    <span class="doccomment">/// Creates a new ElemValue.
+    </span><span class="kw">pub fn </span>new(t: ElemType) -&gt; <span class="prelude-ty">Result</span>&lt;ElemValue&gt; {
+        <span class="comment">// See max length in include/uapi/sound/asound.h in linux kernel for these values
+        </span><span class="kw">let </span>count = <span class="kw">match </span>t {
+            ElemType::None =&gt; <span class="number">1</span>,
+            ElemType::Boolean =&gt; <span class="number">128</span>,
+            ElemType::Integer =&gt; <span class="number">128</span>,
+            ElemType::Enumerated =&gt; <span class="number">128</span>,
+            ElemType::Bytes =&gt; <span class="number">512</span>,
+            ElemType::IEC958 =&gt; <span class="number">1</span>,
+            ElemType::Integer64 =&gt; <span class="number">64</span>,
         };
-        <span class="comment">// if count &gt; maxcount { return Err(Error::new(Some(&quot;ElemValue::new - count too large&quot;.into()), 1)) }</span>
-        <span class="kw">let</span> <span class="ident">ev</span> = <span class="ident">elem_value_new</span>(<span class="ident">t</span>, <span class="ident">count</span>)<span class="question-mark">?</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_clear</span>(<span class="ident">elem_value_ptr</span>(<span class="kw-2">&amp;</span><span class="ident">ev</span>)) };
-        <span class="prelude-val">Ok</span>(<span class="ident">ev</span>)
+        <span class="comment">// if count &gt; maxcount { return Err(Error::new(Some(&quot;ElemValue::new - count too large&quot;.into()), 1)) }
+        </span><span class="kw">let </span>ev = elem_value_new(t, count)<span class="question-mark">?</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_clear(elem_value_ptr(<span class="kw-2">&amp;</span>ev)) };
+        <span class="prelude-val">Ok</span>(ev)
     }
 
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ElemValue</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">use</span> <span class="ident"><span class="self">self</span>::ElemType</span>::<span class="kw-2">*</span>;
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;ElemValue({:?}&quot;</span>, <span class="self">self</span>.<span class="ident">etype</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> <span class="ident">a</span> <span class="kw">in</span> <span class="number">0</span>..<span class="self">self</span>.<span class="ident">count</span> { <span class="kw">match</span> <span class="self">self</span>.<span class="ident">etype</span> {
-            <span class="ident">Boolean</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_boolean</span>(<span class="ident">a</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">Integer</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_integer</span>(<span class="ident">a</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">Integer64</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_integer64</span>(<span class="ident">a</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">Enumerated</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_enumerated</span>(<span class="ident">a</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">Bytes</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_byte</span>(<span class="ident">a</span>).<span class="ident">unwrap</span>()),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(()),
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ElemValue {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="kw">use </span><span class="self">self</span>::ElemType::<span class="kw-2">*</span>;
+        <span class="macro">write!</span>(f, <span class="string">&quot;ElemValue({:?}&quot;</span>, <span class="self">self</span>.etype)<span class="question-mark">?</span>;
+        <span class="kw">for </span>a <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.count { <span class="kw">match </span><span class="self">self</span>.etype {
+            Boolean =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.get_boolean(a).unwrap()),
+            Integer =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.get_integer(a).unwrap()),
+            Integer64 =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.get_integer64(a).unwrap()),
+            Enumerated =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.get_enumerated(a).unwrap()),
+            Bytes =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;,{:?}&quot;</span>, <span class="self">self</span>.get_byte(a).unwrap()),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()),
         }<span class="question-mark">?</span>};
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;)&quot;</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;)&quot;</span>)
     }
 }
 
-<span class="doccomment">/// [snd_ctl_elem_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ElemInfo</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_info_t</span>);
+<span class="doccomment">/// [snd_ctl_elem_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>ElemInfo(<span class="kw-2">*mut </span>alsa::snd_ctl_elem_info_t);
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_info_ptr</span>(<span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">ElemInfo</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_info_t</span> { <span class="ident">a</span>.<span class="number">0</span> }
+<span class="kw">pub fn </span>elem_info_ptr(a: <span class="kw-2">&amp;</span>ElemInfo) -&gt; <span class="kw-2">*mut </span>alsa::snd_ctl_elem_info_t { a.<span class="number">0 </span>}
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">ElemInfo</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_info_free</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
+<span class="kw">impl </span>Drop <span class="kw">for </span>ElemInfo {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_info_free(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_info_new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ElemInfo</span>&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-    <span class="macro">acheck!</span>(<span class="ident">snd_ctl_elem_info_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">ElemInfo</span>(<span class="ident">p</span>))
+<span class="kw">pub fn </span>elem_info_new() -&gt; <span class="prelude-ty">Result</span>&lt;ElemInfo&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+    <span class="macro">acheck!</span>(snd_ctl_elem_info_malloc(<span class="kw-2">&amp;mut </span>p)).map(|<span class="kw">_</span>| ElemInfo(p))
 }
 
-<span class="kw">impl</span> <span class="ident">ElemInfo</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ElemType</span> { <span class="ident">ElemType::from_c_int</span>(
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_info_get_type</span>(<span class="self">self</span>.<span class="number">0</span>) } <span class="kw">as</span> <span class="ident">c_int</span>, <span class="string">&quot;snd_ctl_elem_info_get_type&quot;</span>).<span class="ident">unwrap</span>() }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_info_get_count</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">u32</span> } }
+<span class="kw">impl </span>ElemInfo {
+    <span class="kw">pub fn </span>get_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElemType { ElemType::from_c_int(
+        <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_info_get_type(<span class="self">self</span>.<span class="number">0</span>) } <span class="kw">as </span>c_int, <span class="string">&quot;snd_ctl_elem_info_get_type&quot;</span>).unwrap() }
+    <span class="kw">pub fn </span>get_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_info_get_count(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>u32 } }
 }
 
-<span class="comment">//</span>
-<span class="comment">// Non-allocating version of ElemId</span>
-<span class="comment">//</span>
+<span class="comment">//
+// Non-allocating version of ElemId
+//
 
-<span class="doccomment">/// [snd_ctl_elem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ElemId</span>(<span class="ident">UnsafeCell</span>&lt;[<span class="ident">u8</span>; <span class="ident">ELEM_ID_SIZE</span>]&gt;);
+</span><span class="doccomment">/// [snd_ctl_elem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>ElemId(UnsafeCell&lt;[u8; ELEM_ID_SIZE]&gt;);
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_id_new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">ElemId</span>&gt; {
-    <span class="macro">assert!</span>(<span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span> &lt;= <span class="ident">ELEM_ID_SIZE</span>);
-    <span class="prelude-val">Ok</span>(<span class="ident">ElemId</span>(<span class="ident">UnsafeCell::new</span>(<span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() })))
+<span class="kw">pub fn </span>elem_id_new() -&gt; <span class="prelude-ty">Result</span>&lt;ElemId&gt; {
+    <span class="macro">assert!</span>(<span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_sizeof() } <span class="kw">as </span>usize &lt;= ELEM_ID_SIZE);
+    <span class="prelude-val">Ok</span>(ElemId(UnsafeCell::new(<span class="kw">unsafe </span>{ mem::zeroed() })))
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">elem_id_ptr</span>(<span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">ElemId</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_id_t</span> { <span class="ident">a</span>.<span class="number">0</span>.<span class="ident">get</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_elem_id_t</span> }
+<span class="attribute">#[inline]</span>
+<span class="kw">pub fn </span>elem_id_ptr(a: <span class="kw-2">&amp;</span>ElemId) -&gt; <span class="kw-2">*mut </span>alsa::snd_ctl_elem_id_t { a.<span class="number">0</span>.get() <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">_ as </span><span class="kw-2">*mut </span>alsa::snd_ctl_elem_id_t }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">ElemId</span> {}
+<span class="kw">unsafe impl </span>Send <span class="kw">for </span>ElemId {}
 
-<span class="kw">impl</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">ElemId</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ElemId</span>(<span class="ident">UnsafeCell::new</span>(<span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>.<span class="ident">get</span>() }))
+<span class="kw">impl </span>Clone <span class="kw">for </span>ElemId {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        ElemId(UnsafeCell::new(<span class="kw">unsafe </span>{ <span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>.get() }))
     }
 }
 
-<span class="comment">//</span>
-<span class="comment">// Allocating version of ElemId</span>
-<span class="comment">//</span>
+<span class="comment">//
+// Allocating version of ElemId
+//
 
-<span class="comment">/*
+/*
 
 /// [snd_ctl_elem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
 pub struct ElemId(*mut alsa::snd_ctl_elem_id_t);
@@ -785,104 +785,104 @@ pub fn elem_id_new() -&gt; Result&lt;ElemId&gt; {
 
 pub fn elem_id_ptr(a: &amp;ElemId) -&gt; *mut alsa::snd_ctl_elem_id_t { a.0 }
 
-*/</span>
+*/
 
-<span class="kw">impl</span> <span class="ident">ElemId</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_hctl_elem_id_get_name&quot;</span>, <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_name</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_device</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_device</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) <span class="kw">as</span> <span class="ident">u32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_subdevice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_subdevice</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) <span class="kw">as</span> <span class="ident">u32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_numid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_numid</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) <span class="kw">as</span> <span class="ident">u32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_index</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) <span class="kw">as</span> <span class="ident">u32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_interface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ElemIface</span> { <span class="ident">ElemIface::from_c_int</span>(
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_get_interface</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>)) } <span class="kw">as</span> <span class="ident">c_int</span>, <span class="string">&quot;snd_ctl_elem_id_get_interface&quot;</span>).<span class="ident">unwrap</span>() }
+</span><span class="kw">impl </span>ElemId {
+    <span class="kw">pub fn </span>get_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        from_const(<span class="string">&quot;snd_hctl_elem_id_get_name&quot;</span>, <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_name(elem_id_ptr(<span class="self">self</span>)) })}
+    <span class="kw">pub fn </span>get_device(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_device(elem_id_ptr(<span class="self">self</span>)) <span class="kw">as </span>u32 }}
+    <span class="kw">pub fn </span>get_subdevice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_subdevice(elem_id_ptr(<span class="self">self</span>)) <span class="kw">as </span>u32 }}
+    <span class="kw">pub fn </span>get_numid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_numid(elem_id_ptr(<span class="self">self</span>)) <span class="kw">as </span>u32 }}
+    <span class="kw">pub fn </span>get_index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_index(elem_id_ptr(<span class="self">self</span>)) <span class="kw">as </span>u32 }}
+    <span class="kw">pub fn </span>get_interface(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElemIface { ElemIface::from_c_int(
+        <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_get_interface(elem_id_ptr(<span class="self">self</span>)) } <span class="kw">as </span>c_int, <span class="string">&quot;snd_ctl_elem_id_get_interface&quot;</span>).unwrap() }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_device</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="ident">u32</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_device</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span>) }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_subdevice</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="ident">u32</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_subdevice</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span>) }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_numid</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="ident">u32</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_numid</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span>) }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_index</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="ident">u32</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_index</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span>) }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_interface</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="ident">ElemIface</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_interface</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span> <span class="kw">as</span> <span class="ident">u32</span>) }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_name</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_set_name</span>(<span class="ident">elem_id_ptr</span>(<span class="self">self</span>), <span class="ident">v</span>.<span class="ident">as_ptr</span>()) }}
+    <span class="kw">pub fn </span>set_device(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: u32) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_device(elem_id_ptr(<span class="self">self</span>), v) }}
+    <span class="kw">pub fn </span>set_subdevice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: u32) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_subdevice(elem_id_ptr(<span class="self">self</span>), v) }}
+    <span class="kw">pub fn </span>set_numid(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: u32) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_numid(elem_id_ptr(<span class="self">self</span>), v) }}
+    <span class="kw">pub fn </span>set_index(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: u32) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_index(elem_id_ptr(<span class="self">self</span>), v) }}
+    <span class="kw">pub fn </span>set_interface(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: ElemIface) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_interface(elem_id_ptr(<span class="self">self</span>), v <span class="kw">as </span>u32) }}
+    <span class="kw">pub fn </span>set_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>CStr) { <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_set_name(elem_id_ptr(<span class="self">self</span>), v.as_ptr()) }}
 
-    <span class="doccomment">/// Creates a new ElemId.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// To ensure safety (i e make sure we never have an invalid interface enum), we need to supply it to the &quot;new&quot; function.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">iface</span>: <span class="ident">ElemIface</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="ident">elem_id_new</span>().<span class="ident">unwrap</span>();
-        <span class="ident">r</span>.<span class="ident">set_interface</span>(<span class="ident">iface</span>);
-        <span class="ident">r</span>
+    <span class="doccomment">/// Creates a new ElemId.
+    ///
+    /// To ensure safety (i e make sure we never have an invalid interface enum), we need to supply it to the &quot;new&quot; function.
+    </span><span class="kw">pub fn </span>new(iface: ElemIface) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>r = elem_id_new().unwrap();
+        r.set_interface(iface);
+        r
     }
 }
 
-<span class="kw">impl</span> <span class="ident">cmp::Eq</span> <span class="kw">for</span> <span class="ident">ElemId</span> {}
+<span class="kw">impl </span>cmp::Eq <span class="kw">for </span>ElemId {}
 
-<span class="kw">impl</span> <span class="ident">cmp::PartialEq</span> <span class="kw">for</span> <span class="ident">ElemId</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">ElemId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">get_numid</span>() == <span class="ident">a</span>.<span class="ident">get_numid</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">get_interface</span>() == <span class="ident">a</span>.<span class="ident">get_interface</span>() &amp;&amp;
-        <span class="self">self</span>.<span class="ident">get_index</span>() == <span class="ident">a</span>.<span class="ident">get_index</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">get_device</span>() == <span class="ident">a</span>.<span class="ident">get_device</span>() &amp;&amp;
-        <span class="self">self</span>.<span class="ident">get_subdevice</span>() == <span class="ident">a</span>.<span class="ident">get_subdevice</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">get_name</span>().<span class="ident">ok</span>() == <span class="ident">a</span>.<span class="ident">get_name</span>().<span class="ident">ok</span>()
+<span class="kw">impl </span>cmp::PartialEq <span class="kw">for </span>ElemId {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, a: <span class="kw-2">&amp;</span>ElemId) -&gt; bool {
+        <span class="self">self</span>.get_numid() == a.get_numid() &amp;&amp; <span class="self">self</span>.get_interface() == a.get_interface() &amp;&amp;
+        <span class="self">self</span>.get_index() == a.get_index() &amp;&amp; <span class="self">self</span>.get_device() == a.get_device() &amp;&amp;
+        <span class="self">self</span>.get_subdevice() == a.get_subdevice() &amp;&amp; <span class="self">self</span>.get_name().ok() == a.get_name().ok()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ElemId</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">index</span> = <span class="self">self</span>.<span class="ident">get_index</span>();
-        <span class="kw">let</span> <span class="ident">device</span> = <span class="self">self</span>.<span class="ident">get_device</span>();
-        <span class="kw">let</span> <span class="ident">subdevice</span> = <span class="self">self</span>.<span class="ident">get_subdevice</span>();
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ElemId {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="kw">let </span>index = <span class="self">self</span>.get_index();
+        <span class="kw">let </span>device = <span class="self">self</span>.get_device();
+        <span class="kw">let </span>subdevice = <span class="self">self</span>.get_subdevice();
 
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;ElemId(#{}, {:?}, {:?}&quot;</span>, <span class="self">self</span>.<span class="ident">get_numid</span>(), <span class="self">self</span>.<span class="ident">get_interface</span>(), <span class="self">self</span>.<span class="ident">get_name</span>())<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">index</span> &gt; <span class="number">0</span> { <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;, index={}&quot;</span>, <span class="ident">index</span>)<span class="question-mark">?</span> };
-        <span class="kw">if</span> <span class="ident">device</span> &gt; <span class="number">0</span> || <span class="ident">subdevice</span> &gt; <span class="number">0</span> { <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;, device={}&quot;</span>, <span class="ident">device</span>)<span class="question-mark">?</span> };
-        <span class="kw">if</span> <span class="ident">subdevice</span> &gt; <span class="number">0</span> { <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;, subdevice={}&quot;</span>, <span class="ident">device</span>)<span class="question-mark">?</span> };
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;)&quot;</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;ElemId(#{}, {:?}, {:?}&quot;</span>, <span class="self">self</span>.get_numid(), <span class="self">self</span>.get_interface(), <span class="self">self</span>.get_name())<span class="question-mark">?</span>;
+        <span class="kw">if </span>index &gt; <span class="number">0 </span>{ <span class="macro">write!</span>(f, <span class="string">&quot;, index={}&quot;</span>, index)<span class="question-mark">? </span>};
+        <span class="kw">if </span>device &gt; <span class="number">0 </span>|| subdevice &gt; <span class="number">0 </span>{ <span class="macro">write!</span>(f, <span class="string">&quot;, device={}&quot;</span>, device)<span class="question-mark">? </span>};
+        <span class="kw">if </span>subdevice &gt; <span class="number">0 </span>{ <span class="macro">write!</span>(f, <span class="string">&quot;, subdevice={}&quot;</span>, device)<span class="question-mark">? </span>};
+        <span class="macro">write!</span>(f, <span class="string">&quot;)&quot;</span>)
     }
 }
 
-<span class="doccomment">/// [snd_ctl_event_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Event</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_ctl_event_t</span>);
+<span class="doccomment">/// [snd_ctl_event_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) wrapper
+</span><span class="kw">pub struct </span>Event(<span class="kw-2">*mut </span>alsa::snd_ctl_event_t);
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Event</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_event_free</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
+<span class="kw">impl </span>Drop <span class="kw">for </span>Event {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_ctl_event_free(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">event_new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Event</span>&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-    <span class="macro">acheck!</span>(<span class="ident">snd_ctl_event_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Event</span>(<span class="ident">p</span>))
+<span class="kw">pub fn </span>event_new() -&gt; <span class="prelude-ty">Result</span>&lt;Event&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+    <span class="macro">acheck!</span>(snd_ctl_event_malloc(<span class="kw-2">&amp;mut </span>p)).map(|<span class="kw">_</span>| Event(p))
 }
 
-<span class="kw">impl</span> <span class="ident">Event</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mask</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">EventMask</span> { <span class="ident">EventMask</span>(<span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_event_elem_get_mask</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">u32</span> })}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ElemId</span> {
-        <span class="kw">let</span> <span class="ident">r</span> = <span class="ident">elem_id_new</span>().<span class="ident">unwrap</span>();
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_event_elem_get_id</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">elem_id_ptr</span>(<span class="kw-2">&amp;</span><span class="ident">r</span>)) };
-        <span class="ident">r</span>
+<span class="kw">impl </span>Event {
+    <span class="kw">pub fn </span>get_mask(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EventMask { EventMask(<span class="kw">unsafe </span>{ alsa::snd_ctl_event_elem_get_mask(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>u32 })}
+    <span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElemId {
+        <span class="kw">let </span>r = elem_id_new().unwrap();
+        <span class="kw">unsafe </span>{ alsa::snd_ctl_event_elem_get_id(<span class="self">self</span>.<span class="number">0</span>, elem_id_ptr(<span class="kw-2">&amp;</span>r)) };
+        r
     }
 }
 
 
-<span class="doccomment">/// [SND_CTL_EVENT_MASK_XXX](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) bitmask</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EventMask</span>(<span class="kw">pub</span> <span class="ident">u32</span>);
+<span class="doccomment">/// [SND_CTL_EVENT_MASK_XXX](http://www.alsa-project.org/alsa-doc/alsa-lib/group___control.html) bitmask
+</span><span class="attribute">#[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]</span>
+<span class="kw">pub struct </span>EventMask(<span class="kw">pub </span>u32);
 
-<span class="kw">impl</span> <span class="ident">EventMask</span> {
-   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> { <span class="kw">return</span> <span class="self">self</span>.<span class="number">0</span> &amp; <span class="number">0xffffffff</span> == <span class="number">0xffffffff</span> }
-   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> { <span class="kw">return</span> (!<span class="self">self</span>.<span class="ident">remove</span>()) &amp;&amp; (<span class="self">self</span>.<span class="number">0</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">0</span>) != <span class="number">0</span>); }
-   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> { <span class="kw">return</span> (!<span class="self">self</span>.<span class="ident">remove</span>()) &amp;&amp; (<span class="self">self</span>.<span class="number">0</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">1</span>) != <span class="number">0</span>); }
-   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> { <span class="kw">return</span> (!<span class="self">self</span>.<span class="ident">remove</span>()) &amp;&amp; (<span class="self">self</span>.<span class="number">0</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">2</span>) != <span class="number">0</span>); }
-   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tlv</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> { <span class="kw">return</span> (!<span class="self">self</span>.<span class="ident">remove</span>()) &amp;&amp; (<span class="self">self</span>.<span class="number">0</span> &amp; (<span class="number">1</span> &lt;&lt; <span class="number">3</span>) != <span class="number">0</span>); }
+<span class="kw">impl </span>EventMask {
+   <span class="kw">pub fn </span>remove(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="kw">return </span><span class="self">self</span>.<span class="number">0 </span>&amp; <span class="number">0xffffffff </span>== <span class="number">0xffffffff </span>}
+   <span class="kw">pub fn </span>value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="kw">return </span>(!<span class="self">self</span>.remove()) &amp;&amp; (<span class="self">self</span>.<span class="number">0 </span>&amp; (<span class="number">1 </span>&lt;&lt; <span class="number">0</span>) != <span class="number">0</span>); }
+   <span class="kw">pub fn </span>info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="kw">return </span>(!<span class="self">self</span>.remove()) &amp;&amp; (<span class="self">self</span>.<span class="number">0 </span>&amp; (<span class="number">1 </span>&lt;&lt; <span class="number">1</span>) != <span class="number">0</span>); }
+   <span class="kw">pub fn </span>add(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="kw">return </span>(!<span class="self">self</span>.remove()) &amp;&amp; (<span class="self">self</span>.<span class="number">0 </span>&amp; (<span class="number">1 </span>&lt;&lt; <span class="number">2</span>) != <span class="number">0</span>); }
+   <span class="kw">pub fn </span>tlv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="kw">return </span>(!<span class="self">self</span>.remove()) &amp;&amp; (<span class="self">self</span>.<span class="number">0 </span>&amp; (<span class="number">1 </span>&lt;&lt; <span class="number">3</span>) != <span class="number">0</span>); }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">print_sizeof</span>() {
-    <span class="kw">let</span> <span class="ident">elemid</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_id_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">elemvalue</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_value_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">eleminfo</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_ctl_elem_info_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span>;
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>print_sizeof() {
+    <span class="kw">let </span>elemid = <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_id_sizeof() } <span class="kw">as </span>usize;
+    <span class="kw">let </span>elemvalue = <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_value_sizeof() } <span class="kw">as </span>usize;
+    <span class="kw">let </span>eleminfo = <span class="kw">unsafe </span>{ alsa::snd_ctl_elem_info_sizeof() } <span class="kw">as </span>usize;
 
-    <span class="macro">assert!</span>(<span class="ident">elemid</span> &lt;= <span class="ident">ELEM_ID_SIZE</span>);
-<span class="comment">//    assert!(elemvalue &lt;= ELEM_VALUE_SIZE);</span>
-<span class="comment">//    assert!(eleminfo &lt;= ELEM_INFO_SIZE);</span>
+    <span class="macro">assert!</span>(elemid &lt;= ELEM_ID_SIZE);
+<span class="comment">//    assert!(elemvalue &lt;= ELEM_VALUE_SIZE);
+//    assert!(eleminfo &lt;= ELEM_INFO_SIZE);
 
-    <span class="macro">println!</span>(<span class="string">&quot;Elem id: {}, Elem value: {}, Elem info: {}&quot;</span>, <span class="ident">elemid</span>, <span class="ident">elemvalue</span>, <span class="ident">eleminfo</span>);
+    </span><span class="macro">println!</span>(<span class="string">&quot;Elem id: {}, Elem value: {}, Elem info: {}&quot;</span>, elemid, elemvalue, eleminfo);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -201,208 +201,208 @@
 <span id="201">201</span>
 <span id="202">202</span>
 <span id="203">203</span>
-</pre><pre class="rust"><code><span class="doccomment">//! # minimp3</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Provides a simple wrapper and bindinings to the [minimp3](https://github.com/lieff/minimp3) C library.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ## Tokio</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! By enabling the feature flag `async_tokio` you can decode frames using async</span>
-<span class="doccomment">//! IO and tokio.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! [See the README for example usages.](https://github.com/germangb/minimp3-rs/tree/async)</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">error::Error</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">minimp3_sys</span> <span class="kw">as</span> <span class="ident">ffi</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! # minimp3
+//!
+//! Provides a simple wrapper and bindinings to the [minimp3](https://github.com/lieff/minimp3) C library.
+//!
+//! ## Tokio
+//!
+//! By enabling the feature flag `async_tokio` you can decode frames using async
+//! IO and tokio.
+//!
+//! [See the README for example usages.](https://github.com/germangb/minimp3-rs/tree/async)
+</span><span class="kw">pub use </span>error::Error;
+<span class="kw">pub use </span>minimp3_sys <span class="kw">as </span>ffi;
 
-<span class="kw">use</span> <span class="ident">slice_deque::SliceDeque</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">io</span>, <span class="ident">marker::Send</span>, <span class="ident">mem</span>};
+<span class="kw">use </span>slice_deque::SliceDeque;
+<span class="kw">use </span>std::{io, marker::Send, mem};
 
-<span class="kw">mod</span> <span class="ident">error</span>;
+<span class="kw">mod </span>error;
 
-<span class="doccomment">/// Maximum number of samples present in a MP3 frame.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_SAMPLES_PER_FRAME</span>: <span class="ident">usize</span> = <span class="ident">ffi::MINIMP3_MAX_SAMPLES_PER_FRAME</span> <span class="kw">as</span> <span class="ident">usize</span>;
+<span class="doccomment">/// Maximum number of samples present in a MP3 frame.
+</span><span class="kw">pub const </span>MAX_SAMPLES_PER_FRAME: usize = ffi::MINIMP3_MAX_SAMPLES_PER_FRAME <span class="kw">as </span>usize;
 
-<span class="kw">const</span> <span class="ident">BUFFER_SIZE</span>: <span class="ident">usize</span> = <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">15</span>;
-<span class="kw">const</span> <span class="ident">REFILL_TRIGGER</span>: <span class="ident">usize</span> = <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">8</span>;
+<span class="kw">const </span>BUFFER_SIZE: usize = MAX_SAMPLES_PER_FRAME * <span class="number">15</span>;
+<span class="kw">const </span>REFILL_TRIGGER: usize = MAX_SAMPLES_PER_FRAME * <span class="number">8</span>;
 
-<span class="doccomment">/// A MP3 decoder which consumes a reader and produces [`Frame`]s.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Frame`]: ./struct.Frame.html</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
-    <span class="ident">reader</span>: <span class="ident">R</span>,
-    <span class="ident">buffer</span>: <span class="ident">SliceDeque</span>&lt;<span class="ident">u8</span>&gt;,
-    <span class="ident">buffer_refill</span>: <span class="ident">Box</span>&lt;[<span class="ident">u8</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">5</span>]&gt;,
-    <span class="ident">decoder</span>: <span class="ident">Box</span>&lt;<span class="ident">ffi::mp3dec_t</span>&gt;,
+<span class="doccomment">/// A MP3 decoder which consumes a reader and produces [`Frame`]s.
+///
+/// [`Frame`]: ./struct.Frame.html
+</span><span class="kw">pub struct </span>Decoder&lt;R&gt; {
+    reader: R,
+    buffer: SliceDeque&lt;u8&gt;,
+    buffer_refill: Box&lt;[u8; MAX_SAMPLES_PER_FRAME * <span class="number">5</span>]&gt;,
+    decoder: Box&lt;ffi::mp3dec_t&gt;,
 }
 
-<span class="comment">// Explicitly impl [Send] for [Decoder]s. This isn&#39;t a great idea and should</span>
-<span class="comment">// probably be removed in the future. The only reason it&#39;s here is that</span>
-<span class="comment">// [SliceDeque] doesn&#39;t implement [Send] (since it uses raw pointers</span>
-<span class="comment">// internally), even though it&#39;s safe to send it across thread boundaries.</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">Send</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {}
+<span class="comment">// Explicitly impl [Send] for [Decoder]s. This isn&#39;t a great idea and should
+// probably be removed in the future. The only reason it&#39;s here is that
+// [SliceDeque] doesn&#39;t implement [Send] (since it uses raw pointers
+// internally), even though it&#39;s safe to send it across thread boundaries.
+</span><span class="kw">unsafe impl</span>&lt;R: Send&gt; Send <span class="kw">for </span>Decoder&lt;R&gt; {}
 
-<span class="doccomment">/// A MP3 frame, owning the decoded audio of that frame.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Frame</span> {
-    <span class="doccomment">/// The decoded audio held by this frame. Channels are interleaved.</span>
-    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;,
-    <span class="doccomment">/// This frame&#39;s sample rate in hertz.</span>
-    <span class="kw">pub</span> <span class="ident">sample_rate</span>: <span class="ident">i32</span>,
-    <span class="doccomment">/// The number of channels in this frame.</span>
-    <span class="kw">pub</span> <span class="ident">channels</span>: <span class="ident">usize</span>,
-    <span class="doccomment">/// MPEG layer used by this file.</span>
-    <span class="kw">pub</span> <span class="ident">layer</span>: <span class="ident">usize</span>,
-    <span class="doccomment">/// Current bitrate as of this frame, in kb/s.</span>
-    <span class="kw">pub</span> <span class="ident">bitrate</span>: <span class="ident">i32</span>,
+<span class="doccomment">/// A MP3 frame, owning the decoded audio of that frame.
+</span><span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">pub struct </span>Frame {
+    <span class="doccomment">/// The decoded audio held by this frame. Channels are interleaved.
+    </span><span class="kw">pub </span>data: Vec&lt;i16&gt;,
+    <span class="doccomment">/// This frame&#39;s sample rate in hertz.
+    </span><span class="kw">pub </span>sample_rate: i32,
+    <span class="doccomment">/// The number of channels in this frame.
+    </span><span class="kw">pub </span>channels: usize,
+    <span class="doccomment">/// MPEG layer used by this file.
+    </span><span class="kw">pub </span>layer: usize,
+    <span class="doccomment">/// Current bitrate as of this frame, in kb/s.
+    </span><span class="kw">pub </span>bitrate: i32,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
-    <span class="doccomment">/// Creates a new decoder, consuming the `reader`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">reader</span>: <span class="ident">R</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">minidec</span> = <span class="kw">unsafe</span> { <span class="ident">Box::new</span>(<span class="ident">mem::zeroed</span>()) };
-        <span class="kw">unsafe</span> { <span class="ident">ffi::mp3dec_init</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">minidec</span>) }
+<span class="kw">impl</span>&lt;R&gt; Decoder&lt;R&gt; {
+    <span class="doccomment">/// Creates a new decoder, consuming the `reader`.
+    </span><span class="kw">pub fn </span>new(reader: R) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>minidec = <span class="kw">unsafe </span>{ Box::new(mem::zeroed()) };
+        <span class="kw">unsafe </span>{ ffi::mp3dec_init(<span class="kw-2">&amp;mut *</span>minidec) }
 
-        <span class="self">Self</span> {
-            <span class="ident">reader</span>,
-            <span class="ident">buffer</span>: <span class="ident">SliceDeque::with_capacity</span>(<span class="ident">BUFFER_SIZE</span>),
-            <span class="ident">buffer_refill</span>: <span class="ident">Box::new</span>([<span class="number">0</span>; <span class="ident">MAX_SAMPLES_PER_FRAME</span> * <span class="number">5</span>]),
-            <span class="ident">decoder</span>: <span class="ident">minidec</span>,
+        <span class="self">Self </span>{
+            reader,
+            buffer: SliceDeque::with_capacity(BUFFER_SIZE),
+            buffer_refill: Box::new([<span class="number">0</span>; MAX_SAMPLES_PER_FRAME * <span class="number">5</span>]),
+            decoder: minidec,
         }
     }
 
-    <span class="doccomment">/// Return a reference to the underlying reader.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reader</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">R</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">reader</span>
+    <span class="doccomment">/// Return a reference to the underlying reader.
+    </span><span class="kw">pub fn </span>reader(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>R {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.reader
     }
 
-    <span class="doccomment">/// Return a mutable reference to the underlying reader (reading from it is</span>
-    <span class="doccomment">/// not recommended).</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reader_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">R</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">reader</span>
+    <span class="doccomment">/// Return a mutable reference to the underlying reader (reading from it is
+    /// not recommended).
+    </span><span class="kw">pub fn </span>reader_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>R {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.reader
     }
 
-    <span class="doccomment">/// Destroy the decoder and return the inner reader</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">R</span> {
-        <span class="self">self</span>.<span class="ident">reader</span>
+    <span class="doccomment">/// Destroy the decoder and return the inner reader
+    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; R {
+        <span class="self">self</span>.reader
     }
 
-    <span class="kw">fn</span> <span class="ident">decode_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">frame_info</span> = <span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pcm</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">MAX_SAMPLES_PER_FRAME</span>);
-        <span class="kw">let</span> <span class="ident">samples</span>: <span class="ident">usize</span> = <span class="kw">unsafe</span> {
-            <span class="ident">ffi::mp3dec_decode_frame</span>(
-                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">decoder</span>,
-                <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">as_ptr</span>(),
-                <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="kw">_</span>,
-                <span class="ident">pcm</span>.<span class="ident">as_mut_ptr</span>(),
-                <span class="kw-2">&amp;mut</span> <span class="ident">frame_info</span>,
-            ) <span class="kw">as</span> <span class="kw">_</span>
+    <span class="kw">fn </span>decode_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Frame, Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>frame_info = <span class="kw">unsafe </span>{ mem::zeroed() };
+        <span class="kw">let </span><span class="kw-2">mut </span>pcm = Vec::with_capacity(MAX_SAMPLES_PER_FRAME);
+        <span class="kw">let </span>samples: usize = <span class="kw">unsafe </span>{
+            ffi::mp3dec_decode_frame(
+                <span class="kw-2">&amp;mut *</span><span class="self">self</span>.decoder,
+                <span class="self">self</span>.buffer.as_ptr(),
+                <span class="self">self</span>.buffer.len() <span class="kw">as _</span>,
+                pcm.as_mut_ptr(),
+                <span class="kw-2">&amp;mut </span>frame_info,
+            ) <span class="kw">as _
+        </span>};
+
+        <span class="kw">if </span>samples &gt; <span class="number">0 </span>{
+            <span class="kw">unsafe </span>{
+                pcm.set_len(samples * frame_info.channels <span class="kw">as </span>usize);
+            }
+        }
+
+        <span class="kw">let </span>frame = Frame {
+            data: pcm,
+            sample_rate: frame_info.hz,
+            channels: frame_info.channels <span class="kw">as </span>usize,
+            layer: frame_info.layer <span class="kw">as </span>usize,
+            bitrate: frame_info.bitrate_kbps,
         };
 
-        <span class="kw">if</span> <span class="ident">samples</span> &gt; <span class="number">0</span> {
-            <span class="kw">unsafe</span> {
-                <span class="ident">pcm</span>.<span class="ident">set_len</span>(<span class="ident">samples</span> * <span class="ident">frame_info</span>.<span class="ident">channels</span> <span class="kw">as</span> <span class="ident">usize</span>);
+        <span class="kw">let </span>current_len = <span class="self">self</span>.buffer.len();
+        <span class="self">self</span>.buffer
+            .truncate_front(current_len - frame_info.frame_bytes <span class="kw">as </span>usize);
+
+        <span class="kw">if </span>samples == <span class="number">0 </span>{
+            <span class="kw">if </span>frame_info.frame_bytes &gt; <span class="number">0 </span>{
+                <span class="prelude-val">Err</span>(Error::SkippedData)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Err</span>(Error::InsufficientData)
             }
-        }
-
-        <span class="kw">let</span> <span class="ident">frame</span> = <span class="ident">Frame</span> {
-            <span class="ident">data</span>: <span class="ident">pcm</span>,
-            <span class="ident">sample_rate</span>: <span class="ident">frame_info</span>.<span class="ident">hz</span>,
-            <span class="ident">channels</span>: <span class="ident">frame_info</span>.<span class="ident">channels</span> <span class="kw">as</span> <span class="ident">usize</span>,
-            <span class="ident">layer</span>: <span class="ident">frame_info</span>.<span class="ident">layer</span> <span class="kw">as</span> <span class="ident">usize</span>,
-            <span class="ident">bitrate</span>: <span class="ident">frame_info</span>.<span class="ident">bitrate_kbps</span>,
-        };
-
-        <span class="kw">let</span> <span class="ident">current_len</span> = <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>();
-        <span class="self">self</span>.<span class="ident">buffer</span>
-            .<span class="ident">truncate_front</span>(<span class="ident">current_len</span> - <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> <span class="kw">as</span> <span class="ident">usize</span>);
-
-        <span class="kw">if</span> <span class="ident">samples</span> == <span class="number">0</span> {
-            <span class="kw">if</span> <span class="ident">frame_info</span>.<span class="ident">frame_bytes</span> &gt; <span class="number">0</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>)
-            } <span class="kw">else</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>)
-            }
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">frame</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(frame)
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async_tokio&quot;</span>)]</span>
-<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">tokio::io::AsyncRead</span> + <span class="ident">std::marker::Unpin</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
-    <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)</span>
-    <span class="doccomment">/// if one was found, or, otherwise, an `Err` explaining why not.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">next_frame_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
-        <span class="kw">loop</span> {
-            <span class="comment">// Keep our buffers full</span>
-            <span class="kw">let</span> <span class="ident">bytes_read</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() &lt; <span class="ident">REFILL_TRIGGER</span> {
-                <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">refill_future</span>().<span class="kw">await</span><span class="question-mark">?</span>)
-            } <span class="kw">else</span> {
-                <span class="prelude-val">None</span>
-            };
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async_tokio&quot;</span>)]</span>
+<span class="kw">impl</span>&lt;R: tokio::io::AsyncRead + std::marker::Unpin&gt; Decoder&lt;R&gt; {
+    <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)
+    /// if one was found, or, otherwise, an `Err` explaining why not.
+    </span><span class="kw">pub async fn </span>next_frame_future(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Frame, Error&gt; {
+        <span class="kw">loop </span>{
+            <span class="comment">// Keep our buffers full
+            </span><span class="kw">let </span>bytes_read = <span class="kw">if </span><span class="self">self</span>.buffer.len() &lt; REFILL_TRIGGER {
+                <span class="prelude-val">Some</span>(<span class="self">self</span>.refill_future().<span class="kw">await</span><span class="question-mark">?</span>)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>};
 
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">decode_frame</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">frame</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">frame</span>),
-                <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,</span>
-                <span class="comment">// just let the loop spin around another time.</span>
-                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) | <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
-                    <span class="comment">// If there are no more bytes to be read from the file, return EOF</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) = <span class="ident">bytes_read</span> {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::Eof</span>);
+            <span class="kw">match </span><span class="self">self</span>.decode_frame() {
+                <span class="prelude-val">Ok</span>(frame) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(frame),
+                <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,
+                // just let the loop spin around another time.
+                </span><span class="prelude-val">Err</span>(Error::InsufficientData) | <span class="prelude-val">Err</span>(Error::SkippedData) =&gt; {
+                    <span class="comment">// If there are no more bytes to be read from the file, return EOF
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="number">0</span>) = bytes_read {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Eof);
                     }
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>),
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
             }
         }
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">refill_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">io::Error</span>&gt; {
-        <span class="kw">use</span> <span class="ident">tokio::io::AsyncReadExt</span>;
+    <span class="kw">async fn </span>refill_future(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize, io::Error&gt; {
+        <span class="kw">use </span>tokio::io::AsyncReadExt;
 
-        <span class="kw">let</span> <span class="ident">read_bytes</span> = <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..]).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">buffer_refill</span>[..<span class="ident">read_bytes</span>].<span class="ident">iter</span>());
+        <span class="kw">let </span>read_bytes = <span class="self">self</span>.reader.read(<span class="kw-2">&amp;mut </span><span class="self">self</span>.buffer_refill[..]).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.buffer.extend(<span class="self">self</span>.buffer_refill[..read_bytes].iter());
 
-        <span class="prelude-val">Ok</span>(<span class="ident">read_bytes</span>)
+        <span class="prelude-val">Ok</span>(read_bytes)
     }
 }
 
-<span class="comment">// TODO FIXME do something about the code repetition. The only difference is the</span>
-<span class="comment">//  use of .await after IO reads...</span>
+<span class="comment">// TODO FIXME do something about the code repetition. The only difference is the
+//  use of .await after IO reads...
 
-<span class="kw">impl</span>&lt;<span class="ident">R</span>: <span class="ident">io::Read</span>&gt; <span class="ident">Decoder</span>&lt;<span class="ident">R</span>&gt; {
-    <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)</span>
-    <span class="doccomment">/// if one was found, or, otherwise, an `Err` explaining why not.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Frame</span>, <span class="ident">Error</span>&gt; {
-        <span class="kw">loop</span> {
-            <span class="comment">// Keep our buffers full</span>
-            <span class="kw">let</span> <span class="ident">bytes_read</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() &lt; <span class="ident">REFILL_TRIGGER</span> {
-                <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">refill</span>()<span class="question-mark">?</span>)
-            } <span class="kw">else</span> {
-                <span class="prelude-val">None</span>
-            };
+</span><span class="kw">impl</span>&lt;R: io::Read&gt; Decoder&lt;R&gt; {
+    <span class="doccomment">/// Reads a new frame from the internal reader. Returns a [`Frame`](Frame)
+    /// if one was found, or, otherwise, an `Err` explaining why not.
+    </span><span class="kw">pub fn </span>next_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Frame, Error&gt; {
+        <span class="kw">loop </span>{
+            <span class="comment">// Keep our buffers full
+            </span><span class="kw">let </span>bytes_read = <span class="kw">if </span><span class="self">self</span>.buffer.len() &lt; REFILL_TRIGGER {
+                <span class="prelude-val">Some</span>(<span class="self">self</span>.refill()<span class="question-mark">?</span>)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>};
 
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">decode_frame</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">frame</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">frame</span>),
-                <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,</span>
-                <span class="comment">// just let the loop spin around another time.</span>
-                <span class="prelude-val">Err</span>(<span class="ident">Error::InsufficientData</span>) | <span class="prelude-val">Err</span>(<span class="ident">Error::SkippedData</span>) =&gt; {
-                    <span class="comment">// If there are no more bytes to be read from the file, return EOF</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="number">0</span>) = <span class="ident">bytes_read</span> {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::Eof</span>);
+            <span class="kw">match </span><span class="self">self</span>.decode_frame() {
+                <span class="prelude-val">Ok</span>(frame) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(frame),
+                <span class="comment">// Don&#39;t do anything if we didn&#39;t have enough data or we skipped data,
+                // just let the loop spin around another time.
+                </span><span class="prelude-val">Err</span>(Error::InsufficientData) | <span class="prelude-val">Err</span>(Error::SkippedData) =&gt; {
+                    <span class="comment">// If there are no more bytes to be read from the file, return EOF
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="number">0</span>) = bytes_read {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Eof);
                     }
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>),
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">refill</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">io::Error</span>&gt; {
-        <span class="kw">let</span> <span class="ident">read_bytes</span> = <span class="self">self</span>.<span class="ident">reader</span>.<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">buffer_refill</span>[..])<span class="question-mark">?</span>;
-        <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">buffer_refill</span>[..<span class="ident">read_bytes</span>].<span class="ident">iter</span>());
+    <span class="kw">fn </span>refill(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize, io::Error&gt; {
+        <span class="kw">let </span>read_bytes = <span class="self">self</span>.reader.read(<span class="kw-2">&amp;mut </span><span class="self">self</span>.buffer_refill[..])<span class="question-mark">?</span>;
+        <span class="self">self</span>.buffer.extend(<span class="self">self</span>.buffer_refill[..read_bytes].iter());
 
-        <span class="prelude-val">Ok</span>(<span class="ident">read_bytes</span>)
+        <span class="prelude-val">Ok</span>(read_bytes)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimp3" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="minimp3" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

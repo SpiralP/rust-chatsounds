@@ -77,84 +77,84 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">libc</span>::{<span class="self">self</span>, <span class="ident">SI_LOAD_SHIFT</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cmp</span>, <span class="ident">mem</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>libc::{<span class="self">self</span>, SI_LOAD_SHIFT};
+<span class="kw">use </span>std::{cmp, mem};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Result</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::errno::Errno</span>;
+<span class="kw">use </span><span class="kw">crate</span>::Result;
+<span class="kw">use </span><span class="kw">crate</span>::errno::Errno;
 
-<span class="doccomment">/// System info structure returned by `sysinfo`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SysInfo</span>(<span class="ident">libc::sysinfo</span>);
+<span class="doccomment">/// System info structure returned by `sysinfo`.
+</span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]</span>
+<span class="attribute">#[repr(transparent)]</span>
+<span class="kw">pub struct </span>SysInfo(libc::sysinfo);
 
-<span class="comment">// The fields are c_ulong on 32-bit linux, u64 on 64-bit linux; x32&#39;s ulong is u32</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">target_arch</span> = <span class="string">&quot;x86_64&quot;</span>, <span class="ident">target_pointer_width</span> = <span class="string">&quot;32&quot;</span>))]</span>
-<span class="kw">type</span> <span class="ident">mem_blocks_t</span> = <span class="ident">u64</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">target_arch</span> = <span class="string">&quot;x86_64&quot;</span>, <span class="ident">target_pointer_width</span> = <span class="string">&quot;32&quot;</span>)))]</span>
-<span class="kw">type</span> <span class="ident">mem_blocks_t</span> = <span class="ident">libc::c_ulong</span>;
+<span class="comment">// The fields are c_ulong on 32-bit linux, u64 on 64-bit linux; x32&#39;s ulong is u32
+</span><span class="attribute">#[cfg(all(target_arch = <span class="string">&quot;x86_64&quot;</span>, target_pointer_width = <span class="string">&quot;32&quot;</span>))]</span>
+<span class="kw">type </span>mem_blocks_t = u64;
+<span class="attribute">#[cfg(not(all(target_arch = <span class="string">&quot;x86_64&quot;</span>, target_pointer_width = <span class="string">&quot;32&quot;</span>)))]</span>
+<span class="kw">type </span>mem_blocks_t = libc::c_ulong;
 
-<span class="kw">impl</span> <span class="ident">SysInfo</span> {
-    <span class="doccomment">/// Returns the load average tuple.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The returned values represent the load average over time intervals of</span>
-    <span class="doccomment">/// 1, 5, and 15 minutes, respectively.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load_average</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">f64</span>, <span class="ident">f64</span>, <span class="ident">f64</span>) {
+<span class="kw">impl </span>SysInfo {
+    <span class="doccomment">/// Returns the load average tuple.
+    ///
+    /// The returned values represent the load average over time intervals of
+    /// 1, 5, and 15 minutes, respectively.
+    </span><span class="kw">pub fn </span>load_average(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (f64, f64, f64) {
         (
-            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">loads</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="ident">f64</span> / (<span class="number">1</span> &lt;&lt; <span class="ident">SI_LOAD_SHIFT</span>) <span class="kw">as</span> <span class="ident">f64</span>,
-            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">loads</span>[<span class="number">1</span>] <span class="kw">as</span> <span class="ident">f64</span> / (<span class="number">1</span> &lt;&lt; <span class="ident">SI_LOAD_SHIFT</span>) <span class="kw">as</span> <span class="ident">f64</span>,
-            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">loads</span>[<span class="number">2</span>] <span class="kw">as</span> <span class="ident">f64</span> / (<span class="number">1</span> &lt;&lt; <span class="ident">SI_LOAD_SHIFT</span>) <span class="kw">as</span> <span class="ident">f64</span>,
+            <span class="self">self</span>.<span class="number">0</span>.loads[<span class="number">0</span>] <span class="kw">as </span>f64 / (<span class="number">1 </span>&lt;&lt; SI_LOAD_SHIFT) <span class="kw">as </span>f64,
+            <span class="self">self</span>.<span class="number">0</span>.loads[<span class="number">1</span>] <span class="kw">as </span>f64 / (<span class="number">1 </span>&lt;&lt; SI_LOAD_SHIFT) <span class="kw">as </span>f64,
+            <span class="self">self</span>.<span class="number">0</span>.loads[<span class="number">2</span>] <span class="kw">as </span>f64 / (<span class="number">1 </span>&lt;&lt; SI_LOAD_SHIFT) <span class="kw">as </span>f64,
         )
     }
 
-    <span class="doccomment">/// Returns the time since system boot.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">uptime</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Duration</span> {
-        <span class="comment">// Truncate negative values to 0</span>
-        <span class="ident">Duration::from_secs</span>(<span class="ident">cmp::max</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">uptime</span>, <span class="number">0</span>) <span class="kw">as</span> <span class="ident">u64</span>)
+    <span class="doccomment">/// Returns the time since system boot.
+    </span><span class="kw">pub fn </span>uptime(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Duration {
+        <span class="comment">// Truncate negative values to 0
+        </span>Duration::from_secs(cmp::max(<span class="self">self</span>.<span class="number">0</span>.uptime, <span class="number">0</span>) <span class="kw">as </span>u64)
     }
 
-    <span class="doccomment">/// Current number of processes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">process_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">procs</span>
+    <span class="doccomment">/// Current number of processes.
+    </span><span class="kw">pub fn </span>process_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.<span class="number">0</span>.procs
     }
 
-    <span class="doccomment">/// Returns the amount of swap memory in Bytes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">swap_total</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">scale_mem</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">totalswap</span>)
+    <span class="doccomment">/// Returns the amount of swap memory in Bytes.
+    </span><span class="kw">pub fn </span>swap_total(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.scale_mem(<span class="self">self</span>.<span class="number">0</span>.totalswap)
     }
 
-    <span class="doccomment">/// Returns the amount of unused swap memory in Bytes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">swap_free</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">scale_mem</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">freeswap</span>)
+    <span class="doccomment">/// Returns the amount of unused swap memory in Bytes.
+    </span><span class="kw">pub fn </span>swap_free(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.scale_mem(<span class="self">self</span>.<span class="number">0</span>.freeswap)
     }
 
-    <span class="doccomment">/// Returns the total amount of installed RAM in Bytes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ram_total</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">scale_mem</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">totalram</span>)
+    <span class="doccomment">/// Returns the total amount of installed RAM in Bytes.
+    </span><span class="kw">pub fn </span>ram_total(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.scale_mem(<span class="self">self</span>.<span class="number">0</span>.totalram)
     }
 
-    <span class="doccomment">/// Returns the amount of completely unused RAM in Bytes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// &quot;Unused&quot; in this context means that the RAM in neither actively used by</span>
-    <span class="doccomment">/// programs, nor by the operating system as disk cache or buffer. It is</span>
-    <span class="doccomment">/// &quot;wasted&quot; RAM since it currently serves no purpose.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ram_unused</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">scale_mem</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">freeram</span>)
+    <span class="doccomment">/// Returns the amount of completely unused RAM in Bytes.
+    ///
+    /// &quot;Unused&quot; in this context means that the RAM in neither actively used by
+    /// programs, nor by the operating system as disk cache or buffer. It is
+    /// &quot;wasted&quot; RAM since it currently serves no purpose.
+    </span><span class="kw">pub fn </span>ram_unused(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.scale_mem(<span class="self">self</span>.<span class="number">0</span>.freeram)
     }
 
-    <span class="kw">fn</span> <span class="ident">scale_mem</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">units</span>: <span class="ident">mem_blocks_t</span>) -&gt; <span class="ident">u64</span> {
-        <span class="ident">units</span> <span class="kw">as</span> <span class="ident">u64</span> * <span class="self">self</span>.<span class="number">0</span>.<span class="ident">mem_unit</span> <span class="kw">as</span> <span class="ident">u64</span>
+    <span class="kw">fn </span>scale_mem(<span class="kw-2">&amp;</span><span class="self">self</span>, units: mem_blocks_t) -&gt; u64 {
+        units <span class="kw">as </span>u64 * <span class="self">self</span>.<span class="number">0</span>.mem_unit <span class="kw">as </span>u64
     }
 }
 
-<span class="doccomment">/// Returns system information.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [See `sysinfo(2)`](https://man7.org/linux/man-pages/man2/sysinfo.2.html).</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sysinfo</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">SysInfo</span>&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">info</span> = <span class="ident">mem::MaybeUninit::uninit</span>();
-    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> { <span class="ident">libc::sysinfo</span>(<span class="ident">info</span>.<span class="ident">as_mut_ptr</span>()) };
-    <span class="ident">Errno::result</span>(<span class="ident">res</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="kw">unsafe</span>{ <span class="ident">SysInfo</span>(<span class="ident">info</span>.<span class="ident">assume_init</span>()) })
+<span class="doccomment">/// Returns system information.
+///
+/// [See `sysinfo(2)`](https://man7.org/linux/man-pages/man2/sysinfo.2.html).
+</span><span class="kw">pub fn </span>sysinfo() -&gt; <span class="prelude-ty">Result</span>&lt;SysInfo&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>info = mem::MaybeUninit::uninit();
+    <span class="kw">let </span>res = <span class="kw">unsafe </span>{ libc::sysinfo(info.as_mut_ptr()) };
+    Errno::result(res).map(|<span class="kw">_</span>| <span class="kw">unsafe</span>{ SysInfo(info.assume_init()) })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

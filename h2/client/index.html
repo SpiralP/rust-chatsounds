@@ -48,51 +48,51 @@ manage polling the connection until the connection is complete.
 Alternatively, the caller can call <code>poll</code> manually.</p>
 <h2 id="example"><a href="#example">Example</a></h2>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code>
-<span class="kw">use</span> <span class="ident">h2::client</span>;
+<span class="kw">use </span>h2::client;
 
-<span class="kw">use</span> <span class="ident">http</span>::{<span class="ident">Request</span>, <span class="ident">Method</span>};
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">tokio::net::TcpStream</span>;
+<span class="kw">use </span>http::{Request, Method};
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>tokio::net::TcpStream;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Establish TCP connection to the server.</span>
-    <span class="kw">let</span> <span class="ident">tcp</span> = <span class="ident">TcpStream::connect</span>(<span class="string">&quot;127.0.0.1:5928&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> (<span class="ident">h2</span>, <span class="ident">connection</span>) = <span class="ident">client::handshake</span>(<span class="ident">tcp</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">connection</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">pub async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Establish TCP connection to the server.
+    </span><span class="kw">let </span>tcp = TcpStream::connect(<span class="string">&quot;127.0.0.1:5928&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(h2, connection) = client::handshake(tcp).<span class="kw">await</span><span class="question-mark">?</span>;
+    tokio::spawn(<span class="kw">async move </span>{
+        connection.<span class="kw">await</span>.unwrap();
     });
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h2</span> = <span class="ident">h2</span>.<span class="ident">ready</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="comment">// Prepare the HTTP request to send to the server.</span>
-    <span class="kw">let</span> <span class="ident">request</span> = <span class="ident">Request::builder</span>()
-                    .<span class="ident">method</span>(<span class="ident">Method::GET</span>)
-                    .<span class="ident">uri</span>(<span class="string">&quot;https://www.example.com/&quot;</span>)
-                    .<span class="ident">body</span>(())
-                    .<span class="ident">unwrap</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>h2 = h2.ready().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Prepare the HTTP request to send to the server.
+    </span><span class="kw">let </span>request = Request::builder()
+                    .method(Method::GET)
+                    .uri(<span class="string">&quot;https://www.example.com/&quot;</span>)
+                    .body(())
+                    .unwrap();
 
-    <span class="comment">// Send the request. The second tuple item allows the caller</span>
-    <span class="comment">// to stream a request body.</span>
-    <span class="kw">let</span> (<span class="ident">response</span>, <span class="kw">_</span>) = <span class="ident">h2</span>.<span class="ident">send_request</span>(<span class="ident">request</span>, <span class="bool-val">true</span>).<span class="ident">unwrap</span>();
+    <span class="comment">// Send the request. The second tuple item allows the caller
+    // to stream a request body.
+    </span><span class="kw">let </span>(response, <span class="kw">_</span>) = h2.send_request(request, <span class="bool-val">true</span>).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">head</span>, <span class="kw-2">mut</span> <span class="ident">body</span>) = <span class="ident">response</span>.<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">into_parts</span>();
+    <span class="kw">let </span>(head, <span class="kw-2">mut </span>body) = response.<span class="kw">await</span><span class="question-mark">?</span>.into_parts();
 
-    <span class="macro">println!</span>(<span class="string">&quot;Received response: {:?}&quot;</span>, <span class="ident">head</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Received response: {:?}&quot;</span>, head);
 
-    <span class="comment">// The `flow_control` handle allows the caller to manage</span>
-    <span class="comment">// flow control.</span>
-    <span class="comment">//</span>
-    <span class="comment">// Whenever data is received, the caller is responsible for</span>
-    <span class="comment">// releasing capacity back to the server once it has freed</span>
-    <span class="comment">// the data from memory.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flow_control</span> = <span class="ident">body</span>.<span class="ident">flow_control</span>().<span class="ident">clone</span>();
+    <span class="comment">// The `flow_control` handle allows the caller to manage
+    // flow control.
+    //
+    // Whenever data is received, the caller is responsible for
+    // releasing capacity back to the server once it has freed
+    // the data from memory.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>flow_control = body.flow_control().clone();
 
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) = <span class="ident">body</span>.<span class="ident">data</span>().<span class="kw">await</span> {
-        <span class="kw">let</span> <span class="ident">chunk</span> = <span class="ident">chunk</span><span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;RX: {:?}&quot;</span>, <span class="ident">chunk</span>);
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(chunk) = body.data().<span class="kw">await </span>{
+        <span class="kw">let </span>chunk = chunk<span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;RX: {:?}&quot;</span>, chunk);
 
-        <span class="comment">// Let the server send more data.</span>
-        <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">flow_control</span>.<span class="ident">release_capacity</span>(<span class="ident">chunk</span>.<span class="ident">len</span>());
+        <span class="comment">// Let the server send more data.
+        </span><span class="kw">let _ </span>= flow_control.release_capacity(chunk.len());
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -108,4 +108,4 @@ request.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SendRequest.html" title="h2::client::SendRequest struct">SendRequest</a></div><div class="item-right docblock-short"><p>Initializes new HTTP/2 streams on a connection by sending a request.</p>
 </div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.handshake.html" title="h2::client::handshake fn">handshake</a></div><div class="item-right docblock-short"><p>Creates a new configured HTTP/2 client with default configuration
 values backed by <code>io</code>.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

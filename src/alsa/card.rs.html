@@ -52,59 +52,59 @@
 <span id="52">52</span>
 <span id="53">53</span>
 <span id="54">54</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Sound card enumeration</span>
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_int</span>, <span class="ident">c_char</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::error</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alsa</span>;
-<span class="kw">use</span> <span class="ident">std::ffi::CStr</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Sound card enumeration
+</span><span class="kw">use </span>libc::{c_int, c_char};
+<span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::alsa;
+<span class="kw">use </span>std::ffi::CStr;
 
-<span class="doccomment">/// An ALSA sound card, uniquely identified by its index.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Card</span>(<span class="ident">c_int</span>);
+<span class="doccomment">/// An ALSA sound card, uniquely identified by its index.
+</span><span class="attribute">#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]</span>
+<span class="kw">pub struct </span>Card(c_int);
 
-<span class="doccomment">/// Iterate over existing sound cards.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Iter</span>(<span class="ident">c_int</span>);
+<span class="doccomment">/// Iterate over existing sound cards.
+</span><span class="kw">pub struct </span>Iter(c_int);
 
-<span class="kw">impl</span> <span class="ident">Iter</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">Iter</span> { <span class="ident">Iter</span>(-<span class="number">1</span>) }
+<span class="kw">impl </span>Iter {
+    <span class="kw">pub fn </span>new() -&gt; Iter { Iter(-<span class="number">1</span>) }
 }
 
-<span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Iter</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="prelude-ty">Result</span>&lt;<span class="ident">Card</span>&gt;;
+<span class="kw">impl </span>Iterator <span class="kw">for </span>Iter {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;Card&gt;;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Card</span>&gt;&gt; {
-        <span class="kw">match</span> <span class="macro">acheck!</span>(<span class="ident">snd_card_next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span>)) {
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="kw">if</span> <span class="self">self</span>.<span class="number">0</span> == -<span class="number">1</span> =&gt; <span class="prelude-val">None</span>,
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">Card</span>(<span class="self">self</span>.<span class="number">0</span>))),
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)),
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Card&gt;&gt; {
+        <span class="kw">match </span><span class="macro">acheck!</span>(snd_card_next(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>)) {
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>== -<span class="number">1 </span>=&gt; <span class="prelude-val">None</span>,
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(Card(<span class="self">self</span>.<span class="number">0</span>))),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Card</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">index</span>: <span class="ident">c_int</span>) -&gt; <span class="ident">Card</span> { <span class="ident">Card</span>(<span class="ident">index</span>) }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Card</span>&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_card_get_index</span>(<span class="ident">s</span>.<span class="ident">as_ptr</span>())).<span class="ident">map</span>(<span class="ident">Card</span>)
+<span class="kw">impl </span>Card {
+    <span class="kw">pub fn </span>new(index: c_int) -&gt; Card { Card(index) }
+    <span class="kw">pub fn </span>from_str(s: <span class="kw-2">&amp;</span>CStr) -&gt; <span class="prelude-ty">Result</span>&lt;Card&gt; {
+        <span class="macro">acheck!</span>(snd_card_get_index(s.as_ptr())).map(Card)
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span>: <span class="kw-2">*mut</span> <span class="ident">c_char</span> = <span class="ident">::std::ptr::null_mut</span>();
-        <span class="macro">acheck!</span>(<span class="ident">snd_card_get_name</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;mut</span> <span class="ident">c</span>))
-            .<span class="ident">and_then</span>(|<span class="kw">_</span>| <span class="ident">from_alloc</span>(<span class="string">&quot;snd_card_get_name&quot;</span>, <span class="ident">c</span>)) 
+    <span class="kw">pub fn </span>get_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>c: <span class="kw-2">*mut </span>c_char = ::std::ptr::null_mut();
+        <span class="macro">acheck!</span>(snd_card_get_name(<span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;mut </span>c))
+            .and_then(|<span class="kw">_</span>| from_alloc(<span class="string">&quot;snd_card_get_name&quot;</span>, c)) 
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_longname</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c</span>: <span class="kw-2">*mut</span> <span class="ident">c_char</span> = <span class="ident">::std::ptr::null_mut</span>();
-        <span class="macro">acheck!</span>(<span class="ident">snd_card_get_longname</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;mut</span> <span class="ident">c</span>))
-            .<span class="ident">and_then</span>(|<span class="kw">_</span>| <span class="ident">from_alloc</span>(<span class="string">&quot;snd_card_get_longname&quot;</span>, <span class="ident">c</span>)) 
+    <span class="kw">pub fn </span>get_longname(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>c: <span class="kw-2">*mut </span>c_char = ::std::ptr::null_mut();
+        <span class="macro">acheck!</span>(snd_card_get_longname(<span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;mut </span>c))
+            .and_then(|<span class="kw">_</span>| from_alloc(<span class="string">&quot;snd_card_get_longname&quot;</span>, c)) 
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">c_int</span> { <span class="self">self</span>.<span class="number">0</span> }
+    <span class="kw">pub fn </span>get_index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; c_int { <span class="self">self</span>.<span class="number">0 </span>}
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">print_cards</span>() {
-    <span class="kw">for</span> <span class="ident">a</span> <span class="kw">in</span> <span class="ident">Iter::new</span>().<span class="ident">map</span>(|<span class="ident">a</span>| <span class="ident">a</span>.<span class="ident">unwrap</span>()) {
-        <span class="macro">println!</span>(<span class="string">&quot;Card #{}: {} ({})&quot;</span>, <span class="ident">a</span>.<span class="ident">get_index</span>(), <span class="ident">a</span>.<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">a</span>.<span class="ident">get_longname</span>().<span class="ident">unwrap</span>())
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>print_cards() {
+    <span class="kw">for </span>a <span class="kw">in </span>Iter::new().map(|a| a.unwrap()) {
+        <span class="macro">println!</span>(<span class="string">&quot;Card #{}: {} ({})&quot;</span>, a.get_index(), a.get_name().unwrap(), a.get_longname().unwrap())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

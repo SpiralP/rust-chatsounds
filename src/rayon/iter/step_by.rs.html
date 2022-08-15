@@ -142,149 +142,149 @@
 <span id="142">142</span>
 <span id="143">143</span>
 <span id="144">144</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg</span>(<span class="ident">has_step_by_rev</span>)]</span>
-<span class="kw">use</span> <span class="ident">std::cmp::min</span>;
+</pre><pre class="rust"><code><span class="attribute">#![cfg(has_step_by_rev)]</span>
+<span class="kw">use </span>std::cmp::min;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::plumbing</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math::div_round_up</span>;
-<span class="kw">use</span> <span class="ident">std::iter</span>;
-<span class="kw">use</span> <span class="ident">std::usize</span>;
+<span class="kw">use </span><span class="kw">super</span>::plumbing::<span class="kw-2">*</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::math::div_round_up;
+<span class="kw">use </span>std::iter;
+<span class="kw">use </span>std::usize;
 
-<span class="doccomment">/// `StepBy` is an iterator that skips `n` elements between each yield, where `n` is the given step.</span>
-<span class="doccomment">/// This struct is created by the [`step_by()`] method on [`IndexedParallelIterator`]</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`step_by()`]: trait.IndexedParallelIterator.html#method.step_by</span>
-<span class="doccomment">/// [`IndexedParallelIterator`]: trait.IndexedParallelIterator.html</span>
-<span class="attribute">#[<span class="ident">must_use</span> = <span class="string">&quot;iterator adaptors are lazy and do nothing unless consumed&quot;</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StepBy</span>&lt;<span class="ident">I</span>: <span class="ident">IndexedParallelIterator</span>&gt; {
-    <span class="ident">base</span>: <span class="ident">I</span>,
-    <span class="ident">step</span>: <span class="ident">usize</span>,
+<span class="doccomment">/// `StepBy` is an iterator that skips `n` elements between each yield, where `n` is the given step.
+/// This struct is created by the [`step_by()`] method on [`IndexedParallelIterator`]
+///
+/// [`step_by()`]: trait.IndexedParallelIterator.html#method.step_by
+/// [`IndexedParallelIterator`]: trait.IndexedParallelIterator.html
+</span><span class="attribute">#[must_use = <span class="string">&quot;iterator adaptors are lazy and do nothing unless consumed&quot;</span>]</span>
+<span class="attribute">#[derive(Debug, Clone)]</span>
+<span class="kw">pub struct </span>StepBy&lt;I: IndexedParallelIterator&gt; {
+    base: I,
+    step: usize,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">StepBy</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">IndexedParallelIterator</span>,
+<span class="kw">impl</span>&lt;I&gt; StepBy&lt;I&gt;
+<span class="kw">where
+    </span>I: IndexedParallelIterator,
 {
-    <span class="doccomment">/// Creates a new `StepBy` iterator.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">base</span>: <span class="ident">I</span>, <span class="ident">step</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">StepBy</span> { <span class="ident">base</span>, <span class="ident">step</span> }
+    <span class="doccomment">/// Creates a new `StepBy` iterator.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(base: I, step: usize) -&gt; <span class="self">Self </span>{
+        StepBy { base, step }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">ParallelIterator</span> <span class="kw">for</span> <span class="ident">StepBy</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">IndexedParallelIterator</span>,
+<span class="kw">impl</span>&lt;I&gt; ParallelIterator <span class="kw">for </span>StepBy&lt;I&gt;
+<span class="kw">where
+    </span>I: IndexedParallelIterator,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
+    <span class="kw">type </span>Item = I::Item;
 
-    <span class="kw">fn</span> <span class="ident">drive_unindexed</span>&lt;<span class="ident">C</span>&gt;(<span class="self">self</span>, <span class="ident">consumer</span>: <span class="ident">C</span>) -&gt; <span class="ident">C::Result</span>
-    <span class="kw">where</span>
-        <span class="ident">C</span>: <span class="ident">UnindexedConsumer</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">fn </span>drive_unindexed&lt;C&gt;(<span class="self">self</span>, consumer: C) -&gt; C::Result
+    <span class="kw">where
+        </span>C: UnindexedConsumer&lt;<span class="self">Self</span>::Item&gt;,
     {
-        <span class="ident">bridge</span>(<span class="self">self</span>, <span class="ident">consumer</span>)
+        bridge(<span class="self">self</span>, consumer)
     }
 
-    <span class="kw">fn</span> <span class="ident">opt_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">len</span>())
+    <span class="kw">fn </span>opt_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="prelude-val">Some</span>(<span class="self">self</span>.len())
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">IndexedParallelIterator</span> <span class="kw">for</span> <span class="ident">StepBy</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">IndexedParallelIterator</span>,
+<span class="kw">impl</span>&lt;I&gt; IndexedParallelIterator <span class="kw">for </span>StepBy&lt;I&gt;
+<span class="kw">where
+    </span>I: IndexedParallelIterator,
 {
-    <span class="kw">fn</span> <span class="ident">drive</span>&lt;<span class="ident">C</span>: <span class="ident">Consumer</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;&gt;(<span class="self">self</span>, <span class="ident">consumer</span>: <span class="ident">C</span>) -&gt; <span class="ident">C::Result</span> {
-        <span class="ident">bridge</span>(<span class="self">self</span>, <span class="ident">consumer</span>)
+    <span class="kw">fn </span>drive&lt;C: Consumer&lt;<span class="self">Self</span>::Item&gt;&gt;(<span class="self">self</span>, consumer: C) -&gt; C::Result {
+        bridge(<span class="self">self</span>, consumer)
     }
 
-    <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident">div_round_up</span>(<span class="self">self</span>.<span class="ident">base</span>.<span class="ident">len</span>(), <span class="self">self</span>.<span class="ident">step</span>)
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        div_round_up(<span class="self">self</span>.base.len(), <span class="self">self</span>.step)
     }
 
-    <span class="kw">fn</span> <span class="ident">with_producer</span>&lt;<span class="ident">CB</span>&gt;(<span class="self">self</span>, <span class="ident">callback</span>: <span class="ident">CB</span>) -&gt; <span class="ident">CB::Output</span>
-    <span class="kw">where</span>
-        <span class="ident">CB</span>: <span class="ident">ProducerCallback</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt;,
+    <span class="kw">fn </span>with_producer&lt;CB&gt;(<span class="self">self</span>, callback: CB) -&gt; CB::Output
+    <span class="kw">where
+        </span>CB: ProducerCallback&lt;<span class="self">Self</span>::Item&gt;,
     {
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">len</span>();
-        <span class="kw">return</span> <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">with_producer</span>(<span class="ident">Callback</span> {
-            <span class="ident">callback</span>,
-            <span class="ident">step</span>: <span class="self">self</span>.<span class="ident">step</span>,
-            <span class="ident">len</span>,
+        <span class="kw">let </span>len = <span class="self">self</span>.base.len();
+        <span class="kw">return </span><span class="self">self</span>.base.with_producer(Callback {
+            callback,
+            step: <span class="self">self</span>.step,
+            len,
         });
 
-        <span class="kw">struct</span> <span class="ident">Callback</span>&lt;<span class="ident">CB</span>&gt; {
-            <span class="ident">callback</span>: <span class="ident">CB</span>,
-            <span class="ident">step</span>: <span class="ident">usize</span>,
-            <span class="ident">len</span>: <span class="ident">usize</span>,
+        <span class="kw">struct </span>Callback&lt;CB&gt; {
+            callback: CB,
+            step: usize,
+            len: usize,
         }
 
-        <span class="kw">impl</span>&lt;<span class="ident">T</span>, <span class="ident">CB</span>&gt; <span class="ident">ProducerCallback</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">Callback</span>&lt;<span class="ident">CB</span>&gt;
-        <span class="kw">where</span>
-            <span class="ident">CB</span>: <span class="ident">ProducerCallback</span>&lt;<span class="ident">T</span>&gt;,
+        <span class="kw">impl</span>&lt;T, CB&gt; ProducerCallback&lt;T&gt; <span class="kw">for </span>Callback&lt;CB&gt;
+        <span class="kw">where
+            </span>CB: ProducerCallback&lt;T&gt;,
         {
-            <span class="kw">type</span> <span class="ident">Output</span> = <span class="ident">CB::Output</span>;
-            <span class="kw">fn</span> <span class="ident">callback</span>&lt;<span class="ident">P</span>&gt;(<span class="self">self</span>, <span class="ident">base</span>: <span class="ident">P</span>) -&gt; <span class="ident">CB::Output</span>
-            <span class="kw">where</span>
-                <span class="ident">P</span>: <span class="ident">Producer</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+            <span class="kw">type </span>Output = CB::Output;
+            <span class="kw">fn </span>callback&lt;P&gt;(<span class="self">self</span>, base: P) -&gt; CB::Output
+            <span class="kw">where
+                </span>P: Producer&lt;Item = T&gt;,
             {
-                <span class="kw">let</span> <span class="ident">producer</span> = <span class="ident">StepByProducer</span> {
-                    <span class="ident">base</span>,
-                    <span class="ident">step</span>: <span class="self">self</span>.<span class="ident">step</span>,
-                    <span class="ident">len</span>: <span class="self">self</span>.<span class="ident">len</span>,
+                <span class="kw">let </span>producer = StepByProducer {
+                    base,
+                    step: <span class="self">self</span>.step,
+                    len: <span class="self">self</span>.len,
                 };
-                <span class="self">self</span>.<span class="ident">callback</span>.<span class="ident">callback</span>(<span class="ident">producer</span>)
+                <span class="self">self</span>.callback.callback(producer)
             }
         }
     }
 }
 
-<span class="doccomment">/// ////////////////////////////////////////////////////////////////////////</span>
-<span class="doccomment">/// Producer implementation</span>
+<span class="doccomment">/// ////////////////////////////////////////////////////////////////////////
+/// Producer implementation
 
-<span class="kw">struct</span> <span class="ident">StepByProducer</span>&lt;<span class="ident">P</span>&gt; {
-    <span class="ident">base</span>: <span class="ident">P</span>,
-    <span class="ident">step</span>: <span class="ident">usize</span>,
-    <span class="ident">len</span>: <span class="ident">usize</span>,
+</span><span class="kw">struct </span>StepByProducer&lt;P&gt; {
+    base: P,
+    step: usize,
+    len: usize,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>&gt; <span class="ident">Producer</span> <span class="kw">for</span> <span class="ident">StepByProducer</span>&lt;<span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Producer</span>,
+<span class="kw">impl</span>&lt;P&gt; Producer <span class="kw">for </span>StepByProducer&lt;P&gt;
+<span class="kw">where
+    </span>P: Producer,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">P::Item</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> = <span class="ident">iter::StepBy</span>&lt;<span class="ident">P::IntoIter</span>&gt;;
+    <span class="kw">type </span>Item = P::Item;
+    <span class="kw">type </span>IntoIter = iter::StepBy&lt;P::IntoIter&gt;;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">into_iter</span>().<span class="ident">step_by</span>(<span class="self">self</span>.<span class="ident">step</span>)
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        <span class="self">self</span>.base.into_iter().step_by(<span class="self">self</span>.step)
     }
 
-    <span class="kw">fn</span> <span class="ident">split_at</span>(<span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) -&gt; (<span class="self">Self</span>, <span class="self">Self</span>) {
-        <span class="kw">let</span> <span class="ident">elem_index</span> = <span class="ident">min</span>(<span class="ident">index</span> * <span class="self">self</span>.<span class="ident">step</span>, <span class="self">self</span>.<span class="ident">len</span>);
+    <span class="kw">fn </span>split_at(<span class="self">self</span>, index: usize) -&gt; (<span class="self">Self</span>, <span class="self">Self</span>) {
+        <span class="kw">let </span>elem_index = min(index * <span class="self">self</span>.step, <span class="self">self</span>.len);
 
-        <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">right</span>) = <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">split_at</span>(<span class="ident">elem_index</span>);
+        <span class="kw">let </span>(left, right) = <span class="self">self</span>.base.split_at(elem_index);
         (
-            <span class="ident">StepByProducer</span> {
-                <span class="ident">base</span>: <span class="ident">left</span>,
-                <span class="ident">step</span>: <span class="self">self</span>.<span class="ident">step</span>,
-                <span class="ident">len</span>: <span class="ident">elem_index</span>,
+            StepByProducer {
+                base: left,
+                step: <span class="self">self</span>.step,
+                len: elem_index,
             },
-            <span class="ident">StepByProducer</span> {
-                <span class="ident">base</span>: <span class="ident">right</span>,
-                <span class="ident">step</span>: <span class="self">self</span>.<span class="ident">step</span>,
-                <span class="ident">len</span>: <span class="self">self</span>.<span class="ident">len</span> - <span class="ident">elem_index</span>,
+            StepByProducer {
+                base: right,
+                step: <span class="self">self</span>.step,
+                len: <span class="self">self</span>.len - elem_index,
             },
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">min_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident">div_round_up</span>(<span class="self">self</span>.<span class="ident">base</span>.<span class="ident">min_len</span>(), <span class="self">self</span>.<span class="ident">step</span>)
+    <span class="kw">fn </span>min_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        div_round_up(<span class="self">self</span>.base.min_len(), <span class="self">self</span>.step)
     }
 
-    <span class="kw">fn</span> <span class="ident">max_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">base</span>.<span class="ident">max_len</span>() / <span class="self">self</span>.<span class="ident">step</span>
+    <span class="kw">fn </span>max_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.base.max_len() / <span class="self">self</span>.step
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -70,77 +70,77 @@
 <span id="70">70</span>
 <span id="71">71</span>
 <span id="72">72</span>
-</pre><pre class="rust"><code><span class="doccomment">/// Helper macro to execute a system call that returns an `io::Result`.</span>
-<span class="comment">//</span>
-<span class="comment">// Macro must be defined before any modules that uses them.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_macros</span>)]</span>
-<span class="macro">macro_rules!</span> <span class="ident">syscall</span> {
-    (<span class="macro-nonterminal">$</span><span class="kw">fn</span>: <span class="macro-nonterminal">ident</span> ( $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>: <span class="ident">expr</span>),* $(,)* ) ) =&gt; {{
-        <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> { <span class="ident">libc</span>::<span class="macro-nonterminal">$</span><span class="kw">fn</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>, )<span class="kw-2">*</span>) };
-        <span class="kw">if</span> <span class="ident">res</span> == -<span class="number">1</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">std::io::Error::last_os_error</span>())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+</pre><pre class="rust"><code><span class="doccomment">/// Helper macro to execute a system call that returns an `io::Result`.
+</span><span class="comment">//
+// Macro must be defined before any modules that uses them.
+</span><span class="attribute">#[allow(unused_macros)]</span>
+<span class="macro">macro_rules!</span> syscall {
+    (<span class="macro-nonterminal">$</span><span class="kw">fn</span>: <span class="macro-nonterminal">ident </span>( $(<span class="macro-nonterminal">$arg</span>: expr),* $(,)* ) ) =&gt; {{
+        <span class="kw">let </span>res = <span class="kw">unsafe </span>{ libc::<span class="macro-nonterminal">$</span><span class="kw">fn</span>($(<span class="macro-nonterminal">$arg</span>, )<span class="kw-2">*</span>) };
+        <span class="kw">if </span>res == -<span class="number">1 </span>{
+            <span class="prelude-val">Err</span>(std::io::Error::last_os_error())
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(res)
         }
     }};
 }
 
 <span class="macro">cfg_os_poll!</span> {
-    <span class="kw">mod</span> <span class="ident">selector</span>;
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::selector</span>::{<span class="ident">event</span>, <span class="ident">Event</span>, <span class="ident">Events</span>, <span class="ident">Selector</span>};
+    <span class="kw">mod </span>selector;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span><span class="self">self</span>::selector::{event, Event, Events, Selector};
 
-    <span class="kw">mod</span> <span class="ident">sourcefd</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::sourcefd::SourceFd</span>;
+    <span class="kw">mod </span>sourcefd;
+    <span class="kw">pub use </span><span class="self">self</span>::sourcefd::SourceFd;
 
-    <span class="kw">mod</span> <span class="ident">waker</span>;
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::waker::Waker</span>;
+    <span class="kw">mod </span>waker;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span><span class="self">self</span>::waker::Waker;
 
     <span class="macro">cfg_net!</span> {
-        <span class="kw">mod</span> <span class="ident">net</span>;
+        <span class="kw">mod </span>net;
 
-        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">tcp</span>;
-        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">udp</span>;
-        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">uds</span>;
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::uds::SocketAddr</span>;
+        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>tcp;
+        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>udp;
+        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>uds;
+        <span class="kw">pub use </span><span class="self">self</span>::uds::SocketAddr;
     }
 
     <span class="macro">cfg_io_source!</span> {
-        <span class="kw">use</span> <span class="ident">std::io</span>;
+        <span class="kw">use </span>std::io;
 
-        <span class="comment">// Both `kqueue` and `epoll` don&#39;t need to hold any user space state.</span>
-        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">IoSourceState</span>;
+        <span class="comment">// Both `kqueue` and `epoll` don&#39;t need to hold any user space state.
+        </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IoSourceState;
 
-        <span class="kw">impl</span> <span class="ident">IoSourceState</span> {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">IoSourceState</span> {
-                <span class="ident">IoSourceState</span>
+        <span class="kw">impl </span>IoSourceState {
+            <span class="kw">pub fn </span>new() -&gt; IoSourceState {
+                IoSourceState
             }
 
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_io</span>&lt;<span class="ident">T</span>, <span class="ident">F</span>, <span class="ident">R</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">io</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">R</span>&gt;
-            <span class="kw">where</span>
-                <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">R</span>&gt;,
+            <span class="kw">pub fn </span>do_io&lt;T, F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F, io: <span class="kw-2">&amp;</span>T) -&gt; io::Result&lt;R&gt;
+            <span class="kw">where
+                </span>F: FnOnce(<span class="kw-2">&amp;</span>T) -&gt; io::Result&lt;R&gt;,
             {
-                <span class="comment">// We don&#39;t hold state, so we can just call the function and</span>
-                <span class="comment">// return.</span>
-                <span class="ident">f</span>(<span class="ident">io</span>)
+                <span class="comment">// We don&#39;t hold state, so we can just call the function and
+                // return.
+                </span>f(io)
             }
         }
     }
 
     <span class="macro">cfg_os_ext!</span> {
-        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">pipe</span>;
+        <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>pipe;
     }
 }
 
 <span class="macro">cfg_not_os_poll!</span> {
     <span class="macro">cfg_net!</span> {
-        <span class="kw">mod</span> <span class="ident">uds</span>;
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::uds::SocketAddr</span>;
+        <span class="kw">mod </span>uds;
+        <span class="kw">pub use </span><span class="self">self</span>::uds::SocketAddr;
     }
 
     <span class="macro">cfg_any_os_ext!</span> {
-        <span class="kw">mod</span> <span class="ident">sourcefd</span>;
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::sourcefd::SourceFd</span>;
+        <span class="kw">mod </span>sourcefd;
+        <span class="kw">pub use </span><span class="self">self</span>::sourcefd::SourceFd;
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

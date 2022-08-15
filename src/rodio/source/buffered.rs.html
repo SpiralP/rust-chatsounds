@@ -255,262 +255,262 @@
 <span id="255">255</span>
 <span id="256">256</span>
 <span id="257">257</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cmp</span>;
-<span class="kw">use</span> <span class="ident">std::mem</span>;
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::cmp;
+<span class="kw">use </span>std::mem;
+<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Sample</span>, <span class="ident">Source</span>};
+<span class="kw">use crate</span>::{Sample, Source};
 
-<span class="doccomment">/// Internal function that builds a `Buffered` object.</span>
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">buffered</span>&lt;<span class="ident">I</span>&gt;(<span class="ident">input</span>: <span class="ident">I</span>) -&gt; <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Internal function that builds a `Buffered` object.
+</span><span class="attribute">#[inline]</span>
+<span class="kw">pub fn </span>buffered&lt;I&gt;(input: I) -&gt; Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">let</span> <span class="ident">total_duration</span> = <span class="ident">input</span>.<span class="ident">total_duration</span>();
-    <span class="kw">let</span> <span class="ident">first_frame</span> = <span class="ident">extract</span>(<span class="ident">input</span>);
+    <span class="kw">let </span>total_duration = input.total_duration();
+    <span class="kw">let </span>first_frame = extract(input);
 
-    <span class="ident">Buffered</span> {
-        <span class="ident">current_frame</span>: <span class="ident">first_frame</span>,
-        <span class="ident">position_in_frame</span>: <span class="number">0</span>,
-        <span class="ident">total_duration</span>,
+    Buffered {
+        current_frame: first_frame,
+        position_in_frame: <span class="number">0</span>,
+        total_duration,
     }
 }
 
-<span class="doccomment">/// Iterator that at the same time extracts data from the iterator and stores it in a buffer.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Iterator that at the same time extracts data from the iterator and stores it in a buffer.
+</span><span class="kw">pub struct </span>Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="doccomment">/// Immutable reference to the next frame of data. Cannot be `Frame::Input`.</span>
-    <span class="ident">current_frame</span>: <span class="ident">Arc</span>&lt;<span class="ident">Frame</span>&lt;<span class="ident">I</span>&gt;&gt;,
+    <span class="doccomment">/// Immutable reference to the next frame of data. Cannot be `Frame::Input`.
+    </span>current_frame: Arc&lt;Frame&lt;I&gt;&gt;,
 
-    <span class="doccomment">/// The position in number of samples of this iterator inside `current_frame`.</span>
-    <span class="ident">position_in_frame</span>: <span class="ident">usize</span>,
+    <span class="doccomment">/// The position in number of samples of this iterator inside `current_frame`.
+    </span>position_in_frame: usize,
 
-    <span class="doccomment">/// Obtained once at creation and never modified again.</span>
-    <span class="ident">total_duration</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt;,
+    <span class="doccomment">/// Obtained once at creation and never modified again.
+    </span>total_duration: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
 }
 
-<span class="kw">enum</span> <span class="ident">Frame</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">enum </span>Frame&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="doccomment">/// Data that has already been extracted from the iterator. Also contains a pointer to the</span>
-    <span class="doccomment">/// next frame.</span>
-    <span class="ident">Data</span>(<span class="ident">FrameData</span>&lt;<span class="ident">I</span>&gt;),
+    <span class="doccomment">/// Data that has already been extracted from the iterator. Also contains a pointer to the
+    /// next frame.
+    </span>Data(FrameData&lt;I&gt;),
 
-    <span class="doccomment">/// No more data.</span>
-    <span class="ident">End</span>,
+    <span class="doccomment">/// No more data.
+    </span>End,
 
-    <span class="doccomment">/// Unextracted data. The `Option` should never be `None` and is only here for easier data</span>
-    <span class="doccomment">/// processing.</span>
-    <span class="ident">Input</span>(<span class="ident">Mutex</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">I</span>&gt;&gt;),
+    <span class="doccomment">/// Unextracted data. The `Option` should never be `None` and is only here for easier data
+    /// processing.
+    </span>Input(Mutex&lt;<span class="prelude-ty">Option</span>&lt;I&gt;&gt;),
 }
 
-<span class="kw">struct</span> <span class="ident">FrameData</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">struct </span>FrameData&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="ident">data</span>: <span class="ident">Vec</span>&lt;<span class="ident">I::Item</span>&gt;,
-    <span class="ident">channels</span>: <span class="ident">u16</span>,
-    <span class="ident">rate</span>: <span class="ident">u32</span>,
-    <span class="ident">next</span>: <span class="ident">Mutex</span>&lt;<span class="ident">Arc</span>&lt;<span class="ident">Frame</span>&lt;<span class="ident">I</span>&gt;&gt;&gt;,
+    data: Vec&lt;I::Item&gt;,
+    channels: u16,
+    rate: u32,
+    next: Mutex&lt;Arc&lt;Frame&lt;I&gt;&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">FrameData</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; Drop <span class="kw">for </span>FrameData&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// This is necessary to prevent stack overflows deallocating long chains of the mutually</span>
-        <span class="comment">// recursive `Frame` and `FrameData` types. This iteratively traverses as much of the</span>
-        <span class="comment">// chain as needs to be deallocated, and repeatedly &quot;pops&quot; the head off the list. This</span>
-        <span class="comment">// solves the problem, as when the time comes to actually deallocate the `FrameData`,</span>
-        <span class="comment">// the `next` field will contain a `Frame::End`, or an `Arc` with additional references,</span>
-        <span class="comment">// so the depth of recursive drops will be bounded.</span>
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">arc_next</span>) = <span class="self">self</span>.<span class="ident">next</span>.<span class="ident">get_mut</span>() {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">next_ref</span>) = <span class="ident">Arc::get_mut</span>(<span class="ident">arc_next</span>) {
-                <span class="comment">// This allows us to own the next Frame.</span>
-                <span class="kw">let</span> <span class="ident">next</span> = <span class="ident">mem::replace</span>(<span class="ident">next_ref</span>, <span class="ident">Frame::End</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Frame::Data</span>(<span class="ident">next_data</span>) = <span class="ident">next</span> {
-                    <span class="comment">// Swap the current FrameData with the next one, allowing the current one</span>
-                    <span class="comment">// to go out of scope.</span>
-                    <span class="kw-2">*</span><span class="self">self</span> = <span class="ident">next_data</span>;
-                } <span class="kw">else</span> {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// This is necessary to prevent stack overflows deallocating long chains of the mutually
+        // recursive `Frame` and `FrameData` types. This iteratively traverses as much of the
+        // chain as needs to be deallocated, and repeatedly &quot;pops&quot; the head off the list. This
+        // solves the problem, as when the time comes to actually deallocate the `FrameData`,
+        // the `next` field will contain a `Frame::End`, or an `Arc` with additional references,
+        // so the depth of recursive drops will be bounded.
+        </span><span class="kw">while let </span><span class="prelude-val">Ok</span>(arc_next) = <span class="self">self</span>.next.get_mut() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(next_ref) = Arc::get_mut(arc_next) {
+                <span class="comment">// This allows us to own the next Frame.
+                </span><span class="kw">let </span>next = mem::replace(next_ref, Frame::End);
+                <span class="kw">if let </span>Frame::Data(next_data) = next {
+                    <span class="comment">// Swap the current FrameData with the next one, allowing the current one
+                    // to go out of scope.
+                    </span><span class="kw-2">*</span><span class="self">self </span>= next_data;
+                } <span class="kw">else </span>{
                     <span class="kw">break</span>;
                 }
-            } <span class="kw">else</span> {
+            } <span class="kw">else </span>{
                 <span class="kw">break</span>;
             }
         }
     }
 }
 
-<span class="doccomment">/// Builds a frame from the input iterator.</span>
-<span class="kw">fn</span> <span class="ident">extract</span>&lt;<span class="ident">I</span>&gt;(<span class="kw-2">mut</span> <span class="ident">input</span>: <span class="ident">I</span>) -&gt; <span class="ident">Arc</span>&lt;<span class="ident">Frame</span>&lt;<span class="ident">I</span>&gt;&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Builds a frame from the input iterator.
+</span><span class="kw">fn </span>extract&lt;I&gt;(<span class="kw-2">mut </span>input: I) -&gt; Arc&lt;Frame&lt;I&gt;&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">let</span> <span class="ident">frame_len</span> = <span class="ident">input</span>.<span class="ident">current_frame_len</span>();
+    <span class="kw">let </span>frame_len = input.current_frame_len();
 
-    <span class="kw">if</span> <span class="ident">frame_len</span> == <span class="prelude-val">Some</span>(<span class="number">0</span>) {
-        <span class="kw">return</span> <span class="ident">Arc::new</span>(<span class="ident">Frame::End</span>);
+    <span class="kw">if </span>frame_len == <span class="prelude-val">Some</span>(<span class="number">0</span>) {
+        <span class="kw">return </span>Arc::new(Frame::End);
     }
 
-    <span class="kw">let</span> <span class="ident">channels</span> = <span class="ident">input</span>.<span class="ident">channels</span>();
-    <span class="kw">let</span> <span class="ident">rate</span> = <span class="ident">input</span>.<span class="ident">sample_rate</span>();
-    <span class="kw">let</span> <span class="ident">data</span>: <span class="ident">Vec</span>&lt;<span class="ident">I::Item</span>&gt; = <span class="ident">input</span>
-        .<span class="ident">by_ref</span>()
-        .<span class="ident">take</span>(<span class="ident">cmp::min</span>(<span class="ident">frame_len</span>.<span class="ident">unwrap_or</span>(<span class="number">32768</span>), <span class="number">32768</span>))
-        .<span class="ident">collect</span>();
+    <span class="kw">let </span>channels = input.channels();
+    <span class="kw">let </span>rate = input.sample_rate();
+    <span class="kw">let </span>data: Vec&lt;I::Item&gt; = input
+        .by_ref()
+        .take(cmp::min(frame_len.unwrap_or(<span class="number">32768</span>), <span class="number">32768</span>))
+        .collect();
 
-    <span class="kw">if</span> <span class="ident">data</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">return</span> <span class="ident">Arc::new</span>(<span class="ident">Frame::End</span>);
+    <span class="kw">if </span>data.is_empty() {
+        <span class="kw">return </span>Arc::new(Frame::End);
     }
 
-    <span class="ident">Arc::new</span>(<span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> {
-        <span class="ident">data</span>,
-        <span class="ident">channels</span>,
-        <span class="ident">rate</span>,
-        <span class="ident">next</span>: <span class="ident">Mutex::new</span>(<span class="ident">Arc::new</span>(<span class="ident">Frame::Input</span>(<span class="ident">Mutex::new</span>(<span class="prelude-val">Some</span>(<span class="ident">input</span>))))),
+    Arc::new(Frame::Data(FrameData {
+        data,
+        channels,
+        rate,
+        next: Mutex::new(Arc::new(Frame::Input(Mutex::new(<span class="prelude-val">Some</span>(input))))),
     }))
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="doccomment">/// Advances to the next frame.</span>
-    <span class="kw">fn</span> <span class="ident">next_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">let</span> <span class="ident">next_frame</span> = {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_frame_ptr</span> = <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">current_frame</span> {
-                <span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> { <span class="ident">next</span>, .. }) =&gt; <span class="ident">next</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>(),
-                <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>(),
+    <span class="doccomment">/// Advances to the next frame.
+    </span><span class="kw">fn </span>next_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span>next_frame = {
+            <span class="kw">let </span><span class="kw-2">mut </span>next_frame_ptr = <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.current_frame {
+                Frame::Data(FrameData { next, .. }) =&gt; next.lock().unwrap(),
+                <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
             };
 
-            <span class="kw">let</span> <span class="ident">next_frame</span> = <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">next_frame_ptr</span> {
-                <span class="ident">Frame::Data</span>(<span class="kw">_</span>) =&gt; <span class="ident">next_frame_ptr</span>.<span class="ident">clone</span>(),
-                <span class="ident">Frame::End</span> =&gt; <span class="ident">next_frame_ptr</span>.<span class="ident">clone</span>(),
-                <span class="ident">Frame::Input</span>(<span class="ident">input</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">input</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">take</span>().<span class="ident">unwrap</span>();
-                    <span class="ident">extract</span>(<span class="ident">input</span>)
+            <span class="kw">let </span>next_frame = <span class="kw">match </span><span class="kw-2">&amp;**</span>next_frame_ptr {
+                Frame::Data(<span class="kw">_</span>) =&gt; next_frame_ptr.clone(),
+                Frame::End =&gt; next_frame_ptr.clone(),
+                Frame::Input(input) =&gt; {
+                    <span class="kw">let </span>input = input.lock().unwrap().take().unwrap();
+                    extract(input)
                 }
             };
 
-            <span class="kw-2">*</span><span class="ident">next_frame_ptr</span> = <span class="ident">next_frame</span>.<span class="ident">clone</span>();
-            <span class="ident">next_frame</span>
+            <span class="kw-2">*</span>next_frame_ptr = next_frame.clone();
+            next_frame
         };
 
-        <span class="self">self</span>.<span class="ident">current_frame</span> = <span class="ident">next_frame</span>;
-        <span class="self">self</span>.<span class="ident">position_in_frame</span> = <span class="number">0</span>;
+        <span class="self">self</span>.current_frame = next_frame;
+        <span class="self">self</span>.position_in_frame = <span class="number">0</span>;
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; Iterator <span class="kw">for </span>Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
+    <span class="kw">type </span>Item = I::Item;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">I::Item</span>&gt; {
-        <span class="kw">let</span> <span class="ident">current_sample</span>;
-        <span class="kw">let</span> <span class="ident">advance_frame</span>;
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;I::Item&gt; {
+        <span class="kw">let </span>current_sample;
+        <span class="kw">let </span>advance_frame;
 
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">current_frame</span> {
-            <span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> { <span class="ident">data</span>, .. }) =&gt; {
-                <span class="ident">current_sample</span> = <span class="prelude-val">Some</span>(<span class="ident">data</span>[<span class="self">self</span>.<span class="ident">position_in_frame</span>]);
-                <span class="self">self</span>.<span class="ident">position_in_frame</span> += <span class="number">1</span>;
-                <span class="ident">advance_frame</span> = <span class="self">self</span>.<span class="ident">position_in_frame</span> &gt;= <span class="ident">data</span>.<span class="ident">len</span>();
+        <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.current_frame {
+            Frame::Data(FrameData { data, .. }) =&gt; {
+                current_sample = <span class="prelude-val">Some</span>(data[<span class="self">self</span>.position_in_frame]);
+                <span class="self">self</span>.position_in_frame += <span class="number">1</span>;
+                advance_frame = <span class="self">self</span>.position_in_frame &gt;= data.len();
             }
 
-            <span class="ident">Frame::End</span> =&gt; {
-                <span class="ident">current_sample</span> = <span class="prelude-val">None</span>;
-                <span class="ident">advance_frame</span> = <span class="bool-val">false</span>;
+            Frame::End =&gt; {
+                current_sample = <span class="prelude-val">None</span>;
+                advance_frame = <span class="bool-val">false</span>;
             }
 
-            <span class="ident">Frame::Input</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+            Frame::Input(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
         };
 
-        <span class="kw">if</span> <span class="ident">advance_frame</span> {
-            <span class="self">self</span>.<span class="ident">next_frame</span>();
+        <span class="kw">if </span>advance_frame {
+            <span class="self">self</span>.next_frame();
         }
 
-        <span class="ident">current_sample</span>
+        current_sample
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="comment">// TODO:</span>
-        (<span class="number">0</span>, <span class="prelude-val">None</span>)
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="comment">// TODO:
+        </span>(<span class="number">0</span>, <span class="prelude-val">None</span>)
     }
 }
 
-<span class="comment">// TODO: uncomment when `size_hint` is fixed</span>
-<span class="comment">/*impl&lt;I&gt; ExactSizeIterator for Amplify&lt;I&gt; where I: Source + ExactSizeIterator, I::Item: Sample {
-}*/</span>
+<span class="comment">// TODO: uncomment when `size_hint` is fixed
+/*impl&lt;I&gt; ExactSizeIterator for Amplify&lt;I&gt; where I: Source + ExactSizeIterator, I::Item: Sample {
+}*/
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+</span><span class="kw">impl</span>&lt;I&gt; Source <span class="kw">for </span>Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">current_frame</span> {
-            <span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> { <span class="ident">data</span>, .. }) =&gt; <span class="prelude-val">Some</span>(<span class="ident">data</span>.<span class="ident">len</span>() - <span class="self">self</span>.<span class="ident">position_in_frame</span>),
-            <span class="ident">Frame::End</span> =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
-            <span class="ident">Frame::Input</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;*</span><span class="self">self</span>.current_frame {
+            Frame::Data(FrameData { data, .. }) =&gt; <span class="prelude-val">Some</span>(data.len() - <span class="self">self</span>.position_in_frame),
+            Frame::End =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
+            Frame::Input(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">current_frame</span> {
-            <span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> { <span class="ident">channels</span>, .. }) =&gt; <span class="ident">channels</span>,
-            <span class="ident">Frame::End</span> =&gt; <span class="number">1</span>,
-            <span class="ident">Frame::Input</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self</span>.current_frame {
+            Frame::Data(FrameData { channels, .. }) =&gt; channels,
+            Frame::End =&gt; <span class="number">1</span>,
+            Frame::Input(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">current_frame</span> {
-            <span class="ident">Frame::Data</span>(<span class="ident">FrameData</span> { <span class="ident">rate</span>, .. }) =&gt; <span class="ident">rate</span>,
-            <span class="ident">Frame::End</span> =&gt; <span class="number">44100</span>,
-            <span class="ident">Frame::Input</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self</span>.current_frame {
+            Frame::Data(FrameData { rate, .. }) =&gt; rate,
+            Frame::End =&gt; <span class="number">44100</span>,
+            Frame::Input(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="self">self</span>.<span class="ident">total_duration</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="self">self</span>.total_duration
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; Clone <span class="kw">for </span>Buffered&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Buffered</span>&lt;<span class="ident">I</span>&gt; {
-        <span class="ident">Buffered</span> {
-            <span class="ident">current_frame</span>: <span class="self">self</span>.<span class="ident">current_frame</span>.<span class="ident">clone</span>(),
-            <span class="ident">position_in_frame</span>: <span class="self">self</span>.<span class="ident">position_in_frame</span>,
-            <span class="ident">total_duration</span>: <span class="self">self</span>.<span class="ident">total_duration</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Buffered&lt;I&gt; {
+        Buffered {
+            current_frame: <span class="self">self</span>.current_frame.clone(),
+            position_in_frame: <span class="self">self</span>.position_in_frame,
+            total_duration: <span class="self">self</span>.total_duration,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

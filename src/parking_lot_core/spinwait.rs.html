@@ -72,79 +72,79 @@
 <span id="72">72</span>
 <span id="73">73</span>
 <span id="74">74</span>
-</pre><pre class="rust"><code><span class="comment">// Copyright 2016 Amanieu d&#39;Antras</span>
-<span class="comment">//</span>
-<span class="comment">// Licensed under the Apache License, Version 2.0, &lt;LICENSE-APACHE or</span>
-<span class="comment">// http://apache.org/licenses/LICENSE-2.0&gt; or the MIT license &lt;LICENSE-MIT or</span>
-<span class="comment">// http://opensource.org/licenses/MIT&gt;, at your option. This file may not be</span>
-<span class="comment">// copied, modified, or distributed except according to those terms.</span>
+</pre><pre class="rust"><code><span class="comment">// Copyright 2016 Amanieu d&#39;Antras
+//
+// Licensed under the Apache License, Version 2.0, &lt;LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0&gt; or the MIT license &lt;LICENSE-MIT or
+// http://opensource.org/licenses/MIT&gt;, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::thread_parker</span>;
-<span class="kw">use</span> <span class="ident">std::sync::atomic::spin_loop_hint</span>;
+</span><span class="kw">use </span><span class="kw">crate</span>::thread_parker;
+<span class="kw">use </span>std::sync::atomic::spin_loop_hint;
 
-<span class="comment">// Wastes some CPU time for the given number of iterations,</span>
-<span class="comment">// using a hint to indicate to the CPU that we are spinning.</span>
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">cpu_relax</span>(<span class="ident">iterations</span>: <span class="ident">u32</span>) {
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">iterations</span> {
-        <span class="ident">spin_loop_hint</span>()
+<span class="comment">// Wastes some CPU time for the given number of iterations,
+// using a hint to indicate to the CPU that we are spinning.
+</span><span class="attribute">#[inline]</span>
+<span class="kw">fn </span>cpu_relax(iterations: u32) {
+    <span class="kw">for _ in </span><span class="number">0</span>..iterations {
+        spin_loop_hint()
     }
 }
 
-<span class="doccomment">/// A counter used to perform exponential backoff in spin loops.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SpinWait</span> {
-    <span class="ident">counter</span>: <span class="ident">u32</span>,
+<span class="doccomment">/// A counter used to perform exponential backoff in spin loops.
+</span><span class="attribute">#[derive(Default)]</span>
+<span class="kw">pub struct </span>SpinWait {
+    counter: u32,
 }
 
-<span class="kw">impl</span> <span class="ident">SpinWait</span> {
-    <span class="doccomment">/// Creates a new `SpinWait`.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::default</span>()
+<span class="kw">impl </span>SpinWait {
+    <span class="doccomment">/// Creates a new `SpinWait`.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
 
-    <span class="doccomment">/// Resets a `SpinWait` to its initial state.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reset</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">counter</span> = <span class="number">0</span>;
+    <span class="doccomment">/// Resets a `SpinWait` to its initial state.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>reset(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.counter = <span class="number">0</span>;
     }
 
-    <span class="doccomment">/// Spins until the sleep threshold has been reached.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function returns whether the sleep threshold has been reached, at</span>
-    <span class="doccomment">/// which point further spinning has diminishing returns and the thread</span>
-    <span class="doccomment">/// should be parked instead.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The spin strategy will initially use a CPU-bound loop but will fall back</span>
-    <span class="doccomment">/// to yielding the CPU to the OS after a few iterations.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">spin</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">counter</span> &gt;= <span class="number">10</span> {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+    <span class="doccomment">/// Spins until the sleep threshold has been reached.
+    ///
+    /// This function returns whether the sleep threshold has been reached, at
+    /// which point further spinning has diminishing returns and the thread
+    /// should be parked instead.
+    ///
+    /// The spin strategy will initially use a CPU-bound loop but will fall back
+    /// to yielding the CPU to the OS after a few iterations.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>spin(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.counter &gt;= <span class="number">10 </span>{
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
-        <span class="self">self</span>.<span class="ident">counter</span> += <span class="number">1</span>;
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">counter</span> &lt;= <span class="number">3</span> {
-            <span class="ident">cpu_relax</span>(<span class="number">1</span> &lt;&lt; <span class="self">self</span>.<span class="ident">counter</span>);
-        } <span class="kw">else</span> {
-            <span class="ident">thread_parker::thread_yield</span>();
+        <span class="self">self</span>.counter += <span class="number">1</span>;
+        <span class="kw">if </span><span class="self">self</span>.counter &lt;= <span class="number">3 </span>{
+            cpu_relax(<span class="number">1 </span>&lt;&lt; <span class="self">self</span>.counter);
+        } <span class="kw">else </span>{
+            thread_parker::thread_yield();
         }
-        <span class="bool-val">true</span>
-    }
+        <span class="bool-val">true
+    </span>}
 
-    <span class="doccomment">/// Spins without yielding the thread to the OS.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Instead, the backoff is simply capped at a maximum value. This can be</span>
-    <span class="doccomment">/// used to improve throughput in `compare_exchange` loops that have high</span>
-    <span class="doccomment">/// contention.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">spin_no_yield</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">counter</span> += <span class="number">1</span>;
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">counter</span> &gt; <span class="number">10</span> {
-            <span class="self">self</span>.<span class="ident">counter</span> = <span class="number">10</span>;
+    <span class="doccomment">/// Spins without yielding the thread to the OS.
+    ///
+    /// Instead, the backoff is simply capped at a maximum value. This can be
+    /// used to improve throughput in `compare_exchange` loops that have high
+    /// contention.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>spin_no_yield(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.counter += <span class="number">1</span>;
+        <span class="kw">if </span><span class="self">self</span>.counter &gt; <span class="number">10 </span>{
+            <span class="self">self</span>.counter = <span class="number">10</span>;
         }
-        <span class="ident">cpu_relax</span>(<span class="number">1</span> &lt;&lt; <span class="self">self</span>.<span class="ident">counter</span>);
+        cpu_relax(<span class="number">1 </span>&lt;&lt; <span class="self">self</span>.counter);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="parking_lot_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="parking_lot_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

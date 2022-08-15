@@ -2,37 +2,37 @@
 <p>A pair of both a <a href="struct.Sender.html" title="Sender"><code>Sender</code></a> and a <a href="struct.Receiver.html" title="Receiver"><code>Receiver</code></a>  are created by the
 <a href="fn.channel.html"><code>channel</code></a> function.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, rx) = oneshot::channel();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="kw">_</span>) = <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">3</span>) {
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) = tx.send(<span class="number">3</span>) {
             <span class="macro">println!</span>(<span class="string">&quot;the receiver dropped&quot;</span>);
         }
     });
 
-    <span class="kw">match</span> <span class="ident">rx</span>.<span class="kw">await</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;got = {:?}&quot;</span>, <span class="ident">v</span>),
+    <span class="kw">match </span>rx.<span class="kw">await </span>{
+        <span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">println!</span>(<span class="string">&quot;got = {:?}&quot;</span>, v),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;the sender dropped&quot;</span>),
     }
 }</code></pre></div>
 <p>If the sender is dropped without sending, the receiver will fail with
 <a href="error/struct.RecvError.html" title="error::RecvError"><code>error::RecvError</code></a>:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>::&lt;<span class="ident">u32</span>&gt;();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, rx) = oneshot::channel::&lt;u32&gt;();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">drop</span>(<span class="ident">tx</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        drop(tx);
     });
 
-    <span class="kw">match</span> <span class="ident">rx</span>.<span class="kw">await</span> {
+    <span class="kw">match </span>rx.<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;This doesn&#39;t happen&quot;</span>),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;the sender dropped&quot;</span>),
     }
@@ -40,28 +40,28 @@
 <p>To use a <code>Sender</code> from a destructor, put it in an <a href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html"><code>Option</code></a> and call
 <a href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#method.take"><code>Option::take</code></a>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="kw">struct</span> <span class="ident">SendOnDrop</span> {
-    <span class="ident">sender</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">oneshot::Sender</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>&gt;&gt;,
+<span class="kw">struct </span>SendOnDrop {
+    sender: <span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;&gt;,
 }
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">SendOnDrop</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sender</span>) = <span class="self">self</span>.<span class="ident">sender</span>.<span class="ident">take</span>() {
-            <span class="comment">// Using `let _ =` to ignore send errors.</span>
-            <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">sender</span>.<span class="ident">send</span>(<span class="string">&quot;I got dropped!&quot;</span>);
+<span class="kw">impl </span>Drop <span class="kw">for </span>SendOnDrop {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(sender) = <span class="self">self</span>.sender.take() {
+            <span class="comment">// Using `let _ =` to ignore send errors.
+            </span><span class="kw">let _ </span>= sender.send(<span class="string">&quot;I got dropped!&quot;</span>);
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">recv</span>) = <span class="ident">oneshot::channel</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(send, recv) = oneshot::channel();
 
-    <span class="kw">let</span> <span class="ident">send_on_drop</span> = <span class="ident">SendOnDrop</span> { <span class="ident">sender</span>: <span class="prelude-val">Some</span>(<span class="ident">send</span>) };
-    <span class="ident">drop</span>(<span class="ident">send_on_drop</span>);
+    <span class="kw">let </span>send_on_drop = SendOnDrop { sender: <span class="prelude-val">Some</span>(send) };
+    drop(send_on_drop);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">recv</span>.<span class="kw">await</span>, <span class="prelude-val">Ok</span>(<span class="string">&quot;I got dropped!&quot;</span>));
+    <span class="macro">assert_eq!</span>(recv.<span class="kw">await</span>, <span class="prelude-val">Ok</span>(<span class="string">&quot;I got dropped!&quot;</span>));
 }</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/oneshot.rs.html#547-833">source</a></span><a href="#impl-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="struct" href="struct.Sender.html" title="struct tokio::sync::oneshot::Sender">Sender</a>&lt;T&gt;</h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/oneshot.rs.html#588-624">source</a></span><h4 class="code-header">pub fn <a href="#method.send" class="fnname">send</a>(self, t: T) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, T&gt;</h4></section></summary><div class="docblock"><p>Attempts to send a value on this channel, returning it back if it could
 not be sent.</p>
@@ -80,20 +80,20 @@ after this function returns <code>Ok</code>.</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
 <p>Send a value to another task</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, rx) = oneshot::channel();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="kw">_</span>) = <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">3</span>) {
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) = tx.send(<span class="number">3</span>) {
             <span class="macro">println!</span>(<span class="string">&quot;the receiver dropped&quot;</span>);
         }
     });
 
-    <span class="kw">match</span> <span class="ident">rx</span>.<span class="kw">await</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;got = {:?}&quot;</span>, <span class="ident">v</span>),
+    <span class="kw">match </span>rx.<span class="kw">await </span>{
+        <span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">println!</span>(<span class="string">&quot;got = {:?}&quot;</span>, v),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;the sender dropped&quot;</span>),
     }
 }</code></pre></div>
@@ -107,65 +107,65 @@ computation when the receiver is no longer interested in the result.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
 <p>Basic usage</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>::&lt;()&gt;();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(<span class="kw-2">mut </span>tx, rx) = oneshot::channel::&lt;()&gt;();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">drop</span>(<span class="ident">rx</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        drop(rx);
     });
 
-    <span class="ident">tx</span>.<span class="ident">closed</span>().<span class="kw">await</span>;
+    tx.closed().<span class="kw">await</span>;
     <span class="macro">println!</span>(<span class="string">&quot;the receiver dropped&quot;</span>);
 }</code></pre></div>
 <p>Paired with select</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
-<span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="self">self</span>, <span class="ident">Duration</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
+<span class="kw">use </span>tokio::time::{<span class="self">self</span>, Duration};
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">compute</span>() -&gt; <span class="ident">String</span> {
-    <span class="comment">// Complex computation returning a `String`</span>
-}
+<span class="kw">async fn </span>compute() -&gt; String {
+    <span class="comment">// Complex computation returning a `String`
+</span>}
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(<span class="kw-2">mut </span>tx, rx) = oneshot::channel();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
+    tokio::spawn(<span class="kw">async move </span>{
         <span class="macro">tokio::select!</span> {
-            <span class="kw">_</span> = <span class="ident">tx</span>.<span class="ident">closed</span>() =&gt; {
-                <span class="comment">// The receiver dropped, no need to do any further work</span>
-            }
-            <span class="ident">value</span> = <span class="ident">compute</span>() =&gt; {
-                <span class="comment">// The send can fail if the channel was closed at the exact same</span>
-                <span class="comment">// time as when compute() finished, so just ignore the failure.</span>
-                <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">value</span>);
+            <span class="kw">_ </span>= tx.closed() =&gt; {
+                <span class="comment">// The receiver dropped, no need to do any further work
+            </span>}
+            value = compute() =&gt; {
+                <span class="comment">// The send can fail if the channel was closed at the exact same
+                // time as when compute() finished, so just ignore the failure.
+                </span><span class="kw">let _ </span>= tx.send(value);
             }
         }
     });
 
-    <span class="comment">// Wait for up to 10 seconds</span>
-    <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">time::timeout</span>(<span class="ident">Duration::from_secs</span>(<span class="number">10</span>), <span class="ident">rx</span>).<span class="kw">await</span>;
+    <span class="comment">// Wait for up to 10 seconds
+    </span><span class="kw">let _ </span>= time::timeout(Duration::from_secs(<span class="number">10</span>), rx).<span class="kw">await</span>;
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/oneshot.rs.html#739-744">source</a></span><h4 class="code-header">pub fn <a href="#method.is_closed" class="fnname">is_closed</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if the associated <a href="struct.Receiver.html"><code>Receiver</code></a> handle has been dropped.</p>
 <p>A <a href="struct.Receiver.html"><code>Receiver</code></a> is closed by either calling <a href="struct.Receiver.html#method.close"><code>close</code></a> explicitly or the
 <a href="struct.Receiver.html"><code>Receiver</code></a> value is dropped.</p>
 <p>If <code>true</code> is returned, a call to <code>send</code> will always result in an error.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, rx) = oneshot::channel();
 
-    <span class="macro">assert!</span>(!<span class="ident">tx</span>.<span class="ident">is_closed</span>());
+    <span class="macro">assert!</span>(!tx.is_closed());
 
-    <span class="ident">drop</span>(<span class="ident">rx</span>);
+    drop(rx);
 
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">is_closed</span>());
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">send</span>(<span class="string">&quot;never received&quot;</span>).<span class="ident">is_err</span>());
+    <span class="macro">assert!</span>(tx.is_closed());
+    <span class="macro">assert!</span>(tx.send(<span class="string">&quot;never received&quot;</span>).is_err());
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.poll_closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/oneshot.rs.html#786-832">source</a></span><h4 class="code-header">pub fn <a href="#method.poll_closed" class="fnname">poll_closed</a>(&amp;mut self, cx: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/task/wake/struct.Context.html" title="struct core::task::wake::Context">Context</a>&lt;'_&gt;) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/task/poll/enum.Poll.html" title="enum core::task::poll::Poll">Poll</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Checks whether the oneshot channel has been closed, and if not, schedules the
 <code>Waker</code> in the provided <code>Context</code> to receive a notification when the channel is
@@ -181,19 +181,19 @@ to the most recent call will be scheduled to receive a wakeup.</p>
 <li><code>Poll::Ready(())</code> if the channel is closed.</li>
 </ul>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::oneshot;
 
-<span class="kw">use</span> <span class="ident">futures::future::poll_fn</span>;
+<span class="kw">use </span>futures::future::poll_fn;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">oneshot::channel</span>::&lt;()&gt;();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(<span class="kw-2">mut </span>tx, <span class="kw-2">mut </span>rx) = oneshot::channel::&lt;()&gt;();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">rx</span>.<span class="ident">close</span>();
+    tokio::spawn(<span class="kw">async move </span>{
+        rx.close();
     });
 
-    <span class="ident">poll_fn</span>(|<span class="ident">cx</span>| <span class="ident">tx</span>.<span class="ident">poll_closed</span>(<span class="ident">cx</span>)).<span class="kw">await</span>;
+    poll_fn(|cx| tx.poll_closed(cx)).<span class="kw">await</span>;
 
     <span class="macro">println!</span>(<span class="string">&quot;the receiver dropped&quot;</span>);
 }</code></pre></div>
@@ -210,4 +210,4 @@ to the most recent call will be scheduled to receive a wakeup.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

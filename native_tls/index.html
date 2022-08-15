@@ -38,51 +38,51 @@ macOS, where OpenSSL is not used.</li>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>To connect as a client to a remote server:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">native_tls::TlsConnector</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Write</span>};
-<span class="kw">use</span> <span class="ident">std::net::TcpStream</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>native_tls::TlsConnector;
+<span class="kw">use </span>std::io::{Read, Write};
+<span class="kw">use </span>std::net::TcpStream;
 
-<span class="kw">let</span> <span class="ident">connector</span> = <span class="ident">TlsConnector::new</span>().<span class="ident">unwrap</span>();
+<span class="kw">let </span>connector = TlsConnector::new().unwrap();
 
-<span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">TcpStream::connect</span>(<span class="string">&quot;google.com:443&quot;</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> = <span class="ident">connector</span>.<span class="ident">connect</span>(<span class="string">&quot;google.com&quot;</span>, <span class="ident">stream</span>).<span class="ident">unwrap</span>();
+<span class="kw">let </span>stream = TcpStream::connect(<span class="string">&quot;google.com:443&quot;</span>).unwrap();
+<span class="kw">let </span><span class="kw-2">mut </span>stream = connector.connect(<span class="string">&quot;google.com&quot;</span>, stream).unwrap();
 
-<span class="ident">stream</span>.<span class="ident">write_all</span>(<span class="string">b&quot;GET / HTTP/1.0\r\n\r\n&quot;</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> = <span class="macro">vec!</span>[];
-<span class="ident">stream</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="ident">res</span>).<span class="ident">unwrap</span>();
-<span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">String::from_utf8_lossy</span>(<span class="kw-2">&amp;</span><span class="ident">res</span>));</code></pre></div>
+stream.write_all(<span class="string">b&quot;GET / HTTP/1.0\r\n\r\n&quot;</span>).unwrap();
+<span class="kw">let </span><span class="kw-2">mut </span>res = <span class="macro">vec!</span>[];
+stream.read_to_end(<span class="kw-2">&amp;mut </span>res).unwrap();
+<span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, String::from_utf8_lossy(<span class="kw-2">&amp;</span>res));</code></pre></div>
 <p>To accept connections as a server from remote clients:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">native_tls</span>::{<span class="ident">Identity</span>, <span class="ident">TlsAcceptor</span>, <span class="ident">TlsStream</span>};
-<span class="kw">use</span> <span class="ident">std::fs::File</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>};
-<span class="kw">use</span> <span class="ident">std::net</span>::{<span class="ident">TcpListener</span>, <span class="ident">TcpStream</span>};
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">std::thread</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>native_tls::{Identity, TlsAcceptor, TlsStream};
+<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::{Read};
+<span class="kw">use </span>std::net::{TcpListener, TcpStream};
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::thread;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> = <span class="ident">File::open</span>(<span class="string">&quot;identity.pfx&quot;</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">identity</span> = <span class="macro">vec!</span>[];
-<span class="ident">file</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="ident">identity</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">identity</span> = <span class="ident">Identity::from_pkcs12</span>(<span class="kw-2">&amp;</span><span class="ident">identity</span>, <span class="string">&quot;hunter2&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">let </span><span class="kw-2">mut </span>file = File::open(<span class="string">&quot;identity.pfx&quot;</span>).unwrap();
+<span class="kw">let </span><span class="kw-2">mut </span>identity = <span class="macro">vec!</span>[];
+file.read_to_end(<span class="kw-2">&amp;mut </span>identity).unwrap();
+<span class="kw">let </span>identity = Identity::from_pkcs12(<span class="kw-2">&amp;</span>identity, <span class="string">&quot;hunter2&quot;</span>).unwrap();
 
-<span class="kw">let</span> <span class="ident">listener</span> = <span class="ident">TcpListener::bind</span>(<span class="string">&quot;0.0.0.0:8443&quot;</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">acceptor</span> = <span class="ident">TlsAcceptor::new</span>(<span class="ident">identity</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">acceptor</span> = <span class="ident">Arc::new</span>(<span class="ident">acceptor</span>);
+<span class="kw">let </span>listener = TcpListener::bind(<span class="string">&quot;0.0.0.0:8443&quot;</span>).unwrap();
+<span class="kw">let </span>acceptor = TlsAcceptor::new(identity).unwrap();
+<span class="kw">let </span>acceptor = Arc::new(acceptor);
 
-<span class="kw">fn</span> <span class="ident">handle_client</span>(<span class="ident">stream</span>: <span class="ident">TlsStream</span>&lt;<span class="ident">TcpStream</span>&gt;) {
-    <span class="comment">// ...</span>
-}
+<span class="kw">fn </span>handle_client(stream: TlsStream&lt;TcpStream&gt;) {
+    <span class="comment">// ...
+</span>}
 
-<span class="kw">for</span> <span class="ident">stream</span> <span class="kw">in</span> <span class="ident">listener</span>.<span class="ident">incoming</span>() {
-    <span class="kw">match</span> <span class="ident">stream</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">stream</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">acceptor</span> = <span class="ident">acceptor</span>.<span class="ident">clone</span>();
-            <span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
-                <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">acceptor</span>.<span class="ident">accept</span>(<span class="ident">stream</span>).<span class="ident">unwrap</span>();
-                <span class="ident">handle_client</span>(<span class="ident">stream</span>);
+<span class="kw">for </span>stream <span class="kw">in </span>listener.incoming() {
+    <span class="kw">match </span>stream {
+        <span class="prelude-val">Ok</span>(stream) =&gt; {
+            <span class="kw">let </span>acceptor = acceptor.clone();
+            thread::spawn(<span class="kw">move </span>|| {
+                <span class="kw">let </span>stream = acceptor.accept(stream).unwrap();
+                handle_client(stream);
             });
         }
-        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; { <span class="comment">/* connection failed */</span> }
+        <span class="prelude-val">Err</span>(e) =&gt; { <span class="comment">/* connection failed */ </span>}
     }
 }</code></pre></div>
 </div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Certificate.html" title="native_tls::Certificate struct">Certificate</a></div><div class="item-right docblock-short"><p>An X509 certificate.</p>
@@ -97,4 +97,4 @@ macOS, where OpenSSL is not used.</li>
 </div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.HandshakeError.html" title="native_tls::HandshakeError enum">HandshakeError</a></div><div class="item-right docblock-short"><p>An error returned from <code>ClientBuilder::handshake</code>.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.Protocol.html" title="native_tls::Protocol enum">Protocol</a></div><div class="item-right docblock-short"><p>SSL/TLS protocol versions.</p>
 </div></div></div><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Result.html" title="native_tls::Result type">Result</a></div><div class="item-right docblock-short"><p>A typedef of the result-type returned by many methods.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="native_tls" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="native_tls" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

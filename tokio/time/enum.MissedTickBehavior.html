@@ -6,16 +6,16 @@
 <p>Sometimes, an <a href="struct.Interval.html" title="Interval"><code>Interval</code></a>’s tick is missed. For example, consider the
 following:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="self">self</span>, <span class="ident">Duration</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time::{<span class="self">self</span>, Duration};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="comment">// ticks every 2 milliseconds</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> = <span class="ident">time::interval</span>(<span class="ident">Duration::from_millis</span>(<span class="number">2</span>));
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-        <span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
-        <span class="comment">// if this takes more than 2 milliseconds, a tick will be delayed</span>
-        <span class="ident">task_that_takes_one_to_three_millis</span>().<span class="kw">await</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="comment">// ticks every 2 milliseconds
+    </span><span class="kw">let </span><span class="kw-2">mut </span>interval = time::interval(Duration::from_millis(<span class="number">2</span>));
+    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
+        interval.tick().<span class="kw">await</span>;
+        <span class="comment">// if this takes more than 2 milliseconds, a tick will be delayed
+        </span>task_that_takes_one_to_three_millis().<span class="kw">await</span>;
     }
 }</code></pre></div>
 <p>Generally, a tick is missed if too much time is spent without calling
@@ -41,33 +41,33 @@ shortened.</p>
 Actual ticks:   | work -----|          delay          | work | work | work -| work -----|</code></pre></div>
 <p>In code:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="ident">interval</span>, <span class="ident">Duration</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time::{interval, Duration};
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> = <span class="ident">interval</span>(<span class="ident">Duration::from_millis</span>(<span class="number">50</span>));
+<span class="kw">let </span><span class="kw-2">mut </span>interval = interval(Duration::from_millis(<span class="number">50</span>));
 
-<span class="comment">// First tick resolves immediately after creation</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+<span class="comment">// First tick resolves immediately after creation
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="ident">task_that_takes_200_millis</span>().<span class="kw">await</span>;
-<span class="comment">// The `Interval` has missed a tick</span>
+task_that_takes_200_millis().<span class="kw">await</span>;
+<span class="comment">// The `Interval` has missed a tick
 
-<span class="comment">// Since we have exceeded our timeout, this will resolve immediately</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+// Since we have exceeded our timeout, this will resolve immediately
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// Since we are more than 100ms after the start of `interval`, this will</span>
-<span class="comment">// also resolve immediately.</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+<span class="comment">// Since we are more than 100ms after the start of `interval`, this will
+// also resolve immediately.
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// Also resolves immediately, because it was supposed to resolve at</span>
-<span class="comment">// 150ms after the start of `interval`</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+<span class="comment">// Also resolves immediately, because it was supposed to resolve at
+// 150ms after the start of `interval`
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// Resolves immediately</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+<span class="comment">// Resolves immediately
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// Since we have gotten to 200ms after the start of `interval`, this</span>
-<span class="comment">// will resolve after 50ms</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;</code></pre></div>
+<span class="comment">// Since we have gotten to 200ms after the start of `interval`, this
+// will resolve after 50ms
+</span>interval.tick().<span class="kw">await</span>;</code></pre></div>
 <p>This is the default behavior when <a href="struct.Interval.html" title="Interval"><code>Interval</code></a> is created with
 <a href="fn.interval.html" title="interval"><code>interval</code></a> and <a href="fn.interval_at.html" title="interval_at"><code>interval_at</code></a>.</p>
 </div><h3 id="variant.Delay" class="variant small-section-header"><a href="#variant.Delay" class="anchor field"></a><code>Delay</code></h3><div class="docblock"><p>Tick at multiples of <code>period</code> from when <a href="struct.Interval.html#method.tick"><code>tick</code></a> was called, rather than
@@ -83,24 +83,24 @@ guaranteed to happen at a multiple of <code>period</code> from <code>start</code
 Actual ticks:   | work -----|          delay          | work -----| work -----| work -----|</code></pre></div>
 <p>In code:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="ident">interval</span>, <span class="ident">Duration</span>, <span class="ident">MissedTickBehavior</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time::{interval, Duration, MissedTickBehavior};
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> = <span class="ident">interval</span>(<span class="ident">Duration::from_millis</span>(<span class="number">50</span>));
-<span class="ident">interval</span>.<span class="ident">set_missed_tick_behavior</span>(<span class="ident">MissedTickBehavior::Delay</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>interval = interval(Duration::from_millis(<span class="number">50</span>));
+interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
-<span class="ident">task_that_takes_more_than_50_millis</span>().<span class="kw">await</span>;
-<span class="comment">// The `Interval` has missed a tick</span>
+task_that_takes_more_than_50_millis().<span class="kw">await</span>;
+<span class="comment">// The `Interval` has missed a tick
 
-<span class="comment">// Since we have exceeded our timeout, this will resolve immediately</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+// Since we have exceeded our timeout, this will resolve immediately
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// But this one, rather than also resolving immediately, as might happen</span>
-<span class="comment">// with the `Burst` or `Skip` behaviors, will not resolve until</span>
-<span class="comment">// 50ms after the call to `tick` up above. That is, in `tick`, when we</span>
-<span class="comment">// recognize that we missed a tick, we schedule the next tick to happen</span>
-<span class="comment">// 50ms (or whatever the `period` is) from right then, not from when</span>
-<span class="comment">// were were *supposed* to tick</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;</code></pre></div>
+<span class="comment">// But this one, rather than also resolving immediately, as might happen
+// with the `Burst` or `Skip` behaviors, will not resolve until
+// 50ms after the call to `tick` up above. That is, in `tick`, when we
+// recognize that we missed a tick, we schedule the next tick to happen
+// 50ms (or whatever the `period` is) from right then, not from when
+// were were *supposed* to tick
+</span>interval.tick().<span class="kw">await</span>;</code></pre></div>
 </div><h3 id="variant.Skip" class="variant small-section-header"><a href="#variant.Skip" class="anchor field"></a><code>Skip</code></h3><div class="docblock"><p>Skips missed ticks and tick on the next multiple of <code>period</code> from
 <code>start</code>.</p>
 <p>When this strategy is used, <a href="struct.Interval.html" title="Interval"><code>Interval</code></a> schedules the next tick to fire
@@ -117,21 +117,21 @@ away from each other.</p>
 Actual ticks:   | work -----|          delay          | work ---| work -----| work -----|</code></pre></div>
 <p>In code:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="ident">interval</span>, <span class="ident">Duration</span>, <span class="ident">MissedTickBehavior</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time::{interval, Duration, MissedTickBehavior};
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> = <span class="ident">interval</span>(<span class="ident">Duration::from_millis</span>(<span class="number">50</span>));
-<span class="ident">interval</span>.<span class="ident">set_missed_tick_behavior</span>(<span class="ident">MissedTickBehavior::Skip</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>interval = interval(Duration::from_millis(<span class="number">50</span>));
+interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-<span class="ident">task_that_takes_75_millis</span>().<span class="kw">await</span>;
-<span class="comment">// The `Interval` has missed a tick</span>
+task_that_takes_75_millis().<span class="kw">await</span>;
+<span class="comment">// The `Interval` has missed a tick
 
-<span class="comment">// Since we have exceeded our timeout, this will resolve immediately</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
+// Since we have exceeded our timeout, this will resolve immediately
+</span>interval.tick().<span class="kw">await</span>;
 
-<span class="comment">// This one will resolve after 25ms, 100ms after the start of</span>
-<span class="comment">// `interval`, which is the closest multiple of `period` from the start</span>
-<span class="comment">// of `interval` after the call to `tick` up above.</span>
-<span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;</code></pre></div>
+<span class="comment">// This one will resolve after 25ms, 100ms after the start of
+// `interval`, which is the closest multiple of `period` from the start
+// of `interval` after the call to `tick` up above.
+</span>interval.tick().<span class="kw">await</span>;</code></pre></div>
 </div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Clone-for-MissedTickBehavior" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/time/interval.rs.html#181">source</a></span><a href="#impl-Clone-for-MissedTickBehavior" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="enum" href="enum.MissedTickBehavior.html" title="enum tokio::time::MissedTickBehavior">MissedTickBehavior</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/time/interval.rs.html#181">source</a></span><a href="#method.clone" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fnname">clone</a>(&amp;self) -&gt; <a class="enum" href="enum.MissedTickBehavior.html" title="enum tokio::time::MissedTickBehavior">MissedTickBehavior</a></h4></section></summary><div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/clone.rs.html#132-134">source</a></span><a href="#method.clone_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from" class="fnname">clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</h4></section></summary><div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-MissedTickBehavior" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/time/interval.rs.html#181">source</a></span><a href="#impl-Debug-for-MissedTickBehavior" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="enum" href="enum.MissedTickBehavior.html" title="enum tokio::time::MissedTickBehavior">MissedTickBehavior</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/time/interval.rs.html#181">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
@@ -158,4 +158,4 @@ by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.Pa
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-MissedTickBehavior" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-MissedTickBehavior" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

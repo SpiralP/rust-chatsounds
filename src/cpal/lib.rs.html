@@ -784,791 +784,791 @@
 <span id="784">784</span>
 <span id="785">785</span>
 <span id="786">786</span>
-</pre><pre class="rust"><code><span class="doccomment">//! # How to use cpal</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Here are some concepts cpal exposes:</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! - A [**Host**](./struct.Host.html) provides access to the available audio devices on the system.</span>
-<span class="doccomment">//!   Some platforms have more than one host available, but every platform supported by CPAL has at</span>
-<span class="doccomment">//!   least one [**DefaultHost**](./struct.Host.html) that is guaranteed to be available.</span>
-<span class="doccomment">//! - A [**Device**](./struct.Device.html) is an audio device that may have any number of input and</span>
-<span class="doccomment">//!   output streams.</span>
-<span class="doccomment">//! - A [**Stream**](./struct.Stream.html) is an open flow of audio data. Input streams allow you to</span>
-<span class="doccomment">//!   receive audio data, output streams allow you to play audio data. You must choose which</span>
-<span class="doccomment">//!   **Device** will run your stream before you can create one. Often, a default device can be</span>
-<span class="doccomment">//!   retrieved via the **Host**.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The first step is to initialise the `Host`:</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//! use cpal::traits::HostTrait;</span>
-<span class="doccomment">//! let host = cpal::default_host();</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Then choose an available `Device`. The easiest way is to use the default input or output</span>
-<span class="doccomment">//! `Device` via the `default_input_device()` or `default_output_device()` functions. Alternatively</span>
-<span class="doccomment">//! you can enumerate all the available devices with the `devices()` function. Beware that the</span>
-<span class="doccomment">//! `default_*_device()` functions return an `Option` in case no device is available for that</span>
-<span class="doccomment">//! stream type on the system.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! # use cpal::traits::HostTrait;</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! let device = host.default_output_device().expect(&quot;no output device available&quot;);</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Before we can create a stream, we must decide what the configuration of the audio stream is</span>
-<span class="doccomment">//! going to be. You can query all the supported configurations with the</span>
-<span class="doccomment">//! `supported_input_configs()` and `supported_output_configs()` methods. These produce a list of</span>
-<span class="doccomment">//! `SupportedStreamConfigRange` structs which can later be turned into actual</span>
-<span class="doccomment">//! `SupportedStreamConfig` structs. If you don&#39;t want to query the list of configs, you can also</span>
-<span class="doccomment">//! build your own `StreamConfig` manually, but doing so could lead to an error when building the</span>
-<span class="doccomment">//! stream if the config is not supported by the device.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! &gt; **Note**: the `supported_input/output_configs()` methods could return an error for example if</span>
-<span class="doccomment">//! &gt; the device has been disconnected.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! use cpal::traits::{DeviceTrait, HostTrait};</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! # let device = host.default_output_device().unwrap();</span>
-<span class="doccomment">//! let mut supported_configs_range = device.supported_output_configs()</span>
-<span class="doccomment">//!     .expect(&quot;error while querying configs&quot;);</span>
-<span class="doccomment">//! let supported_config = supported_configs_range.next()</span>
-<span class="doccomment">//!     .expect(&quot;no supported config?!&quot;)</span>
-<span class="doccomment">//!     .with_max_sample_rate();</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Now that we have everything for the stream, we are ready to create it from our selected device:</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! use cpal::Data;</span>
-<span class="doccomment">//! use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! # let device = host.default_output_device().unwrap();</span>
-<span class="doccomment">//! # let config = device.default_output_config().unwrap().into();</span>
-<span class="doccomment">//! let stream = device.build_output_stream(</span>
-<span class="doccomment">//!     &amp;config,</span>
-<span class="doccomment">//!     move |data: &amp;mut [f32], _: &amp;cpal::OutputCallbackInfo| {</span>
-<span class="doccomment">//!         // react to stream events and read or write stream data here.</span>
-<span class="doccomment">//!     },</span>
-<span class="doccomment">//!     move |err| {</span>
-<span class="doccomment">//!         // react to errors here.</span>
-<span class="doccomment">//!     },</span>
-<span class="doccomment">//! );</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! While the stream is running, the selected audio device will periodically call the data callback</span>
-<span class="doccomment">//! that was passed to the function. The callback is passed an instance of either `&amp;Data` or</span>
-<span class="doccomment">//! `&amp;mut Data` depending on whether the stream is an input stream or output stream respectively.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! &gt; **Note**: Creating and running a stream will *not* block the thread. On modern platforms, the</span>
-<span class="doccomment">//! &gt; given callback is called by a dedicated, high-priority thread responsible for delivering</span>
-<span class="doccomment">//! &gt; audio data to the system&#39;s audio device in a timely manner. On older platforms that only</span>
-<span class="doccomment">//! &gt; provide a blocking API (e.g. ALSA), CPAL will create a thread in order to consistently</span>
-<span class="doccomment">//! &gt; provide non-blocking behaviour (currently this is a thread per stream, but this may change to</span>
-<span class="doccomment">//! &gt; use a single thread for all streams). *If this is an issue for your platform or design,</span>
-<span class="doccomment">//! &gt; please share your issue and use-case with the CPAL team on the GitHub issue tracker for</span>
-<span class="doccomment">//! &gt; consideration.*</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! In this example, we simply fill the given output buffer with silence.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! use cpal::{Data, Sample, SampleFormat};</span>
-<span class="doccomment">//! use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! # let device = host.default_output_device().unwrap();</span>
-<span class="doccomment">//! # let supported_config = device.default_output_config().unwrap();</span>
-<span class="doccomment">//! let err_fn = |err| eprintln!(&quot;an error occurred on the output audio stream: {}&quot;, err);</span>
-<span class="doccomment">//! let sample_format = supported_config.sample_format();</span>
-<span class="doccomment">//! let config = supported_config.into();</span>
-<span class="doccomment">//! let stream = match sample_format {</span>
-<span class="doccomment">//!     SampleFormat::F32 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;f32&gt;, err_fn),</span>
-<span class="doccomment">//!     SampleFormat::I16 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;i16&gt;, err_fn),</span>
-<span class="doccomment">//!     SampleFormat::U16 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;u16&gt;, err_fn),</span>
-<span class="doccomment">//! }.unwrap();</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! fn write_silence&lt;T: Sample&gt;(data: &amp;mut [T], _: &amp;cpal::OutputCallbackInfo) {</span>
-<span class="doccomment">//!     for sample in data.iter_mut() {</span>
-<span class="doccomment">//!         *sample = Sample::from(&amp;0.0);</span>
-<span class="doccomment">//!     }</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Not all platforms automatically run the stream upon creation. To ensure the stream has started,</span>
-<span class="doccomment">//! we can use `Stream::play`.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! # use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! # let device = host.default_output_device().unwrap();</span>
-<span class="doccomment">//! # let supported_config = device.default_output_config().unwrap();</span>
-<span class="doccomment">//! # let sample_format = supported_config.sample_format();</span>
-<span class="doccomment">//! # let config = supported_config.into();</span>
-<span class="doccomment">//! # let data_fn = move |_data: &amp;mut cpal::Data, _: &amp;cpal::OutputCallbackInfo| {};</span>
-<span class="doccomment">//! # let err_fn = move |_err| {};</span>
-<span class="doccomment">//! # let stream = device.build_output_stream_raw(&amp;config, sample_format, data_fn, err_fn).unwrap();</span>
-<span class="doccomment">//! stream.play().unwrap();</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Some devices support pausing the audio stream. This can be useful for saving energy in moments</span>
-<span class="doccomment">//! of silence.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! # use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};</span>
-<span class="doccomment">//! # let host = cpal::default_host();</span>
-<span class="doccomment">//! # let device = host.default_output_device().unwrap();</span>
-<span class="doccomment">//! # let supported_config = device.default_output_config().unwrap();</span>
-<span class="doccomment">//! # let sample_format = supported_config.sample_format();</span>
-<span class="doccomment">//! # let config = supported_config.into();</span>
-<span class="doccomment">//! # let data_fn = move |_data: &amp;mut cpal::Data, _: &amp;cpal::OutputCallbackInfo| {};</span>
-<span class="doccomment">//! # let err_fn = move |_err| {};</span>
-<span class="doccomment">//! # let stream = device.build_output_stream_raw(&amp;config, sample_format, data_fn, err_fn).unwrap();</span>
-<span class="doccomment">//! stream.pause().unwrap();</span>
-<span class="doccomment">//! ```</span>
+</pre><pre class="rust"><code><span class="doccomment">//! # How to use cpal
+//!
+//! Here are some concepts cpal exposes:
+//!
+//! - A [**Host**](./struct.Host.html) provides access to the available audio devices on the system.
+//!   Some platforms have more than one host available, but every platform supported by CPAL has at
+//!   least one [**DefaultHost**](./struct.Host.html) that is guaranteed to be available.
+//! - A [**Device**](./struct.Device.html) is an audio device that may have any number of input and
+//!   output streams.
+//! - A [**Stream**](./struct.Stream.html) is an open flow of audio data. Input streams allow you to
+//!   receive audio data, output streams allow you to play audio data. You must choose which
+//!   **Device** will run your stream before you can create one. Often, a default device can be
+//!   retrieved via the **Host**.
+//!
+//! The first step is to initialise the `Host`:
+//!
+//! ```
+//! use cpal::traits::HostTrait;
+//! let host = cpal::default_host();
+//! ```
+//!
+//! Then choose an available `Device`. The easiest way is to use the default input or output
+//! `Device` via the `default_input_device()` or `default_output_device()` functions. Alternatively
+//! you can enumerate all the available devices with the `devices()` function. Beware that the
+//! `default_*_device()` functions return an `Option` in case no device is available for that
+//! stream type on the system.
+//!
+//! ```no_run
+//! # use cpal::traits::HostTrait;
+//! # let host = cpal::default_host();
+//! let device = host.default_output_device().expect(&quot;no output device available&quot;);
+//! ```
+//!
+//! Before we can create a stream, we must decide what the configuration of the audio stream is
+//! going to be. You can query all the supported configurations with the
+//! `supported_input_configs()` and `supported_output_configs()` methods. These produce a list of
+//! `SupportedStreamConfigRange` structs which can later be turned into actual
+//! `SupportedStreamConfig` structs. If you don&#39;t want to query the list of configs, you can also
+//! build your own `StreamConfig` manually, but doing so could lead to an error when building the
+//! stream if the config is not supported by the device.
+//!
+//! &gt; **Note**: the `supported_input/output_configs()` methods could return an error for example if
+//! &gt; the device has been disconnected.
+//!
+//! ```no_run
+//! use cpal::traits::{DeviceTrait, HostTrait};
+//! # let host = cpal::default_host();
+//! # let device = host.default_output_device().unwrap();
+//! let mut supported_configs_range = device.supported_output_configs()
+//!     .expect(&quot;error while querying configs&quot;);
+//! let supported_config = supported_configs_range.next()
+//!     .expect(&quot;no supported config?!&quot;)
+//!     .with_max_sample_rate();
+//! ```
+//!
+//! Now that we have everything for the stream, we are ready to create it from our selected device:
+//!
+//! ```no_run
+//! use cpal::Data;
+//! use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+//! # let host = cpal::default_host();
+//! # let device = host.default_output_device().unwrap();
+//! # let config = device.default_output_config().unwrap().into();
+//! let stream = device.build_output_stream(
+//!     &amp;config,
+//!     move |data: &amp;mut [f32], _: &amp;cpal::OutputCallbackInfo| {
+//!         // react to stream events and read or write stream data here.
+//!     },
+//!     move |err| {
+//!         // react to errors here.
+//!     },
+//! );
+//! ```
+//!
+//! While the stream is running, the selected audio device will periodically call the data callback
+//! that was passed to the function. The callback is passed an instance of either `&amp;Data` or
+//! `&amp;mut Data` depending on whether the stream is an input stream or output stream respectively.
+//!
+//! &gt; **Note**: Creating and running a stream will *not* block the thread. On modern platforms, the
+//! &gt; given callback is called by a dedicated, high-priority thread responsible for delivering
+//! &gt; audio data to the system&#39;s audio device in a timely manner. On older platforms that only
+//! &gt; provide a blocking API (e.g. ALSA), CPAL will create a thread in order to consistently
+//! &gt; provide non-blocking behaviour (currently this is a thread per stream, but this may change to
+//! &gt; use a single thread for all streams). *If this is an issue for your platform or design,
+//! &gt; please share your issue and use-case with the CPAL team on the GitHub issue tracker for
+//! &gt; consideration.*
+//!
+//! In this example, we simply fill the given output buffer with silence.
+//!
+//! ```no_run
+//! use cpal::{Data, Sample, SampleFormat};
+//! use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+//! # let host = cpal::default_host();
+//! # let device = host.default_output_device().unwrap();
+//! # let supported_config = device.default_output_config().unwrap();
+//! let err_fn = |err| eprintln!(&quot;an error occurred on the output audio stream: {}&quot;, err);
+//! let sample_format = supported_config.sample_format();
+//! let config = supported_config.into();
+//! let stream = match sample_format {
+//!     SampleFormat::F32 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;f32&gt;, err_fn),
+//!     SampleFormat::I16 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;i16&gt;, err_fn),
+//!     SampleFormat::U16 =&gt; device.build_output_stream(&amp;config, write_silence::&lt;u16&gt;, err_fn),
+//! }.unwrap();
+//!
+//! fn write_silence&lt;T: Sample&gt;(data: &amp;mut [T], _: &amp;cpal::OutputCallbackInfo) {
+//!     for sample in data.iter_mut() {
+//!         *sample = Sample::from(&amp;0.0);
+//!     }
+//! }
+//! ```
+//!
+//! Not all platforms automatically run the stream upon creation. To ensure the stream has started,
+//! we can use `Stream::play`.
+//!
+//! ```no_run
+//! # use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+//! # let host = cpal::default_host();
+//! # let device = host.default_output_device().unwrap();
+//! # let supported_config = device.default_output_config().unwrap();
+//! # let sample_format = supported_config.sample_format();
+//! # let config = supported_config.into();
+//! # let data_fn = move |_data: &amp;mut cpal::Data, _: &amp;cpal::OutputCallbackInfo| {};
+//! # let err_fn = move |_err| {};
+//! # let stream = device.build_output_stream_raw(&amp;config, sample_format, data_fn, err_fn).unwrap();
+//! stream.play().unwrap();
+//! ```
+//!
+//! Some devices support pausing the audio stream. This can be useful for saving energy in moments
+//! of silence.
+//!
+//! ```no_run
+//! # use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+//! # let host = cpal::default_host();
+//! # let device = host.default_output_device().unwrap();
+//! # let supported_config = device.default_output_config().unwrap();
+//! # let sample_format = supported_config.sample_format();
+//! # let config = supported_config.into();
+//! # let data_fn = move |_data: &amp;mut cpal::Data, _: &amp;cpal::OutputCallbackInfo| {};
+//! # let err_fn = move |_err| {};
+//! # let stream = device.build_output_stream_raw(&amp;config, sample_format, data_fn, err_fn).unwrap();
+//! stream.pause().unwrap();
+//! ```
 
-<span class="attribute">#![<span class="ident">recursion_limit</span> = <span class="string">&quot;512&quot;</span>]</span>
+</span><span class="attribute">#![recursion_limit = <span class="string">&quot;512&quot;</span>]</span>
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;windows&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">macro_use</span>]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">lazy_static</span>;
-<span class="comment">// Extern crate declarations with `#[macro_use]` must unfortunately be at crate root.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;emscripten&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">macro_use</span>]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">stdweb</span>;
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">thiserror</span>;
+<span class="attribute">#[cfg(target_os = <span class="string">&quot;windows&quot;</span>)]</span>
+<span class="attribute">#[macro_use]</span>
+<span class="kw">extern crate </span>lazy_static;
+<span class="comment">// Extern crate declarations with `#[macro_use]` must unfortunately be at crate root.
+</span><span class="attribute">#[cfg(target_os = <span class="string">&quot;emscripten&quot;</span>)]</span>
+<span class="attribute">#[macro_use]</span>
+<span class="kw">extern crate </span>stdweb;
+<span class="kw">extern crate </span>thiserror;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">error</span>::<span class="kw-2">*</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">platform</span>::{
-    <span class="ident">available_hosts</span>, <span class="ident">default_host</span>, <span class="ident">host_from_id</span>, <span class="ident">Device</span>, <span class="ident">Devices</span>, <span class="ident">Host</span>, <span class="ident">HostId</span>, <span class="ident">Stream</span>,
-    <span class="ident">SupportedInputConfigs</span>, <span class="ident">SupportedOutputConfigs</span>, <span class="ident">ALL_HOSTS</span>,
+<span class="kw">pub use </span>error::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>platform::{
+    available_hosts, default_host, host_from_id, Device, Devices, Host, HostId, Stream,
+    SupportedInputConfigs, SupportedOutputConfigs, ALL_HOSTS,
 };
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">samples_formats</span>::{<span class="ident">Sample</span>, <span class="ident">SampleFormat</span>};
-<span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
-<span class="kw">use</span> <span class="ident">std::ops</span>::{<span class="ident">Div</span>, <span class="ident">Mul</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+<span class="kw">pub use </span>samples_formats::{Sample, SampleFormat};
+<span class="kw">use </span>std::convert::TryInto;
+<span class="kw">use </span>std::ops::{Div, Mul};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">mod</span> <span class="ident">error</span>;
-<span class="kw">mod</span> <span class="ident">host</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">platform</span>;
-<span class="kw">mod</span> <span class="ident">samples_formats</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">traits</span>;
+<span class="kw">mod </span>error;
+<span class="kw">mod </span>host;
+<span class="kw">pub mod </span>platform;
+<span class="kw">mod </span>samples_formats;
+<span class="kw">pub mod </span>traits;
 
-<span class="doccomment">/// A host&#39;s device iterator yielding only *input* devices.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InputDevices</span>&lt;<span class="ident">I</span>&gt; = <span class="ident">std::iter::Filter</span>&lt;<span class="ident">I</span>, <span class="kw">fn</span>(<span class="kw-2">&amp;</span>&lt;<span class="ident">I</span> <span class="kw">as</span> <span class="ident">Iterator</span>&gt;<span class="ident">::Item</span>) -&gt; <span class="ident">bool</span>&gt;;
+<span class="doccomment">/// A host&#39;s device iterator yielding only *input* devices.
+</span><span class="kw">pub type </span>InputDevices&lt;I&gt; = std::iter::Filter&lt;I, <span class="kw">fn</span>(<span class="kw-2">&amp;</span>&lt;I <span class="kw">as </span>Iterator&gt;::Item) -&gt; bool&gt;;
 
-<span class="doccomment">/// A host&#39;s device iterator yielding only *output* devices.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">OutputDevices</span>&lt;<span class="ident">I</span>&gt; = <span class="ident">std::iter::Filter</span>&lt;<span class="ident">I</span>, <span class="kw">fn</span>(<span class="kw-2">&amp;</span>&lt;<span class="ident">I</span> <span class="kw">as</span> <span class="ident">Iterator</span>&gt;<span class="ident">::Item</span>) -&gt; <span class="ident">bool</span>&gt;;
+<span class="doccomment">/// A host&#39;s device iterator yielding only *output* devices.
+</span><span class="kw">pub type </span>OutputDevices&lt;I&gt; = std::iter::Filter&lt;I, <span class="kw">fn</span>(<span class="kw-2">&amp;</span>&lt;I <span class="kw">as </span>Iterator&gt;::Item) -&gt; bool&gt;;
 
-<span class="doccomment">/// Number of channels.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ChannelCount</span> = <span class="ident">u16</span>;
+<span class="doccomment">/// Number of channels.
+</span><span class="kw">pub type </span>ChannelCount = u16;
 
-<span class="doccomment">/// The number of samples processed per second for a single channel of audio.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SampleRate</span>(<span class="kw">pub</span> <span class="ident">u32</span>);
+<span class="doccomment">/// The number of samples processed per second for a single channel of audio.
+</span><span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]</span>
+<span class="kw">pub struct </span>SampleRate(<span class="kw">pub </span>u32);
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Mul</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">SampleRate</span>
-<span class="kw">where</span>
-    <span class="ident">u32</span>: <span class="ident">Mul</span>&lt;<span class="ident">T</span>, <span class="ident">Output</span> = <span class="ident">u32</span>&gt;,
+<span class="kw">impl</span>&lt;T&gt; Mul&lt;T&gt; <span class="kw">for </span>SampleRate
+<span class="kw">where
+    </span>u32: Mul&lt;T, Output = u32&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> = <span class="self">Self</span>;
-    <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SampleRate</span>(<span class="self">self</span>.<span class="number">0</span> * <span class="ident">rhs</span>)
+    <span class="kw">type </span>Output = <span class="self">Self</span>;
+    <span class="kw">fn </span>mul(<span class="self">self</span>, rhs: T) -&gt; <span class="self">Self </span>{
+        SampleRate(<span class="self">self</span>.<span class="number">0 </span>* rhs)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Div</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">SampleRate</span>
-<span class="kw">where</span>
-    <span class="ident">u32</span>: <span class="ident">Div</span>&lt;<span class="ident">T</span>, <span class="ident">Output</span> = <span class="ident">u32</span>&gt;,
+<span class="kw">impl</span>&lt;T&gt; Div&lt;T&gt; <span class="kw">for </span>SampleRate
+<span class="kw">where
+    </span>u32: Div&lt;T, Output = u32&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> = <span class="self">Self</span>;
-    <span class="kw">fn</span> <span class="ident">div</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SampleRate</span>(<span class="self">self</span>.<span class="number">0</span> / <span class="ident">rhs</span>)
+    <span class="kw">type </span>Output = <span class="self">Self</span>;
+    <span class="kw">fn </span>div(<span class="self">self</span>, rhs: T) -&gt; <span class="self">Self </span>{
+        SampleRate(<span class="self">self</span>.<span class="number">0 </span>/ rhs)
     }
 }
 
-<span class="doccomment">/// The desired number of frames for the hardware buffer.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">FrameCount</span> = <span class="ident">u32</span>;
+<span class="doccomment">/// The desired number of frames for the hardware buffer.
+</span><span class="kw">pub type </span>FrameCount = u32;
 
-<span class="doccomment">/// The buffer size used by the device.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Default is used when no specific buffer size is set and uses the default</span>
-<span class="doccomment">/// behavior of the given host. Note, the default buffer size may be surprisingly</span>
-<span class="doccomment">/// large, leading to latency issues. If low latency is desired, Fixed(BufferSize)</span>
-<span class="doccomment">/// should be used in accordance with the SupportedBufferSize range produced by</span>
-<span class="doccomment">/// the SupportedStreamConfig API.  </span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BufferSize</span> {
-    <span class="ident">Default</span>,
-    <span class="ident">Fixed</span>(<span class="ident">FrameCount</span>),
+<span class="doccomment">/// The buffer size used by the device.
+///
+/// Default is used when no specific buffer size is set and uses the default
+/// behavior of the given host. Note, the default buffer size may be surprisingly
+/// large, leading to latency issues. If low latency is desired, Fixed(BufferSize)
+/// should be used in accordance with the SupportedBufferSize range produced by
+/// the SupportedStreamConfig API.  
+</span><span class="attribute">#[derive(Clone, Debug, Eq, PartialEq)]</span>
+<span class="kw">pub enum </span>BufferSize {
+    Default,
+    Fixed(FrameCount),
 }
 
-<span class="doccomment">/// The set of parameters used to describe how to open a stream.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The sample format is omitted in favour of using a sample type.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StreamConfig</span> {
-    <span class="kw">pub</span> <span class="ident">channels</span>: <span class="ident">ChannelCount</span>,
-    <span class="kw">pub</span> <span class="ident">sample_rate</span>: <span class="ident">SampleRate</span>,
-    <span class="kw">pub</span> <span class="ident">buffer_size</span>: <span class="ident">BufferSize</span>,
+<span class="doccomment">/// The set of parameters used to describe how to open a stream.
+///
+/// The sample format is omitted in favour of using a sample type.
+</span><span class="attribute">#[derive(Clone, Debug, Eq, PartialEq)]</span>
+<span class="kw">pub struct </span>StreamConfig {
+    <span class="kw">pub </span>channels: ChannelCount,
+    <span class="kw">pub </span>sample_rate: SampleRate,
+    <span class="kw">pub </span>buffer_size: BufferSize,
 }
 
-<span class="doccomment">/// Describes the minimum and maximum supported buffer size for the device</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SupportedBufferSize</span> {
-    <span class="ident">Range</span> {
-        <span class="ident">min</span>: <span class="ident">FrameCount</span>,
-        <span class="ident">max</span>: <span class="ident">FrameCount</span>,
+<span class="doccomment">/// Describes the minimum and maximum supported buffer size for the device
+</span><span class="attribute">#[derive(Clone, Debug, Eq, PartialEq)]</span>
+<span class="kw">pub enum </span>SupportedBufferSize {
+    Range {
+        min: FrameCount,
+        max: FrameCount,
     },
-    <span class="doccomment">/// In the case that the platform provides no way of getting the default</span>
-    <span class="doccomment">/// buffersize before starting a stream.</span>
-    <span class="ident">Unknown</span>,
+    <span class="doccomment">/// In the case that the platform provides no way of getting the default
+    /// buffersize before starting a stream.
+    </span>Unknown,
 }
 
-<span class="doccomment">/// Describes a range of supported stream configurations, retrieved via the</span>
-<span class="doccomment">/// `Device::supported_input/output_configs` method.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SupportedStreamConfigRange</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">channels</span>: <span class="ident">ChannelCount</span>,
-    <span class="doccomment">/// Minimum value for the samples rate of the supported formats.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>,
-    <span class="doccomment">/// Maximum value for the samples rate of the supported formats.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>,
-    <span class="doccomment">/// Buffersize ranges supported by the device</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize</span>,
-    <span class="doccomment">/// Type of data expected by the device.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">sample_format</span>: <span class="ident">SampleFormat</span>,
+<span class="doccomment">/// Describes a range of supported stream configurations, retrieved via the
+/// `Device::supported_input/output_configs` method.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]</span>
+<span class="kw">pub struct </span>SupportedStreamConfigRange {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) channels: ChannelCount,
+    <span class="doccomment">/// Minimum value for the samples rate of the supported formats.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) min_sample_rate: SampleRate,
+    <span class="doccomment">/// Maximum value for the samples rate of the supported formats.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) max_sample_rate: SampleRate,
+    <span class="doccomment">/// Buffersize ranges supported by the device
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) buffer_size: SupportedBufferSize,
+    <span class="doccomment">/// Type of data expected by the device.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) sample_format: SampleFormat,
 }
 
-<span class="doccomment">/// Describes a single supported stream configuration, retrieved via either a</span>
-<span class="doccomment">/// `SupportedStreamConfigRange` instance or one of the `Device::default_input/output_config` methods.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SupportedStreamConfig</span> {
-    <span class="ident">channels</span>: <span class="ident">ChannelCount</span>,
-    <span class="ident">sample_rate</span>: <span class="ident">SampleRate</span>,
-    <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize</span>,
-    <span class="ident">sample_format</span>: <span class="ident">SampleFormat</span>,
+<span class="doccomment">/// Describes a single supported stream configuration, retrieved via either a
+/// `SupportedStreamConfigRange` instance or one of the `Device::default_input/output_config` methods.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]</span>
+<span class="kw">pub struct </span>SupportedStreamConfig {
+    channels: ChannelCount,
+    sample_rate: SampleRate,
+    buffer_size: SupportedBufferSize,
+    sample_format: SampleFormat,
 }
 
-<span class="doccomment">/// A buffer of dynamically typed audio data, passed to raw stream callbacks.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Raw input stream callbacks receive `&amp;Data`, while raw output stream callbacks expect `&amp;mut</span>
-<span class="doccomment">/// Data`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Data</span> {
-    <span class="ident">data</span>: <span class="kw-2">*mut</span> (),
-    <span class="ident">len</span>: <span class="ident">usize</span>,
-    <span class="ident">sample_format</span>: <span class="ident">SampleFormat</span>,
+<span class="doccomment">/// A buffer of dynamically typed audio data, passed to raw stream callbacks.
+///
+/// Raw input stream callbacks receive `&amp;Data`, while raw output stream callbacks expect `&amp;mut
+/// Data`.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub struct </span>Data {
+    data: <span class="kw-2">*mut </span>(),
+    len: usize,
+    sample_format: SampleFormat,
 }
 
-<span class="doccomment">/// A monotonic time instance associated with a stream, retrieved from either:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// 1. A timestamp provided to the stream&#39;s underlying audio data callback or</span>
-<span class="doccomment">/// 2. The same time source used to generate timestamps for a stream&#39;s underlying audio data</span>
-<span class="doccomment">///    callback.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// **StreamInstant** represents a duration since some unspecified origin occurring either before</span>
-<span class="doccomment">/// or equal to the moment the stream from which it was created begins.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Host `StreamInstant` Sources</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// | Host | Source |</span>
-<span class="doccomment">/// | ---- | ------ |</span>
-<span class="doccomment">/// | alsa | `snd_pcm_status_get_htstamp` |</span>
-<span class="doccomment">/// | coreaudio | `mach_absolute_time` |</span>
-<span class="doccomment">/// | wasapi | `QueryPerformanceCounter` |</span>
-<span class="doccomment">/// | asio | `timeGetTime` |</span>
-<span class="doccomment">/// | emscripten | `AudioContext.getOutputTimestamp` |</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StreamInstant</span> {
-    <span class="ident">secs</span>: <span class="ident">i64</span>,
-    <span class="ident">nanos</span>: <span class="ident">u32</span>,
+<span class="doccomment">/// A monotonic time instance associated with a stream, retrieved from either:
+///
+/// 1. A timestamp provided to the stream&#39;s underlying audio data callback or
+/// 2. The same time source used to generate timestamps for a stream&#39;s underlying audio data
+///    callback.
+///
+/// **StreamInstant** represents a duration since some unspecified origin occurring either before
+/// or equal to the moment the stream from which it was created begins.
+///
+/// ## Host `StreamInstant` Sources
+///
+/// | Host | Source |
+/// | ---- | ------ |
+/// | alsa | `snd_pcm_status_get_htstamp` |
+/// | coreaudio | `mach_absolute_time` |
+/// | wasapi | `QueryPerformanceCounter` |
+/// | asio | `timeGetTime` |
+/// | emscripten | `AudioContext.getOutputTimestamp` |
+</span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]</span>
+<span class="kw">pub struct </span>StreamInstant {
+    secs: i64,
+    nanos: u32,
 }
 
-<span class="doccomment">/// A timestamp associated with a call to an input stream&#39;s data callback.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputStreamTimestamp</span> {
-    <span class="doccomment">/// The instant the stream&#39;s data callback was invoked.</span>
-    <span class="kw">pub</span> <span class="ident">callback</span>: <span class="ident">StreamInstant</span>,
-    <span class="doccomment">/// The instant that data was captured from the device.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// E.g. The instant data was read from an ADC.</span>
-    <span class="kw">pub</span> <span class="ident">capture</span>: <span class="ident">StreamInstant</span>,
+<span class="doccomment">/// A timestamp associated with a call to an input stream&#39;s data callback.
+</span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]</span>
+<span class="kw">pub struct </span>InputStreamTimestamp {
+    <span class="doccomment">/// The instant the stream&#39;s data callback was invoked.
+    </span><span class="kw">pub </span>callback: StreamInstant,
+    <span class="doccomment">/// The instant that data was captured from the device.
+    ///
+    /// E.g. The instant data was read from an ADC.
+    </span><span class="kw">pub </span>capture: StreamInstant,
 }
 
-<span class="doccomment">/// A timestamp associated with a call to an output stream&#39;s data callback.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputStreamTimestamp</span> {
-    <span class="doccomment">/// The instant the stream&#39;s data callback was invoked.</span>
-    <span class="kw">pub</span> <span class="ident">callback</span>: <span class="ident">StreamInstant</span>,
-    <span class="doccomment">/// The predicted instant that data written will be delivered to the device for playback.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// E.g. The instant data will be played by a DAC.</span>
-    <span class="kw">pub</span> <span class="ident">playback</span>: <span class="ident">StreamInstant</span>,
+<span class="doccomment">/// A timestamp associated with a call to an output stream&#39;s data callback.
+</span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]</span>
+<span class="kw">pub struct </span>OutputStreamTimestamp {
+    <span class="doccomment">/// The instant the stream&#39;s data callback was invoked.
+    </span><span class="kw">pub </span>callback: StreamInstant,
+    <span class="doccomment">/// The predicted instant that data written will be delivered to the device for playback.
+    ///
+    /// E.g. The instant data will be played by a DAC.
+    </span><span class="kw">pub </span>playback: StreamInstant,
 }
 
-<span class="doccomment">/// Information relevant to a single call to the user&#39;s input stream data callback.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputCallbackInfo</span> {
-    <span class="ident">timestamp</span>: <span class="ident">InputStreamTimestamp</span>,
+<span class="doccomment">/// Information relevant to a single call to the user&#39;s input stream data callback.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq)]</span>
+<span class="kw">pub struct </span>InputCallbackInfo {
+    timestamp: InputStreamTimestamp,
 }
 
-<span class="doccomment">/// Information relevant to a single call to the user&#39;s output stream data callback.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputCallbackInfo</span> {
-    <span class="ident">timestamp</span>: <span class="ident">OutputStreamTimestamp</span>,
+<span class="doccomment">/// Information relevant to a single call to the user&#39;s output stream data callback.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq)]</span>
+<span class="kw">pub struct </span>OutputCallbackInfo {
+    timestamp: OutputStreamTimestamp,
 }
 
-<span class="kw">impl</span> <span class="ident">SupportedStreamConfig</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ChannelCount</span> {
-        <span class="self">self</span>.<span class="ident">channels</span>
+<span class="kw">impl </span>SupportedStreamConfig {
+    <span class="kw">pub fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ChannelCount {
+        <span class="self">self</span>.channels
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleRate</span> {
-        <span class="self">self</span>.<span class="ident">sample_rate</span>
+    <span class="kw">pub fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleRate {
+        <span class="self">self</span>.sample_rate
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">buffer_size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">SupportedBufferSize</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">buffer_size</span>
+    <span class="kw">pub fn </span>buffer_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SupportedBufferSize {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.buffer_size
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleFormat</span> {
-        <span class="self">self</span>.<span class="ident">sample_format</span>
+    <span class="kw">pub fn </span>sample_format(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleFormat {
+        <span class="self">self</span>.sample_format
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">config</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">StreamConfig</span> {
-        <span class="ident">StreamConfig</span> {
-            <span class="ident">channels</span>: <span class="self">self</span>.<span class="ident">channels</span>,
-            <span class="ident">sample_rate</span>: <span class="self">self</span>.<span class="ident">sample_rate</span>,
-            <span class="ident">buffer_size</span>: <span class="ident">BufferSize::Default</span>,
+    <span class="kw">pub fn </span>config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StreamConfig {
+        StreamConfig {
+            channels: <span class="self">self</span>.channels,
+            sample_rate: <span class="self">self</span>.sample_rate,
+            buffer_size: BufferSize::Default,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">StreamInstant</span> {
-    <span class="doccomment">/// The amount of time elapsed from another instant to this one.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if `earlier` is later than self.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">duration_since</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">earlier</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span> &lt; <span class="ident">earlier</span> {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            (<span class="self">self</span>.<span class="ident">as_nanos</span>() - <span class="ident">earlier</span>.<span class="ident">as_nanos</span>())
-                .<span class="ident">try_into</span>()
-                .<span class="ident">ok</span>()
-                .<span class="ident">map</span>(<span class="ident">Duration::from_nanos</span>)
+<span class="kw">impl </span>StreamInstant {
+    <span class="doccomment">/// The amount of time elapsed from another instant to this one.
+    ///
+    /// Returns `None` if `earlier` is later than self.
+    </span><span class="kw">pub fn </span>duration_since(<span class="kw-2">&amp;</span><span class="self">self</span>, earlier: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="kw">if </span><span class="self">self </span>&lt; earlier {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            (<span class="self">self</span>.as_nanos() - earlier.as_nanos())
+                .try_into()
+                .ok()
+                .map(Duration::from_nanos)
         }
     }
 
-    <span class="doccomment">/// Returns the instant in time after the given duration has passed.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if the resulting instant would exceed the bounds of the underlying data</span>
-    <span class="doccomment">/// structure.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">duration</span>: <span class="ident">Duration</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="self">self</span>.<span class="ident">as_nanos</span>()
-            .<span class="ident">checked_add</span>(<span class="ident">duration</span>.<span class="ident">as_nanos</span>() <span class="kw">as</span> <span class="ident">i128</span>)
-            .<span class="ident">and_then</span>(<span class="ident"><span class="self">Self</span>::from_nanos_i128</span>)
+    <span class="doccomment">/// Returns the instant in time after the given duration has passed.
+    ///
+    /// Returns `None` if the resulting instant would exceed the bounds of the underlying data
+    /// structure.
+    </span><span class="kw">pub fn </span>add(<span class="kw-2">&amp;</span><span class="self">self</span>, duration: Duration) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="self">self</span>.as_nanos()
+            .checked_add(duration.as_nanos() <span class="kw">as </span>i128)
+            .and_then(<span class="self">Self</span>::from_nanos_i128)
     }
 
-    <span class="doccomment">/// Returns the instant in time one `duration` ago.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if the resulting instant would underflow. As a result, it is important to</span>
-    <span class="doccomment">/// consider that on some platforms the `StreamInstant` may begin at `0` from the moment the</span>
-    <span class="doccomment">/// source stream is created.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sub</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">duration</span>: <span class="ident">Duration</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="self">self</span>.<span class="ident">as_nanos</span>()
-            .<span class="ident">checked_sub</span>(<span class="ident">duration</span>.<span class="ident">as_nanos</span>() <span class="kw">as</span> <span class="ident">i128</span>)
-            .<span class="ident">and_then</span>(<span class="ident"><span class="self">Self</span>::from_nanos_i128</span>)
+    <span class="doccomment">/// Returns the instant in time one `duration` ago.
+    ///
+    /// Returns `None` if the resulting instant would underflow. As a result, it is important to
+    /// consider that on some platforms the `StreamInstant` may begin at `0` from the moment the
+    /// source stream is created.
+    </span><span class="kw">pub fn </span>sub(<span class="kw-2">&amp;</span><span class="self">self</span>, duration: Duration) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="self">self</span>.as_nanos()
+            .checked_sub(duration.as_nanos() <span class="kw">as </span>i128)
+            .and_then(<span class="self">Self</span>::from_nanos_i128)
     }
 
-    <span class="kw">fn</span> <span class="ident">as_nanos</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i128</span> {
-        (<span class="self">self</span>.<span class="ident">secs</span> <span class="kw">as</span> <span class="ident">i128</span> * <span class="number">1_000_000_000</span>) + <span class="self">self</span>.<span class="ident">nanos</span> <span class="kw">as</span> <span class="ident">i128</span>
+    <span class="kw">fn </span>as_nanos(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i128 {
+        (<span class="self">self</span>.secs <span class="kw">as </span>i128 * <span class="number">1_000_000_000</span>) + <span class="self">self</span>.nanos <span class="kw">as </span>i128
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">from_nanos</span>(<span class="ident">nanos</span>: <span class="ident">i64</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">secs</span> = <span class="ident">nanos</span> / <span class="number">1_000_000_000</span>;
-        <span class="kw">let</span> <span class="ident">subsec_nanos</span> = <span class="ident">nanos</span> - <span class="ident">secs</span> * <span class="number">1_000_000_000</span>;
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">secs</span> <span class="kw">as</span> <span class="ident">i64</span>, <span class="ident">subsec_nanos</span> <span class="kw">as</span> <span class="ident">u32</span>)
+    <span class="attribute">#[allow(dead_code)]</span>
+    <span class="kw">fn </span>from_nanos(nanos: i64) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>secs = nanos / <span class="number">1_000_000_000</span>;
+        <span class="kw">let </span>subsec_nanos = nanos - secs * <span class="number">1_000_000_000</span>;
+        <span class="self">Self</span>::new(secs <span class="kw">as </span>i64, subsec_nanos <span class="kw">as </span>u32)
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">from_nanos_i128</span>(<span class="ident">nanos</span>: <span class="ident">i128</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let</span> <span class="ident">secs</span> = <span class="ident">nanos</span> / <span class="number">1_000_000_000</span>;
-        <span class="kw">if</span> <span class="ident">secs</span> &gt; <span class="ident">i64::MAX</span> <span class="kw">as</span> <span class="ident">i128</span> || <span class="ident">secs</span> &lt; <span class="ident">i64::MIN</span> <span class="kw">as</span> <span class="ident">i128</span> {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">subsec_nanos</span> = <span class="ident">nanos</span> - <span class="ident">secs</span> * <span class="number">1_000_000_000</span>;
-            <span class="macro">debug_assert!</span>(<span class="ident">subsec_nanos</span> &lt; <span class="ident">u32::MAX</span> <span class="kw">as</span> <span class="ident">i128</span>);
-            <span class="prelude-val">Some</span>(<span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">secs</span> <span class="kw">as</span> <span class="ident">i64</span>, <span class="ident">subsec_nanos</span> <span class="kw">as</span> <span class="ident">u32</span>))
+    <span class="attribute">#[allow(dead_code)]</span>
+    <span class="kw">fn </span>from_nanos_i128(nanos: i128) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>secs = nanos / <span class="number">1_000_000_000</span>;
+        <span class="kw">if </span>secs &gt; i64::MAX <span class="kw">as </span>i128 || secs &lt; i64::MIN <span class="kw">as </span>i128 {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="kw">let </span>subsec_nanos = nanos - secs * <span class="number">1_000_000_000</span>;
+            <span class="macro">debug_assert!</span>(subsec_nanos &lt; u32::MAX <span class="kw">as </span>i128);
+            <span class="prelude-val">Some</span>(<span class="self">Self</span>::new(secs <span class="kw">as </span>i64, subsec_nanos <span class="kw">as </span>u32))
         }
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">from_secs_f64</span>(<span class="ident">secs</span>: <span class="ident">f64</span>) -&gt; <span class="ident"><span class="kw">crate</span>::StreamInstant</span> {
-        <span class="kw">let</span> <span class="ident">s</span> = <span class="ident">secs</span>.<span class="ident">floor</span>() <span class="kw">as</span> <span class="ident">i64</span>;
-        <span class="kw">let</span> <span class="ident">ns</span> = ((<span class="ident">secs</span> - <span class="ident">s</span> <span class="kw">as</span> <span class="ident">f64</span>) * <span class="number">1_000_000_000.0</span>) <span class="kw">as</span> <span class="ident">u32</span>;
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">s</span>, <span class="ident">ns</span>)
+    <span class="attribute">#[allow(dead_code)]</span>
+    <span class="kw">fn </span>from_secs_f64(secs: f64) -&gt; <span class="kw">crate</span>::StreamInstant {
+        <span class="kw">let </span>s = secs.floor() <span class="kw">as </span>i64;
+        <span class="kw">let </span>ns = ((secs - s <span class="kw">as </span>f64) * <span class="number">1_000_000_000.0</span>) <span class="kw">as </span>u32;
+        <span class="self">Self</span>::new(s, ns)
     }
 
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">secs</span>: <span class="ident">i64</span>, <span class="ident">nanos</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">StreamInstant</span> { <span class="ident">secs</span>, <span class="ident">nanos</span> }
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">InputCallbackInfo</span> {
-    <span class="doccomment">/// The timestamp associated with the call to an input stream&#39;s data callback.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">timestamp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">InputStreamTimestamp</span> {
-        <span class="self">self</span>.<span class="ident">timestamp</span>
+    <span class="kw">fn </span>new(secs: i64, nanos: u32) -&gt; <span class="self">Self </span>{
+        StreamInstant { secs, nanos }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">OutputCallbackInfo</span> {
-    <span class="doccomment">/// The timestamp associated with the call to an output stream&#39;s data callback.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">timestamp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">OutputStreamTimestamp</span> {
-        <span class="self">self</span>.<span class="ident">timestamp</span>
+<span class="kw">impl </span>InputCallbackInfo {
+    <span class="doccomment">/// The timestamp associated with the call to an input stream&#39;s data callback.
+    </span><span class="kw">pub fn </span>timestamp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; InputStreamTimestamp {
+        <span class="self">self</span>.timestamp
     }
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::len_without_is_empty</span>)]</span>
-<span class="kw">impl</span> <span class="ident">Data</span> {
-    <span class="comment">// Internal constructor for host implementations to use.</span>
-    <span class="comment">//</span>
-    <span class="comment">// The following requirements must be met in order for the safety of `Data`&#39;s public API.</span>
-    <span class="comment">//</span>
-    <span class="comment">// - The `data` pointer must point to the first sample in the slice containing all samples.</span>
-    <span class="comment">// - The `len` must describe the length of the buffer as a number of samples in the expected</span>
-    <span class="comment">//   format specified via the `sample_format` argument.</span>
-    <span class="comment">// - The `sample_format` must correctly represent the underlying sample data delivered/expected</span>
-    <span class="comment">//   by the stream.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_parts</span>(
-        <span class="ident">data</span>: <span class="kw-2">*mut</span> (),
-        <span class="ident">len</span>: <span class="ident">usize</span>,
-        <span class="ident">sample_format</span>: <span class="ident">SampleFormat</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="ident">Data</span> {
-            <span class="ident">data</span>,
-            <span class="ident">len</span>,
-            <span class="ident">sample_format</span>,
+<span class="kw">impl </span>OutputCallbackInfo {
+    <span class="doccomment">/// The timestamp associated with the call to an output stream&#39;s data callback.
+    </span><span class="kw">pub fn </span>timestamp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OutputStreamTimestamp {
+        <span class="self">self</span>.timestamp
+    }
+}
+
+<span class="attribute">#[allow(clippy::len_without_is_empty)]</span>
+<span class="kw">impl </span>Data {
+    <span class="comment">// Internal constructor for host implementations to use.
+    //
+    // The following requirements must be met in order for the safety of `Data`&#39;s public API.
+    //
+    // - The `data` pointer must point to the first sample in the slice containing all samples.
+    // - The `len` must describe the length of the buffer as a number of samples in the expected
+    //   format specified via the `sample_format` argument.
+    // - The `sample_format` must correctly represent the underlying sample data delivered/expected
+    //   by the stream.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>from_parts(
+        data: <span class="kw-2">*mut </span>(),
+        len: usize,
+        sample_format: SampleFormat,
+    ) -&gt; <span class="self">Self </span>{
+        Data {
+            data,
+            len,
+            sample_format,
         }
     }
 
-    <span class="doccomment">/// The sample format of the internal audio data.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleFormat</span> {
-        <span class="self">self</span>.<span class="ident">sample_format</span>
+    <span class="doccomment">/// The sample format of the internal audio data.
+    </span><span class="kw">pub fn </span>sample_format(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleFormat {
+        <span class="self">self</span>.sample_format
     }
 
-    <span class="doccomment">/// The full length of the buffer in samples.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The returned length is the same length as the slice of type `T` that would be returned via</span>
-    <span class="doccomment">/// `as_slice` given a sample type that matches the inner sample format.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>
+    <span class="doccomment">/// The full length of the buffer in samples.
+    ///
+    /// The returned length is the same length as the slice of type `T` that would be returned via
+    /// `as_slice` given a sample type that matches the inner sample format.
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len
     }
 
-    <span class="doccomment">/// The raw slice of memory representing the underlying audio data as a slice of bytes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It is up to the user to interpret the slice of memory based on `Data::sample_format`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">len</span> * <span class="self">self</span>.<span class="ident">sample_format</span>.<span class="ident">sample_size</span>();
-        <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See</span>
-        <span class="comment">// the unsafe `from_parts` constructor for these requirements.</span>
-        <span class="kw">unsafe</span> { <span class="ident">std::slice::from_raw_parts</span>(<span class="self">self</span>.<span class="ident">data</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">u8</span>, <span class="ident">len</span>) }
+    <span class="doccomment">/// The raw slice of memory representing the underlying audio data as a slice of bytes.
+    ///
+    /// It is up to the user to interpret the slice of memory based on `Data::sample_format`.
+    </span><span class="kw">pub fn </span>bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+        <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.sample_format.sample_size();
+        <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See
+        // the unsafe `from_parts` constructor for these requirements.
+        </span><span class="kw">unsafe </span>{ std::slice::from_raw_parts(<span class="self">self</span>.data <span class="kw">as </span><span class="kw-2">*const </span>u8, len) }
     }
 
-    <span class="doccomment">/// The raw slice of memory representing the underlying audio data as a slice of bytes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It is up to the user to interpret the slice of memory based on `Data::sample_format`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bytes_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>] {
-        <span class="kw">let</span> <span class="ident">len</span> = <span class="self">self</span>.<span class="ident">len</span> * <span class="self">self</span>.<span class="ident">sample_format</span>.<span class="ident">sample_size</span>();
-        <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See</span>
-        <span class="comment">// the unsafe `from_parts` constructor for these requirements.</span>
-        <span class="kw">unsafe</span> { <span class="ident">std::slice::from_raw_parts_mut</span>(<span class="self">self</span>.<span class="ident">data</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">len</span>) }
+    <span class="doccomment">/// The raw slice of memory representing the underlying audio data as a slice of bytes.
+    ///
+    /// It is up to the user to interpret the slice of memory based on `Data::sample_format`.
+    </span><span class="kw">pub fn </span>bytes_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[u8] {
+        <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.sample_format.sample_size();
+        <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See
+        // the unsafe `from_parts` constructor for these requirements.
+        </span><span class="kw">unsafe </span>{ std::slice::from_raw_parts_mut(<span class="self">self</span>.data <span class="kw">as </span><span class="kw-2">*mut </span>u8, len) }
     }
 
-    <span class="doccomment">/// Access the data as a slice of sample type `T`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if the sample type does not match the expected sample format.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_slice</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[<span class="ident">T</span>]&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Sample</span>,
+    <span class="doccomment">/// Access the data as a slice of sample type `T`.
+    ///
+    /// Returns `None` if the sample type does not match the expected sample format.
+    </span><span class="kw">pub fn </span>as_slice&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[T]&gt;
+    <span class="kw">where
+        </span>T: Sample,
     {
-        <span class="kw">if</span> <span class="ident">T::FORMAT</span> == <span class="self">self</span>.<span class="ident">sample_format</span> {
-            <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See</span>
-            <span class="comment">// the unsafe `from_parts` constructor for these requirements.</span>
-            <span class="kw">unsafe</span> { <span class="prelude-val">Some</span>(<span class="ident">std::slice::from_raw_parts</span>(<span class="self">self</span>.<span class="ident">data</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">T</span>, <span class="self">self</span>.<span class="ident">len</span>)) }
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        <span class="kw">if </span>T::FORMAT == <span class="self">self</span>.sample_format {
+            <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See
+            // the unsafe `from_parts` constructor for these requirements.
+            </span><span class="kw">unsafe </span>{ <span class="prelude-val">Some</span>(std::slice::from_raw_parts(<span class="self">self</span>.data <span class="kw">as </span><span class="kw-2">*const </span>T, <span class="self">self</span>.len)) }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 
-    <span class="doccomment">/// Access the data as a slice of sample type `T`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if the sample type does not match the expected sample format.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_slice_mut</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut</span> [<span class="ident">T</span>]&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Sample</span>,
+    <span class="doccomment">/// Access the data as a slice of sample type `T`.
+    ///
+    /// Returns `None` if the sample type does not match the expected sample format.
+    </span><span class="kw">pub fn </span>as_slice_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>[T]&gt;
+    <span class="kw">where
+        </span>T: Sample,
     {
-        <span class="kw">if</span> <span class="ident">T::FORMAT</span> == <span class="self">self</span>.<span class="ident">sample_format</span> {
-            <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See</span>
-            <span class="comment">// the unsafe `from_parts` constructor for these requirements.</span>
-            <span class="kw">unsafe</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">std::slice::from_raw_parts_mut</span>(
-                    <span class="self">self</span>.<span class="ident">data</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">T</span>,
-                    <span class="self">self</span>.<span class="ident">len</span>,
+        <span class="kw">if </span>T::FORMAT == <span class="self">self</span>.sample_format {
+            <span class="comment">// The safety of this block relies on correct construction of the `Data` instance. See
+            // the unsafe `from_parts` constructor for these requirements.
+            </span><span class="kw">unsafe </span>{
+                <span class="prelude-val">Some</span>(std::slice::from_raw_parts_mut(
+                    <span class="self">self</span>.data <span class="kw">as </span><span class="kw-2">*mut </span>T,
+                    <span class="self">self</span>.len,
                 ))
             }
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 }
 
-<span class="kw">impl</span> <span class="ident">SupportedStreamConfigRange</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ChannelCount</span> {
-        <span class="self">self</span>.<span class="ident">channels</span>
+<span class="kw">impl </span>SupportedStreamConfigRange {
+    <span class="kw">pub fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ChannelCount {
+        <span class="self">self</span>.channels
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleRate</span> {
-        <span class="self">self</span>.<span class="ident">min_sample_rate</span>
+    <span class="kw">pub fn </span>min_sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleRate {
+        <span class="self">self</span>.min_sample_rate
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleRate</span> {
-        <span class="self">self</span>.<span class="ident">max_sample_rate</span>
+    <span class="kw">pub fn </span>max_sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleRate {
+        <span class="self">self</span>.max_sample_rate
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">buffer_size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">SupportedBufferSize</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">buffer_size</span>
+    <span class="kw">pub fn </span>buffer_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SupportedBufferSize {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.buffer_size
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sample_format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SampleFormat</span> {
-        <span class="self">self</span>.<span class="ident">sample_format</span>
+    <span class="kw">pub fn </span>sample_format(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SampleFormat {
+        <span class="self">self</span>.sample_format
     }
 
-    <span class="doccomment">/// Retrieve a `SupportedStreamConfig` with the given sample rate and buffer size.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// **panic!**s if the given `sample_rate` is outside the range specified within this</span>
-    <span class="doccomment">/// `SupportedStreamConfigRange` instance.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_sample_rate</span>(<span class="self">self</span>, <span class="ident">sample_rate</span>: <span class="ident">SampleRate</span>) -&gt; <span class="ident">SupportedStreamConfig</span> {
-        <span class="macro">assert!</span>(<span class="self">self</span>.<span class="ident">min_sample_rate</span> &lt;= <span class="ident">sample_rate</span> &amp;&amp; <span class="ident">sample_rate</span> &lt;= <span class="self">self</span>.<span class="ident">max_sample_rate</span>);
-        <span class="ident">SupportedStreamConfig</span> {
-            <span class="ident">channels</span>: <span class="self">self</span>.<span class="ident">channels</span>,
-            <span class="ident">sample_rate</span>,
-            <span class="ident">sample_format</span>: <span class="self">self</span>.<span class="ident">sample_format</span>,
-            <span class="ident">buffer_size</span>: <span class="self">self</span>.<span class="ident">buffer_size</span>,
-        }
-    }
-
-    <span class="doccomment">/// Turns this `SupportedStreamConfigRange` into a `SupportedStreamConfig` corresponding to the maximum samples rate.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_max_sample_rate</span>(<span class="self">self</span>) -&gt; <span class="ident">SupportedStreamConfig</span> {
-        <span class="ident">SupportedStreamConfig</span> {
-            <span class="ident">channels</span>: <span class="self">self</span>.<span class="ident">channels</span>,
-            <span class="ident">sample_rate</span>: <span class="self">self</span>.<span class="ident">max_sample_rate</span>,
-            <span class="ident">sample_format</span>: <span class="self">self</span>.<span class="ident">sample_format</span>,
-            <span class="ident">buffer_size</span>: <span class="self">self</span>.<span class="ident">buffer_size</span>,
+    <span class="doccomment">/// Retrieve a `SupportedStreamConfig` with the given sample rate and buffer size.
+    ///
+    /// **panic!**s if the given `sample_rate` is outside the range specified within this
+    /// `SupportedStreamConfigRange` instance.
+    </span><span class="kw">pub fn </span>with_sample_rate(<span class="self">self</span>, sample_rate: SampleRate) -&gt; SupportedStreamConfig {
+        <span class="macro">assert!</span>(<span class="self">self</span>.min_sample_rate &lt;= sample_rate &amp;&amp; sample_rate &lt;= <span class="self">self</span>.max_sample_rate);
+        SupportedStreamConfig {
+            channels: <span class="self">self</span>.channels,
+            sample_rate,
+            sample_format: <span class="self">self</span>.sample_format,
+            buffer_size: <span class="self">self</span>.buffer_size,
         }
     }
 
-    <span class="doccomment">/// A comparison function which compares two `SupportedStreamConfigRange`s in terms of their priority of</span>
-    <span class="doccomment">/// use as a default stream format.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Some backends do not provide a default stream format for their audio devices. In these</span>
-    <span class="doccomment">/// cases, CPAL attempts to decide on a reasonable default format for the user. To do this we</span>
-    <span class="doccomment">/// use the &quot;greatest&quot; of all supported stream formats when compared with this method.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// SupportedStreamConfigs are prioritised by the following heuristics:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// **Channels**:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - Stereo</span>
-    <span class="doccomment">/// - Mono</span>
-    <span class="doccomment">/// - Max available channels</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// **Sample format**:</span>
-    <span class="doccomment">/// - f32</span>
-    <span class="doccomment">/// - i16</span>
-    <span class="doccomment">/// - u16</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// **Sample rate**:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - 44100 (cd quality)</span>
-    <span class="doccomment">/// - Max sample rate</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cmp_default_heuristics</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">std::cmp::Ordering</span> {
-        <span class="kw">use</span> <span class="ident">std::cmp::Ordering::Equal</span>;
-        <span class="kw">use</span> <span class="ident">SampleFormat</span>::{<span class="ident">F32</span>, <span class="ident">I16</span>, <span class="ident">U16</span>};
+    <span class="doccomment">/// Turns this `SupportedStreamConfigRange` into a `SupportedStreamConfig` corresponding to the maximum samples rate.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>with_max_sample_rate(<span class="self">self</span>) -&gt; SupportedStreamConfig {
+        SupportedStreamConfig {
+            channels: <span class="self">self</span>.channels,
+            sample_rate: <span class="self">self</span>.max_sample_rate,
+            sample_format: <span class="self">self</span>.sample_format,
+            buffer_size: <span class="self">self</span>.buffer_size,
+        }
+    }
 
-        <span class="kw">let</span> <span class="ident">cmp_stereo</span> = (<span class="self">self</span>.<span class="ident">channels</span> == <span class="number">2</span>).<span class="ident">cmp</span>(<span class="kw-2">&amp;</span>(<span class="ident">other</span>.<span class="ident">channels</span> == <span class="number">2</span>));
-        <span class="kw">if</span> <span class="ident">cmp_stereo</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_stereo</span>;
+    <span class="doccomment">/// A comparison function which compares two `SupportedStreamConfigRange`s in terms of their priority of
+    /// use as a default stream format.
+    ///
+    /// Some backends do not provide a default stream format for their audio devices. In these
+    /// cases, CPAL attempts to decide on a reasonable default format for the user. To do this we
+    /// use the &quot;greatest&quot; of all supported stream formats when compared with this method.
+    ///
+    /// SupportedStreamConfigs are prioritised by the following heuristics:
+    ///
+    /// **Channels**:
+    ///
+    /// - Stereo
+    /// - Mono
+    /// - Max available channels
+    ///
+    /// **Sample format**:
+    /// - f32
+    /// - i16
+    /// - u16
+    ///
+    /// **Sample rate**:
+    ///
+    /// - 44100 (cd quality)
+    /// - Max sample rate
+    </span><span class="kw">pub fn </span>cmp_default_heuristics(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; std::cmp::Ordering {
+        <span class="kw">use </span>std::cmp::Ordering::Equal;
+        <span class="kw">use </span>SampleFormat::{F32, I16, U16};
+
+        <span class="kw">let </span>cmp_stereo = (<span class="self">self</span>.channels == <span class="number">2</span>).cmp(<span class="kw-2">&amp;</span>(other.channels == <span class="number">2</span>));
+        <span class="kw">if </span>cmp_stereo != Equal {
+            <span class="kw">return </span>cmp_stereo;
         }
 
-        <span class="kw">let</span> <span class="ident">cmp_mono</span> = (<span class="self">self</span>.<span class="ident">channels</span> == <span class="number">1</span>).<span class="ident">cmp</span>(<span class="kw-2">&amp;</span>(<span class="ident">other</span>.<span class="ident">channels</span> == <span class="number">1</span>));
-        <span class="kw">if</span> <span class="ident">cmp_mono</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_mono</span>;
+        <span class="kw">let </span>cmp_mono = (<span class="self">self</span>.channels == <span class="number">1</span>).cmp(<span class="kw-2">&amp;</span>(other.channels == <span class="number">1</span>));
+        <span class="kw">if </span>cmp_mono != Equal {
+            <span class="kw">return </span>cmp_mono;
         }
 
-        <span class="kw">let</span> <span class="ident">cmp_channels</span> = <span class="self">self</span>.<span class="ident">channels</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="ident">channels</span>);
-        <span class="kw">if</span> <span class="ident">cmp_channels</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_channels</span>;
+        <span class="kw">let </span>cmp_channels = <span class="self">self</span>.channels.cmp(<span class="kw-2">&amp;</span>other.channels);
+        <span class="kw">if </span>cmp_channels != Equal {
+            <span class="kw">return </span>cmp_channels;
         }
 
-        <span class="kw">let</span> <span class="ident">cmp_f32</span> = (<span class="self">self</span>.<span class="ident">sample_format</span> == <span class="ident">F32</span>).<span class="ident">cmp</span>(<span class="kw-2">&amp;</span>(<span class="ident">other</span>.<span class="ident">sample_format</span> == <span class="ident">F32</span>));
-        <span class="kw">if</span> <span class="ident">cmp_f32</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_f32</span>;
+        <span class="kw">let </span>cmp_f32 = (<span class="self">self</span>.sample_format == F32).cmp(<span class="kw-2">&amp;</span>(other.sample_format == F32));
+        <span class="kw">if </span>cmp_f32 != Equal {
+            <span class="kw">return </span>cmp_f32;
         }
 
-        <span class="kw">let</span> <span class="ident">cmp_i16</span> = (<span class="self">self</span>.<span class="ident">sample_format</span> == <span class="ident">I16</span>).<span class="ident">cmp</span>(<span class="kw-2">&amp;</span>(<span class="ident">other</span>.<span class="ident">sample_format</span> == <span class="ident">I16</span>));
-        <span class="kw">if</span> <span class="ident">cmp_i16</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_i16</span>;
+        <span class="kw">let </span>cmp_i16 = (<span class="self">self</span>.sample_format == I16).cmp(<span class="kw-2">&amp;</span>(other.sample_format == I16));
+        <span class="kw">if </span>cmp_i16 != Equal {
+            <span class="kw">return </span>cmp_i16;
         }
 
-        <span class="kw">let</span> <span class="ident">cmp_u16</span> = (<span class="self">self</span>.<span class="ident">sample_format</span> == <span class="ident">U16</span>).<span class="ident">cmp</span>(<span class="kw-2">&amp;</span>(<span class="ident">other</span>.<span class="ident">sample_format</span> == <span class="ident">U16</span>));
-        <span class="kw">if</span> <span class="ident">cmp_u16</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_u16</span>;
+        <span class="kw">let </span>cmp_u16 = (<span class="self">self</span>.sample_format == U16).cmp(<span class="kw-2">&amp;</span>(other.sample_format == U16));
+        <span class="kw">if </span>cmp_u16 != Equal {
+            <span class="kw">return </span>cmp_u16;
         }
 
-        <span class="kw">const</span> <span class="ident">HZ_44100</span>: <span class="ident">SampleRate</span> = <span class="ident">SampleRate</span>(<span class="number">44_100</span>);
-        <span class="kw">let</span> <span class="ident">r44100_in_self</span> = <span class="self">self</span>.<span class="ident">min_sample_rate</span> &lt;= <span class="ident">HZ_44100</span> &amp;&amp; <span class="ident">HZ_44100</span> &lt;= <span class="self">self</span>.<span class="ident">max_sample_rate</span>;
-        <span class="kw">let</span> <span class="ident">r44100_in_other</span> =
-            <span class="ident">other</span>.<span class="ident">min_sample_rate</span> &lt;= <span class="ident">HZ_44100</span> &amp;&amp; <span class="ident">HZ_44100</span> &lt;= <span class="ident">other</span>.<span class="ident">max_sample_rate</span>;
-        <span class="kw">let</span> <span class="ident">cmp_r44100</span> = <span class="ident">r44100_in_self</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">r44100_in_other</span>);
-        <span class="kw">if</span> <span class="ident">cmp_r44100</span> != <span class="ident">Equal</span> {
-            <span class="kw">return</span> <span class="ident">cmp_r44100</span>;
+        <span class="kw">const </span>HZ_44100: SampleRate = SampleRate(<span class="number">44_100</span>);
+        <span class="kw">let </span>r44100_in_self = <span class="self">self</span>.min_sample_rate &lt;= HZ_44100 &amp;&amp; HZ_44100 &lt;= <span class="self">self</span>.max_sample_rate;
+        <span class="kw">let </span>r44100_in_other =
+            other.min_sample_rate &lt;= HZ_44100 &amp;&amp; HZ_44100 &lt;= other.max_sample_rate;
+        <span class="kw">let </span>cmp_r44100 = r44100_in_self.cmp(<span class="kw-2">&amp;</span>r44100_in_other);
+        <span class="kw">if </span>cmp_r44100 != Equal {
+            <span class="kw">return </span>cmp_r44100;
         }
 
-        <span class="self">self</span>.<span class="ident">max_sample_rate</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="ident">max_sample_rate</span>)
+        <span class="self">self</span>.max_sample_rate.cmp(<span class="kw-2">&amp;</span>other.max_sample_rate)
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_cmp_default_heuristics</span>() {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">formats</span> = <span class="macro">vec!</span>[
-        <span class="ident">SupportedStreamConfigRange</span> {
-            <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize::Range</span> { <span class="ident">min</span>: <span class="number">256</span>, <span class="ident">max</span>: <span class="number">512</span> },
-            <span class="ident">channels</span>: <span class="number">2</span>,
-            <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">1</span>),
-            <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">96000</span>),
-            <span class="ident">sample_format</span>: <span class="ident">SampleFormat::F32</span>,
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_cmp_default_heuristics() {
+    <span class="kw">let </span><span class="kw-2">mut </span>formats = <span class="macro">vec!</span>[
+        SupportedStreamConfigRange {
+            buffer_size: SupportedBufferSize::Range { min: <span class="number">256</span>, max: <span class="number">512 </span>},
+            channels: <span class="number">2</span>,
+            min_sample_rate: SampleRate(<span class="number">1</span>),
+            max_sample_rate: SampleRate(<span class="number">96000</span>),
+            sample_format: SampleFormat::F32,
         },
-        <span class="ident">SupportedStreamConfigRange</span> {
-            <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize::Range</span> { <span class="ident">min</span>: <span class="number">256</span>, <span class="ident">max</span>: <span class="number">512</span> },
-            <span class="ident">channels</span>: <span class="number">1</span>,
-            <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">1</span>),
-            <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">96000</span>),
-            <span class="ident">sample_format</span>: <span class="ident">SampleFormat::F32</span>,
+        SupportedStreamConfigRange {
+            buffer_size: SupportedBufferSize::Range { min: <span class="number">256</span>, max: <span class="number">512 </span>},
+            channels: <span class="number">1</span>,
+            min_sample_rate: SampleRate(<span class="number">1</span>),
+            max_sample_rate: SampleRate(<span class="number">96000</span>),
+            sample_format: SampleFormat::F32,
         },
-        <span class="ident">SupportedStreamConfigRange</span> {
-            <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize::Range</span> { <span class="ident">min</span>: <span class="number">256</span>, <span class="ident">max</span>: <span class="number">512</span> },
-            <span class="ident">channels</span>: <span class="number">2</span>,
-            <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">1</span>),
-            <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">96000</span>),
-            <span class="ident">sample_format</span>: <span class="ident">SampleFormat::I16</span>,
+        SupportedStreamConfigRange {
+            buffer_size: SupportedBufferSize::Range { min: <span class="number">256</span>, max: <span class="number">512 </span>},
+            channels: <span class="number">2</span>,
+            min_sample_rate: SampleRate(<span class="number">1</span>),
+            max_sample_rate: SampleRate(<span class="number">96000</span>),
+            sample_format: SampleFormat::I16,
         },
-        <span class="ident">SupportedStreamConfigRange</span> {
-            <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize::Range</span> { <span class="ident">min</span>: <span class="number">256</span>, <span class="ident">max</span>: <span class="number">512</span> },
-            <span class="ident">channels</span>: <span class="number">2</span>,
-            <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">1</span>),
-            <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">96000</span>),
-            <span class="ident">sample_format</span>: <span class="ident">SampleFormat::U16</span>,
+        SupportedStreamConfigRange {
+            buffer_size: SupportedBufferSize::Range { min: <span class="number">256</span>, max: <span class="number">512 </span>},
+            channels: <span class="number">2</span>,
+            min_sample_rate: SampleRate(<span class="number">1</span>),
+            max_sample_rate: SampleRate(<span class="number">96000</span>),
+            sample_format: SampleFormat::U16,
         },
-        <span class="ident">SupportedStreamConfigRange</span> {
-            <span class="ident">buffer_size</span>: <span class="ident">SupportedBufferSize::Range</span> { <span class="ident">min</span>: <span class="number">256</span>, <span class="ident">max</span>: <span class="number">512</span> },
-            <span class="ident">channels</span>: <span class="number">2</span>,
-            <span class="ident">min_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">1</span>),
-            <span class="ident">max_sample_rate</span>: <span class="ident">SampleRate</span>(<span class="number">22050</span>),
-            <span class="ident">sample_format</span>: <span class="ident">SampleFormat::F32</span>,
+        SupportedStreamConfigRange {
+            buffer_size: SupportedBufferSize::Range { min: <span class="number">256</span>, max: <span class="number">512 </span>},
+            channels: <span class="number">2</span>,
+            min_sample_rate: SampleRate(<span class="number">1</span>),
+            max_sample_rate: SampleRate(<span class="number">22050</span>),
+            sample_format: SampleFormat::F32,
         },
     ];
 
-    <span class="ident">formats</span>.<span class="ident">sort_by</span>(|<span class="ident">a</span>, <span class="ident">b</span>| <span class="ident">a</span>.<span class="ident">cmp_default_heuristics</span>(<span class="ident">b</span>));
+    formats.sort_by(|a, b| a.cmp_default_heuristics(b));
 
-    <span class="comment">// lowest-priority first:</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">0</span>].<span class="ident">sample_format</span>(), <span class="ident">SampleFormat::F32</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">0</span>].<span class="ident">min_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">0</span>].<span class="ident">max_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">96000</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">0</span>].<span class="ident">channels</span>(), <span class="number">1</span>);
+    <span class="comment">// lowest-priority first:
+    </span><span class="macro">assert_eq!</span>(formats[<span class="number">0</span>].sample_format(), SampleFormat::F32);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">0</span>].min_sample_rate(), SampleRate(<span class="number">1</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">0</span>].max_sample_rate(), SampleRate(<span class="number">96000</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">0</span>].channels(), <span class="number">1</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">1</span>].<span class="ident">sample_format</span>(), <span class="ident">SampleFormat::U16</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">1</span>].<span class="ident">min_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">1</span>].<span class="ident">max_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">96000</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">1</span>].<span class="ident">channels</span>(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">1</span>].sample_format(), SampleFormat::U16);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">1</span>].min_sample_rate(), SampleRate(<span class="number">1</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">1</span>].max_sample_rate(), SampleRate(<span class="number">96000</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">1</span>].channels(), <span class="number">2</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">2</span>].<span class="ident">sample_format</span>(), <span class="ident">SampleFormat::I16</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">2</span>].<span class="ident">min_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">2</span>].<span class="ident">max_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">96000</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">2</span>].<span class="ident">channels</span>(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">2</span>].sample_format(), SampleFormat::I16);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">2</span>].min_sample_rate(), SampleRate(<span class="number">1</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">2</span>].max_sample_rate(), SampleRate(<span class="number">96000</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">2</span>].channels(), <span class="number">2</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">3</span>].<span class="ident">sample_format</span>(), <span class="ident">SampleFormat::F32</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">3</span>].<span class="ident">min_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">3</span>].<span class="ident">max_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">22050</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">3</span>].<span class="ident">channels</span>(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">3</span>].sample_format(), SampleFormat::F32);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">3</span>].min_sample_rate(), SampleRate(<span class="number">1</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">3</span>].max_sample_rate(), SampleRate(<span class="number">22050</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">3</span>].channels(), <span class="number">2</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">4</span>].<span class="ident">sample_format</span>(), <span class="ident">SampleFormat::F32</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">4</span>].<span class="ident">min_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">4</span>].<span class="ident">max_sample_rate</span>(), <span class="ident">SampleRate</span>(<span class="number">96000</span>));
-    <span class="macro">assert_eq!</span>(<span class="ident">formats</span>[<span class="number">4</span>].<span class="ident">channels</span>(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">4</span>].sample_format(), SampleFormat::F32);
+    <span class="macro">assert_eq!</span>(formats[<span class="number">4</span>].min_sample_rate(), SampleRate(<span class="number">1</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">4</span>].max_sample_rate(), SampleRate(<span class="number">96000</span>));
+    <span class="macro">assert_eq!</span>(formats[<span class="number">4</span>].channels(), <span class="number">2</span>);
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">SupportedStreamConfig</span>&gt; <span class="kw">for</span> <span class="ident">StreamConfig</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">conf</span>: <span class="ident">SupportedStreamConfig</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">conf</span>.<span class="ident">config</span>()
+<span class="kw">impl </span>From&lt;SupportedStreamConfig&gt; <span class="kw">for </span>StreamConfig {
+    <span class="kw">fn </span>from(conf: SupportedStreamConfig) -&gt; <span class="self">Self </span>{
+        conf.config()
     }
 }
 
-<span class="comment">// If a backend does not provide an API for retrieving supported formats, we query it with a bunch</span>
-<span class="comment">// of commonly used rates. This is always the case for wasapi and is sometimes the case for alsa.</span>
-<span class="comment">//</span>
-<span class="comment">// If a rate you desire is missing from this list, feel free to add it!</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;windows&quot;</span>)]</span>
-<span class="kw">const</span> <span class="ident">COMMON_SAMPLE_RATES</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">SampleRate</span>] = <span class="kw-2">&amp;</span>[
-    <span class="ident">SampleRate</span>(<span class="number">5512</span>),
-    <span class="ident">SampleRate</span>(<span class="number">8000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">11025</span>),
-    <span class="ident">SampleRate</span>(<span class="number">16000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">22050</span>),
-    <span class="ident">SampleRate</span>(<span class="number">32000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">44100</span>),
-    <span class="ident">SampleRate</span>(<span class="number">48000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">64000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">88200</span>),
-    <span class="ident">SampleRate</span>(<span class="number">96000</span>),
-    <span class="ident">SampleRate</span>(<span class="number">176400</span>),
-    <span class="ident">SampleRate</span>(<span class="number">192000</span>),
+<span class="comment">// If a backend does not provide an API for retrieving supported formats, we query it with a bunch
+// of commonly used rates. This is always the case for wasapi and is sometimes the case for alsa.
+//
+// If a rate you desire is missing from this list, feel free to add it!
+</span><span class="attribute">#[cfg(target_os = <span class="string">&quot;windows&quot;</span>)]</span>
+<span class="kw">const </span>COMMON_SAMPLE_RATES: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[SampleRate] = <span class="kw-2">&amp;</span>[
+    SampleRate(<span class="number">5512</span>),
+    SampleRate(<span class="number">8000</span>),
+    SampleRate(<span class="number">11025</span>),
+    SampleRate(<span class="number">16000</span>),
+    SampleRate(<span class="number">22050</span>),
+    SampleRate(<span class="number">32000</span>),
+    SampleRate(<span class="number">44100</span>),
+    SampleRate(<span class="number">48000</span>),
+    SampleRate(<span class="number">64000</span>),
+    SampleRate(<span class="number">88200</span>),
+    SampleRate(<span class="number">96000</span>),
+    SampleRate(<span class="number">176400</span>),
+    SampleRate(<span class="number">192000</span>),
 ];
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_stream_instant</span>() {
-    <span class="kw">let</span> <span class="ident">a</span> = <span class="ident">StreamInstant::new</span>(<span class="number">2</span>, <span class="number">0</span>);
-    <span class="kw">let</span> <span class="ident">b</span> = <span class="ident">StreamInstant::new</span>(-<span class="number">2</span>, <span class="number">0</span>);
-    <span class="kw">let</span> <span class="ident">min</span> = <span class="ident">StreamInstant::new</span>(<span class="ident">i64::MIN</span>, <span class="number">0</span>);
-    <span class="kw">let</span> <span class="ident">max</span> = <span class="ident">StreamInstant::new</span>(<span class="ident">i64::MAX</span>, <span class="number">0</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_stream_instant() {
+    <span class="kw">let </span>a = StreamInstant::new(<span class="number">2</span>, <span class="number">0</span>);
+    <span class="kw">let </span>b = StreamInstant::new(-<span class="number">2</span>, <span class="number">0</span>);
+    <span class="kw">let </span>min = StreamInstant::new(i64::MIN, <span class="number">0</span>);
+    <span class="kw">let </span>max = StreamInstant::new(i64::MAX, <span class="number">0</span>);
     <span class="macro">assert_eq!</span>(
-        <span class="ident">a</span>.<span class="ident">sub</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(<span class="number">1</span>, <span class="number">0</span>))
+        a.sub(Duration::from_secs(<span class="number">1</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(<span class="number">1</span>, <span class="number">0</span>))
     );
     <span class="macro">assert_eq!</span>(
-        <span class="ident">a</span>.<span class="ident">sub</span>(<span class="ident">Duration::from_secs</span>(<span class="number">2</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(<span class="number">0</span>, <span class="number">0</span>))
+        a.sub(Duration::from_secs(<span class="number">2</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(<span class="number">0</span>, <span class="number">0</span>))
     );
     <span class="macro">assert_eq!</span>(
-        <span class="ident">a</span>.<span class="ident">sub</span>(<span class="ident">Duration::from_secs</span>(<span class="number">3</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(-<span class="number">1</span>, <span class="number">0</span>))
+        a.sub(Duration::from_secs(<span class="number">3</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(-<span class="number">1</span>, <span class="number">0</span>))
     );
-    <span class="macro">assert_eq!</span>(<span class="ident">min</span>.<span class="ident">sub</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>)), <span class="prelude-val">None</span>);
+    <span class="macro">assert_eq!</span>(min.sub(Duration::from_secs(<span class="number">1</span>)), <span class="prelude-val">None</span>);
     <span class="macro">assert_eq!</span>(
-        <span class="ident">b</span>.<span class="ident">add</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(-<span class="number">1</span>, <span class="number">0</span>))
-    );
-    <span class="macro">assert_eq!</span>(
-        <span class="ident">b</span>.<span class="ident">add</span>(<span class="ident">Duration::from_secs</span>(<span class="number">2</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(<span class="number">0</span>, <span class="number">0</span>))
+        b.add(Duration::from_secs(<span class="number">1</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(-<span class="number">1</span>, <span class="number">0</span>))
     );
     <span class="macro">assert_eq!</span>(
-        <span class="ident">b</span>.<span class="ident">add</span>(<span class="ident">Duration::from_secs</span>(<span class="number">3</span>)),
-        <span class="prelude-val">Some</span>(<span class="ident">StreamInstant::new</span>(<span class="number">1</span>, <span class="number">0</span>))
+        b.add(Duration::from_secs(<span class="number">2</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(<span class="number">0</span>, <span class="number">0</span>))
     );
-    <span class="macro">assert_eq!</span>(<span class="ident">max</span>.<span class="ident">add</span>(<span class="ident">Duration::from_secs</span>(<span class="number">1</span>)), <span class="prelude-val">None</span>);
+    <span class="macro">assert_eq!</span>(
+        b.add(Duration::from_secs(<span class="number">3</span>)),
+        <span class="prelude-val">Some</span>(StreamInstant::new(<span class="number">1</span>, <span class="number">0</span>))
+    );
+    <span class="macro">assert_eq!</span>(max.add(Duration::from_secs(<span class="number">1</span>)), <span class="prelude-val">None</span>);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="cpal" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="cpal" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

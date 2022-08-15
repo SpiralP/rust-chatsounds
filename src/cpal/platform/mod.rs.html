@@ -617,446 +617,446 @@
 <span id="617">617</span>
 <span id="618">618</span>
 <span id="619">619</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Platform-specific items.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! This module also contains the implementation of the platform&#39;s dynamically dispatched `Host`</span>
-<span class="doccomment">//! type and its associated `Device`, `StreamId` and other associated types. These</span>
-<span class="doccomment">//! types are useful in the case that users require switching between audio host APIs at runtime.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Platform-specific items.
+//!
+//! This module also contains the implementation of the platform&#39;s dynamically dispatched `Host`
+//! type and its associated `Device`, `StreamId` and other associated types. These
+//! types are useful in the case that users require switching between audio host APIs at runtime.
 
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::platform_impl</span>::<span class="kw-2">*</span>;
+</span><span class="attribute">#[doc(inline)]</span>
+<span class="kw">pub use </span><span class="self">self</span>::platform_impl::<span class="kw-2">*</span>;
 
-<span class="comment">// A macro to assist with implementing a platform&#39;s dynamically dispatched `Host` type.</span>
-<span class="comment">//</span>
-<span class="comment">// These dynamically dispatched types are necessary to allow for users to switch between hosts at</span>
-<span class="comment">// runtime.</span>
-<span class="comment">//</span>
-<span class="comment">// For example the invocation `impl_platform_host(Wasapi wasapi &quot;WASAPI&quot;, Asio asio &quot;ASIO&quot;)`,</span>
-<span class="comment">// this macro should expand to:</span>
-<span class="comment">//</span>
-<span class="comment">// ```</span>
-<span class="comment">// pub enum HostId {</span>
-<span class="comment">//     Wasapi,</span>
-<span class="comment">//     Asio,</span>
-<span class="comment">// }</span>
-<span class="comment">//</span>
-<span class="comment">// pub enum Host {</span>
-<span class="comment">//     Wasapi(crate::host::wasapi::Host),</span>
-<span class="comment">//     Asio(crate::host::asio::Host),</span>
-<span class="comment">// }</span>
-<span class="comment">// ```</span>
-<span class="comment">//</span>
-<span class="comment">// And so on for Device, Devices, Host, StreamId, SupportedInputConfigs,</span>
-<span class="comment">// SupportedOutputConfigs and all their necessary trait implementations.</span>
-<span class="comment">// ```</span>
-<span class="macro">macro_rules!</span> <span class="ident">impl_platform_host</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_name</span>:<span class="ident">literal</span>),<span class="kw-2">*</span>) =&gt; {
-        <span class="doccomment">/// All hosts supported by CPAL on this platform.</span>
-        <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">ALL_HOSTS</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">HostId</span>] = <span class="kw-2">&amp;</span>[
+<span class="comment">// A macro to assist with implementing a platform&#39;s dynamically dispatched `Host` type.
+//
+// These dynamically dispatched types are necessary to allow for users to switch between hosts at
+// runtime.
+//
+// For example the invocation `impl_platform_host(Wasapi wasapi &quot;WASAPI&quot;, Asio asio &quot;ASIO&quot;)`,
+// this macro should expand to:
+//
+// ```
+// pub enum HostId {
+//     Wasapi,
+//     Asio,
+// }
+//
+// pub enum Host {
+//     Wasapi(crate::host::wasapi::Host),
+//     Asio(crate::host::asio::Host),
+// }
+// ```
+//
+// And so on for Device, Devices, Host, StreamId, SupportedInputConfigs,
+// SupportedOutputConfigs and all their necessary trait implementations.
+// ```
+</span><span class="macro">macro_rules!</span> impl_platform_host {
+    ($(<span class="macro-nonterminal">$HostVariant</span>:ident <span class="macro-nonterminal">$host_mod</span>:ident <span class="macro-nonterminal">$host_name</span>:literal),<span class="kw-2">*</span>) =&gt; {
+        <span class="doccomment">/// All hosts supported by CPAL on this platform.
+        </span><span class="kw">pub const </span>ALL_HOSTS: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[HostId] = <span class="kw-2">&amp;</span>[
             $(
-                <span class="ident">HostId</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>,
+                HostId::<span class="macro-nonterminal">$HostVariant</span>,
             )*
         ];
 
-        <span class="doccomment">/// The platform&#39;s dynamically dispatched **Host** type.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// An instance of this **Host** type may represent one of the **Host**s available</span>
-        <span class="doccomment">/// on the platform.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// Use this type if you require switching between available hosts at runtime.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// This type may be constructed via the **host_from_id** function. **HostId**s may</span>
-        <span class="doccomment">/// be acquired via the **ALL_HOSTS** const, and the **available_hosts** function.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Host</span>(<span class="ident">HostInner</span>);
+        <span class="doccomment">/// The platform&#39;s dynamically dispatched **Host** type.
+        ///
+        /// An instance of this **Host** type may represent one of the **Host**s available
+        /// on the platform.
+        ///
+        /// Use this type if you require switching between available hosts at runtime.
+        ///
+        /// This type may be constructed via the **host_from_id** function. **HostId**s may
+        /// be acquired via the **ALL_HOSTS** const, and the **available_hosts** function.
+        </span><span class="kw">pub struct </span>Host(HostInner);
 
-        <span class="doccomment">/// The **Device** implementation associated with the platform&#39;s dynamically dispatched</span>
-        <span class="doccomment">/// **Host** type.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Device</span>(<span class="ident">DeviceInner</span>);
+        <span class="doccomment">/// The **Device** implementation associated with the platform&#39;s dynamically dispatched
+        /// **Host** type.
+        </span><span class="kw">pub struct </span>Device(DeviceInner);
 
-        <span class="doccomment">/// The **Devices** iterator associated with the platform&#39;s dynamically dispatched **Host**</span>
-        <span class="doccomment">/// type.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Devices</span>(<span class="ident">DevicesInner</span>);
+        <span class="doccomment">/// The **Devices** iterator associated with the platform&#39;s dynamically dispatched **Host**
+        /// type.
+        </span><span class="kw">pub struct </span>Devices(DevicesInner);
 
-        <span class="doccomment">/// The **Stream** implementation associated with the platform&#39;s dynamically dispatched</span>
-        <span class="doccomment">/// **Host** type.</span>
-        <span class="comment">// Streams cannot be `Send` or `Sync` if we plan to support Android&#39;s AAudio API. This is</span>
-        <span class="comment">// because the stream API is not thread-safe, and the API prohibits calling certain</span>
-        <span class="comment">// functions within the callback.</span>
-        <span class="comment">//</span>
-        <span class="comment">// TODO: Confirm this and add more specific detail and references.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Stream</span>(<span class="ident">StreamInner</span>, <span class="ident"><span class="kw">crate</span>::platform::NotSendSyncAcrossAllPlatforms</span>);
+        <span class="doccomment">/// The **Stream** implementation associated with the platform&#39;s dynamically dispatched
+        /// **Host** type.
+        </span><span class="comment">// Streams cannot be `Send` or `Sync` if we plan to support Android&#39;s AAudio API. This is
+        // because the stream API is not thread-safe, and the API prohibits calling certain
+        // functions within the callback.
+        //
+        // TODO: Confirm this and add more specific detail and references.
+        </span><span class="kw">pub struct </span>Stream(StreamInner, <span class="kw">crate</span>::platform::NotSendSyncAcrossAllPlatforms);
 
-        <span class="doccomment">/// The **SupportedInputConfigs** iterator associated with the platform&#39;s dynamically</span>
-        <span class="doccomment">/// dispatched **Host** type.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SupportedInputConfigs</span>(<span class="ident">SupportedInputConfigsInner</span>);
+        <span class="doccomment">/// The **SupportedInputConfigs** iterator associated with the platform&#39;s dynamically
+        /// dispatched **Host** type.
+        </span><span class="kw">pub struct </span>SupportedInputConfigs(SupportedInputConfigsInner);
 
-        <span class="doccomment">/// The **SupportedOutputConfigs** iterator associated with the platform&#39;s dynamically</span>
-        <span class="doccomment">/// dispatched **Host** type.</span>
-        <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SupportedOutputConfigs</span>(<span class="ident">SupportedOutputConfigsInner</span>);
+        <span class="doccomment">/// The **SupportedOutputConfigs** iterator associated with the platform&#39;s dynamically
+        /// dispatched **Host** type.
+        </span><span class="kw">pub struct </span>SupportedOutputConfigs(SupportedOutputConfigsInner);
 
-        <span class="doccomment">/// Unique identifier for available hosts on the platform.</span>
-        <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>)]</span>
-        <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HostId</span> {
+        <span class="doccomment">/// Unique identifier for available hosts on the platform.
+        </span><span class="attribute">#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]</span>
+        <span class="kw">pub enum </span>HostId {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>,
+                <span class="macro-nonterminal">$HostVariant</span>,
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">DeviceInner</span> {
+        <span class="kw">enum </span>DeviceInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Device</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Device</span>),
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">DevicesInner</span> {
+        <span class="kw">enum </span>DevicesInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Devices</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Devices</span>),
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">HostInner</span> {
+        <span class="kw">enum </span>HostInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host</span>),
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">StreamInner</span> {
+        <span class="kw">enum </span>StreamInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Stream</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Stream</span>),
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">SupportedInputConfigsInner</span> {
+        <span class="kw">enum </span>SupportedInputConfigsInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::SupportedInputConfigs</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::SupportedInputConfigs</span>),
             )*
         }
 
-        <span class="kw">enum</span> <span class="ident">SupportedOutputConfigsInner</span> {
+        <span class="kw">enum </span>SupportedOutputConfigsInner {
             $(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::SupportedOutputConfigs</span>),
+                <span class="macro-nonterminal">$HostVariant</span>(<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::SupportedOutputConfigs</span>),
             )*
         }
 
-        <span class="kw">impl</span> <span class="ident">HostId</span> {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> {
-                <span class="kw">match</span> <span class="self">self</span> {
+        <span class="kw">impl </span>HostId {
+            <span class="kw">pub fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+                <span class="kw">match </span><span class="self">self </span>{
                     $(
-                        <span class="ident">HostId</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span> =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_name</span>,
+                        HostId::<span class="macro-nonterminal">$HostVariant </span>=&gt; <span class="macro-nonterminal">$host_name</span>,
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">Host</span> {
-            <span class="doccomment">/// The unique identifier associated with this host.</span>
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">HostId</span> {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+        <span class="kw">impl </span>Host {
+            <span class="doccomment">/// The unique identifier associated with this host.
+            </span><span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostId {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw">_</span>) =&gt; <span class="ident">HostId</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>,
+                        HostInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw">_</span>) =&gt; HostId::<span class="macro-nonterminal">$HostVariant</span>,
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Devices</span> {
-            <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">Device</span>;
+        <span class="kw">impl </span>Iterator <span class="kw">for </span>Devices {
+            <span class="kw">type </span>Item = Device;
 
-            <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DevicesInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">d</span>) =&gt; {
-                            <span class="ident">d</span>.<span class="ident">next</span>().<span class="ident">map</span>(<span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>).<span class="ident">map</span>(<span class="ident">Device::from</span>)
+                        DevicesInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref mut </span>d) =&gt; {
+                            d.next().map(DeviceInner::<span class="macro-nonterminal">$HostVariant</span>).map(Device::from)
                         }
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DevicesInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">size_hint</span>(),
+                        DevicesInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.size_hint(),
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SupportedInputConfigs</span> {
-            <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident"><span class="kw">crate</span>::SupportedStreamConfigRange</span>;
+        <span class="kw">impl </span>Iterator <span class="kw">for </span>SupportedInputConfigs {
+            <span class="kw">type </span>Item = <span class="kw">crate</span>::SupportedStreamConfigRange;
 
-            <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">SupportedInputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">s</span>) =&gt; <span class="ident">s</span>.<span class="ident">next</span>(),
+                        SupportedInputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref mut </span>s) =&gt; s.next(),
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">SupportedInputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">size_hint</span>(),
-                    )*
-                }
-            }
-        }
-
-        <span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SupportedOutputConfigs</span> {
-            <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident"><span class="kw">crate</span>::SupportedStreamConfigRange</span>;
-
-            <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
-                    $(
-                        <span class="ident">SupportedOutputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">s</span>) =&gt; <span class="ident">s</span>.<span class="ident">next</span>(),
-                    )*
-                }
-            }
-
-            <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
-                    $(
-                        <span class="ident">SupportedOutputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">size_hint</span>(),
+                        SupportedInputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.size_hint(),
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident"><span class="kw">crate</span>::traits::DeviceTrait</span> <span class="kw">for</span> <span class="ident">Device</span> {
-            <span class="kw">type</span> <span class="ident">SupportedInputConfigs</span> = <span class="ident">SupportedInputConfigs</span>;
-            <span class="kw">type</span> <span class="ident">SupportedOutputConfigs</span> = <span class="ident">SupportedOutputConfigs</span>;
-            <span class="kw">type</span> <span class="ident">Stream</span> = <span class="ident">Stream</span>;
+        <span class="kw">impl </span>Iterator <span class="kw">for </span>SupportedOutputConfigs {
+            <span class="kw">type </span>Item = <span class="kw">crate</span>::SupportedStreamConfigRange;
 
-            <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>, <span class="ident"><span class="kw">crate</span>::DeviceNameError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">name</span>(),
+                        SupportedOutputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref mut </span>s) =&gt; s.next(),
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">supported_input_configs</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::SupportedInputConfigs</span>, <span class="ident"><span class="kw">crate</span>::SupportedStreamConfigsError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; {
-                            <span class="ident">d</span>.<span class="ident">supported_input_configs</span>()
-                                .<span class="ident">map</span>(<span class="ident">SupportedInputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>)
-                                .<span class="ident">map</span>(<span class="ident">SupportedInputConfigs</span>)
+                        SupportedOutputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.size_hint(),
+                    )*
+                }
+            }
+        }
+
+        <span class="kw">impl </span><span class="kw">crate</span>::traits::DeviceTrait <span class="kw">for </span>Device {
+            <span class="kw">type </span>SupportedInputConfigs = SupportedInputConfigs;
+            <span class="kw">type </span>SupportedOutputConfigs = SupportedOutputConfigs;
+            <span class="kw">type </span>Stream = Stream;
+
+            <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, <span class="kw">crate</span>::DeviceNameError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
+                    $(
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.name(),
+                    )*
+                }
+            }
+
+            <span class="kw">fn </span>supported_input_configs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::SupportedInputConfigs, <span class="kw">crate</span>::SupportedStreamConfigsError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
+                    $(
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; {
+                            d.supported_input_configs()
+                                .map(SupportedInputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>)
+                                .map(SupportedInputConfigs)
                         }
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">supported_output_configs</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::SupportedOutputConfigs</span>, <span class="ident"><span class="kw">crate</span>::SupportedStreamConfigsError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>supported_output_configs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::SupportedOutputConfigs, <span class="kw">crate</span>::SupportedStreamConfigsError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; {
-                            <span class="ident">d</span>.<span class="ident">supported_output_configs</span>()
-                                .<span class="ident">map</span>(<span class="ident">SupportedOutputConfigsInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>)
-                                .<span class="ident">map</span>(<span class="ident">SupportedOutputConfigs</span>)
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; {
+                            d.supported_output_configs()
+                                .map(SupportedOutputConfigsInner::<span class="macro-nonterminal">$HostVariant</span>)
+                                .map(SupportedOutputConfigs)
                         }
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">default_input_config</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="kw">crate</span>::SupportedStreamConfig</span>, <span class="ident"><span class="kw">crate</span>::DefaultStreamConfigError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>default_input_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">crate</span>::SupportedStreamConfig, <span class="kw">crate</span>::DefaultStreamConfigError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">default_input_config</span>(),
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.default_input_config(),
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">default_output_config</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="kw">crate</span>::SupportedStreamConfig</span>, <span class="ident"><span class="kw">crate</span>::DefaultStreamConfigError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>default_output_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">crate</span>::SupportedStreamConfig, <span class="kw">crate</span>::DefaultStreamConfigError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>.<span class="ident">default_output_config</span>(),
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d.default_output_config(),
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">build_input_stream_raw</span>&lt;<span class="ident">D</span>, <span class="ident">E</span>&gt;(
+            <span class="kw">fn </span>build_input_stream_raw&lt;D, E&gt;(
                 <span class="kw-2">&amp;</span><span class="self">self</span>,
-                <span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::StreamConfig</span>,
-                <span class="ident">sample_format</span>: <span class="ident"><span class="kw">crate</span>::SampleFormat</span>,
-                <span class="ident">data_callback</span>: <span class="ident">D</span>,
-                <span class="ident">error_callback</span>: <span class="ident">E</span>,
-            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::Stream</span>, <span class="ident"><span class="kw">crate</span>::BuildStreamError</span>&gt;
-            <span class="kw">where</span>
-                <span class="ident">D</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::Data</span>, <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::InputCallbackInfo</span>) + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
-                <span class="ident">E</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="kw">crate</span>::StreamError</span>) + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+                config: <span class="kw-2">&amp;</span><span class="kw">crate</span>::StreamConfig,
+                sample_format: <span class="kw">crate</span>::SampleFormat,
+                data_callback: D,
+                error_callback: E,
+            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Stream, <span class="kw">crate</span>::BuildStreamError&gt;
+            <span class="kw">where
+                </span>D: FnMut(<span class="kw-2">&amp;</span><span class="kw">crate</span>::Data, <span class="kw-2">&amp;</span><span class="kw">crate</span>::InputCallbackInfo) + Send + <span class="lifetime">&#39;static</span>,
+                E: FnMut(<span class="kw">crate</span>::StreamError) + Send + <span class="lifetime">&#39;static</span>,
             {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>
-                            .<span class="ident">build_input_stream_raw</span>(
-                                <span class="ident">config</span>,
-                                <span class="ident">sample_format</span>,
-                                <span class="ident">data_callback</span>,
-                                <span class="ident">error_callback</span>,
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d
+                            .build_input_stream_raw(
+                                config,
+                                sample_format,
+                                data_callback,
+                                error_callback,
                             )
-                            .<span class="ident">map</span>(<span class="ident">StreamInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>)
-                            .<span class="ident">map</span>(<span class="ident">Stream::from</span>),
+                            .map(StreamInner::<span class="macro-nonterminal">$HostVariant</span>)
+                            .map(Stream::from),
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">build_output_stream_raw</span>&lt;<span class="ident">D</span>, <span class="ident">E</span>&gt;(
+            <span class="kw">fn </span>build_output_stream_raw&lt;D, E&gt;(
                 <span class="kw-2">&amp;</span><span class="self">self</span>,
-                <span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::StreamConfig</span>,
-                <span class="ident">sample_format</span>: <span class="ident"><span class="kw">crate</span>::SampleFormat</span>,
-                <span class="ident">data_callback</span>: <span class="ident">D</span>,
-                <span class="ident">error_callback</span>: <span class="ident">E</span>,
-            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::Stream</span>, <span class="ident"><span class="kw">crate</span>::BuildStreamError</span>&gt;
-            <span class="kw">where</span>
-                <span class="ident">D</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident"><span class="kw">crate</span>::Data</span>, <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::OutputCallbackInfo</span>) + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
-                <span class="ident">E</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="kw">crate</span>::StreamError</span>) + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+                config: <span class="kw-2">&amp;</span><span class="kw">crate</span>::StreamConfig,
+                sample_format: <span class="kw">crate</span>::SampleFormat,
+                data_callback: D,
+                error_callback: E,
+            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Stream, <span class="kw">crate</span>::BuildStreamError&gt;
+            <span class="kw">where
+                </span>D: FnMut(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::Data, <span class="kw-2">&amp;</span><span class="kw">crate</span>::OutputCallbackInfo) + Send + <span class="lifetime">&#39;static</span>,
+                E: FnMut(<span class="kw">crate</span>::StreamError) + Send + <span class="lifetime">&#39;static</span>,
             {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) =&gt; <span class="ident">d</span>
-                            .<span class="ident">build_output_stream_raw</span>(
-                                <span class="ident">config</span>,
-                                <span class="ident">sample_format</span>,
-                                <span class="ident">data_callback</span>,
-                                <span class="ident">error_callback</span>,
+                        DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>d) =&gt; d
+                            .build_output_stream_raw(
+                                config,
+                                sample_format,
+                                data_callback,
+                                error_callback,
                             )
-                            .<span class="ident">map</span>(<span class="ident">StreamInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>)
-                            .<span class="ident">map</span>(<span class="ident">Stream::from</span>),
+                            .map(StreamInner::<span class="macro-nonterminal">$HostVariant</span>)
+                            .map(Stream::from),
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident"><span class="kw">crate</span>::traits::HostTrait</span> <span class="kw">for</span> <span class="ident">Host</span> {
-            <span class="kw">type</span> <span class="ident">Devices</span> = <span class="ident">Devices</span>;
-            <span class="kw">type</span> <span class="ident">Device</span> = <span class="ident">Device</span>;
+        <span class="kw">impl </span><span class="kw">crate</span>::traits::HostTrait <span class="kw">for </span>Host {
+            <span class="kw">type </span>Devices = Devices;
+            <span class="kw">type </span>Device = Device;
 
-            <span class="kw">fn</span> <span class="ident">is_available</span>() -&gt; <span class="ident">bool</span> {
-                $( <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host::is_available</span>() ||)* <span class="bool-val">false</span>
-            }
+            <span class="kw">fn </span>is_available() -&gt; bool {
+                $( <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host::is_available</span>() ||)* <span class="bool-val">false
+            </span>}
 
-            <span class="kw">fn</span> <span class="ident">devices</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::Devices</span>, <span class="ident"><span class="kw">crate</span>::DevicesError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>devices(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Devices, <span class="kw">crate</span>::DevicesError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">h</span>) =&gt; {
-                            <span class="ident">h</span>.<span class="ident">devices</span>().<span class="ident">map</span>(<span class="ident">DevicesInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>).<span class="ident">map</span>(<span class="ident">Devices::from</span>)
+                        HostInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>h) =&gt; {
+                            h.devices().map(DevicesInner::<span class="macro-nonterminal">$HostVariant</span>).map(Devices::from)
                         }
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">default_input_device</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Device</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>default_input_device(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Device&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">h</span>) =&gt; {
-                            <span class="ident">h</span>.<span class="ident">default_input_device</span>().<span class="ident">map</span>(<span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>).<span class="ident">map</span>(<span class="ident">Device::from</span>)
+                        HostInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>h) =&gt; {
+                            h.default_input_device().map(DeviceInner::<span class="macro-nonterminal">$HostVariant</span>).map(Device::from)
                         }
                     )*
                 }
             }
 
-            <span class="kw">fn</span> <span class="ident">default_output_device</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Device</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="kw">fn </span>default_output_device(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Device&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
                     $(
-                        <span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">h</span>) =&gt; {
-                            <span class="ident">h</span>.<span class="ident">default_output_device</span>().<span class="ident">map</span>(<span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>).<span class="ident">map</span>(<span class="ident">Device::from</span>)
-                        }
-                    )*
-                }
-            }
-        }
-
-        <span class="kw">impl</span> <span class="ident"><span class="kw">crate</span>::traits::StreamTrait</span> <span class="kw">for</span> <span class="ident">Stream</span> {
-            <span class="kw">fn</span> <span class="ident">play</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident"><span class="kw">crate</span>::PlayStreamError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
-                    $(
-                        <span class="ident">StreamInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">s</span>) =&gt; {
-                            <span class="ident">s</span>.<span class="ident">play</span>()
-                        }
-                    )*
-                }
-            }
-
-            <span class="kw">fn</span> <span class="ident">pause</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident"><span class="kw">crate</span>::PauseStreamError</span>&gt; {
-                <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
-                    $(
-                        <span class="ident">StreamInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="kw-2">ref</span> <span class="ident">s</span>) =&gt; {
-                            <span class="ident">s</span>.<span class="ident">pause</span>()
+                        HostInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>h) =&gt; {
+                            h.default_output_device().map(DeviceInner::<span class="macro-nonterminal">$HostVariant</span>).map(Device::from)
                         }
                     )*
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">DeviceInner</span>&gt; <span class="kw">for</span> <span class="ident">Device</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">d</span>: <span class="ident">DeviceInner</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">Device</span>(<span class="ident">d</span>)
+        <span class="kw">impl </span><span class="kw">crate</span>::traits::StreamTrait <span class="kw">for </span>Stream {
+            <span class="kw">fn </span>play(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::PlayStreamError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
+                    $(
+                        StreamInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>s) =&gt; {
+                            s.play()
+                        }
+                    )*
+                }
+            }
+
+            <span class="kw">fn </span>pause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::PauseStreamError&gt; {
+                <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
+                    $(
+                        StreamInner::<span class="macro-nonterminal">$HostVariant</span>(<span class="kw-2">ref </span>s) =&gt; {
+                            s.pause()
+                        }
+                    )*
+                }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">DevicesInner</span>&gt; <span class="kw">for</span> <span class="ident">Devices</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">d</span>: <span class="ident">DevicesInner</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">Devices</span>(<span class="ident">d</span>)
+        <span class="kw">impl </span>From&lt;DeviceInner&gt; <span class="kw">for </span>Device {
+            <span class="kw">fn </span>from(d: DeviceInner) -&gt; <span class="self">Self </span>{
+                Device(d)
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">HostInner</span>&gt; <span class="kw">for</span> <span class="ident">Host</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">h</span>: <span class="ident">HostInner</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">Host</span>(<span class="ident">h</span>)
+        <span class="kw">impl </span>From&lt;DevicesInner&gt; <span class="kw">for </span>Devices {
+            <span class="kw">fn </span>from(d: DevicesInner) -&gt; <span class="self">Self </span>{
+                Devices(d)
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">StreamInner</span>&gt; <span class="kw">for</span> <span class="ident">Stream</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">s</span>: <span class="ident">StreamInner</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">Stream</span>(<span class="ident">s</span>, <span class="ident">Default::default</span>())
+        <span class="kw">impl </span>From&lt;HostInner&gt; <span class="kw">for </span>Host {
+            <span class="kw">fn </span>from(h: HostInner) -&gt; <span class="self">Self </span>{
+                Host(h)
+            }
+        }
+
+        <span class="kw">impl </span>From&lt;StreamInner&gt; <span class="kw">for </span>Stream {
+            <span class="kw">fn </span>from(s: StreamInner) -&gt; <span class="self">Self </span>{
+                Stream(s, Default::default())
             }
         }
 
         $(
-            <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Device</span>&gt; <span class="kw">for</span> <span class="ident">Device</span> {
-                <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">h</span>: <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Device</span>) -&gt; <span class="self">Self</span> {
-                    <span class="ident">DeviceInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident">h</span>).<span class="ident">into</span>()
+            <span class="kw">impl </span>From&lt;<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Device</span>&gt; <span class="kw">for </span>Device {
+                <span class="kw">fn </span>from(h: <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Device</span>) -&gt; <span class="self">Self </span>{
+                    DeviceInner::<span class="macro-nonterminal">$HostVariant</span>(h).into()
                 }
             }
 
-            <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Devices</span>&gt; <span class="kw">for</span> <span class="ident">Devices</span> {
-                <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">h</span>: <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Devices</span>) -&gt; <span class="self">Self</span> {
-                    <span class="ident">DevicesInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident">h</span>).<span class="ident">into</span>()
+            <span class="kw">impl </span>From&lt;<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Devices</span>&gt; <span class="kw">for </span>Devices {
+                <span class="kw">fn </span>from(h: <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Devices</span>) -&gt; <span class="self">Self </span>{
+                    DevicesInner::<span class="macro-nonterminal">$HostVariant</span>(h).into()
                 }
             }
 
-            <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host</span>&gt; <span class="kw">for</span> <span class="ident">Host</span> {
-                <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">h</span>: <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host</span>) -&gt; <span class="self">Self</span> {
-                    <span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident">h</span>).<span class="ident">into</span>()
+            <span class="kw">impl </span>From&lt;<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host</span>&gt; <span class="kw">for </span>Host {
+                <span class="kw">fn </span>from(h: <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host</span>) -&gt; <span class="self">Self </span>{
+                    HostInner::<span class="macro-nonterminal">$HostVariant</span>(h).into()
                 }
             }
 
-            <span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Stream</span>&gt; <span class="kw">for</span> <span class="ident">Stream</span> {
-                <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">h</span>: <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Stream</span>) -&gt; <span class="self">Self</span> {
-                    <span class="ident">StreamInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>(<span class="ident">h</span>).<span class="ident">into</span>()
+            <span class="kw">impl </span>From&lt;<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Stream</span>&gt; <span class="kw">for </span>Stream {
+                <span class="kw">fn </span>from(h: <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Stream</span>) -&gt; <span class="self">Self </span>{
+                    StreamInner::<span class="macro-nonterminal">$HostVariant</span>(h).into()
                 }
             }
         )*
 
-        <span class="doccomment">/// Produces a list of hosts that are currently available on the system.</span>
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">available_hosts</span>() -&gt; <span class="ident">Vec</span>&lt;<span class="ident">HostId</span>&gt; {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">host_ids</span> = <span class="macro">vec!</span>[];
+        <span class="doccomment">/// Produces a list of hosts that are currently available on the system.
+        </span><span class="kw">pub fn </span>available_hosts() -&gt; Vec&lt;HostId&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>host_ids = <span class="macro">vec!</span>[];
             $(
-                <span class="kw">if</span> &lt;<span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host</span> <span class="kw">as</span> <span class="ident"><span class="kw">crate</span>::traits::HostTrait</span>&gt;<span class="ident">::is_available</span>() {
-                    <span class="ident">host_ids</span>.<span class="ident">push</span>(<span class="ident">HostId</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>);
+                <span class="kw">if </span>&lt;<span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host </span><span class="kw">as </span><span class="kw">crate</span>::traits::HostTrait&gt;::is_available() {
+                    host_ids.push(HostId::<span class="macro-nonterminal">$HostVariant</span>);
                 }
             )*
-            <span class="ident">host_ids</span>
+            host_ids
         }
 
-        <span class="doccomment">/// Given a unique host identifier, initialise and produce the host if it is available.</span>
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">host_from_id</span>(<span class="ident">id</span>: <span class="ident">HostId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Host</span>, <span class="ident"><span class="kw">crate</span>::HostUnavailable</span>&gt; {
-            <span class="kw">match</span> <span class="ident">id</span> {
+        <span class="doccomment">/// Given a unique host identifier, initialise and produce the host if it is available.
+        </span><span class="kw">pub fn </span>host_from_id(id: HostId) -&gt; <span class="prelude-ty">Result</span>&lt;Host, <span class="kw">crate</span>::HostUnavailable&gt; {
+            <span class="kw">match </span>id {
                 $(
-                    <span class="ident">HostId</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span> =&gt; {
-                        <span class="ident"><span class="kw">crate</span>::host</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">host_mod::Host::new</span>()
-                            .<span class="ident">map</span>(<span class="ident">HostInner</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">HostVariant</span>)
-                            .<span class="ident">map</span>(<span class="ident">Host::from</span>)
+                    HostId::<span class="macro-nonterminal">$HostVariant </span>=&gt; {
+                        <span class="kw">crate</span>::host::<span class="macro-nonterminal">$host_mod::Host::new</span>()
+                            .map(HostInner::<span class="macro-nonterminal">$HostVariant</span>)
+                            .map(Host::from)
                     }
                 )*
             }
@@ -1064,177 +1064,177 @@
     };
 }
 
-<span class="comment">// TODO: Add pulseaudio and jack here eventually.</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;linux&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>))]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::alsa</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">AlsaDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">AlsaDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">AlsaHost</span>, <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">AlsaStream</span>,
-        <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">AlsaSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">AlsaSupportedOutputConfigs</span>,
+<span class="comment">// TODO: Add pulseaudio and jack here eventually.
+</span><span class="attribute">#[cfg(any(target_os = <span class="string">&quot;linux&quot;</span>, target_os = <span class="string">&quot;dragonfly&quot;</span>, target_os = <span class="string">&quot;freebsd&quot;</span>))]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::alsa::{
+        Device <span class="kw">as </span>AlsaDevice, Devices <span class="kw">as </span>AlsaDevices, Host <span class="kw">as </span>AlsaHost, Stream <span class="kw">as </span>AlsaStream,
+        SupportedInputConfigs <span class="kw">as </span>AlsaSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>AlsaSupportedOutputConfigs,
     };
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;jack&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::jack</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">JackDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">JackDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">JackHost</span>, <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">JackStream</span>,
-        <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">JackSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">JackSupportedOutputConfigs</span>,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;jack&quot;</span>)]</span>
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::jack::{
+        Device <span class="kw">as </span>JackDevice, Devices <span class="kw">as </span>JackDevices, Host <span class="kw">as </span>JackHost, Stream <span class="kw">as </span>JackStream,
+        SupportedInputConfigs <span class="kw">as </span>JackSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>JackSupportedOutputConfigs,
     };
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;jack&quot;</span>)]</span>
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Jack</span> <span class="ident">jack</span> <span class="string">&quot;JACK&quot;</span>, <span class="ident">Alsa</span> <span class="ident">alsa</span> <span class="string">&quot;ALSA&quot;</span>);
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;jack&quot;</span>)]</span>
+    <span class="macro">impl_platform_host!</span>(Jack jack <span class="string">&quot;JACK&quot;</span>, Alsa alsa <span class="string">&quot;ALSA&quot;</span>);
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;jack&quot;</span>))]</span>
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Alsa</span> <span class="ident">alsa</span> <span class="string">&quot;ALSA&quot;</span>);
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;jack&quot;</span>))]</span>
+    <span class="macro">impl_platform_host!</span>(Alsa alsa <span class="string">&quot;ALSA&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">AlsaHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        AlsaHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>, <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>))]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::coreaudio</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">CoreAudioDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">CoreAudioDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">CoreAudioHost</span>,
-        <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">CoreAudioStream</span>, <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">CoreAudioSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">CoreAudioSupportedOutputConfigs</span>,
+<span class="attribute">#[cfg(any(target_os = <span class="string">&quot;macos&quot;</span>, target_os = <span class="string">&quot;ios&quot;</span>))]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::coreaudio::{
+        Device <span class="kw">as </span>CoreAudioDevice, Devices <span class="kw">as </span>CoreAudioDevices, Host <span class="kw">as </span>CoreAudioHost,
+        Stream <span class="kw">as </span>CoreAudioStream, SupportedInputConfigs <span class="kw">as </span>CoreAudioSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>CoreAudioSupportedOutputConfigs,
     };
 
-    <span class="macro">impl_platform_host!</span>(<span class="ident">CoreAudio</span> <span class="ident">coreaudio</span> <span class="string">&quot;CoreAudio&quot;</span>);
+    <span class="macro">impl_platform_host!</span>(CoreAudio coreaudio <span class="string">&quot;CoreAudio&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">CoreAudioHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        CoreAudioHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;emscripten&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::emscripten</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">EmscriptenDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">EmscriptenDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">EmscriptenHost</span>,
-        <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">EmscriptenStream</span>, <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">EmscriptenSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">EmscriptenSupportedOutputConfigs</span>,
+<span class="attribute">#[cfg(target_os = <span class="string">&quot;emscripten&quot;</span>)]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::emscripten::{
+        Device <span class="kw">as </span>EmscriptenDevice, Devices <span class="kw">as </span>EmscriptenDevices, Host <span class="kw">as </span>EmscriptenHost,
+        Stream <span class="kw">as </span>EmscriptenStream, SupportedInputConfigs <span class="kw">as </span>EmscriptenSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>EmscriptenSupportedOutputConfigs,
     };
 
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Emscripten</span> <span class="ident">emscripten</span> <span class="string">&quot;Emscripten&quot;</span>);
+    <span class="macro">impl_platform_host!</span>(Emscripten emscripten <span class="string">&quot;Emscripten&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">EmscriptenHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        EmscriptenHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">target_arch</span> = <span class="string">&quot;wasm32&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;wasm-bindgen&quot;</span>))]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::webaudio</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">WebAudioDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">WebAudioDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">WebAudioHost</span>,
-        <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">WebAudioStream</span>, <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">WebAudioSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">WebAudioSupportedOutputConfigs</span>,
+<span class="attribute">#[cfg(all(target_arch = <span class="string">&quot;wasm32&quot;</span>, feature = <span class="string">&quot;wasm-bindgen&quot;</span>))]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::webaudio::{
+        Device <span class="kw">as </span>WebAudioDevice, Devices <span class="kw">as </span>WebAudioDevices, Host <span class="kw">as </span>WebAudioHost,
+        Stream <span class="kw">as </span>WebAudioStream, SupportedInputConfigs <span class="kw">as </span>WebAudioSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>WebAudioSupportedOutputConfigs,
     };
 
-    <span class="macro">impl_platform_host!</span>(<span class="ident">WebAudio</span> <span class="ident">webaudio</span> <span class="string">&quot;WebAudio&quot;</span>);
+    <span class="macro">impl_platform_host!</span>(WebAudio webaudio <span class="string">&quot;WebAudio&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">WebAudioHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        WebAudioHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">windows</span>)]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;asio&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::asio</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">AsioDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">AsioDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">AsioHost</span>, <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">AsioStream</span>,
-        <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">AsioSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">AsioSupportedOutputConfigs</span>,
+<span class="attribute">#[cfg(windows)]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;asio&quot;</span>)]</span>
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::asio::{
+        Device <span class="kw">as </span>AsioDevice, Devices <span class="kw">as </span>AsioDevices, Host <span class="kw">as </span>AsioHost, Stream <span class="kw">as </span>AsioStream,
+        SupportedInputConfigs <span class="kw">as </span>AsioSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>AsioSupportedOutputConfigs,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::wasapi</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">WasapiDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">WasapiDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">WasapiHost</span>,
-        <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">WasapiStream</span>, <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">WasapiSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">WasapiSupportedOutputConfigs</span>,
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::wasapi::{
+        Device <span class="kw">as </span>WasapiDevice, Devices <span class="kw">as </span>WasapiDevices, Host <span class="kw">as </span>WasapiHost,
+        Stream <span class="kw">as </span>WasapiStream, SupportedInputConfigs <span class="kw">as </span>WasapiSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>WasapiSupportedOutputConfigs,
     };
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;asio&quot;</span>)]</span>
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Asio</span> <span class="ident">asio</span> <span class="string">&quot;ASIO&quot;</span>, <span class="ident">Wasapi</span> <span class="ident">wasapi</span> <span class="string">&quot;WASAPI&quot;</span>);
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;asio&quot;</span>)]</span>
+    <span class="macro">impl_platform_host!</span>(Asio asio <span class="string">&quot;ASIO&quot;</span>, Wasapi wasapi <span class="string">&quot;WASAPI&quot;</span>);
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;asio&quot;</span>))]</span>
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Wasapi</span> <span class="ident">wasapi</span> <span class="string">&quot;WASAPI&quot;</span>);
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;asio&quot;</span>))]</span>
+    <span class="macro">impl_platform_host!</span>(Wasapi wasapi <span class="string">&quot;WASAPI&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">WasapiHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        WasapiHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::oboe</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">OboeDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">OboeDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">OboeHost</span>, <span class="ident">Stream</span> <span class="kw">as</span> <span class="ident">OboeStream</span>,
-        <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">OboeSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">OboeSupportedOutputConfigs</span>,
+<span class="attribute">#[cfg(target_os = <span class="string">&quot;android&quot;</span>)]</span>
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::oboe::{
+        Device <span class="kw">as </span>OboeDevice, Devices <span class="kw">as </span>OboeDevices, Host <span class="kw">as </span>OboeHost, Stream <span class="kw">as </span>OboeStream,
+        SupportedInputConfigs <span class="kw">as </span>OboeSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>OboeSupportedOutputConfigs,
     };
 
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Oboe</span> <span class="ident">oboe</span> <span class="string">&quot;Oboe&quot;</span>);
+    <span class="macro">impl_platform_host!</span>(Oboe oboe <span class="string">&quot;Oboe&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">OboeHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        OboeHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">any</span>(
-    <span class="ident">windows</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;linux&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;dragonfly&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;freebsd&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;macos&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;ios&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;emscripten&quot;</span>,
-    <span class="ident">target_os</span> = <span class="string">&quot;android&quot;</span>,
-    <span class="ident">all</span>(<span class="ident">target_arch</span> = <span class="string">&quot;wasm32&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;wasm-bindgen&quot;</span>),
+<span class="attribute">#[cfg(not(any(
+    windows,
+    target_os = <span class="string">&quot;linux&quot;</span>,
+    target_os = <span class="string">&quot;dragonfly&quot;</span>,
+    target_os = <span class="string">&quot;freebsd&quot;</span>,
+    target_os = <span class="string">&quot;macos&quot;</span>,
+    target_os = <span class="string">&quot;ios&quot;</span>,
+    target_os = <span class="string">&quot;emscripten&quot;</span>,
+    target_os = <span class="string">&quot;android&quot;</span>,
+    all(target_arch = <span class="string">&quot;wasm32&quot;</span>, feature = <span class="string">&quot;wasm-bindgen&quot;</span>),
 )))]</span>
-<span class="kw">mod</span> <span class="ident">platform_impl</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::host::null</span>::{
-        <span class="ident">Device</span> <span class="kw">as</span> <span class="ident">NullDevice</span>, <span class="ident">Devices</span> <span class="kw">as</span> <span class="ident">NullDevices</span>, <span class="ident">Host</span> <span class="kw">as</span> <span class="ident">NullHost</span>,
-        <span class="ident">SupportedInputConfigs</span> <span class="kw">as</span> <span class="ident">NullSupportedInputConfigs</span>,
-        <span class="ident">SupportedOutputConfigs</span> <span class="kw">as</span> <span class="ident">NullSupportedOutputConfigs</span>,
+<span class="kw">mod </span>platform_impl {
+    <span class="kw">pub use </span><span class="kw">crate</span>::host::null::{
+        Device <span class="kw">as </span>NullDevice, Devices <span class="kw">as </span>NullDevices, Host <span class="kw">as </span>NullHost,
+        SupportedInputConfigs <span class="kw">as </span>NullSupportedInputConfigs,
+        SupportedOutputConfigs <span class="kw">as </span>NullSupportedOutputConfigs,
     };
 
-    <span class="macro">impl_platform_host!</span>(<span class="ident">Null</span> <span class="ident">null</span> <span class="string">&quot;Null&quot;</span>);
+    <span class="macro">impl_platform_host!</span>(Null null <span class="string">&quot;Null&quot;</span>);
 
-    <span class="doccomment">/// The default host for the current compilation target platform.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">default_host</span>() -&gt; <span class="ident">Host</span> {
-        <span class="ident">NullHost::new</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;the default host should always be available&quot;</span>)
-            .<span class="ident">into</span>()
+    <span class="doccomment">/// The default host for the current compilation target platform.
+    </span><span class="kw">pub fn </span>default_host() -&gt; Host {
+        NullHost::new()
+            .expect(<span class="string">&quot;the default host should always be available&quot;</span>)
+            .into()
     }
 }
 
-<span class="comment">// The following zero-sized types are for applying Send/Sync restrictions to ensure</span>
-<span class="comment">// consistent behaviour across different platforms. These verbosely named types are used</span>
-<span class="comment">// (rather than using the markers directly) in the hope of making the compile errors</span>
-<span class="comment">// slightly more helpful.</span>
-<span class="comment">//</span>
-<span class="comment">// TODO: Remove these in favour of using negative trait bounds if they stabilise.</span>
+<span class="comment">// The following zero-sized types are for applying Send/Sync restrictions to ensure
+// consistent behaviour across different platforms. These verbosely named types are used
+// (rather than using the markers directly) in the hope of making the compile errors
+// slightly more helpful.
+//
+// TODO: Remove these in favour of using negative trait bounds if they stabilise.
 
-<span class="comment">// A marker used to remove the `Send` and `Sync` traits.</span>
-<span class="kw">struct</span> <span class="ident">NotSendSyncAcrossAllPlatforms</span>(<span class="ident">std::marker::PhantomData</span>&lt;<span class="kw-2">*mut</span> ()&gt;);
+// A marker used to remove the `Send` and `Sync` traits.
+</span><span class="kw">struct </span>NotSendSyncAcrossAllPlatforms(std::marker::PhantomData&lt;<span class="kw-2">*mut </span>()&gt;);
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">NotSendSyncAcrossAllPlatforms</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">NotSendSyncAcrossAllPlatforms</span>(<span class="ident">std::marker::PhantomData</span>)
+<span class="kw">impl </span>Default <span class="kw">for </span>NotSendSyncAcrossAllPlatforms {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        NotSendSyncAcrossAllPlatforms(std::marker::PhantomData)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="cpal" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="cpal" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

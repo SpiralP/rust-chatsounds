@@ -42,37 +42,37 @@ codebase.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>Pass an input value and receive result of computation:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::task;
 
-<span class="comment">// Initial input</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = <span class="string">&quot;Hello, &quot;</span>.<span class="ident">to_string</span>();
-<span class="kw">let</span> <span class="ident">res</span> = <span class="ident">task::spawn_blocking</span>(<span class="kw">move</span> || {
-    <span class="comment">// Stand-in for compute-heavy work or using synchronous APIs</span>
-    <span class="ident">v</span>.<span class="ident">push_str</span>(<span class="string">&quot;world&quot;</span>);
-    <span class="comment">// Pass ownership of the value back to the asynchronous context</span>
-    <span class="ident">v</span>
+<span class="comment">// Initial input
+</span><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="string">&quot;Hello, &quot;</span>.to_string();
+<span class="kw">let </span>res = task::spawn_blocking(<span class="kw">move </span>|| {
+    <span class="comment">// Stand-in for compute-heavy work or using synchronous APIs
+    </span>v.push_str(<span class="string">&quot;world&quot;</span>);
+    <span class="comment">// Pass ownership of the value back to the asynchronous context
+    </span>v
 }).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="comment">// `res` is the value returned from the thread</span>
-<span class="macro">assert_eq!</span>(<span class="ident">res</span>.<span class="ident">as_str</span>(), <span class="string">&quot;Hello, world&quot;</span>);</code></pre></div>
+<span class="comment">// `res` is the value returned from the thread
+</span><span class="macro">assert_eq!</span>(res.as_str(), <span class="string">&quot;Hello, world&quot;</span>);</code></pre></div>
 <p>Use a channel:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::task;
+<span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">2</span>);
-<span class="kw">let</span> <span class="ident">start</span> = <span class="number">5</span>;
-<span class="kw">let</span> <span class="ident">worker</span> = <span class="ident">task::spawn_blocking</span>(<span class="kw">move</span> || {
-    <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-        <span class="comment">// Stand in for complex computation</span>
-        <span class="ident">tx</span>.<span class="ident">blocking_send</span>(<span class="ident">start</span> + <span class="ident">x</span>).<span class="ident">unwrap</span>();
+<span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">2</span>);
+<span class="kw">let </span>start = <span class="number">5</span>;
+<span class="kw">let </span>worker = task::spawn_blocking(<span class="kw">move </span>|| {
+    <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+        <span class="comment">// Stand in for complex computation
+        </span>tx.blocking_send(start + x).unwrap();
     }
 });
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc</span> = <span class="number">0</span>;
-<span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">v</span>) = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-    <span class="ident">acc</span> += <span class="ident">v</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>acc = <span class="number">0</span>;
+<span class="kw">while let </span><span class="prelude-val">Some</span>(v) = rx.recv().<span class="kw">await </span>{
+    acc += v;
 }
-<span class="macro">assert_eq!</span>(<span class="ident">acc</span>, <span class="number">95</span>);
-<span class="ident">worker</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();</code></pre></div>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+<span class="macro">assert_eq!</span>(acc, <span class="number">95</span>);
+worker.<span class="kw">await</span>.unwrap();</code></pre></div>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

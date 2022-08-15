@@ -10,48 +10,48 @@ conveniently extract out the value at the end.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>A simple example</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures</span>::{
-    <span class="ident">pin_mut</span>,
-    <span class="ident">future::Either</span>,
-    <span class="ident">future::<span class="self">self</span></span>,
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>futures::{
+    pin_mut,
+    future::Either,
+    future::<span class="self">self</span>,
 };
 
-<span class="comment">// These two futures have different types even though their outputs have the same type.</span>
-<span class="kw">let</span> <span class="ident">future1</span> = <span class="kw">async</span> {
-    <span class="ident">future::pending</span>::&lt;()&gt;().<span class="kw">await</span>; <span class="comment">// will never finish</span>
-    <span class="number">1</span>
-};
-<span class="kw">let</span> <span class="ident">future2</span> = <span class="kw">async</span> {
-    <span class="ident">future::ready</span>(<span class="number">2</span>).<span class="kw">await</span>
-};
+<span class="comment">// These two futures have different types even though their outputs have the same type.
+</span><span class="kw">let </span>future1 = <span class="kw">async </span>{
+    future::pending::&lt;()&gt;().<span class="kw">await</span>; <span class="comment">// will never finish
+    </span><span class="number">1
+</span>};
+<span class="kw">let </span>future2 = <span class="kw">async </span>{
+    future::ready(<span class="number">2</span>).<span class="kw">await
+</span>};
 
-<span class="comment">// &#39;select&#39; requires Future + Unpin bounds</span>
-<span class="macro">pin_mut!</span>(<span class="ident">future1</span>);
-<span class="macro">pin_mut!</span>(<span class="ident">future2</span>);
+<span class="comment">// &#39;select&#39; requires Future + Unpin bounds
+</span><span class="macro">pin_mut!</span>(future1);
+<span class="macro">pin_mut!</span>(future2);
 
-<span class="kw">let</span> <span class="ident">value</span> = <span class="kw">match</span> <span class="ident">future::select</span>(<span class="ident">future1</span>, <span class="ident">future2</span>).<span class="kw">await</span> {
-    <span class="ident">Either::Left</span>((<span class="ident">value1</span>, <span class="kw">_</span>)) =&gt; <span class="ident">value1</span>,  <span class="comment">// `value1` is resolved from `future1`</span>
-                                          <span class="comment">// `_` represents `future2`</span>
-    <span class="ident">Either::Right</span>((<span class="ident">value2</span>, <span class="kw">_</span>)) =&gt; <span class="ident">value2</span>, <span class="comment">// `value2` is resolved from `future2`</span>
-                                          <span class="comment">// `_` represents `future1`</span>
-};
+<span class="kw">let </span>value = <span class="kw">match </span>future::select(future1, future2).<span class="kw">await </span>{
+    Either::Left((value1, <span class="kw">_</span>)) =&gt; value1,  <span class="comment">// `value1` is resolved from `future1`
+                                          // `_` represents `future2`
+    </span>Either::Right((value2, <span class="kw">_</span>)) =&gt; value2, <span class="comment">// `value2` is resolved from `future2`
+                                          // `_` represents `future1`
+</span>};
 
-<span class="macro">assert!</span>(<span class="ident">value</span> == <span class="number">2</span>);</code></pre></div>
+<span class="macro">assert!</span>(value == <span class="number">2</span>);</code></pre></div>
 <p>A more complex example</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures::future</span>::{<span class="self">self</span>, <span class="ident">Either</span>, <span class="ident">Future</span>, <span class="ident">FutureExt</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>futures::future::{<span class="self">self</span>, Either, Future, FutureExt};
 
-<span class="comment">// A poor-man&#39;s join implemented on top of select</span>
+<span class="comment">// A poor-man&#39;s join implemented on top of select
 
-<span class="kw">fn</span> <span class="ident">join</span>&lt;<span class="ident">A</span>, <span class="ident">B</span>&gt;(<span class="ident">a</span>: <span class="ident">A</span>, <span class="ident">b</span>: <span class="ident">B</span>) -&gt; <span class="kw">impl</span> <span class="ident">Future</span>&lt;<span class="ident">Output</span>=(<span class="ident">A::Output</span>, <span class="ident">B::Output</span>)&gt;
-    <span class="kw">where</span> <span class="ident">A</span>: <span class="ident">Future</span> + <span class="ident">Unpin</span>,
-          <span class="ident">B</span>: <span class="ident">Future</span> + <span class="ident">Unpin</span>,
+</span><span class="kw">fn </span>join&lt;A, B&gt;(a: A, b: B) -&gt; <span class="kw">impl </span>Future&lt;Output=(A::Output, B::Output)&gt;
+    <span class="kw">where </span>A: Future + Unpin,
+          B: Future + Unpin,
 {
-    <span class="ident">future::select</span>(<span class="ident">a</span>, <span class="ident">b</span>).<span class="ident">then</span>(|<span class="ident">either</span>| {
-        <span class="kw">match</span> <span class="ident">either</span> {
-            <span class="ident">Either::Left</span>((<span class="ident">x</span>, <span class="ident">b</span>)) =&gt; <span class="ident">b</span>.<span class="ident">map</span>(<span class="kw">move</span> |<span class="ident">y</span>| (<span class="ident">x</span>, <span class="ident">y</span>)).<span class="ident">left_future</span>(),
-            <span class="ident">Either::Right</span>((<span class="ident">y</span>, <span class="ident">a</span>)) =&gt; <span class="ident">a</span>.<span class="ident">map</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="ident">x</span>, <span class="ident">y</span>)).<span class="ident">right_future</span>(),
+    future::select(a, b).then(|either| {
+        <span class="kw">match </span>either {
+            Either::Left((x, b)) =&gt; b.map(<span class="kw">move </span>|y| (x, y)).left_future(),
+            Either::Right((y, a)) =&gt; a.map(<span class="kw">move </span>|x| (x, y)).right_future(),
         }
     })
 }</code></pre></div>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

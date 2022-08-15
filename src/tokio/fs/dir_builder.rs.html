@@ -135,142 +135,142 @@
 <span id="135">135</span>
 <span id="136">136</span>
 <span id="137">137</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fs::asyncify</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::fs::asyncify;
 
-<span class="kw">use</span> <span class="ident">std::io</span>;
-<span class="kw">use</span> <span class="ident">std::path::Path</span>;
+<span class="kw">use </span>std::io;
+<span class="kw">use </span>std::path::Path;
 
-<span class="doccomment">/// A builder for creating directories in various manners.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is a specialized version of [`std::fs::DirBuilder`] for usage on</span>
-<span class="doccomment">/// the Tokio runtime.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [std::fs::DirBuilder]: std::fs::DirBuilder</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DirBuilder</span> {
-    <span class="doccomment">/// Indicates whether to create parent directories if they are missing.</span>
-    <span class="ident">recursive</span>: <span class="ident">bool</span>,
+<span class="doccomment">/// A builder for creating directories in various manners.
+///
+/// This is a specialized version of [`std::fs::DirBuilder`] for usage on
+/// the Tokio runtime.
+///
+/// [std::fs::DirBuilder]: std::fs::DirBuilder
+</span><span class="attribute">#[derive(Debug, Default)]</span>
+<span class="kw">pub struct </span>DirBuilder {
+    <span class="doccomment">/// Indicates whether to create parent directories if they are missing.
+    </span>recursive: bool,
 
-    <span class="doccomment">/// Sets the Unix mode for newly created directories.</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">unix</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">mode</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt;,
+    <span class="doccomment">/// Sets the Unix mode for newly created directories.
+    </span><span class="attribute">#[cfg(unix)]</span>
+    <span class="kw">pub</span>(<span class="kw">super</span>) mode: <span class="prelude-ty">Option</span>&lt;u32&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">DirBuilder</span> {
-    <span class="doccomment">/// Creates a new set of options with default mode/security settings for all</span>
-    <span class="doccomment">/// platforms and also non-recursive.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is an async version of [`std::fs::DirBuilder::new`][std]</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [std]: std::fs::DirBuilder::new</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```no_run</span>
-    <span class="doccomment">/// use tokio::fs::DirBuilder;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let builder = DirBuilder::new();</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">Default::default</span>()
+<span class="kw">impl </span>DirBuilder {
+    <span class="doccomment">/// Creates a new set of options with default mode/security settings for all
+    /// platforms and also non-recursive.
+    ///
+    /// This is an async version of [`std::fs::DirBuilder::new`][std]
+    ///
+    /// [std]: std::fs::DirBuilder::new
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use tokio::fs::DirBuilder;
+    ///
+    /// let builder = DirBuilder::new();
+    /// ```
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        Default::default()
     }
 
-    <span class="doccomment">/// Indicates whether to create directories recursively (including all parent directories).</span>
-    <span class="doccomment">/// Parents that do not exist are created with the same security and permissions settings.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This option defaults to `false`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is an async version of [`std::fs::DirBuilder::recursive`][std]</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [std]: std::fs::DirBuilder::recursive</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```no_run</span>
-    <span class="doccomment">/// use tokio::fs::DirBuilder;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let mut builder = DirBuilder::new();</span>
-    <span class="doccomment">/// builder.recursive(true);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">recursive</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">recursive</span>: <span class="ident">bool</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">recursive</span> = <span class="ident">recursive</span>;
-        <span class="self">self</span>
-    }
+    <span class="doccomment">/// Indicates whether to create directories recursively (including all parent directories).
+    /// Parents that do not exist are created with the same security and permissions settings.
+    ///
+    /// This option defaults to `false`.
+    ///
+    /// This is an async version of [`std::fs::DirBuilder::recursive`][std]
+    ///
+    /// [std]: std::fs::DirBuilder::recursive
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use tokio::fs::DirBuilder;
+    ///
+    /// let mut builder = DirBuilder::new();
+    /// builder.recursive(true);
+    /// ```
+    </span><span class="kw">pub fn </span>recursive(<span class="kw-2">&amp;mut </span><span class="self">self</span>, recursive: bool) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.recursive = recursive;
+        <span class="self">self
+    </span>}
 
-    <span class="doccomment">/// Creates the specified directory with the configured options.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It is considered an error if the directory already exists unless</span>
-    <span class="doccomment">/// recursive mode is enabled.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is an async version of [`std::fs::DirBuilder::create`][std]</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [std]: std::fs::DirBuilder::create</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// An error will be returned under the following circumstances:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * Path already points to an existing file.</span>
-    <span class="doccomment">/// * Path already points to an existing directory and the mode is</span>
-    <span class="doccomment">///   non-recursive.</span>
-    <span class="doccomment">/// * The calling process doesn&#39;t have permissions to create the directory</span>
-    <span class="doccomment">///   or its missing parents.</span>
-    <span class="doccomment">/// * Other I/O error occurred.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```no_run</span>
-    <span class="doccomment">/// use tokio::fs::DirBuilder;</span>
-    <span class="doccomment">/// use std::io;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// #[tokio::main]</span>
-    <span class="doccomment">/// async fn main() -&gt; io::Result&lt;()&gt; {</span>
-    <span class="doccomment">///     DirBuilder::new()</span>
-    <span class="doccomment">///         .recursive(true)</span>
-    <span class="doccomment">///         .create(&quot;/tmp/foo/bar/baz&quot;)</span>
-    <span class="doccomment">///         .await?;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     Ok(())</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">path</span>: <span class="kw">impl</span> <span class="ident">AsRef</span>&lt;<span class="ident">Path</span>&gt;) -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-        <span class="kw">let</span> <span class="ident">path</span> = <span class="ident">path</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> = <span class="ident">std::fs::DirBuilder::new</span>();
-        <span class="ident">builder</span>.<span class="ident">recursive</span>(<span class="self">self</span>.<span class="ident">recursive</span>);
+    <span class="doccomment">/// Creates the specified directory with the configured options.
+    ///
+    /// It is considered an error if the directory already exists unless
+    /// recursive mode is enabled.
+    ///
+    /// This is an async version of [`std::fs::DirBuilder::create`][std]
+    ///
+    /// [std]: std::fs::DirBuilder::create
+    ///
+    /// # Errors
+    ///
+    /// An error will be returned under the following circumstances:
+    ///
+    /// * Path already points to an existing file.
+    /// * Path already points to an existing directory and the mode is
+    ///   non-recursive.
+    /// * The calling process doesn&#39;t have permissions to create the directory
+    ///   or its missing parents.
+    /// * Other I/O error occurred.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use tokio::fs::DirBuilder;
+    /// use std::io;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -&gt; io::Result&lt;()&gt; {
+    ///     DirBuilder::new()
+    ///         .recursive(true)
+    ///         .create(&quot;/tmp/foo/bar/baz&quot;)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    </span><span class="kw">pub async fn </span>create(<span class="kw-2">&amp;</span><span class="self">self</span>, path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; io::Result&lt;()&gt; {
+        <span class="kw">let </span>path = path.as_ref().to_owned();
+        <span class="kw">let </span><span class="kw-2">mut </span>builder = std::fs::DirBuilder::new();
+        builder.recursive(<span class="self">self</span>.recursive);
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">unix</span>)]</span>
+        <span class="attribute">#[cfg(unix)]</span>
         {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mode</span>) = <span class="self">self</span>.<span class="ident">mode</span> {
-                <span class="ident">std::os::unix::fs::DirBuilderExt::mode</span>(<span class="kw-2">&amp;mut</span> <span class="ident">builder</span>, <span class="ident">mode</span>);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(mode) = <span class="self">self</span>.mode {
+                std::os::unix::fs::DirBuilderExt::mode(<span class="kw-2">&amp;mut </span>builder, mode);
             }
         }
 
-        <span class="ident">asyncify</span>(<span class="kw">move</span> || <span class="ident">builder</span>.<span class="ident">create</span>(<span class="ident">path</span>)).<span class="kw">await</span>
-    }
+        asyncify(<span class="kw">move </span>|| builder.create(path)).<span class="kw">await
+    </span>}
 }
 
 <span class="macro">feature!</span> {
-    <span class="attribute">#![<span class="ident">unix</span>]</span>
+    <span class="attribute">#![unix]</span>
 
-    <span class="kw">impl</span> <span class="ident">DirBuilder</span> {
-        <span class="doccomment">/// Sets the mode to create new directories with.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// This option defaults to 0o777.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// # Examples</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```no_run</span>
-        <span class="doccomment">/// use tokio::fs::DirBuilder;</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// let mut builder = DirBuilder::new();</span>
-        <span class="doccomment">/// builder.mode(0o775);</span>
-        <span class="doccomment">/// ```</span>
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mode</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mode</span>: <span class="ident">u32</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-            <span class="self">self</span>.<span class="ident">mode</span> = <span class="prelude-val">Some</span>(<span class="ident">mode</span>);
-            <span class="self">self</span>
-        }
+    <span class="kw">impl </span>DirBuilder {
+        <span class="doccomment">/// Sets the mode to create new directories with.
+        ///
+        /// This option defaults to 0o777.
+        ///
+        /// # Examples
+        ///
+        ///
+        /// ```no_run
+        /// use tokio::fs::DirBuilder;
+        ///
+        /// let mut builder = DirBuilder::new();
+        /// builder.mode(0o775);
+        /// ```
+        </span><span class="kw">pub fn </span>mode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mode: u32) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+            <span class="self">self</span>.mode = <span class="prelude-val">Some</span>(mode);
+            <span class="self">self
+        </span>}
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

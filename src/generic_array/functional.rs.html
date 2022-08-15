@@ -93,100 +93,100 @@
 <span id="93">93</span>
 <span id="94">94</span>
 <span id="95">95</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Functional programming with generic sequences</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Please see `tests/generics.rs` for examples of how to best use these in your generic functions.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Functional programming with generic sequences
+//!
+//! Please see `tests/generics.rs` for examples of how to best use these in your generic functions.
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ArrayLength</span>;
-<span class="kw">use</span> <span class="ident">core::iter::FromIterator</span>;
+</span><span class="kw">use </span><span class="kw">super</span>::ArrayLength;
+<span class="kw">use </span>core::iter::FromIterator;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sequence</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::sequence::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Defines the relationship between one generic sequence and another,</span>
-<span class="doccomment">/// for operations such as `map` and `zip`.</span>
-<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;
-<span class="kw">where</span>
-    <span class="ident"><span class="self">Self</span>::Length</span>: <span class="ident">ArrayLength</span>&lt;<span class="ident">U</span>&gt;,
+<span class="doccomment">/// Defines the relationship between one generic sequence and another,
+/// for operations such as `map` and `zip`.
+</span><span class="kw">pub unsafe trait </span>MappedGenericSequence&lt;T, U&gt;: GenericSequence&lt;T&gt;
+<span class="kw">where
+    </span><span class="self">Self</span>::Length: ArrayLength&lt;U&gt;,
 {
-    <span class="doccomment">/// Mapped sequence type</span>
-    <span class="kw">type</span> <span class="ident">Mapped</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">U</span>, <span class="ident">Length</span> = <span class="ident"><span class="self">Self</span>::Length</span>&gt;;
+    <span class="doccomment">/// Mapped sequence type
+    </span><span class="kw">type </span>Mapped: GenericSequence&lt;U, Length = <span class="self">Self</span>::Length&gt;;
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">S</span>: <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;&gt; <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;,
-    <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">Length</span> = &lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span> <span class="kw">as</span> <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::Length</span>&gt;,
-    &lt;<span class="ident">S</span> <span class="kw">as</span> <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::Length</span>: <span class="ident">ArrayLength</span>&lt;<span class="ident">U</span>&gt;,
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T, U, S: MappedGenericSequence&lt;T, U&gt;&gt; MappedGenericSequence&lt;T, U&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>S
+<span class="kw">where
+    </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>S: GenericSequence&lt;T&gt;,
+    S: GenericSequence&lt;T, Length = &lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>S <span class="kw">as </span>GenericSequence&lt;T&gt;&gt;::Length&gt;,
+    &lt;S <span class="kw">as </span>GenericSequence&lt;T&gt;&gt;::Length: ArrayLength&lt;U&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Mapped</span> = &lt;<span class="ident">S</span> <span class="kw">as</span> <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;&gt;<span class="ident">::Mapped</span>;
+    <span class="kw">type </span>Mapped = &lt;S <span class="kw">as </span>MappedGenericSequence&lt;T, U&gt;&gt;::Mapped;
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>, <span class="ident">U</span>, <span class="ident">S</span>: <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;&gt; <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;,
-    <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">Length</span> = &lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">S</span> <span class="kw">as</span> <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::Length</span>&gt;,
-    &lt;<span class="ident">S</span> <span class="kw">as</span> <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt;<span class="ident">::Length</span>: <span class="ident">ArrayLength</span>&lt;<span class="ident">U</span>&gt;,
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T, U, S: MappedGenericSequence&lt;T, U&gt;&gt; MappedGenericSequence&lt;T, U&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>S
+<span class="kw">where
+    </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>S: GenericSequence&lt;T&gt;,
+    S: GenericSequence&lt;T, Length = &lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>S <span class="kw">as </span>GenericSequence&lt;T&gt;&gt;::Length&gt;,
+    &lt;S <span class="kw">as </span>GenericSequence&lt;T&gt;&gt;::Length: ArrayLength&lt;U&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Mapped</span> = &lt;<span class="ident">S</span> <span class="kw">as</span> <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;&gt;<span class="ident">::Mapped</span>;
+    <span class="kw">type </span>Mapped = &lt;S <span class="kw">as </span>MappedGenericSequence&lt;T, U&gt;&gt;::Mapped;
 }
 
-<span class="doccomment">/// Accessor type for a mapped generic sequence</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">MappedSequence</span>&lt;<span class="ident">S</span>, <span class="ident">T</span>, <span class="ident">U</span>&gt; =
-    &lt;&lt;<span class="ident">S</span> <span class="kw">as</span> <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;&gt;<span class="ident">::Mapped</span> <span class="kw">as</span> <span class="ident">GenericSequence</span>&lt;<span class="ident">U</span>&gt;&gt;<span class="ident">::Sequence</span>;
+<span class="doccomment">/// Accessor type for a mapped generic sequence
+</span><span class="kw">pub type </span>MappedSequence&lt;S, T, U&gt; =
+    &lt;&lt;S <span class="kw">as </span>MappedGenericSequence&lt;T, U&gt;&gt;::Mapped <span class="kw">as </span>GenericSequence&lt;U&gt;&gt;::Sequence;
 
-<span class="doccomment">/// Defines functional programming methods for generic sequences</span>
-<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">FunctionalSequence</span>&lt;<span class="ident">T</span>&gt;: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="doccomment">/// Maps a `GenericSequence` to another `GenericSequence`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If the mapping function panics, any already initialized elements in the new sequence</span>
-    <span class="doccomment">/// will be dropped, AND any unused elements in the source sequence will also be dropped.</span>
-    <span class="kw">fn</span> <span class="ident">map</span>&lt;<span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">MappedSequence</span>&lt;<span class="self">Self</span>, <span class="ident">T</span>, <span class="ident">U</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;,
-        <span class="ident"><span class="self">Self</span>::Length</span>: <span class="ident">ArrayLength</span>&lt;<span class="ident">U</span>&gt;,
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">U</span>,
+<span class="doccomment">/// Defines functional programming methods for generic sequences
+</span><span class="kw">pub unsafe trait </span>FunctionalSequence&lt;T&gt;: GenericSequence&lt;T&gt; {
+    <span class="doccomment">/// Maps a `GenericSequence` to another `GenericSequence`.
+    ///
+    /// If the mapping function panics, any already initialized elements in the new sequence
+    /// will be dropped, AND any unused elements in the source sequence will also be dropped.
+    </span><span class="kw">fn </span>map&lt;U, F&gt;(<span class="self">self</span>, f: F) -&gt; MappedSequence&lt;<span class="self">Self</span>, T, U&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: MappedGenericSequence&lt;T, U&gt;,
+        <span class="self">Self</span>::Length: ArrayLength&lt;U&gt;,
+        F: FnMut(<span class="self">Self</span>::Item) -&gt; U,
     {
-        <span class="ident">FromIterator::from_iter</span>(<span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>))
+        FromIterator::from_iter(<span class="self">self</span>.into_iter().map(f))
     }
 
-    <span class="doccomment">/// Combines two `GenericSequence` instances and iterates through both of them,</span>
-    <span class="doccomment">/// initializing a new `GenericSequence` with the result of the zipped mapping function.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If the mapping function panics, any already initialized elements in the new sequence</span>
-    <span class="doccomment">/// will be dropped, AND any unused elements in the source sequences will also be dropped.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">zip</span>&lt;<span class="ident">B</span>, <span class="ident">Rhs</span>, <span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">Rhs</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">MappedSequence</span>&lt;<span class="self">Self</span>, <span class="ident">T</span>, <span class="ident">U</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">T</span>, <span class="ident">U</span>&gt;,
-        <span class="ident">Rhs</span>: <span class="ident">MappedGenericSequence</span>&lt;<span class="ident">B</span>, <span class="ident">U</span>, <span class="ident">Mapped</span> = <span class="ident">MappedSequence</span>&lt;<span class="self">Self</span>, <span class="ident">T</span>, <span class="ident">U</span>&gt;&gt;,
-        <span class="ident"><span class="self">Self</span>::Length</span>: <span class="ident">ArrayLength</span>&lt;<span class="ident">B</span>&gt; + <span class="ident">ArrayLength</span>&lt;<span class="ident">U</span>&gt;,
-        <span class="ident">Rhs</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">B</span>, <span class="ident">Length</span> = <span class="ident"><span class="self">Self</span>::Length</span>&gt;,
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">Rhs::Item</span>) -&gt; <span class="ident">U</span>,
+    <span class="doccomment">/// Combines two `GenericSequence` instances and iterates through both of them,
+    /// initializing a new `GenericSequence` with the result of the zipped mapping function.
+    ///
+    /// If the mapping function panics, any already initialized elements in the new sequence
+    /// will be dropped, AND any unused elements in the source sequences will also be dropped.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>zip&lt;B, Rhs, U, F&gt;(<span class="self">self</span>, rhs: Rhs, f: F) -&gt; MappedSequence&lt;<span class="self">Self</span>, T, U&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: MappedGenericSequence&lt;T, U&gt;,
+        Rhs: MappedGenericSequence&lt;B, U, Mapped = MappedSequence&lt;<span class="self">Self</span>, T, U&gt;&gt;,
+        <span class="self">Self</span>::Length: ArrayLength&lt;B&gt; + ArrayLength&lt;U&gt;,
+        Rhs: GenericSequence&lt;B, Length = <span class="self">Self</span>::Length&gt;,
+        F: FnMut(<span class="self">Self</span>::Item, Rhs::Item) -&gt; U,
     {
-        <span class="ident">rhs</span>.<span class="ident">inverted_zip2</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        rhs.inverted_zip2(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Folds (or reduces) a sequence of data into a single value.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If the fold function panics, any unused elements will be dropped.</span>
-    <span class="kw">fn</span> <span class="ident">fold</span>&lt;<span class="ident">U</span>, <span class="ident">F</span>&gt;(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">U</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">U</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">U</span>, <span class="ident"><span class="self">Self</span>::Item</span>) -&gt; <span class="ident">U</span>,
+    <span class="doccomment">/// Folds (or reduces) a sequence of data into a single value.
+    ///
+    /// If the fold function panics, any unused elements will be dropped.
+    </span><span class="kw">fn </span>fold&lt;U, F&gt;(<span class="self">self</span>, init: U, f: F) -&gt; U
+    <span class="kw">where
+        </span>F: FnMut(U, <span class="self">Self</span>::Item) -&gt; U,
     {
-        <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">fold</span>(<span class="ident">init</span>, <span class="ident">f</span>)
+        <span class="self">self</span>.into_iter().fold(init, f)
     }
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>, <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="ident">FunctionalSequence</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T, S: GenericSequence&lt;T&gt;&gt; FunctionalSequence&lt;T&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>S
+<span class="kw">where
+    </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>S: GenericSequence&lt;T&gt;,
 {
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>, <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;&gt; <span class="ident">FunctionalSequence</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">S</span>: <span class="ident">GenericSequence</span>&lt;<span class="ident">T</span>&gt;,
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T, S: GenericSequence&lt;T&gt;&gt; FunctionalSequence&lt;T&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>S
+<span class="kw">where
+    </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>S: GenericSequence&lt;T&gt;,
 {
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="generic_array" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="generic_array" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

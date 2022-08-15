@@ -110,113 +110,113 @@
 <span id="110">110</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * This is a copy of the sync_wrapper crate.
- */</span>
+ */
 
-<span class="doccomment">/// A mutual exclusion primitive that relies on static type information only</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In some cases synchronization can be proven statically: whenever you hold an exclusive `&amp;mut`</span>
-<span class="doccomment">/// reference, the Rust type system ensures that no other part of the program can hold another</span>
-<span class="doccomment">/// reference to the data. Therefore it is safe to access it even if the current thread obtained</span>
-<span class="doccomment">/// this reference via a channel. Whenever this is the case, the overhead of allocating and locking</span>
-<span class="doccomment">/// a [`Mutex`] can be avoided by using this static version.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// One example where this is often applicable is [`Future`], which requires an exclusive reference</span>
-<span class="doccomment">/// for its [`poll`] method: While a given `Future` implementation may not be safe to access by</span>
-<span class="doccomment">/// multiple threads concurrently, the executor can only run the `Future` on one thread at any</span>
-<span class="doccomment">/// given time, making it [`Sync`] in practice as long as the implementation is `Send`. You can</span>
-<span class="doccomment">/// therefore use the sync wrapper to prove that your data structure is `Sync` even though it</span>
-<span class="doccomment">/// contains such a `Future`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```ignore</span>
-<span class="doccomment">/// use hyper::common::sync_wrapper::SyncWrapper;</span>
-<span class="doccomment">/// use std::future::Future;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyThing {</span>
-<span class="doccomment">///     future: SyncWrapper&lt;Box&lt;dyn Future&lt;Output = String&gt; + Send&gt;&gt;,</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl MyThing {</span>
-<span class="doccomment">///     // all accesses to `self.future` now require an exclusive reference or ownership</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn assert_sync&lt;T: Sync&gt;() {}</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// assert_sync::&lt;MyThing&gt;();</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Mutex`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html</span>
-<span class="doccomment">/// [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html</span>
-<span class="doccomment">/// [`poll`]: https://doc.rust-lang.org/std/future/trait.Future.html#method.poll</span>
-<span class="doccomment">/// [`Sync`]: https://doc.rust-lang.org/std/marker/trait.Sync.html</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">transparent</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">SyncWrapper</span>&lt;<span class="ident">T</span>&gt;(<span class="ident">T</span>);
+</span><span class="doccomment">/// A mutual exclusion primitive that relies on static type information only
+///
+/// In some cases synchronization can be proven statically: whenever you hold an exclusive `&amp;mut`
+/// reference, the Rust type system ensures that no other part of the program can hold another
+/// reference to the data. Therefore it is safe to access it even if the current thread obtained
+/// this reference via a channel. Whenever this is the case, the overhead of allocating and locking
+/// a [`Mutex`] can be avoided by using this static version.
+///
+/// One example where this is often applicable is [`Future`], which requires an exclusive reference
+/// for its [`poll`] method: While a given `Future` implementation may not be safe to access by
+/// multiple threads concurrently, the executor can only run the `Future` on one thread at any
+/// given time, making it [`Sync`] in practice as long as the implementation is `Send`. You can
+/// therefore use the sync wrapper to prove that your data structure is `Sync` even though it
+/// contains such a `Future`.
+///
+/// # Example
+///
+/// ```ignore
+/// use hyper::common::sync_wrapper::SyncWrapper;
+/// use std::future::Future;
+///
+/// struct MyThing {
+///     future: SyncWrapper&lt;Box&lt;dyn Future&lt;Output = String&gt; + Send&gt;&gt;,
+/// }
+///
+/// impl MyThing {
+///     // all accesses to `self.future` now require an exclusive reference or ownership
+/// }
+///
+/// fn assert_sync&lt;T: Sync&gt;() {}
+///
+/// assert_sync::&lt;MyThing&gt;();
+/// ```
+///
+/// [`Mutex`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html
+/// [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
+/// [`poll`]: https://doc.rust-lang.org/std/future/trait.Future.html#method.poll
+/// [`Sync`]: https://doc.rust-lang.org/std/marker/trait.Sync.html
+</span><span class="attribute">#[repr(transparent)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SyncWrapper&lt;T&gt;(T);
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">SyncWrapper</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="doccomment">/// Creates a new SyncWrapper containing the given value.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// use hyper::common::sync_wrapper::SyncWrapper;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let wrapped = SyncWrapper::new(42);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">value</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">value</span>)
+<span class="kw">impl</span>&lt;T&gt; SyncWrapper&lt;T&gt; {
+    <span class="doccomment">/// Creates a new SyncWrapper containing the given value.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use hyper::common::sync_wrapper::SyncWrapper;
+    ///
+    /// let wrapped = SyncWrapper::new(42);
+    /// ```
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(value: T) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(value)
     }
 
-    <span class="doccomment">/// Acquires a reference to the protected value.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is safe because it requires an exclusive reference to the wrapper. Therefore this method</span>
-    <span class="doccomment">/// neither panics nor does it return an error. This is in contrast to [`Mutex::get_mut`] which</span>
-    <span class="doccomment">/// returns an error if another thread panicked while holding the lock. It is not recommended</span>
-    <span class="doccomment">/// to send an exclusive reference to a potentially damaged value to another thread for further</span>
-    <span class="doccomment">/// processing.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Mutex::get_mut`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html#method.get_mut</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// use hyper::common::sync_wrapper::SyncWrapper;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let mut wrapped = SyncWrapper::new(42);</span>
-    <span class="doccomment">/// let value = wrapped.get_mut();</span>
-    <span class="doccomment">/// *value = 0;</span>
-    <span class="doccomment">/// assert_eq!(*wrapped.get_mut(), 0);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">T</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="number">0</span>
-    }
+    <span class="doccomment">/// Acquires a reference to the protected value.
+    ///
+    /// This is safe because it requires an exclusive reference to the wrapper. Therefore this method
+    /// neither panics nor does it return an error. This is in contrast to [`Mutex::get_mut`] which
+    /// returns an error if another thread panicked while holding the lock. It is not recommended
+    /// to send an exclusive reference to a potentially damaged value to another thread for further
+    /// processing.
+    ///
+    /// [`Mutex::get_mut`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html#method.get_mut
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use hyper::common::sync_wrapper::SyncWrapper;
+    ///
+    /// let mut wrapped = SyncWrapper::new(42);
+    /// let value = wrapped.get_mut();
+    /// *value = 0;
+    /// assert_eq!(*wrapped.get_mut(), 0);
+    /// ```
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0
+    </span>}
 
-    <span class="doccomment">/// Consumes this wrapper, returning the underlying data.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is safe because it requires ownership of the wrapper, aherefore this method will neither</span>
-    <span class="doccomment">/// panic nor does it return an error. This is in contrast to [`Mutex::into_inner`] which</span>
-    <span class="doccomment">/// returns an error if another thread panicked while holding the lock. It is not recommended</span>
-    <span class="doccomment">/// to send an exclusive reference to a potentially damaged value to another thread for further</span>
-    <span class="doccomment">/// processing.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Mutex::into_inner`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html#method.into_inner</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// use hyper::common::sync_wrapper::SyncWrapper;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let mut wrapped = SyncWrapper::new(42);</span>
-    <span class="doccomment">/// assert_eq!(wrapped.into_inner(), 42);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">T</span> {
-        <span class="self">self</span>.<span class="number">0</span>
-    }
+    <span class="doccomment">/// Consumes this wrapper, returning the underlying data.
+    ///
+    /// This is safe because it requires ownership of the wrapper, aherefore this method will neither
+    /// panic nor does it return an error. This is in contrast to [`Mutex::into_inner`] which
+    /// returns an error if another thread panicked while holding the lock. It is not recommended
+    /// to send an exclusive reference to a potentially damaged value to another thread for further
+    /// processing.
+    ///
+    /// [`Mutex::into_inner`]: https://doc.rust-lang.org/std/sync/struct.Mutex.html#method.into_inner
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use hyper::common::sync_wrapper::SyncWrapper;
+    ///
+    /// let mut wrapped = SyncWrapper::new(42);
+    /// assert_eq!(wrapped.into_inner(), 42);
+    /// ```
+    </span><span class="attribute">#[allow(dead_code)]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; T {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
 }
 
-<span class="comment">// this is safe because the only operations permitted on this data structure require exclusive</span>
-<span class="comment">// access or ownership</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">Send</span>&gt; <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">SyncWrapper</span>&lt;<span class="ident">T</span>&gt; {}
+<span class="comment">// this is safe because the only operations permitted on this data structure require exclusive
+// access or ownership
+</span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Sync <span class="kw">for </span>SyncWrapper&lt;T&gt; {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

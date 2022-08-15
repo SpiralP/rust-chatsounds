@@ -36,43 +36,43 @@
 <span id="36">36</span>
 <span id="37">37</span>
 <span id="38">38</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Low level threading primitives</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Low level threading primitives
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::errno::Errno</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Result</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sys::signal::Signal</span>;
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="self">self</span>, <span class="ident">pthread_t</span>};
+</span><span class="attribute">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]</span>
+<span class="kw">use </span><span class="kw">crate</span>::errno::Errno;
+<span class="attribute">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]</span>
+<span class="kw">use </span><span class="kw">crate</span>::Result;
+<span class="attribute">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]</span>
+<span class="kw">use </span><span class="kw">crate</span>::sys::signal::Signal;
+<span class="kw">use </span>libc::{<span class="self">self</span>, pthread_t};
 
-<span class="doccomment">/// Identifies an individual thread.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Pthread</span> = <span class="ident">pthread_t</span>;
+<span class="doccomment">/// Identifies an individual thread.
+</span><span class="kw">pub type </span>Pthread = pthread_t;
 
-<span class="doccomment">/// Obtain ID of the calling thread (see</span>
-<span class="doccomment">/// [`pthread_self(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_self.html)</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The thread ID returned by `pthread_self()` is not the same thing as</span>
-<span class="doccomment">/// the kernel thread ID returned by a call to `gettid(2)`.</span>
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pthread_self</span>() -&gt; <span class="ident">Pthread</span> {
-    <span class="kw">unsafe</span> { <span class="ident">libc::pthread_self</span>() }
+<span class="doccomment">/// Obtain ID of the calling thread (see
+/// [`pthread_self(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_self.html)
+///
+/// The thread ID returned by `pthread_self()` is not the same thing as
+/// the kernel thread ID returned by a call to `gettid(2)`.
+</span><span class="attribute">#[inline]</span>
+<span class="kw">pub fn </span>pthread_self() -&gt; Pthread {
+    <span class="kw">unsafe </span>{ libc::pthread_self() }
 }
 
-<span class="doccomment">/// Send a signal to a thread (see [`pthread_kill(3)`]).</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If `signal` is `None`, `pthread_kill` will only preform error checking and</span>
-<span class="doccomment">/// won&#39;t send any signal.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`pthread_kill(3)`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_kill.html</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> = <span class="string">&quot;redox&quot;</span>))]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pthread_kill</span>&lt;<span class="ident">T</span>: <span class="ident">Into</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Signal</span>&gt;&gt;&gt;(<span class="ident">thread</span>: <span class="ident">Pthread</span>, <span class="ident">signal</span>: <span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">sig</span> = <span class="kw">match</span> <span class="ident">signal</span>.<span class="ident">into</span>() {
-        <span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="ident">s</span> <span class="kw">as</span> <span class="ident">libc::c_int</span>,
-        <span class="prelude-val">None</span> =&gt; <span class="number">0</span>,
+<span class="doccomment">/// Send a signal to a thread (see [`pthread_kill(3)`]).
+///
+/// If `signal` is `None`, `pthread_kill` will only preform error checking and
+/// won&#39;t send any signal.
+///
+/// [`pthread_kill(3)`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_kill.html
+</span><span class="attribute">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]</span>
+<span class="kw">pub fn </span>pthread_kill&lt;T: Into&lt;<span class="prelude-ty">Option</span>&lt;Signal&gt;&gt;&gt;(thread: Pthread, signal: T) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>sig = <span class="kw">match </span>signal.into() {
+        <span class="prelude-val">Some</span>(s) =&gt; s <span class="kw">as </span>libc::c_int,
+        <span class="prelude-val">None </span>=&gt; <span class="number">0</span>,
     };
-    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> { <span class="ident">libc::pthread_kill</span>(<span class="ident">thread</span>, <span class="ident">sig</span>) };
-    <span class="ident">Errno::result</span>(<span class="ident">res</span>).<span class="ident">map</span>(<span class="ident">drop</span>)
+    <span class="kw">let </span>res = <span class="kw">unsafe </span>{ libc::pthread_kill(thread, sig) };
+    Errno::result(res).map(drop)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

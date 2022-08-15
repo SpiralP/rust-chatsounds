@@ -21,44 +21,44 @@ packet was received by the kernel.</p>
 <p>See the kernel’s explanation in “SO_TIMESTAMP” of
 <a href="https://www.kernel.org/doc/Documentation/networking/timestamping.txt">networking/timestamping</a>.</p>
 <h4 id="examples"><a href="#examples">Examples</a></h4>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Set up</span>
-<span class="kw">let</span> <span class="ident">message</span> = <span class="string">&quot;Ohayō!&quot;</span>.<span class="ident">as_bytes</span>();
-<span class="kw">let</span> <span class="ident">in_socket</span> = <span class="ident">socket</span>(
-    <span class="ident">AddressFamily::Inet</span>,
-    <span class="ident">SockType::Datagram</span>,
-    <span class="ident">SockFlag::empty</span>(),
-    <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-<span class="ident">setsockopt</span>(<span class="ident">in_socket</span>, <span class="ident">sockopt::ReceiveTimestamp</span>, <span class="kw-2">&amp;</span><span class="bool-val">true</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">localhost</span> = <span class="ident">InetAddr::new</span>(<span class="ident">IpAddr::new_v4</span>(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>), <span class="number">0</span>);
-<span class="ident">bind</span>(<span class="ident">in_socket</span>, <span class="kw-2">&amp;</span><span class="ident">SockAddr::new_inet</span>(<span class="ident">localhost</span>)).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">address</span> = <span class="ident">getsockname</span>(<span class="ident">in_socket</span>).<span class="ident">unwrap</span>();
-<span class="comment">// Get initial time</span>
-<span class="kw">let</span> <span class="ident">time0</span> = <span class="ident">SystemTime::now</span>();
-<span class="comment">// Send the message</span>
-<span class="kw">let</span> <span class="ident">iov</span> = [<span class="ident">IoVec::from_slice</span>(<span class="ident">message</span>)];
-<span class="kw">let</span> <span class="ident">flags</span> = <span class="ident">MsgFlags::empty</span>();
-<span class="kw">let</span> <span class="ident">l</span> = <span class="ident">sendmsg</span>(<span class="ident">in_socket</span>, <span class="kw-2">&amp;</span><span class="ident">iov</span>, <span class="kw-2">&amp;</span>[], <span class="ident">flags</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">address</span>)).<span class="ident">unwrap</span>();
-<span class="macro">assert_eq!</span>(<span class="ident">message</span>.<span class="ident">len</span>(), <span class="ident">l</span>);
-<span class="comment">// Receive the message</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="ident">message</span>.<span class="ident">len</span>()];
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cmsgspace</span> = <span class="macro">cmsg_space!</span>(<span class="ident">TimeVal</span>);
-<span class="kw">let</span> <span class="ident">iov</span> = [<span class="ident">IoVec::from_mut_slice</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>)];
-<span class="kw">let</span> <span class="ident">r</span> = <span class="ident">recvmsg</span>(<span class="ident">in_socket</span>, <span class="kw-2">&amp;</span><span class="ident">iov</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cmsgspace</span>), <span class="ident">flags</span>).<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">rtime</span> = <span class="kw">match</span> <span class="ident">r</span>.<span class="ident">cmsgs</span>().<span class="ident">next</span>() {
-    <span class="prelude-val">Some</span>(<span class="ident">ControlMessageOwned::ScmTimestamp</span>(<span class="ident">rtime</span>)) =&gt; <span class="ident">rtime</span>,
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Set up
+</span><span class="kw">let </span>message = <span class="string">&quot;Ohayō!&quot;</span>.as_bytes();
+<span class="kw">let </span>in_socket = socket(
+    AddressFamily::Inet,
+    SockType::Datagram,
+    SockFlag::empty(),
+    <span class="prelude-val">None</span>).unwrap();
+setsockopt(in_socket, sockopt::ReceiveTimestamp, <span class="kw-2">&amp;</span><span class="bool-val">true</span>).unwrap();
+<span class="kw">let </span>localhost = InetAddr::new(IpAddr::new_v4(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>), <span class="number">0</span>);
+bind(in_socket, <span class="kw-2">&amp;</span>SockAddr::new_inet(localhost)).unwrap();
+<span class="kw">let </span>address = getsockname(in_socket).unwrap();
+<span class="comment">// Get initial time
+</span><span class="kw">let </span>time0 = SystemTime::now();
+<span class="comment">// Send the message
+</span><span class="kw">let </span>iov = [IoVec::from_slice(message)];
+<span class="kw">let </span>flags = MsgFlags::empty();
+<span class="kw">let </span>l = sendmsg(in_socket, <span class="kw-2">&amp;</span>iov, <span class="kw-2">&amp;</span>[], flags, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>address)).unwrap();
+<span class="macro">assert_eq!</span>(message.len(), l);
+<span class="comment">// Receive the message
+</span><span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[<span class="number">0u8</span>; message.len()];
+<span class="kw">let </span><span class="kw-2">mut </span>cmsgspace = <span class="macro">cmsg_space!</span>(TimeVal);
+<span class="kw">let </span>iov = [IoVec::from_mut_slice(<span class="kw-2">&amp;mut </span>buffer)];
+<span class="kw">let </span>r = recvmsg(in_socket, <span class="kw-2">&amp;</span>iov, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>cmsgspace), flags).unwrap();
+<span class="kw">let </span>rtime = <span class="kw">match </span>r.cmsgs().next() {
+    <span class="prelude-val">Some</span>(ControlMessageOwned::ScmTimestamp(rtime)) =&gt; rtime,
     <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected control message&quot;</span>),
-    <span class="prelude-val">None</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;No control message&quot;</span>)
+    <span class="prelude-val">None </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;No control message&quot;</span>)
 };
-<span class="comment">// Check the final time</span>
-<span class="kw">let</span> <span class="ident">time1</span> = <span class="ident">SystemTime::now</span>();
-<span class="comment">// the packet&#39;s received timestamp should lie in-between the two system</span>
-<span class="comment">// times, unless the system clock was adjusted in the meantime.</span>
-<span class="kw">let</span> <span class="ident">rduration</span> = <span class="ident">Duration::new</span>(<span class="ident">rtime</span>.<span class="ident">tv_sec</span>() <span class="kw">as</span> <span class="ident">u64</span>,
-                              <span class="ident">rtime</span>.<span class="ident">tv_usec</span>() <span class="kw">as</span> <span class="ident">u32</span> * <span class="number">1000</span>);
-<span class="macro">assert!</span>(<span class="ident">time0</span>.<span class="ident">duration_since</span>(<span class="ident">UNIX_EPOCH</span>).<span class="ident">unwrap</span>() &lt;= <span class="ident">rduration</span>);
-<span class="macro">assert!</span>(<span class="ident">rduration</span> &lt;= <span class="ident">time1</span>.<span class="ident">duration_since</span>(<span class="ident">UNIX_EPOCH</span>).<span class="ident">unwrap</span>());
-<span class="comment">// Close socket</span>
-<span class="ident">nix::unistd::close</span>(<span class="ident">in_socket</span>).<span class="ident">unwrap</span>();</code></pre></div>
+<span class="comment">// Check the final time
+</span><span class="kw">let </span>time1 = SystemTime::now();
+<span class="comment">// the packet&#39;s received timestamp should lie in-between the two system
+// times, unless the system clock was adjusted in the meantime.
+</span><span class="kw">let </span>rduration = Duration::new(rtime.tv_sec() <span class="kw">as </span>u64,
+                              rtime.tv_usec() <span class="kw">as </span>u32 * <span class="number">1000</span>);
+<span class="macro">assert!</span>(time0.duration_since(UNIX_EPOCH).unwrap() &lt;= rduration);
+<span class="macro">assert!</span>(rduration &lt;= time1.duration_since(UNIX_EPOCH).unwrap());
+<span class="comment">// Close socket
+</span>nix::unistd::close(in_socket).unwrap();</code></pre></div>
 </div><h3 id="variant.ScmTimestampns" class="variant small-section-header"><a href="#variant.ScmTimestampns" class="anchor field"></a><code>ScmTimestampns(<a class="struct" href="../time/struct.TimeSpec.html" title="struct nix::sys::time::TimeSpec">TimeSpec</a>)</code></h3><div class="docblock"><p>Nanoseconds resolution timestamp</p>
 <p><a href="https://www.kernel.org/doc/html/latest/networking/timestamping.html">Further reading</a></p>
 </div><h3 id="variant.Ipv4PacketInfo" class="variant small-section-header"><a href="#variant.Ipv4PacketInfo" class="anchor field"></a><code>Ipv4PacketInfo(<a class="struct" href="../../../libc/unix/linux_like/struct.in_pktinfo.html" title="struct libc::unix::linux_like::in_pktinfo">in_pktinfo</a>)</code></h3><h3 id="variant.Ipv6PacketInfo" class="variant small-section-header"><a href="#variant.Ipv6PacketInfo" class="anchor field"></a><code>Ipv6PacketInfo(<a class="struct" href="../../../libc/unix/linux_like/linux/struct.in6_pktinfo.html" title="struct libc::unix::linux_like::linux::in6_pktinfo">in6_pktinfo</a>)</code></h3><h3 id="variant.UdpGroSegments" class="variant small-section-header"><a href="#variant.UdpGroSegments" class="anchor field"></a><code>UdpGroSegments(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u16.html">u16</a>)</code></h3><div class="docblock"><p>UDP Generic Receive Offload (GRO) allows receiving multiple UDP
@@ -97,4 +97,4 @@ by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.Pa
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-ControlMessageOwned" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-ControlMessageOwned" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

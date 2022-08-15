@@ -6,106 +6,106 @@
 <p>Using <code>Token</code> to track which socket generated the event. In this example,
 <code>HashMap</code> is used, but usually something like <a href="https://crates.io/crates/slab"><code>slab</code></a> is better.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">mio</span>::{<span class="ident">Events</span>, <span class="ident">Interest</span>, <span class="ident">Poll</span>, <span class="ident">Token</span>};
-<span class="kw">use</span> <span class="ident">mio::net::TcpListener</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>mio::{Events, Interest, Poll, Token};
+<span class="kw">use </span>mio::net::TcpListener;
 
-<span class="kw">use</span> <span class="ident">std::thread</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="self">self</span>, <span class="ident">Read</span>};
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+<span class="kw">use </span>std::thread;
+<span class="kw">use </span>std::io::{<span class="self">self</span>, Read};
+<span class="kw">use </span>std::collections::HashMap;
 
-<span class="comment">// After this number of sockets is accepted, the server will shutdown.</span>
-<span class="kw">const</span> <span class="ident">MAX_SOCKETS</span>: <span class="ident">usize</span> = <span class="number">32</span>;
+<span class="comment">// After this number of sockets is accepted, the server will shutdown.
+</span><span class="kw">const </span>MAX_SOCKETS: usize = <span class="number">32</span>;
 
-<span class="comment">// Pick a token that will not be used by any other socket and use that one</span>
-<span class="comment">// for the listener.</span>
-<span class="kw">const</span> <span class="ident">LISTENER</span>: <span class="ident">Token</span> = <span class="ident">Token</span>(<span class="number">1024</span>);
+<span class="comment">// Pick a token that will not be used by any other socket and use that one
+// for the listener.
+</span><span class="kw">const </span>LISTENER: Token = Token(<span class="number">1024</span>);
 
-<span class="comment">// Used to store the sockets.</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sockets</span> = <span class="ident">HashMap::new</span>();
+<span class="comment">// Used to store the sockets.
+</span><span class="kw">let </span><span class="kw-2">mut </span>sockets = HashMap::new();
 
-<span class="comment">// This is used to generate a unique token for a socket</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_socket_index</span> = <span class="number">0</span>;
+<span class="comment">// This is used to generate a unique token for a socket
+</span><span class="kw">let </span><span class="kw-2">mut </span>next_socket_index = <span class="number">0</span>;
 
-<span class="comment">// The `Poll` instance</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">poll</span> = <span class="ident">Poll::new</span>()<span class="question-mark">?</span>;
+<span class="comment">// The `Poll` instance
+</span><span class="kw">let </span><span class="kw-2">mut </span>poll = Poll::new()<span class="question-mark">?</span>;
 
-<span class="comment">// Tcp listener</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">listener</span> = <span class="ident">TcpListener::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+<span class="comment">// Tcp listener
+</span><span class="kw">let </span><span class="kw-2">mut </span>listener = TcpListener::bind(<span class="string">&quot;127.0.0.1:0&quot;</span>.parse()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
-<span class="comment">// Register the listener</span>
-<span class="ident">poll</span>.<span class="ident">registry</span>().<span class="ident">register</span>(<span class="kw-2">&amp;mut</span> <span class="ident">listener</span>, <span class="ident">LISTENER</span>, <span class="ident">Interest::READABLE</span>)<span class="question-mark">?</span>;
+<span class="comment">// Register the listener
+</span>poll.registry().register(<span class="kw-2">&amp;mut </span>listener, LISTENER, Interest::READABLE)<span class="question-mark">?</span>;
 
-<span class="comment">// Spawn a thread that will connect a bunch of sockets then close them</span>
-<span class="kw">let</span> <span class="ident">addr</span> = <span class="ident">listener</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>;
-<span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
-    <span class="kw">use</span> <span class="ident">std::net::TcpStream</span>;
+<span class="comment">// Spawn a thread that will connect a bunch of sockets then close them
+</span><span class="kw">let </span>addr = listener.local_addr()<span class="question-mark">?</span>;
+thread::spawn(<span class="kw">move </span>|| {
+    <span class="kw">use </span>std::net::TcpStream;
 
-    <span class="comment">// +1 here is to connect an extra socket to signal the socket to close</span>
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..(<span class="ident">MAX_SOCKETS</span>+<span class="number">1</span>) {
-        <span class="comment">// Connect then drop the socket</span>
-        <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">TcpStream::connect</span>(<span class="ident">addr</span>).<span class="ident">unwrap</span>();
+    <span class="comment">// +1 here is to connect an extra socket to signal the socket to close
+    </span><span class="kw">for _ in </span><span class="number">0</span>..(MAX_SOCKETS+<span class="number">1</span>) {
+        <span class="comment">// Connect then drop the socket
+        </span><span class="kw">let _ </span>= TcpStream::connect(addr).unwrap();
     }
 });
 
-<span class="comment">// Event storage</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">events</span> = <span class="ident">Events::with_capacity</span>(<span class="number">1024</span>);
+<span class="comment">// Event storage
+</span><span class="kw">let </span><span class="kw-2">mut </span>events = Events::with_capacity(<span class="number">1024</span>);
 
-<span class="comment">// Read buffer, this will never actually get filled</span>
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">256</span>];
+<span class="comment">// Read buffer, this will never actually get filled
+</span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">256</span>];
 
-<span class="comment">// The main event loop</span>
-<span class="kw">loop</span> {
-    <span class="comment">// Wait for events</span>
-    <span class="ident">poll</span>.<span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="ident">events</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+<span class="comment">// The main event loop
+</span><span class="kw">loop </span>{
+    <span class="comment">// Wait for events
+    </span>poll.poll(<span class="kw-2">&amp;mut </span>events, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">for</span> <span class="ident">event</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">events</span> {
-        <span class="kw">match</span> <span class="ident">event</span>.<span class="ident">token</span>() {
-            <span class="ident">LISTENER</span> =&gt; {
-                <span class="comment">// Perform operations in a loop until `WouldBlock` is</span>
-                <span class="comment">// encountered.</span>
-                <span class="kw">loop</span> {
-                    <span class="kw">match</span> <span class="ident">listener</span>.<span class="ident">accept</span>() {
-                        <span class="prelude-val">Ok</span>((<span class="kw-2">mut</span> <span class="ident">socket</span>, <span class="kw">_</span>)) =&gt; {
-                            <span class="comment">// Shutdown the server</span>
-                            <span class="kw">if</span> <span class="ident">next_socket_index</span> == <span class="ident">MAX_SOCKETS</span> {
-                                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+    <span class="kw">for </span>event <span class="kw">in </span><span class="kw-2">&amp;</span>events {
+        <span class="kw">match </span>event.token() {
+            LISTENER =&gt; {
+                <span class="comment">// Perform operations in a loop until `WouldBlock` is
+                // encountered.
+                </span><span class="kw">loop </span>{
+                    <span class="kw">match </span>listener.accept() {
+                        <span class="prelude-val">Ok</span>((<span class="kw-2">mut </span>socket, <span class="kw">_</span>)) =&gt; {
+                            <span class="comment">// Shutdown the server
+                            </span><span class="kw">if </span>next_socket_index == MAX_SOCKETS {
+                                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                             }
 
-                            <span class="comment">// Get the token for the socket</span>
-                            <span class="kw">let</span> <span class="ident">token</span> = <span class="ident">Token</span>(<span class="ident">next_socket_index</span>);
-                            <span class="ident">next_socket_index</span> += <span class="number">1</span>;
+                            <span class="comment">// Get the token for the socket
+                            </span><span class="kw">let </span>token = Token(next_socket_index);
+                            next_socket_index += <span class="number">1</span>;
 
-                            <span class="comment">// Register the new socket w/ poll</span>
-                            <span class="ident">poll</span>.<span class="ident">registry</span>().<span class="ident">register</span>(<span class="kw-2">&amp;mut</span> <span class="ident">socket</span>, <span class="ident">token</span>, <span class="ident">Interest::READABLE</span>)<span class="question-mark">?</span>;
+                            <span class="comment">// Register the new socket w/ poll
+                            </span>poll.registry().register(<span class="kw-2">&amp;mut </span>socket, token, Interest::READABLE)<span class="question-mark">?</span>;
 
-                            <span class="comment">// Store the socket</span>
-                            <span class="ident">sockets</span>.<span class="ident">insert</span>(<span class="ident">token</span>, <span class="ident">socket</span>);
+                            <span class="comment">// Store the socket
+                            </span>sockets.insert(token, socket);
                         }
-                        <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                            <span class="comment">// Socket is not ready anymore, stop accepting</span>
-                            <span class="kw">break</span>;
+                        <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                            <span class="comment">// Socket is not ready anymore, stop accepting
+                            </span><span class="kw">break</span>;
                         }
-                        <span class="ident">e</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;err={:?}&quot;</span>, <span class="ident">e</span>), <span class="comment">// Unexpected error</span>
-                    }
+                        e =&gt; <span class="macro">panic!</span>(<span class="string">&quot;err={:?}&quot;</span>, e), <span class="comment">// Unexpected error
+                    </span>}
                 }
             }
-            <span class="ident">token</span> =&gt; {
-                <span class="comment">// Always operate in a loop</span>
-                <span class="kw">loop</span> {
-                    <span class="kw">match</span> <span class="ident">sockets</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>).<span class="ident">unwrap</span>().<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
+            token =&gt; {
+                <span class="comment">// Always operate in a loop
+                </span><span class="kw">loop </span>{
+                    <span class="kw">match </span>sockets.get_mut(<span class="kw-2">&amp;</span>token).unwrap().read(<span class="kw-2">&amp;mut </span>buf) {
                         <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; {
-                            <span class="comment">// Socket is closed, remove it from the map</span>
-                            <span class="ident">sockets</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>);
+                            <span class="comment">// Socket is closed, remove it from the map
+                            </span>sockets.remove(<span class="kw-2">&amp;</span>token);
                             <span class="kw">break</span>;
                         }
-                        <span class="comment">// Data is not actually sent in this example</span>
-                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-                        <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                            <span class="comment">// Socket is not ready anymore, stop reading</span>
-                            <span class="kw">break</span>;
+                        <span class="comment">// Data is not actually sent in this example
+                        </span><span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+                        <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                            <span class="comment">// Socket is not ready anymore, stop reading
+                            </span><span class="kw">break</span>;
                         }
-                        <span class="ident">e</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;err={:?}&quot;</span>, <span class="ident">e</span>), <span class="comment">// Unexpected error</span>
-                    }
+                        e =&gt; <span class="macro">panic!</span>(<span class="string">&quot;err={:?}&quot;</span>, e), <span class="comment">// Unexpected error
+                    </span>}
                 }
             }
         }
@@ -145,4 +145,4 @@ operator. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.h
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Token" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Token" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="mio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

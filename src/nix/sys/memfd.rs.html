@@ -45,52 +45,52 @@
 <span id="45">45</span>
 <span id="46">46</span>
 <span id="47">47</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Interfaces for managing memory-backed files.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Interfaces for managing memory-backed files.
 
-<span class="kw">use</span> <span class="ident">std::os::unix::io::RawFd</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Result</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::errno::Errno</span>;
-<span class="kw">use</span> <span class="ident">std::ffi::CStr</span>;
+</span><span class="kw">use </span>std::os::unix::io::RawFd;
+<span class="kw">use </span><span class="kw">crate</span>::Result;
+<span class="kw">use </span><span class="kw">crate</span>::errno::Errno;
+<span class="kw">use </span>std::ffi::CStr;
 
 <span class="macro">libc_bitflags!</span>(
-    <span class="doccomment">/// Options that change the behavior of [`memfd_create`].</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MemFdCreateFlag</span>: <span class="ident">libc::c_uint</span> {
-        <span class="doccomment">/// Set the close-on-exec ([`FD_CLOEXEC`]) flag on the new file descriptor.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// By default, the new file descriptor is set to remain open across an [`execve`]</span>
-        <span class="doccomment">/// (the `FD_CLOEXEC` flag is initially disabled). This flag can be used to change</span>
-        <span class="doccomment">/// this default. The file offset is set to the beginning of the file (see [`lseek`]).</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// See also the description of the `O_CLOEXEC` flag in [`open(2)`].</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// [`execve`]: crate::unistd::execve</span>
-        <span class="doccomment">/// [`lseek`]: crate::unistd::lseek</span>
-        <span class="doccomment">/// [`FD_CLOEXEC`]: crate::fcntl::FdFlag::FD_CLOEXEC</span>
-        <span class="doccomment">/// [`open(2)`]: https://man7.org/linux/man-pages/man2/open.2.html</span>
-        <span class="ident">MFD_CLOEXEC</span>;
-        <span class="doccomment">/// Allow sealing operations on this file.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// See also the file sealing notes given in [`memfd_create(2)`].</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// [`memfd_create(2)`]: https://man7.org/linux/man-pages/man2/memfd_create.2.html</span>
-        <span class="ident">MFD_ALLOW_SEALING</span>;
+    <span class="doccomment">/// Options that change the behavior of [`memfd_create`].
+    </span><span class="kw">pub struct </span>MemFdCreateFlag: libc::c_uint {
+        <span class="doccomment">/// Set the close-on-exec ([`FD_CLOEXEC`]) flag on the new file descriptor.
+        ///
+        /// By default, the new file descriptor is set to remain open across an [`execve`]
+        /// (the `FD_CLOEXEC` flag is initially disabled). This flag can be used to change
+        /// this default. The file offset is set to the beginning of the file (see [`lseek`]).
+        ///
+        /// See also the description of the `O_CLOEXEC` flag in [`open(2)`].
+        ///
+        /// [`execve`]: crate::unistd::execve
+        /// [`lseek`]: crate::unistd::lseek
+        /// [`FD_CLOEXEC`]: crate::fcntl::FdFlag::FD_CLOEXEC
+        /// [`open(2)`]: https://man7.org/linux/man-pages/man2/open.2.html
+        </span>MFD_CLOEXEC;
+        <span class="doccomment">/// Allow sealing operations on this file.
+        ///
+        /// See also the file sealing notes given in [`memfd_create(2)`].
+        ///
+        /// [`memfd_create(2)`]: https://man7.org/linux/man-pages/man2/memfd_create.2.html
+        </span>MFD_ALLOW_SEALING;
     }
 );
 
-<span class="doccomment">/// Creates an anonymous file that lives in memory, and return a file-descriptor to it.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The file behaves like a regular file, and so can be modified, truncated, memory-mapped, and so on.</span>
-<span class="doccomment">/// However, unlike a regular file, it lives in RAM and has a volatile backing storage.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// For more information, see [`memfd_create(2)`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`memfd_create(2)`]: https://man7.org/linux/man-pages/man2/memfd_create.2.html</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">memfd_create</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>, <span class="ident">flags</span>: <span class="ident">MemFdCreateFlag</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">RawFd</span>&gt; {
-    <span class="kw">let</span> <span class="ident">res</span> = <span class="kw">unsafe</span> {
-        <span class="ident">libc::syscall</span>(<span class="ident">libc::SYS_memfd_create</span>, <span class="ident">name</span>.<span class="ident">as_ptr</span>(), <span class="ident">flags</span>.<span class="ident">bits</span>())
+<span class="doccomment">/// Creates an anonymous file that lives in memory, and return a file-descriptor to it.
+///
+/// The file behaves like a regular file, and so can be modified, truncated, memory-mapped, and so on.
+/// However, unlike a regular file, it lives in RAM and has a volatile backing storage.
+///
+/// For more information, see [`memfd_create(2)`].
+///
+/// [`memfd_create(2)`]: https://man7.org/linux/man-pages/man2/memfd_create.2.html
+</span><span class="kw">pub fn </span>memfd_create(name: <span class="kw-2">&amp;</span>CStr, flags: MemFdCreateFlag) -&gt; <span class="prelude-ty">Result</span>&lt;RawFd&gt; {
+    <span class="kw">let </span>res = <span class="kw">unsafe </span>{
+        libc::syscall(libc::SYS_memfd_create, name.as_ptr(), flags.bits())
     };
 
-    <span class="ident">Errno::result</span>(<span class="ident">res</span>).<span class="ident">map</span>(|<span class="ident">r</span>| <span class="ident">r</span> <span class="kw">as</span> <span class="ident">RawFd</span>)
+    Errno::result(res).map(|r| r <span class="kw">as </span>RawFd)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="nix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

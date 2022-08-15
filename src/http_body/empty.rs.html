@@ -73,80 +73,80 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Body</span>, <span class="ident">SizeHint</span>};
-<span class="kw">use</span> <span class="ident">bytes::Buf</span>;
-<span class="kw">use</span> <span class="ident">http::HeaderMap</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">convert::Infallible</span>,
-    <span class="ident">fmt</span>,
-    <span class="ident">marker::PhantomData</span>,
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>},
+</pre><pre class="rust"><code><span class="kw">use super</span>::{Body, SizeHint};
+<span class="kw">use </span>bytes::Buf;
+<span class="kw">use </span>http::HeaderMap;
+<span class="kw">use </span>std::{
+    convert::Infallible,
+    fmt,
+    marker::PhantomData,
+    pin::Pin,
+    task::{Context, Poll},
 };
 
-<span class="doccomment">/// A body that is always empty.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="kw">fn</span>() -&gt; <span class="ident">D</span>&gt;,
+<span class="doccomment">/// A body that is always empty.
+</span><span class="kw">pub struct </span>Empty&lt;D&gt; {
+    _marker: PhantomData&lt;<span class="kw">fn</span>() -&gt; D&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">D</span>&gt; <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="doccomment">/// Create a new `Empty`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::default</span>()
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">D</span>: <span class="ident">Buf</span>&gt; <span class="ident">Body</span> <span class="kw">for</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Data</span> = <span class="ident">D</span>;
-    <span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">Infallible</span>;
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">poll_data</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;,
-        <span class="ident">_cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident"><span class="self">Self</span>::Data</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt;&gt;&gt; {
-        <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">poll_trailers</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span>&lt;<span class="kw-2">&amp;mut</span> <span class="self">Self</span>&gt;,
-        <span class="ident">_cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">HeaderMap</span>&gt;, <span class="ident"><span class="self">Self</span>::Error</span>&gt;&gt; {
-        <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>))
-    }
-
-    <span class="kw">fn</span> <span class="ident">is_end_stream</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">true</span>
-    }
-
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SizeHint</span> {
-        <span class="ident">SizeHint::with_exact</span>(<span class="number">0</span>)
+<span class="kw">impl</span>&lt;D&gt; Empty&lt;D&gt; {
+    <span class="doccomment">/// Create a new `Empty`.
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">D</span>&gt; <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Empty&quot;</span>).<span class="ident">finish</span>()
+<span class="kw">impl</span>&lt;D: Buf&gt; Body <span class="kw">for </span>Empty&lt;D&gt; {
+    <span class="kw">type </span>Data = D;
+    <span class="kw">type </span>Error = Infallible;
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>poll_data(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Data, <span class="self">Self</span>::Error&gt;&gt;&gt; {
+        Poll::Ready(<span class="prelude-val">None</span>)
+    }
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>poll_trailers(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;HeaderMap&gt;, <span class="self">Self</span>::Error&gt;&gt; {
+        Poll::Ready(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>))
+    }
+
+    <span class="kw">fn </span>is_end_stream(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
+
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SizeHint {
+        SizeHint::with_exact(<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">D</span>&gt; <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+<span class="kw">impl</span>&lt;D&gt; fmt::Debug <span class="kw">for </span>Empty&lt;D&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">&quot;Empty&quot;</span>).finish()
+    }
+}
+
+<span class="kw">impl</span>&lt;D&gt; Default <span class="kw">for </span>Empty&lt;D&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">D</span>&gt; <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+<span class="kw">impl</span>&lt;D&gt; Clone <span class="kw">for </span>Empty&lt;D&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">D</span>&gt; <span class="ident">Copy</span> <span class="kw">for</span> <span class="ident">Empty</span>&lt;<span class="ident">D</span>&gt; {}
+<span class="kw">impl</span>&lt;D&gt; Copy <span class="kw">for </span>Empty&lt;D&gt; {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="http_body" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="http_body" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

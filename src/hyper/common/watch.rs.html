@@ -71,78 +71,78 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-</pre><pre class="rust"><code><span class="doccomment">//! An SPSC broadcast channel.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! - The value can only be a `usize`.</span>
-<span class="doccomment">//! - The consumer is only notified if the value is different.</span>
-<span class="doccomment">//! - The value `0` is reserved for closed.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! An SPSC broadcast channel.
+//!
+//! - The value can only be a `usize`.
+//! - The consumer is only notified if the value is different.
+//! - The value `0` is reserved for closed.
 
-<span class="kw">use</span> <span class="ident">futures_util::task::AtomicWaker</span>;
-<span class="kw">use</span> <span class="ident">std::sync</span>::{
-    <span class="ident">atomic</span>::{<span class="ident">AtomicUsize</span>, <span class="ident">Ordering</span>},
-    <span class="ident">Arc</span>,
+</span><span class="kw">use </span>futures_util::task::AtomicWaker;
+<span class="kw">use </span>std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
 };
-<span class="kw">use</span> <span class="ident">std::task</span>;
+<span class="kw">use </span>std::task;
 
-<span class="kw">type</span> <span class="ident">Value</span> = <span class="ident">usize</span>;
+<span class="kw">type </span>Value = usize;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">CLOSED</span>: <span class="ident">usize</span> = <span class="number">0</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLOSED: usize = <span class="number">0</span>;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">channel</span>(<span class="ident">initial</span>: <span class="ident">Value</span>) -&gt; (<span class="ident">Sender</span>, <span class="ident">Receiver</span>) {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>channel(initial: Value) -&gt; (Sender, Receiver) {
     <span class="macro">debug_assert!</span>(
-        <span class="ident">initial</span> != <span class="ident">CLOSED</span>,
-        <span class="string">&quot;watch::channel initial state of 0 is reserved&quot;</span>
-    );
+        initial != CLOSED,
+        <span class="string">&quot;watch::channel initial state of 0 is reserved&quot;
+    </span>);
 
-    <span class="kw">let</span> <span class="ident">shared</span> = <span class="ident">Arc::new</span>(<span class="ident">Shared</span> {
-        <span class="ident">value</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">initial</span>),
-        <span class="ident">waker</span>: <span class="ident">AtomicWaker::new</span>(),
+    <span class="kw">let </span>shared = Arc::new(Shared {
+        value: AtomicUsize::new(initial),
+        waker: AtomicWaker::new(),
     });
 
     (
-        <span class="ident">Sender</span> {
-            <span class="ident">shared</span>: <span class="ident">shared</span>.<span class="ident">clone</span>(),
+        Sender {
+            shared: shared.clone(),
         },
-        <span class="ident">Receiver</span> { <span class="ident">shared</span> },
+        Receiver { shared },
     )
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Sender</span> {
-    <span class="ident">shared</span>: <span class="ident">Arc</span>&lt;<span class="ident">Shared</span>&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Sender {
+    shared: Arc&lt;Shared&gt;,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Receiver</span> {
-    <span class="ident">shared</span>: <span class="ident">Arc</span>&lt;<span class="ident">Shared</span>&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Receiver {
+    shared: Arc&lt;Shared&gt;,
 }
 
-<span class="kw">struct</span> <span class="ident">Shared</span> {
-    <span class="ident">value</span>: <span class="ident">AtomicUsize</span>,
-    <span class="ident">waker</span>: <span class="ident">AtomicWaker</span>,
+<span class="kw">struct </span>Shared {
+    value: AtomicUsize,
+    waker: AtomicWaker,
 }
 
-<span class="kw">impl</span> <span class="ident">Sender</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="ident">Value</span>) {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">shared</span>.<span class="ident">value</span>.<span class="ident">swap</span>(<span class="ident">value</span>, <span class="ident">Ordering::SeqCst</span>) != <span class="ident">value</span> {
-            <span class="self">self</span>.<span class="ident">shared</span>.<span class="ident">waker</span>.<span class="ident">wake</span>();
+<span class="kw">impl </span>Sender {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>send(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: Value) {
+        <span class="kw">if </span><span class="self">self</span>.shared.value.swap(value, Ordering::SeqCst) != value {
+            <span class="self">self</span>.shared.waker.wake();
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Sender</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">send</span>(<span class="ident">CLOSED</span>);
+<span class="kw">impl </span>Drop <span class="kw">for </span>Sender {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.send(CLOSED);
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Receiver</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">load</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">Value</span> {
-        <span class="self">self</span>.<span class="ident">shared</span>.<span class="ident">waker</span>.<span class="ident">register</span>(<span class="ident">cx</span>.<span class="ident">waker</span>());
-        <span class="self">self</span>.<span class="ident">shared</span>.<span class="ident">value</span>.<span class="ident">load</span>(<span class="ident">Ordering::SeqCst</span>)
+<span class="kw">impl </span>Receiver {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>load(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Value {
+        <span class="self">self</span>.shared.waker.register(cx.waker());
+        <span class="self">self</span>.shared.value.load(Ordering::SeqCst)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">peek</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Value</span> {
-        <span class="self">self</span>.<span class="ident">shared</span>.<span class="ident">value</span>.<span class="ident">load</span>(<span class="ident">Ordering::Relaxed</span>)
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Value {
+        <span class="self">self</span>.shared.value.load(Ordering::Relaxed)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

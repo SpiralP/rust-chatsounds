@@ -156,163 +156,163 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::codec::Codec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::frame</span>::{<span class="self">self</span>, <span class="ident">Reason</span>, <span class="ident">StreamId</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::codec::Codec;
+<span class="kw">use </span><span class="kw">crate</span>::frame::{<span class="self">self</span>, Reason, StreamId};
 
-<span class="kw">use</span> <span class="ident">bytes::Buf</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
-<span class="kw">use</span> <span class="ident">tokio::io::AsyncWrite</span>;
+<span class="kw">use </span>bytes::Buf;
+<span class="kw">use </span>std::io;
+<span class="kw">use </span>std::task::{Context, Poll};
+<span class="kw">use </span>tokio::io::AsyncWrite;
 
-<span class="doccomment">/// Manages our sending of GOAWAY frames.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">GoAway</span> {
-    <span class="doccomment">/// Whether the connection should close now, or wait until idle.</span>
-    <span class="ident">close_now</span>: <span class="ident">bool</span>,
-    <span class="doccomment">/// Records if we&#39;ve sent any GOAWAY before.</span>
-    <span class="ident">going_away</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">GoingAway</span>&gt;,
-    <span class="doccomment">/// Whether the user started the GOAWAY by calling `abrupt_shutdown`.</span>
-    <span class="ident">is_user_initiated</span>: <span class="ident">bool</span>,
-    <span class="doccomment">/// A GOAWAY frame that must be buffered in the Codec immediately.</span>
-    <span class="ident">pending</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">frame::GoAway</span>&gt;,
+<span class="doccomment">/// Manages our sending of GOAWAY frames.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>GoAway {
+    <span class="doccomment">/// Whether the connection should close now, or wait until idle.
+    </span>close_now: bool,
+    <span class="doccomment">/// Records if we&#39;ve sent any GOAWAY before.
+    </span>going_away: <span class="prelude-ty">Option</span>&lt;GoingAway&gt;,
+    <span class="doccomment">/// Whether the user started the GOAWAY by calling `abrupt_shutdown`.
+    </span>is_user_initiated: bool,
+    <span class="doccomment">/// A GOAWAY frame that must be buffered in the Codec immediately.
+    </span>pending: <span class="prelude-ty">Option</span>&lt;frame::GoAway&gt;,
 }
 
-<span class="doccomment">/// Keeps a memory of any GOAWAY frames we&#39;ve sent before.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This looks very similar to a `frame::GoAway`, but is a separate type. Why?</span>
-<span class="doccomment">/// Mostly for documentation purposes. This type is to record status. If it</span>
-<span class="doccomment">/// were a `frame::GoAway`, it might appear like we eventually wanted to</span>
-<span class="doccomment">/// serialize it. We **only** want to be able to look up these fields at a</span>
-<span class="doccomment">/// later time.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// (Technically, `frame::GoAway` should gain an opaque_debug_data field as</span>
-<span class="doccomment">/// well, and we wouldn&#39;t want to save that here to accidentally dump in logs,</span>
-<span class="doccomment">/// or waste struct space.)</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">GoingAway</span> {
-    <span class="doccomment">/// Stores the highest stream ID of a GOAWAY that has been sent.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It&#39;s illegal to send a subsequent GOAWAY with a higher ID.</span>
-    <span class="ident">last_processed_id</span>: <span class="ident">StreamId</span>,
+<span class="doccomment">/// Keeps a memory of any GOAWAY frames we&#39;ve sent before.
+///
+/// This looks very similar to a `frame::GoAway`, but is a separate type. Why?
+/// Mostly for documentation purposes. This type is to record status. If it
+/// were a `frame::GoAway`, it might appear like we eventually wanted to
+/// serialize it. We **only** want to be able to look up these fields at a
+/// later time.
+///
+/// (Technically, `frame::GoAway` should gain an opaque_debug_data field as
+/// well, and we wouldn&#39;t want to save that here to accidentally dump in logs,
+/// or waste struct space.)
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>GoingAway {
+    <span class="doccomment">/// Stores the highest stream ID of a GOAWAY that has been sent.
+    ///
+    /// It&#39;s illegal to send a subsequent GOAWAY with a higher ID.
+    </span>last_processed_id: StreamId,
 
-    <span class="doccomment">/// Records the error code of any GOAWAY frame sent.</span>
-    <span class="ident">reason</span>: <span class="ident">Reason</span>,
+    <span class="doccomment">/// Records the error code of any GOAWAY frame sent.
+    </span>reason: Reason,
 }
 
-<span class="kw">impl</span> <span class="ident">GoAway</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">GoAway</span> {
-            <span class="ident">close_now</span>: <span class="bool-val">false</span>,
-            <span class="ident">going_away</span>: <span class="prelude-val">None</span>,
-            <span class="ident">is_user_initiated</span>: <span class="bool-val">false</span>,
-            <span class="ident">pending</span>: <span class="prelude-val">None</span>,
+<span class="kw">impl </span>GoAway {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        GoAway {
+            close_now: <span class="bool-val">false</span>,
+            going_away: <span class="prelude-val">None</span>,
+            is_user_initiated: <span class="bool-val">false</span>,
+            pending: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="doccomment">/// Enqueue a GOAWAY frame to be written.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The connection is expected to continue to run until idle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">go_away</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">frame::GoAway</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">going_away</span>) = <span class="self">self</span>.<span class="ident">going_away</span> {
+    <span class="doccomment">/// Enqueue a GOAWAY frame to be written.
+    ///
+    /// The connection is expected to continue to run until idle.
+    </span><span class="kw">pub fn </span>go_away(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: frame::GoAway) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>going_away) = <span class="self">self</span>.going_away {
             <span class="macro">assert!</span>(
-                <span class="ident">f</span>.<span class="ident">last_stream_id</span>() &lt;= <span class="ident">going_away</span>.<span class="ident">last_processed_id</span>,
+                f.last_stream_id() &lt;= going_away.last_processed_id,
                 <span class="string">&quot;GOAWAY stream IDs shouldn&#39;t be higher; \
                  last_processed_id = {:?}, f.last_stream_id() = {:?}&quot;</span>,
-                <span class="ident">going_away</span>.<span class="ident">last_processed_id</span>,
-                <span class="ident">f</span>.<span class="ident">last_stream_id</span>(),
+                going_away.last_processed_id,
+                f.last_stream_id(),
             );
         }
 
-        <span class="self">self</span>.<span class="ident">going_away</span> = <span class="prelude-val">Some</span>(<span class="ident">GoingAway</span> {
-            <span class="ident">last_processed_id</span>: <span class="ident">f</span>.<span class="ident">last_stream_id</span>(),
-            <span class="ident">reason</span>: <span class="ident">f</span>.<span class="ident">reason</span>(),
+        <span class="self">self</span>.going_away = <span class="prelude-val">Some</span>(GoingAway {
+            last_processed_id: f.last_stream_id(),
+            reason: f.reason(),
         });
-        <span class="self">self</span>.<span class="ident">pending</span> = <span class="prelude-val">Some</span>(<span class="ident">f</span>);
+        <span class="self">self</span>.pending = <span class="prelude-val">Some</span>(f);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">go_away_now</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">frame::GoAway</span>) {
-        <span class="self">self</span>.<span class="ident">close_now</span> = <span class="bool-val">true</span>;
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">going_away</span>) = <span class="self">self</span>.<span class="ident">going_away</span> {
-            <span class="comment">// Prevent sending the same GOAWAY twice.</span>
-            <span class="kw">if</span> <span class="ident">going_away</span>.<span class="ident">last_processed_id</span> == <span class="ident">f</span>.<span class="ident">last_stream_id</span>() &amp;&amp; <span class="ident">going_away</span>.<span class="ident">reason</span> == <span class="ident">f</span>.<span class="ident">reason</span>()
+    <span class="kw">pub fn </span>go_away_now(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: frame::GoAway) {
+        <span class="self">self</span>.close_now = <span class="bool-val">true</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>going_away) = <span class="self">self</span>.going_away {
+            <span class="comment">// Prevent sending the same GOAWAY twice.
+            </span><span class="kw">if </span>going_away.last_processed_id == f.last_stream_id() &amp;&amp; going_away.reason == f.reason()
             {
                 <span class="kw">return</span>;
             }
         }
-        <span class="self">self</span>.<span class="ident">go_away</span>(<span class="ident">f</span>);
+        <span class="self">self</span>.go_away(f);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">go_away_from_user</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">frame::GoAway</span>) {
-        <span class="self">self</span>.<span class="ident">is_user_initiated</span> = <span class="bool-val">true</span>;
-        <span class="self">self</span>.<span class="ident">go_away_now</span>(<span class="ident">f</span>);
+    <span class="kw">pub fn </span>go_away_from_user(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: frame::GoAway) {
+        <span class="self">self</span>.is_user_initiated = <span class="bool-val">true</span>;
+        <span class="self">self</span>.go_away_now(f);
     }
 
-    <span class="doccomment">/// Return if a GOAWAY has ever been scheduled.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_going_away</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">going_away</span>.<span class="ident">is_some</span>()
+    <span class="doccomment">/// Return if a GOAWAY has ever been scheduled.
+    </span><span class="kw">pub fn </span>is_going_away(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.going_away.is_some()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_user_initiated</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">is_user_initiated</span>
+    <span class="kw">pub fn </span>is_user_initiated(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.is_user_initiated
     }
 
-    <span class="doccomment">/// Returns the going away info, if any.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">going_away</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">GoingAway</span>&gt; {
-        <span class="self">self</span>.<span class="ident">going_away</span>.<span class="ident">as_ref</span>()
+    <span class="doccomment">/// Returns the going away info, if any.
+    </span><span class="kw">pub fn </span>going_away(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>GoingAway&gt; {
+        <span class="self">self</span>.going_away.as_ref()
     }
 
-    <span class="doccomment">/// Returns if the connection should close now, or wait until idle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">should_close_now</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">is_none</span>() &amp;&amp; <span class="self">self</span>.<span class="ident">close_now</span>
+    <span class="doccomment">/// Returns if the connection should close now, or wait until idle.
+    </span><span class="kw">pub fn </span>should_close_now(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.pending.is_none() &amp;&amp; <span class="self">self</span>.close_now
     }
 
-    <span class="doccomment">/// Returns if the connection should be closed when idle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">should_close_on_idle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        !<span class="self">self</span>.<span class="ident">close_now</span>
-            &amp;&amp; <span class="self">self</span>
-                .<span class="ident">going_away</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map</span>(|<span class="ident">g</span>| <span class="ident">g</span>.<span class="ident">last_processed_id</span> != <span class="ident">StreamId::MAX</span>)
-                .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>)
+    <span class="doccomment">/// Returns if the connection should be closed when idle.
+    </span><span class="kw">pub fn </span>should_close_on_idle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        !<span class="self">self</span>.close_now
+            &amp;&amp; <span class="self">self
+                </span>.going_away
+                .as_ref()
+                .map(|g| g.last_processed_id != StreamId::MAX)
+                .unwrap_or(<span class="bool-val">false</span>)
     }
 
-    <span class="doccomment">/// Try to write a pending GOAWAY frame to the buffer.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If a frame is written, the `Reason` of the GOAWAY is returned.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send_pending_go_away</span>&lt;<span class="ident">T</span>, <span class="ident">B</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>,
-        <span class="ident">dst</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Codec</span>&lt;<span class="ident">T</span>, <span class="ident">B</span>&gt;,
-    ) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">io::Result</span>&lt;<span class="ident">Reason</span>&gt;&gt;&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">AsyncWrite</span> + <span class="ident">Unpin</span>,
-        <span class="ident">B</span>: <span class="ident">Buf</span>,
+    <span class="doccomment">/// Try to write a pending GOAWAY frame to the buffer.
+    ///
+    /// If a frame is written, the `Reason` of the GOAWAY is returned.
+    </span><span class="kw">pub fn </span>send_pending_go_away&lt;T, B&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        cx: <span class="kw-2">&amp;mut </span>Context,
+        dst: <span class="kw-2">&amp;mut </span>Codec&lt;T, B&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;io::Result&lt;Reason&gt;&gt;&gt;
+    <span class="kw">where
+        </span>T: AsyncWrite + Unpin,
+        B: Buf,
     {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">frame</span>) = <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">take</span>() {
-            <span class="kw">if</span> !<span class="ident">dst</span>.<span class="ident">poll_ready</span>(<span class="ident">cx</span>)<span class="question-mark">?</span>.<span class="ident">is_ready</span>() {
-                <span class="self">self</span>.<span class="ident">pending</span> = <span class="prelude-val">Some</span>(<span class="ident">frame</span>);
-                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = <span class="self">self</span>.pending.take() {
+            <span class="kw">if </span>!dst.poll_ready(cx)<span class="question-mark">?</span>.is_ready() {
+                <span class="self">self</span>.pending = <span class="prelude-val">Some</span>(frame);
+                <span class="kw">return </span>Poll::Pending;
             }
 
-            <span class="kw">let</span> <span class="ident">reason</span> = <span class="ident">frame</span>.<span class="ident">reason</span>();
-            <span class="ident">dst</span>.<span class="ident">buffer</span>(<span class="ident">frame</span>.<span class="ident">into</span>()).<span class="ident">expect</span>(<span class="string">&quot;invalid GOAWAY frame&quot;</span>);
+            <span class="kw">let </span>reason = frame.reason();
+            dst.buffer(frame.into()).expect(<span class="string">&quot;invalid GOAWAY frame&quot;</span>);
 
-            <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">reason</span>)));
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">should_close_now</span>() {
-            <span class="kw">return</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">going_away</span>().<span class="ident">map</span>(|<span class="ident">going_away</span>| <span class="ident">going_away</span>.<span class="ident">reason</span>) {
-                <span class="prelude-val">Some</span>(<span class="ident">reason</span>) =&gt; <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">reason</span>))),
-                <span class="prelude-val">None</span> =&gt; <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>),
+            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(reason)));
+        } <span class="kw">else if </span><span class="self">self</span>.should_close_now() {
+            <span class="kw">return match </span><span class="self">self</span>.going_away().map(|going_away| going_away.reason) {
+                <span class="prelude-val">Some</span>(reason) =&gt; Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(reason))),
+                <span class="prelude-val">None </span>=&gt; Poll::Ready(<span class="prelude-val">None</span>),
             };
         }
 
-        <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
+        Poll::Ready(<span class="prelude-val">None</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">GoingAway</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">reason</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Reason</span> {
-        <span class="self">self</span>.<span class="ident">reason</span>
+<span class="kw">impl </span>GoingAway {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>reason(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Reason {
+        <span class="self">self</span>.reason
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

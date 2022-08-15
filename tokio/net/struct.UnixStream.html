@@ -23,50 +23,50 @@ consumed by an attempt to read or write that fails with <code>WouldBlock</code> 
 <p>Concurrently read and write to the stream on the same task without
 splitting.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::io::Interest</span>;
-<span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::io::Interest;
+<span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">ready</span> = <span class="ident">stream</span>.<span class="ident">ready</span>(<span class="ident">Interest::READABLE</span> | <span class="ident">Interest::WRITABLE</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>ready = stream.ready(Interest::READABLE | Interest::WRITABLE).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_readable</span>() {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">1024</span>];
-            <span class="comment">// Try to read data, this may still fail with `WouldBlock`</span>
-            <span class="comment">// if the readiness event is a false positive.</span>
-            <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">data</span>) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, <span class="ident">n</span>);        
+        <span class="kw">if </span>ready.is_readable() {
+            <span class="kw">let </span><span class="kw-2">mut </span>data = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">1024</span>];
+            <span class="comment">// Try to read data, this may still fail with `WouldBlock`
+            // if the readiness event is a false positive.
+            </span><span class="kw">match </span>stream.try_read(<span class="kw-2">&amp;mut </span>data) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, n);        
                 }
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                     <span class="kw">continue</span>;
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
                 }
             }
 
         }
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_writable</span>() {
-            <span class="comment">// Try to write data, this may still fail with `WouldBlock`</span>
-            <span class="comment">// if the readiness event is a false positive.</span>
-            <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_write</span>(<span class="string">b&quot;hello world&quot;</span>) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;write {} bytes&quot;</span>, <span class="ident">n</span>);
+        <span class="kw">if </span>ready.is_writable() {
+            <span class="comment">// Try to write data, this may still fail with `WouldBlock`
+            // if the readiness event is a false positive.
+            </span><span class="kw">match </span>stream.try_write(<span class="string">b&quot;hello world&quot;</span>) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;write {} bytes&quot;</span>, n);
                 }
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                     <span class="kw">continue</span>;
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
                 }
             }
         }
@@ -81,40 +81,40 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to read that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">msg</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">1024</span>];
+    <span class="kw">let </span><span class="kw-2">mut </span>msg = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">1024</span>];
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">stream</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>stream.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to read data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">msg</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="ident">msg</span>.<span class="ident">truncate</span>(<span class="ident">n</span>);
+        <span class="comment">// Try to read data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_read(<span class="kw-2">&amp;mut </span>msg) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                msg.truncate(n);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;GOT = {:?}&quot;</span>, <span class="ident">msg</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;GOT = {:?}&quot;</span>, msg);
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.poll_read_ready" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#222-224">source</a></span><h4 class="code-header">pub fn <a href="#method.poll_read_ready" class="fnname">poll_read_ready</a>(&amp;self, cx: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/task/wake/struct.Context.html" title="struct core::task::wake::Context">Context</a>&lt;'_&gt;) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/task/poll/enum.Poll.html" title="enum core::task::poll::Poll">Poll</a>&lt;<a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Polls for read readiness.</p>
@@ -151,37 +151,37 @@ number of bytes read. <code>Ok(0)</code> indicates the stream’s read half is c
 and will no longer yield data. If the stream is not ready to read data
 <code>Err(io::ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">stream</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>stream.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Creating the buffer **after** the `await` prevents it from</span>
-        <span class="comment">// being stored in the async task.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">4096</span>];
+        <span class="comment">// Creating the buffer **after** the `await` prevents it from
+        // being stored in the async task.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">4096</span>];
 
-        <span class="comment">// Try to read data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
+        <span class="comment">// Try to read data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_read(<span class="kw-2">&amp;mut </span>buf) {
             <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="kw">break</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, <span class="ident">n</span>);
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, n);
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -205,42 +205,42 @@ number of bytes read. <code>Ok(0)</code> indicates the stream’s read half is c
 and will no longer yield data. If the stream is not ready to read data
 <code>Err(io::ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="self">self</span>, <span class="ident">IoSliceMut</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io::{<span class="self">self</span>, IoSliceMut};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">stream</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>stream.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Creating the buffer **after** the `await` prevents it from</span>
-        <span class="comment">// being stored in the async task.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf_a</span> = [<span class="number">0</span>; <span class="number">512</span>];
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf_b</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bufs</span> = [
-            <span class="ident">IoSliceMut::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf_a</span>),
-            <span class="ident">IoSliceMut::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf_b</span>),
+        <span class="comment">// Creating the buffer **after** the `await` prevents it from
+        // being stored in the async task.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf_a = [<span class="number">0</span>; <span class="number">512</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>buf_b = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>bufs = [
+            IoSliceMut::new(<span class="kw-2">&amp;mut </span>buf_a),
+            IoSliceMut::new(<span class="kw-2">&amp;mut </span>buf_b),
         ];
 
-        <span class="comment">// Try to read data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_read_vectored</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bufs</span>) {
+        <span class="comment">// Try to read data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_read_vectored(<span class="kw-2">&amp;mut </span>bufs) {
             <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="kw">break</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, <span class="ident">n</span>);
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, n);
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -260,35 +260,35 @@ number of bytes read. <code>Ok(0)</code> indicates the stream’s read half is c
 and will no longer yield data. If the stream is not ready to read data
 <code>Err(io::ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">stream</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>stream.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::with_capacity</span>(<span class="number">4096</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(<span class="number">4096</span>);
 
-        <span class="comment">// Try to read data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_read_buf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
+        <span class="comment">// Try to read data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_read_buf(<span class="kw-2">&amp;mut </span>buf) {
             <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="kw">break</span>,
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, <span class="ident">n</span>);
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;read {} bytes&quot;</span>, n);
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -304,32 +304,32 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to write that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">stream</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>stream.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to write data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_write</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to write data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_write(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -367,32 +367,32 @@ only part of the buffer may be written.</p>
 number of bytes written. If the stream is not ready to write data,
 <code>Err(io::ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">stream</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>stream.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to write data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_write</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to write data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_write(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -411,34 +411,34 @@ buffers.</p>
 number of bytes written. If the stream is not ready to write data,
 <code>Err(io::ErrorKind::WouldBlock)</code> is returned.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
-<span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-    <span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+    <span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">bufs</span> = [<span class="ident">io::IoSlice::new</span>(<span class="string">b&quot;hello &quot;</span>), <span class="ident">io::IoSlice::new</span>(<span class="string">b&quot;world&quot;</span>)];
+    <span class="kw">let </span>bufs = [io::IoSlice::new(<span class="string">b&quot;hello &quot;</span>), io::IoSlice::new(<span class="string">b&quot;world&quot;</span>)];
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">stream</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>stream.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to write data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">stream</span>.<span class="ident">try_write_vectored</span>(<span class="kw-2">&amp;</span><span class="ident">bufs</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to write data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>stream.try_write_vectored(<span class="kw-2">&amp;</span>bufs) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>());
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
             }
         }
     }
@@ -478,21 +478,21 @@ explicitly with <a href="../runtime/struct.Runtime.html#method.enter"><code>Runt
 mode set as <code>true</code>.  Use <a href="https://doc.rust-lang.org/nightly/std/os/unix/net/stream/struct.UnixStream.html#method.set_nonblocking"><code>set_nonblocking</code></a> to change the blocking
 mode if needed.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::error::Error</span>;
-<span class="kw">use</span> <span class="ident">std::io::Read</span>;
-<span class="kw">use</span> <span class="ident">tokio::net::UnixListener</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io::Read;
+<span class="kw">use </span>tokio::net::UnixListener;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> = [<span class="number">0u8</span>; <span class="number">12</span>];
-    <span class="kw">let</span> <span class="ident">listener</span> = <span class="ident">UnixListener::bind</span>(<span class="kw-2">&amp;</span><span class="ident">bind_path</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> (<span class="ident">tokio_unix_stream</span>, <span class="kw">_</span>) = <span class="ident">listener</span>.<span class="ident">accept</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">std_unix_stream</span> = <span class="ident">tokio_unix_stream</span>.<span class="ident">into_std</span>()<span class="question-mark">?</span>;
-    <span class="ident">std_unix_stream</span>.<span class="ident">set_nonblocking</span>(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
-    <span class="ident">std_unix_stream</span>.<span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="ident">data</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>data = [<span class="number">0u8</span>; <span class="number">12</span>];
+    <span class="kw">let </span>listener = UnixListener::bind(<span class="kw-2">&amp;</span>bind_path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(tokio_unix_stream, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>std_unix_stream = tokio_unix_stream.into_std()<span class="question-mark">?</span>;
+    std_unix_stream.set_nonblocking(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
+    std_unix_stream.read_exact(<span class="kw-2">&amp;mut </span>data)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.pair" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#764-770">source</a></span><h4 class="code-header">pub fn <a href="#method.pair" class="fnname">pair</a>() -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="struct" href="struct.UnixStream.html" title="struct tokio::net::UnixStream">UnixStream</a>, <a class="struct" href="struct.UnixStream.html" title="struct tokio::net::UnixStream">UnixStream</a>)&gt;</h4></section></summary><div class="docblock"><p>Creates an unnamed pair of connected sockets.</p>
@@ -501,22 +501,22 @@ communicating back and forth between one another. Each socket will
 be associated with the default event loop’s handle.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.local_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#793-795">source</a></span><h4 class="code-header">pub fn <a href="#method.local_addr" class="fnname">local_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the socket address of the local half of this connection.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
 
-<span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-<span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+<span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+<span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">stream</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>);</code></pre></div>
+<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, stream.local_addr()<span class="question-mark">?</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peer_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#813-815">source</a></span><h4 class="code-header">pub fn <a href="#method.peer_addr" class="fnname">peer_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the socket address of the remote half of this connection.</p>
 <h5 id="examples-10"><a href="#examples-10">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixStream</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixStream;
 
-<span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">bind_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;bind_path&quot;</span>);
-<span class="kw">let</span> <span class="ident">stream</span> = <span class="ident">UnixStream::connect</span>(<span class="ident">bind_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+<span class="kw">let </span>bind_path = dir.path().join(<span class="string">&quot;bind_path&quot;</span>);
+<span class="kw">let </span>stream = UnixStream::connect(bind_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">stream</span>.<span class="ident">peer_addr</span>()<span class="question-mark">?</span>);</code></pre></div>
+<span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, stream.peer_addr()<span class="question-mark">?</span>);</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peer_cred" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#818-820">source</a></span><h4 class="code-header">pub fn <a href="#method.peer_cred" class="fnname">peer_cred</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="unix/struct.UCred.html" title="struct tokio::net::unix::UCred">UCred</a>&gt;</h4></section></summary><div class="docblock"><p>Returns effective credentials of the process which called <code>connect</code> or <code>pair</code>.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.take_error" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#823-825">source</a></span><h4 class="code-header">pub fn <a href="#method.take_error" class="fnname">take_error</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the value of the <code>SO_ERROR</code> option.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.split" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/stream.rs.html#846-848">source</a></span><h4 class="code-header">pub fn <a href="#method.split" class="fnname">split</a>&lt;'a&gt;(&amp;'a mut self) -&gt; (<a class="struct" href="unix/struct.ReadHalf.html" title="struct tokio::net::unix::ReadHalf">ReadHalf</a>&lt;'a&gt;, <a class="struct" href="unix/struct.WriteHalf.html" title="struct tokio::net::unix::WriteHalf">WriteHalf</a>&lt;'a&gt;)</h4></section></summary><div class="docblock"><p>Splits a <code>UnixStream</code> into a read half and a write half, which can be used
@@ -559,4 +559,4 @@ the I/O connection has completely shut down. <a href="../io/trait.AsyncWrite.htm
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from-1" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from-1" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-UnixStream" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-UnixStream" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-2" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-2" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

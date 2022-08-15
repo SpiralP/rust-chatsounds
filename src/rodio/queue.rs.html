@@ -285,292 +285,292 @@
 <span id="285">285</span>
 <span id="286">286</span>
 <span id="287">287</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Queue that plays sounds one after the other.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Queue that plays sounds one after the other.
 
-<span class="kw">use</span> <span class="ident">std::sync::atomic</span>::{<span class="ident">AtomicBool</span>, <span class="ident">Ordering</span>};
-<span class="kw">use</span> <span class="ident">std::sync::mpsc</span>::{<span class="ident">Receiver</span>, <span class="ident">Sender</span>};
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">mpsc</span>, <span class="ident">Arc</span>, <span class="ident">Mutex</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</span><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
+<span class="kw">use </span>std::sync::mpsc::{Receiver, Sender};
+<span class="kw">use </span>std::sync::{mpsc, Arc, Mutex};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source</span>::{<span class="ident">Empty</span>, <span class="ident">Source</span>, <span class="ident">Zero</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Sample</span>;
+<span class="kw">use </span><span class="kw">crate</span>::source::{Empty, Source, Zero};
+<span class="kw">use </span><span class="kw">crate</span>::Sample;
 
-<span class="doccomment">/// Builds a new queue. It consists of an input and an output.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The input can be used to add sounds to the end of the queue, while the output implements</span>
-<span class="doccomment">/// `Source` and plays the sounds.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The parameter indicates how the queue should behave if the queue becomes empty:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// - If you pass `true`, then the queue is infinite and will play a silence instead until you add</span>
-<span class="doccomment">///   a new sound.</span>
-<span class="doccomment">/// - If you pass `false`, then the queue will report that it has finished playing.</span>
-<span class="doccomment">///</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">queue</span>&lt;<span class="ident">S</span>&gt;(<span class="ident">keep_alive_if_empty</span>: <span class="ident">bool</span>) -&gt; (<span class="ident">Arc</span>&lt;<span class="ident">SourcesQueueInput</span>&lt;<span class="ident">S</span>&gt;&gt;, <span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">S</span>&gt;)
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="doccomment">/// Builds a new queue. It consists of an input and an output.
+///
+/// The input can be used to add sounds to the end of the queue, while the output implements
+/// `Source` and plays the sounds.
+///
+/// The parameter indicates how the queue should behave if the queue becomes empty:
+///
+/// - If you pass `true`, then the queue is infinite and will play a silence instead until you add
+///   a new sound.
+/// - If you pass `false`, then the queue will report that it has finished playing.
+///
+</span><span class="kw">pub fn </span>queue&lt;S&gt;(keep_alive_if_empty: bool) -&gt; (Arc&lt;SourcesQueueInput&lt;S&gt;&gt;, SourcesQueueOutput&lt;S&gt;)
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">Arc::new</span>(<span class="ident">SourcesQueueInput</span> {
-        <span class="ident">next_sounds</span>: <span class="ident">Mutex::new</span>(<span class="ident">Vec::new</span>()),
-        <span class="ident">keep_alive_if_empty</span>: <span class="ident">AtomicBool::new</span>(<span class="ident">keep_alive_if_empty</span>),
+    <span class="kw">let </span>input = Arc::new(SourcesQueueInput {
+        next_sounds: Mutex::new(Vec::new()),
+        keep_alive_if_empty: AtomicBool::new(keep_alive_if_empty),
     });
 
-    <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">SourcesQueueOutput</span> {
-        <span class="ident">current</span>: <span class="ident">Box::new</span>(<span class="ident">Empty</span>::&lt;<span class="ident">S</span>&gt;<span class="ident">::new</span>()) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">_</span>&gt;,
-        <span class="ident">signal_after_end</span>: <span class="prelude-val">None</span>,
-        <span class="ident">input</span>: <span class="ident">input</span>.<span class="ident">clone</span>(),
+    <span class="kw">let </span>output = SourcesQueueOutput {
+        current: Box::new(Empty::&lt;S&gt;::new()) <span class="kw">as </span>Box&lt;<span class="kw">_</span>&gt;,
+        signal_after_end: <span class="prelude-val">None</span>,
+        input: input.clone(),
     };
 
-    (<span class="ident">input</span>, <span class="ident">output</span>)
+    (input, output)
 }
 
-<span class="comment">// TODO: consider reimplementing this with `from_factory`</span>
+<span class="comment">// TODO: consider reimplementing this with `from_factory`
 
-<span class="doccomment">/// The input of the queue.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SourcesQueueInput</span>&lt;<span class="ident">S</span>&gt; {
-    <span class="ident">next_sounds</span>: <span class="ident">Mutex</span>&lt;<span class="ident">Vec</span>&lt;(<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;, <span class="prelude-ty">Option</span>&lt;<span class="ident">Sender</span>&lt;()&gt;&gt;)&gt;&gt;,
+</span><span class="doccomment">/// The input of the queue.
+</span><span class="kw">pub struct </span>SourcesQueueInput&lt;S&gt; {
+    next_sounds: Mutex&lt;Vec&lt;(Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;, <span class="prelude-ty">Option</span>&lt;Sender&lt;()&gt;&gt;)&gt;&gt;,
 
-    <span class="comment">// See constructor.</span>
-    <span class="ident">keep_alive_if_empty</span>: <span class="ident">AtomicBool</span>,
+    <span class="comment">// See constructor.
+    </span>keep_alive_if_empty: AtomicBool,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">SourcesQueueInput</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; SourcesQueueInput&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="doccomment">/// Adds a new source to the end of the queue.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">T</span>)
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Adds a new source to the end of the queue.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>append&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: T)
+    <span class="kw">where
+        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.<span class="ident">next_sounds</span>
-            .<span class="ident">lock</span>()
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">push</span>((<span class="ident">Box::new</span>(<span class="ident">source</span>) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">_</span>&gt;, <span class="prelude-val">None</span>));
+        <span class="self">self</span>.next_sounds
+            .lock()
+            .unwrap()
+            .push((Box::new(source) <span class="kw">as </span>Box&lt;<span class="kw">_</span>&gt;, <span class="prelude-val">None</span>));
     }
 
-    <span class="doccomment">/// Adds a new source to the end of the queue.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The `Receiver` will be signalled when the sound has finished playing.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append_with_signal</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">T</span>) -&gt; <span class="ident">Receiver</span>&lt;()&gt;
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Adds a new source to the end of the queue.
+    ///
+    /// The `Receiver` will be signalled when the sound has finished playing.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>append_with_signal&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: T) -&gt; Receiver&lt;()&gt;
+    <span class="kw">where
+        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>();
-        <span class="self">self</span>.<span class="ident">next_sounds</span>
-            .<span class="ident">lock</span>()
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">push</span>((<span class="ident">Box::new</span>(<span class="ident">source</span>) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">_</span>&gt;, <span class="prelude-val">Some</span>(<span class="ident">tx</span>)));
-        <span class="ident">rx</span>
+        <span class="kw">let </span>(tx, rx) = mpsc::channel();
+        <span class="self">self</span>.next_sounds
+            .lock()
+            .unwrap()
+            .push((Box::new(source) <span class="kw">as </span>Box&lt;<span class="kw">_</span>&gt;, <span class="prelude-val">Some</span>(tx)));
+        rx
     }
 
-    <span class="doccomment">/// Sets whether the queue stays alive if there&#39;s no more sound to play.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// See also the constructor.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_keep_alive_if_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">keep_alive_if_empty</span>: <span class="ident">bool</span>) {
-        <span class="self">self</span>.<span class="ident">keep_alive_if_empty</span>
-            .<span class="ident">store</span>(<span class="ident">keep_alive_if_empty</span>, <span class="ident">Ordering::Release</span>);
+    <span class="doccomment">/// Sets whether the queue stays alive if there&#39;s no more sound to play.
+    ///
+    /// See also the constructor.
+    </span><span class="kw">pub fn </span>set_keep_alive_if_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, keep_alive_if_empty: bool) {
+        <span class="self">self</span>.keep_alive_if_empty
+            .store(keep_alive_if_empty, Ordering::Release);
     }
 }
 
-<span class="doccomment">/// The output of the queue. Implements `Source`.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">S</span>&gt; {
-    <span class="comment">// The current iterator that produces samples.</span>
-    <span class="ident">current</span>: <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;,
+<span class="doccomment">/// The output of the queue. Implements `Source`.
+</span><span class="kw">pub struct </span>SourcesQueueOutput&lt;S&gt; {
+    <span class="comment">// The current iterator that produces samples.
+    </span>current: Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;,
 
-    <span class="comment">// Signal this sender before picking from `next`.</span>
-    <span class="ident">signal_after_end</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">Sender</span>&lt;()&gt;&gt;,
+    <span class="comment">// Signal this sender before picking from `next`.
+    </span>signal_after_end: <span class="prelude-ty">Option</span>&lt;Sender&lt;()&gt;&gt;,
 
-    <span class="comment">// The next sounds.</span>
-    <span class="ident">input</span>: <span class="ident">Arc</span>&lt;<span class="ident">SourcesQueueInput</span>&lt;<span class="ident">S</span>&gt;&gt;,
+    <span class="comment">// The next sounds.
+    </span>input: Arc&lt;SourcesQueueInput&lt;S&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; Source <span class="kw">for </span>SourcesQueueOutput&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="comment">// This function is non-trivial because the boundary between two sounds in the queue should</span>
-        <span class="comment">// be a frame boundary as well.</span>
-        <span class="comment">//</span>
-        <span class="comment">// The current sound is free to return `None` for `current_frame_len()`, in which case</span>
-        <span class="comment">// we *should* return the number of samples remaining the current sound.</span>
-        <span class="comment">// This can be estimated with `size_hint()`.</span>
-        <span class="comment">//</span>
-        <span class="comment">// If the `size_hint` is `None` as well, we are in the worst case scenario. To handle this</span>
-        <span class="comment">// situation we force a frame to have a maximum number of samples indicate by this</span>
-        <span class="comment">// constant.</span>
-        <span class="kw">const</span> <span class="ident">THRESHOLD</span>: <span class="ident">usize</span> = <span class="number">512</span>;
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="comment">// This function is non-trivial because the boundary between two sounds in the queue should
+        // be a frame boundary as well.
+        //
+        // The current sound is free to return `None` for `current_frame_len()`, in which case
+        // we *should* return the number of samples remaining the current sound.
+        // This can be estimated with `size_hint()`.
+        //
+        // If the `size_hint` is `None` as well, we are in the worst case scenario. To handle this
+        // situation we force a frame to have a maximum number of samples indicate by this
+        // constant.
+        </span><span class="kw">const </span>THRESHOLD: usize = <span class="number">512</span>;
 
-        <span class="comment">// Try the current `current_frame_len`.</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">val</span>) = <span class="self">self</span>.<span class="ident">current</span>.<span class="ident">current_frame_len</span>() {
-            <span class="kw">if</span> <span class="ident">val</span> != <span class="number">0</span> {
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">val</span>);
+        <span class="comment">// Try the current `current_frame_len`.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(val) = <span class="self">self</span>.current.current_frame_len() {
+            <span class="kw">if </span>val != <span class="number">0 </span>{
+                <span class="kw">return </span><span class="prelude-val">Some</span>(val);
             }
         }
 
-        <span class="comment">// Try the size hint.</span>
-        <span class="kw">let</span> (<span class="ident">lower_bound</span>, <span class="kw">_</span>) = <span class="self">self</span>.<span class="ident">current</span>.<span class="ident">size_hint</span>();
-        <span class="comment">// The iterator default implementation just returns 0.</span>
-        <span class="comment">// That&#39;s a problematic value, so skip it.</span>
-        <span class="kw">if</span> <span class="ident">lower_bound</span> &gt; <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">lower_bound</span>);
+        <span class="comment">// Try the size hint.
+        </span><span class="kw">let </span>(lower_bound, <span class="kw">_</span>) = <span class="self">self</span>.current.size_hint();
+        <span class="comment">// The iterator default implementation just returns 0.
+        // That&#39;s a problematic value, so skip it.
+        </span><span class="kw">if </span>lower_bound &gt; <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Some</span>(lower_bound);
         }
 
-        <span class="comment">// Otherwise we use the constant value.</span>
-        <span class="prelude-val">Some</span>(<span class="ident">THRESHOLD</span>)
+        <span class="comment">// Otherwise we use the constant value.
+        </span><span class="prelude-val">Some</span>(THRESHOLD)
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="ident">current</span>.<span class="ident">channels</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.current.channels()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="self">self</span>.<span class="ident">current</span>.<span class="ident">sample_rate</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.current.sample_rate()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="prelude-val">None</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="prelude-val">None
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;S&gt; Iterator <span class="kw">for </span>SourcesQueueOutput&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+{
+    <span class="kw">type </span>Item = S;
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;S&gt; {
+        <span class="kw">loop </span>{
+            <span class="comment">// Basic situation that will happen most of the time.
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(sample) = <span class="self">self</span>.current.next() {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(sample);
+            }
+
+            <span class="comment">// Since `self.current` has finished, we need to pick the next sound.
+            // In order to avoid inlining this expensive operation, the code is in another function.
+            </span><span class="kw">if </span><span class="self">self</span>.go_next().is_err() {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+        }
+    }
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        (<span class="self">self</span>.current.size_hint().<span class="number">0</span>, <span class="prelude-val">None</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; SourcesQueueOutput&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">S</span>;
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">S</span>&gt; {
-        <span class="kw">loop</span> {
-            <span class="comment">// Basic situation that will happen most of the time.</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sample</span>) = <span class="self">self</span>.<span class="ident">current</span>.<span class="ident">next</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">sample</span>);
-            }
-
-            <span class="comment">// Since `self.current` has finished, we need to pick the next sound.</span>
-            <span class="comment">// In order to avoid inlining this expensive operation, the code is in another function.</span>
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">go_next</span>().<span class="ident">is_err</span>() {
-                <span class="kw">return</span> <span class="prelude-val">None</span>;
-            }
-        }
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        (<span class="self">self</span>.<span class="ident">current</span>.<span class="ident">size_hint</span>().<span class="number">0</span>, <span class="prelude-val">None</span>)
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
-{
-    <span class="comment">// Called when `current` is empty and we must jump to the next element.</span>
-    <span class="comment">// Returns `Ok` if the sound should continue playing, or an error if it should stop.</span>
-    <span class="comment">//</span>
-    <span class="comment">// This method is separate so that it is not inlined.</span>
-    <span class="kw">fn</span> <span class="ident">go_next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">signal_after_end</span>) = <span class="self">self</span>.<span class="ident">signal_after_end</span>.<span class="ident">take</span>() {
-            <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">signal_after_end</span>.<span class="ident">send</span>(());
+    <span class="comment">// Called when `current` is empty and we must jump to the next element.
+    // Returns `Ok` if the sound should continue playing, or an error if it should stop.
+    //
+    // This method is separate so that it is not inlined.
+    </span><span class="kw">fn </span>go_next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(signal_after_end) = <span class="self">self</span>.signal_after_end.take() {
+            <span class="kw">let _ </span>= signal_after_end.send(());
         }
 
-        <span class="kw">let</span> (<span class="ident">next</span>, <span class="ident">signal_after_end</span>) = {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next</span> = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next_sounds</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let </span>(next, signal_after_end) = {
+            <span class="kw">let </span><span class="kw-2">mut </span>next = <span class="self">self</span>.input.next_sounds.lock().unwrap();
 
-            <span class="kw">if</span> <span class="ident">next</span>.<span class="ident">len</span>() == <span class="number">0</span> {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">keep_alive_if_empty</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>) {
-                    <span class="comment">// Play a short silence in order to avoid spinlocking.</span>
-                    <span class="kw">let</span> <span class="ident">silence</span> = <span class="ident">Zero</span>::&lt;<span class="ident">S</span>&gt;<span class="ident">::new</span>(<span class="number">1</span>, <span class="number">44100</span>); <span class="comment">// TODO: meh</span>
-                    (
-                        <span class="ident">Box::new</span>(<span class="ident">silence</span>.<span class="ident">take_duration</span>(<span class="ident">Duration::from_millis</span>(<span class="number">10</span>))) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">_</span>&gt;,
+            <span class="kw">if </span>next.len() == <span class="number">0 </span>{
+                <span class="kw">if </span><span class="self">self</span>.input.keep_alive_if_empty.load(Ordering::Acquire) {
+                    <span class="comment">// Play a short silence in order to avoid spinlocking.
+                    </span><span class="kw">let </span>silence = Zero::&lt;S&gt;::new(<span class="number">1</span>, <span class="number">44100</span>); <span class="comment">// TODO: meh
+                    </span>(
+                        Box::new(silence.take_duration(Duration::from_millis(<span class="number">10</span>))) <span class="kw">as </span>Box&lt;<span class="kw">_</span>&gt;,
                         <span class="prelude-val">None</span>,
                     )
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(());
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(());
                 }
-            } <span class="kw">else</span> {
-                <span class="ident">next</span>.<span class="ident">remove</span>(<span class="number">0</span>)
+            } <span class="kw">else </span>{
+                next.remove(<span class="number">0</span>)
             }
         };
 
-        <span class="self">self</span>.<span class="ident">current</span> = <span class="ident">next</span>;
-        <span class="self">self</span>.<span class="ident">signal_after_end</span> = <span class="ident">signal_after_end</span>;
+        <span class="self">self</span>.current = next;
+        <span class="self">self</span>.signal_after_end = signal_after_end;
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::SamplesBuffer</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::queue</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Source</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::buffer::SamplesBuffer;
+    <span class="kw">use </span><span class="kw">crate</span>::queue;
+    <span class="kw">use </span><span class="kw">crate</span>::source::Source;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">ignore</span>]</span> <span class="comment">// FIXME: samples rate and channel not updated immediately after transition</span>
-    <span class="kw">fn</span> <span class="ident">basic</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">queue::queue</span>(<span class="bool-val">false</span>);
+    <span class="attribute">#[test]</span>
+    <span class="attribute">#[ignore]</span> <span class="comment">// FIXME: samples rate and channel not updated immediately after transition
+    </span><span class="kw">fn </span>basic() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = queue::queue(<span class="bool-val">false</span>);
 
-        <span class="ident">tx</span>.<span class="ident">append</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
-        <span class="ident">tx</span>.<span class="ident">append</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">2</span>, <span class="number">96000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
+        tx.append(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        tx.append(SamplesBuffer::new(<span class="number">2</span>, <span class="number">96000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">channels</span>(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">sample_rate</span>(), <span class="number">48000</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">channels</span>(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">sample_rate</span>(), <span class="number">96000</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(rx.channels(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(rx.sample_rate(), <span class="number">48000</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.channels(), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(rx.sample_rate(), <span class="number">96000</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">immediate_end</span>() {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">queue::queue</span>::&lt;<span class="ident">i16</span>&gt;(<span class="bool-val">false</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>immediate_end() {
+        <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>rx) = queue::queue::&lt;i16&gt;(<span class="bool-val">false</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">keep_alive</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">queue::queue</span>(<span class="bool-val">true</span>);
-        <span class="ident">tx</span>.<span class="ident">append</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>keep_alive() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = queue::queue(<span class="bool-val">true</span>);
+        tx.append(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
 
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">100000</span> {
-            <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
+        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100000 </span>{
+            <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">ignore</span>]</span> <span class="comment">// TODO: not yet implemented</span>
-    <span class="kw">fn</span> <span class="ident">no_delay_when_added</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">queue::queue</span>(<span class="bool-val">true</span>);
+    <span class="attribute">#[test]</span>
+    <span class="attribute">#[ignore]</span> <span class="comment">// TODO: not yet implemented
+    </span><span class="kw">fn </span>no_delay_when_added() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = queue::queue(<span class="bool-val">true</span>);
 
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">500</span> {
-            <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
+        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">500 </span>{
+            <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">0</span>));
         }
 
-        <span class="ident">tx</span>.<span class="ident">append</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        tx.append(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

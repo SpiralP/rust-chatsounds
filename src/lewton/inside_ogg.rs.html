@@ -388,56 +388,56 @@
 <span id="388">388</span>
 <span id="389">389</span>
 <span id="390">390</span>
-</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Licensed under MIT license, or Apache 2 license,</span>
-<span class="comment">// at your option. Please see the LICENSE file</span>
-<span class="comment">// attached to this source distribution for details.</span>
+</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust
+//
+// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Licensed under MIT license, or Apache 2 license,
+// at your option. Please see the LICENSE file
+// attached to this source distribution for details.
 
-<span class="doccomment">/*!
+</span><span class="doccomment">/*!
 Higher-level utilities for Ogg streams and files
 
 This module provides higher level access to the library functionality,
 and useful helper methods for the Ogg `PacketReader` struct.
-*/</span>
+*/
 
-<span class="kw">use</span> <span class="ident">ogg</span>::{<span class="ident">PacketReader</span>, <span class="ident">Packet</span>};
-<span class="kw">use</span> <span class="ident">header</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">VorbisError</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>};
-<span class="kw">use</span> <span class="ident">::audio</span>::{<span class="ident">PreviousWindowRight</span>, <span class="ident">read_audio_packet</span>,
-	<span class="ident">read_audio_packet_generic</span>};
-<span class="kw">use</span> <span class="ident">::header::HeaderSet</span>;
-<span class="kw">use</span> <span class="ident">::samples</span>::{<span class="ident">Samples</span>, <span class="ident">InterleavedSamples</span>};
+</span><span class="kw">use </span>ogg::{PacketReader, Packet};
+<span class="kw">use </span>header::<span class="kw-2">*</span>;
+<span class="kw">use </span>VorbisError;
+<span class="kw">use </span>std::io::{Read, Seek};
+<span class="kw">use </span>::audio::{PreviousWindowRight, read_audio_packet,
+	read_audio_packet_generic};
+<span class="kw">use </span>::header::HeaderSet;
+<span class="kw">use </span>::samples::{Samples, InterleavedSamples};
 
-<span class="doccomment">/// Reads the three vorbis headers from an ogg stream as well as stream serial information</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Please note that this function doesn&#39;t work well with async</span>
-<span class="doccomment">/// I/O. In order to support this use case, enable the `async_ogg` feature,</span>
-<span class="doccomment">/// and use the `HeadersReader` struct instead.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_headers</span>&lt;<span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">Read</span> + <span class="ident">Seek</span> + <span class="lifetime">&#39;a</span>&gt;(<span class="ident">rdr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;) -&gt;
-		<span class="prelude-ty">Result</span>&lt;(<span class="ident">HeaderSet</span>, <span class="ident">u32</span>), <span class="ident">VorbisError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">pck</span> :<span class="ident">Packet</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
-	<span class="kw">let</span> <span class="ident">ident_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_ident</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>));
-	<span class="kw">let</span> <span class="ident">stream_serial</span> = <span class="ident">pck</span>.<span class="ident">stream_serial</span>();
+<span class="doccomment">/// Reads the three vorbis headers from an ogg stream as well as stream serial information
+///
+/// Please note that this function doesn&#39;t work well with async
+/// I/O. In order to support this use case, enable the `async_ogg` feature,
+/// and use the `HeadersReader` struct instead.
+</span><span class="kw">pub fn </span>read_headers&lt;<span class="lifetime">&#39;a</span>, T: Read + Seek + <span class="lifetime">&#39;a</span>&gt;(rdr: <span class="kw-2">&amp;mut </span>PacketReader&lt;T&gt;) -&gt;
+		<span class="prelude-ty">Result</span>&lt;(HeaderSet, u32), VorbisError&gt; {
+	<span class="kw">let </span>pck :Packet = <span class="macro">try!</span>(rdr.read_packet_expected());
+	<span class="kw">let </span>ident_hdr = <span class="macro">try!</span>(read_header_ident(<span class="kw-2">&amp;</span>pck.data));
+	<span class="kw">let </span>stream_serial = pck.stream_serial();
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pck</span> :<span class="ident">Packet</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
-	<span class="kw">while</span> <span class="ident">pck</span>.<span class="ident">stream_serial</span>() != <span class="ident">stream_serial</span> {
-		<span class="ident">pck</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
+	<span class="kw">let </span><span class="kw-2">mut </span>pck :Packet = <span class="macro">try!</span>(rdr.read_packet_expected());
+	<span class="kw">while </span>pck.stream_serial() != stream_serial {
+		pck = <span class="macro">try!</span>(rdr.read_packet_expected());
 	}
-	<span class="kw">let</span> <span class="ident">comment_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_comment</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>));
+	<span class="kw">let </span>comment_hdr = <span class="macro">try!</span>(read_header_comment(<span class="kw-2">&amp;</span>pck.data));
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pck</span> :<span class="ident">Packet</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
-	<span class="kw">while</span> <span class="ident">pck</span>.<span class="ident">stream_serial</span>() != <span class="ident">stream_serial</span> {
-		<span class="ident">pck</span> = <span class="macro">try!</span>(<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
+	<span class="kw">let </span><span class="kw-2">mut </span>pck :Packet = <span class="macro">try!</span>(rdr.read_packet_expected());
+	<span class="kw">while </span>pck.stream_serial() != stream_serial {
+		pck = <span class="macro">try!</span>(rdr.read_packet_expected());
 	}
-	<span class="kw">let</span> <span class="ident">setup_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_setup</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>, <span class="ident">ident_hdr</span>.<span class="ident">audio_channels</span>,
-		(<span class="ident">ident_hdr</span>.<span class="ident">blocksize_0</span>, <span class="ident">ident_hdr</span>.<span class="ident">blocksize_1</span>)));
+	<span class="kw">let </span>setup_hdr = <span class="macro">try!</span>(read_header_setup(<span class="kw-2">&amp;</span>pck.data, ident_hdr.audio_channels,
+		(ident_hdr.blocksize_0, ident_hdr.blocksize_1)));
 
-	<span class="ident">rdr</span>.<span class="ident">delete_unread_packets</span>();
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(((<span class="ident">ident_hdr</span>, <span class="ident">comment_hdr</span>, <span class="ident">setup_hdr</span>), <span class="ident">pck</span>.<span class="ident">stream_serial</span>()));
+	rdr.delete_unread_packets();
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(((ident_hdr, comment_hdr, setup_hdr), pck.stream_serial()));
 }
 
 <span class="doccomment">/**
@@ -452,331 +452,331 @@ in the case of ogv, is not supported.
 
 If you need support for this, you need to use the lower level methods
 instead.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OggStreamReader</span>&lt;<span class="ident">T</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>&gt; {
-	<span class="ident">rdr</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;,
-	<span class="ident">pwr</span> :<span class="ident">PreviousWindowRight</span>,
+*/
+</span><span class="kw">pub struct </span>OggStreamReader&lt;T: Read + Seek&gt; {
+	rdr :PacketReader&lt;T&gt;,
+	pwr :PreviousWindowRight,
 
-	<span class="ident">stream_serial</span> :<span class="ident">u32</span>,
+	stream_serial :u32,
 
-	<span class="kw">pub</span> <span class="ident">ident_hdr</span> :<span class="ident">IdentHeader</span>,
-	<span class="kw">pub</span> <span class="ident">comment_hdr</span> :<span class="ident">CommentHeader</span>,
-	<span class="kw">pub</span> <span class="ident">setup_hdr</span> :<span class="ident">SetupHeader</span>,
+	<span class="kw">pub </span>ident_hdr :IdentHeader,
+	<span class="kw">pub </span>comment_hdr :CommentHeader,
+	<span class="kw">pub </span>setup_hdr :SetupHeader,
 
-	<span class="ident">cur_absgp</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;,
+	cur_absgp :<span class="prelude-ty">Option</span>&lt;u64&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">Read</span> + <span class="ident">Seek</span>&gt; <span class="ident">OggStreamReader</span>&lt;<span class="ident">T</span>&gt; {
-	<span class="doccomment">/// Constructs a new OggStreamReader from a given implementation of `Read + Seek`.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Please note that this function doesn&#39;t work well with async</span>
-	<span class="doccomment">/// I/O. In order to support this use case, enable the `async_ogg` feature,</span>
-	<span class="doccomment">/// and use the `HeadersReader` struct instead.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rdr</span> :<span class="ident">T</span>) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">VorbisError</span>&gt; {
-		<span class="ident">OggStreamReader::from_ogg_reader</span>(<span class="ident">PacketReader::new</span>(<span class="ident">rdr</span>))
+<span class="kw">impl</span>&lt;T: Read + Seek&gt; OggStreamReader&lt;T&gt; {
+	<span class="doccomment">/// Constructs a new OggStreamReader from a given implementation of `Read + Seek`.
+	///
+	/// Please note that this function doesn&#39;t work well with async
+	/// I/O. In order to support this use case, enable the `async_ogg` feature,
+	/// and use the `HeadersReader` struct instead.
+	</span><span class="kw">pub fn </span>new(rdr :T) -&gt;
+			<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, VorbisError&gt; {
+		OggStreamReader::from_ogg_reader(PacketReader::new(rdr))
 	}
-	<span class="doccomment">/// Constructs a new OggStreamReader from a given Ogg PacketReader.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The `new` function is a nice wrapper around this function that</span>
-	<span class="doccomment">/// also creates the ogg reader.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Please note that this function doesn&#39;t work well with async</span>
-	<span class="doccomment">/// I/O. In order to support this use case, enable the `async_ogg` feature,</span>
-	<span class="doccomment">/// and use the `HeadersReader` struct instead.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_ogg_reader</span>(<span class="kw-2">mut</span> <span class="ident">rdr</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="ident">VorbisError</span>&gt; {
-		<span class="kw">let</span> ((<span class="ident">ident_hdr</span>, <span class="ident">comment_hdr</span>, <span class="ident">setup_hdr</span>), <span class="ident">stream_serial</span>) =
-			<span class="macro">try!</span>(<span class="ident">read_headers</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rdr</span>));
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">OggStreamReader</span> {
-			<span class="ident">rdr</span>,
-			<span class="ident">pwr</span> : <span class="ident">PreviousWindowRight::new</span>(),
-			<span class="ident">ident_hdr</span>,
-			<span class="ident">comment_hdr</span>,
-			<span class="ident">setup_hdr</span>,
-			<span class="ident">stream_serial</span>,
-			<span class="ident">cur_absgp</span> : <span class="prelude-val">None</span>,
+	<span class="doccomment">/// Constructs a new OggStreamReader from a given Ogg PacketReader.
+	///
+	/// The `new` function is a nice wrapper around this function that
+	/// also creates the ogg reader.
+	///
+	/// Please note that this function doesn&#39;t work well with async
+	/// I/O. In order to support this use case, enable the `async_ogg` feature,
+	/// and use the `HeadersReader` struct instead.
+	</span><span class="kw">pub fn </span>from_ogg_reader(<span class="kw-2">mut </span>rdr :PacketReader&lt;T&gt;) -&gt;
+			<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, VorbisError&gt; {
+		<span class="kw">let </span>((ident_hdr, comment_hdr, setup_hdr), stream_serial) =
+			<span class="macro">try!</span>(read_headers(<span class="kw-2">&amp;mut </span>rdr));
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(OggStreamReader {
+			rdr,
+			pwr : PreviousWindowRight::new(),
+			ident_hdr,
+			comment_hdr,
+			setup_hdr,
+			stream_serial,
+			cur_absgp : <span class="prelude-val">None</span>,
 		});
 	}
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="self">self</span>.<span class="ident">rdr</span>
+	<span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; PacketReader&lt;T&gt; {
+		<span class="self">self</span>.rdr
 	}
-	<span class="kw">fn</span> <span class="ident">read_next_audio_packet</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Packet</span>&gt;, <span class="ident">VorbisError</span>&gt; {
-		<span class="kw">loop</span> {
-			<span class="kw">let</span> <span class="ident">pck</span> = <span class="kw">match</span> <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_packet</span>()) {
-				<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
-				<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+	<span class="kw">fn </span>read_next_audio_packet(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Packet&gt;, VorbisError&gt; {
+		<span class="kw">loop </span>{
+			<span class="kw">let </span>pck = <span class="kw">match </span><span class="macro">try!</span>(<span class="self">self</span>.rdr.read_packet()) {
+				<span class="prelude-val">Some</span>(p) =&gt; p,
+				<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 			};
-			<span class="kw">if</span> <span class="ident">pck</span>.<span class="ident">stream_serial</span>() != <span class="self">self</span>.<span class="ident">stream_serial</span> {
-				<span class="kw">if</span> <span class="ident">pck</span>.<span class="ident">first_in_stream</span>() {
-					<span class="comment">// We have a chained ogg file. This means we need to</span>
-					<span class="comment">// re-initialize the internal context.</span>
-					<span class="kw">let</span> <span class="ident">ident_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_ident</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>));
+			<span class="kw">if </span>pck.stream_serial() != <span class="self">self</span>.stream_serial {
+				<span class="kw">if </span>pck.first_in_stream() {
+					<span class="comment">// We have a chained ogg file. This means we need to
+					// re-initialize the internal context.
+					</span><span class="kw">let </span>ident_hdr = <span class="macro">try!</span>(read_header_ident(<span class="kw-2">&amp;</span>pck.data));
 
-					<span class="kw">let</span> <span class="ident">pck</span> :<span class="ident">Packet</span> = <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
-					<span class="kw">let</span> <span class="ident">comment_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_comment</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>));
+					<span class="kw">let </span>pck :Packet = <span class="macro">try!</span>(<span class="self">self</span>.rdr.read_packet_expected());
+					<span class="kw">let </span>comment_hdr = <span class="macro">try!</span>(read_header_comment(<span class="kw-2">&amp;</span>pck.data));
 
-					<span class="kw">let</span> <span class="ident">pck</span> :<span class="ident">Packet</span> = <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_packet_expected</span>());
-					<span class="kw">let</span> <span class="ident">setup_hdr</span> = <span class="macro">try!</span>(<span class="ident">read_header_setup</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>, <span class="ident">ident_hdr</span>.<span class="ident">audio_channels</span>,
-						(<span class="ident">ident_hdr</span>.<span class="ident">blocksize_0</span>, <span class="ident">ident_hdr</span>.<span class="ident">blocksize_1</span>)));
+					<span class="kw">let </span>pck :Packet = <span class="macro">try!</span>(<span class="self">self</span>.rdr.read_packet_expected());
+					<span class="kw">let </span>setup_hdr = <span class="macro">try!</span>(read_header_setup(<span class="kw-2">&amp;</span>pck.data, ident_hdr.audio_channels,
+						(ident_hdr.blocksize_0, ident_hdr.blocksize_1)));
 
-					<span class="comment">// Update the context</span>
-					<span class="self">self</span>.<span class="ident">pwr</span> = <span class="ident">PreviousWindowRight::new</span>();
-					<span class="self">self</span>.<span class="ident">ident_hdr</span> = <span class="ident">ident_hdr</span>;
-					<span class="self">self</span>.<span class="ident">comment_hdr</span> = <span class="ident">comment_hdr</span>;
-					<span class="self">self</span>.<span class="ident">setup_hdr</span> = <span class="ident">setup_hdr</span>;
-					<span class="self">self</span>.<span class="ident">stream_serial</span> = <span class="ident">pck</span>.<span class="ident">stream_serial</span>();
-					<span class="self">self</span>.<span class="ident">cur_absgp</span> = <span class="prelude-val">None</span>;
+					<span class="comment">// Update the context
+					</span><span class="self">self</span>.pwr = PreviousWindowRight::new();
+					<span class="self">self</span>.ident_hdr = ident_hdr;
+					<span class="self">self</span>.comment_hdr = comment_hdr;
+					<span class="self">self</span>.setup_hdr = setup_hdr;
+					<span class="self">self</span>.stream_serial = pck.stream_serial();
+					<span class="self">self</span>.cur_absgp = <span class="prelude-val">None</span>;
 
-					<span class="comment">// Now, read the first audio packet to prime the pwr</span>
-					<span class="comment">// and discard the packet.</span>
-					<span class="kw">let</span> <span class="ident">pck</span> = <span class="kw">match</span> <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_packet</span>()) {
-						<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
-						<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+					<span class="comment">// Now, read the first audio packet to prime the pwr
+					// and discard the packet.
+					</span><span class="kw">let </span>pck = <span class="kw">match </span><span class="macro">try!</span>(<span class="self">self</span>.rdr.read_packet()) {
+						<span class="prelude-val">Some</span>(p) =&gt; p,
+						<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 					};
-					<span class="kw">let</span> <span class="ident">_decoded_pck</span> = <span class="macro">try!</span>(<span class="ident">read_audio_packet</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ident_hdr</span>,
-						<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">setup_hdr</span>, <span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">pwr</span>));
-					<span class="self">self</span>.<span class="ident">cur_absgp</span> = <span class="prelude-val">Some</span>(<span class="ident">pck</span>.<span class="ident">absgp_page</span>());
+					<span class="kw">let </span>_decoded_pck = <span class="macro">try!</span>(read_audio_packet(<span class="kw-2">&amp;</span><span class="self">self</span>.ident_hdr,
+						<span class="kw-2">&amp;</span><span class="self">self</span>.setup_hdr, <span class="kw-2">&amp;</span>pck.data, <span class="kw-2">&amp;mut </span><span class="self">self</span>.pwr));
+					<span class="self">self</span>.cur_absgp = <span class="prelude-val">Some</span>(pck.absgp_page());
 
-					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_packet</span>()));
-				} <span class="kw">else</span> {
-					<span class="comment">// Ignore every packet that has a mismatching stream serial</span>
-				}
-			} <span class="kw">else</span> {
-				<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">pck</span>));
+					<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">try!</span>(<span class="self">self</span>.rdr.read_packet()));
+				} <span class="kw">else </span>{
+					<span class="comment">// Ignore every packet that has a mismatching stream serial
+				</span>}
+			} <span class="kw">else </span>{
+				<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(pck));
 			}
 		}
 	}
-	<span class="doccomment">/// Reads and decompresses an audio packet from the stream.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On read errors, it returns Err(e) with the error.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On success, it either returns None, when the end of the</span>
-	<span class="doccomment">/// stream has been reached, or Some(packet_data),</span>
-	<span class="doccomment">/// with the data of the decompressed packet.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_dec_packet</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;&gt;&gt;, <span class="ident">VorbisError</span>&gt; {
-		<span class="kw">let</span> <span class="ident">pck</span> = <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_dec_packet_generic</span>());
-		<span class="prelude-val">Ok</span>(<span class="ident">pck</span>)
+	<span class="doccomment">/// Reads and decompresses an audio packet from the stream.
+	///
+	/// On read errors, it returns Err(e) with the error.
+	///
+	/// On success, it either returns None, when the end of the
+	/// stream has been reached, or Some(packet_data),
+	/// with the data of the decompressed packet.
+	</span><span class="kw">pub fn </span>read_dec_packet(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt;
+			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Vec&lt;i16&gt;&gt;&gt;, VorbisError&gt; {
+		<span class="kw">let </span>pck = <span class="macro">try!</span>(<span class="self">self</span>.read_dec_packet_generic());
+		<span class="prelude-val">Ok</span>(pck)
 	}
-	<span class="doccomment">/// Reads and decompresses an audio packet from the stream (generic).</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On read errors, it returns Err(e) with the error.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On success, it either returns None, when the end of the</span>
-	<span class="doccomment">/// stream has been reached, or Some(packet_data),</span>
-	<span class="doccomment">/// with the data of the decompressed packet.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_dec_packet_generic</span>&lt;<span class="ident">S</span> :<span class="ident">Samples</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">S</span>&gt;, <span class="ident">VorbisError</span>&gt; {
-		<span class="kw">let</span> <span class="ident">pck</span> = <span class="kw">match</span> <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_next_audio_packet</span>()) {
-			<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
-			<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+	<span class="doccomment">/// Reads and decompresses an audio packet from the stream (generic).
+	///
+	/// On read errors, it returns Err(e) with the error.
+	///
+	/// On success, it either returns None, when the end of the
+	/// stream has been reached, or Some(packet_data),
+	/// with the data of the decompressed packet.
+	</span><span class="kw">pub fn </span>read_dec_packet_generic&lt;S :Samples&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt;
+			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;S&gt;, VorbisError&gt; {
+		<span class="kw">let </span>pck = <span class="kw">match </span><span class="macro">try!</span>(<span class="self">self</span>.read_next_audio_packet()) {
+			<span class="prelude-val">Some</span>(p) =&gt; p,
+			<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 		};
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decoded_pck</span> :<span class="ident">S</span> = <span class="macro">try!</span>(<span class="ident">read_audio_packet_generic</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ident_hdr</span>,
-			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">setup_hdr</span>, <span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">pwr</span>));
+		<span class="kw">let </span><span class="kw-2">mut </span>decoded_pck :S = <span class="macro">try!</span>(read_audio_packet_generic(<span class="kw-2">&amp;</span><span class="self">self</span>.ident_hdr,
+			<span class="kw-2">&amp;</span><span class="self">self</span>.setup_hdr, <span class="kw-2">&amp;</span>pck.data, <span class="kw-2">&amp;mut </span><span class="self">self</span>.pwr));
 
-		<span class="comment">// If this is the last packet in the logical bitstream,</span>
-		<span class="comment">// we need to truncate it so that its ending matches</span>
-		<span class="comment">// the absgp of the current page.</span>
-		<span class="comment">// This is what the spec mandates and also the behaviour</span>
-		<span class="comment">// of libvorbis.</span>
-		<span class="kw">if</span> <span class="kw">let</span> (<span class="prelude-val">Some</span>(<span class="ident">absgp</span>), <span class="bool-val">true</span>) = (<span class="self">self</span>.<span class="ident">cur_absgp</span>, <span class="ident">pck</span>.<span class="ident">last_in_stream</span>()) {
-			<span class="kw">let</span> <span class="ident">target_length</span> = <span class="ident">pck</span>.<span class="ident">absgp_page</span>().<span class="ident">saturating_sub</span>(<span class="ident">absgp</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-			<span class="ident">decoded_pck</span>.<span class="ident">truncate</span>(<span class="ident">target_length</span>);
+		<span class="comment">// If this is the last packet in the logical bitstream,
+		// we need to truncate it so that its ending matches
+		// the absgp of the current page.
+		// This is what the spec mandates and also the behaviour
+		// of libvorbis.
+		</span><span class="kw">if let </span>(<span class="prelude-val">Some</span>(absgp), <span class="bool-val">true</span>) = (<span class="self">self</span>.cur_absgp, pck.last_in_stream()) {
+			<span class="kw">let </span>target_length = pck.absgp_page().saturating_sub(absgp) <span class="kw">as </span>usize;
+			decoded_pck.truncate(target_length);
 		}
-		<span class="kw">if</span> <span class="ident">pck</span>.<span class="ident">last_in_page</span>() {
-			<span class="self">self</span>.<span class="ident">cur_absgp</span> = <span class="prelude-val">Some</span>(<span class="ident">pck</span>.<span class="ident">absgp_page</span>());
-		} <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="kw-2">&amp;mut</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">absgp</span>) = <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">cur_absgp</span> {
-			<span class="kw-2">*</span><span class="ident">absgp</span> += <span class="ident">decoded_pck</span>.<span class="ident">num_samples</span>() <span class="kw">as</span> <span class="ident">u64</span>;
+		<span class="kw">if </span>pck.last_in_page() {
+			<span class="self">self</span>.cur_absgp = <span class="prelude-val">Some</span>(pck.absgp_page());
+		} <span class="kw">else if let </span><span class="kw-2">&amp;mut </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>absgp) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cur_absgp {
+			<span class="kw-2">*</span>absgp += decoded_pck.num_samples() <span class="kw">as </span>u64;
 		}
 
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">decoded_pck</span>));
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(decoded_pck));
 	}
-	<span class="doccomment">/// Reads and decompresses an audio packet from the stream (interleaved).</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On read errors, it returns Err(e) with the error.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// On success, it either returns None, when the end of the</span>
-	<span class="doccomment">/// stream has been reached, or Some(packet_data),</span>
-	<span class="doccomment">/// with the data of the decompressed packet.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Unlike `read_dec_packet`, this function returns the</span>
-	<span class="doccomment">/// interleaved samples.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_dec_packet_itl</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;&gt;, <span class="ident">VorbisError</span>&gt; {
-		<span class="kw">let</span> <span class="ident">decoded_pck</span> :<span class="ident">InterleavedSamples</span>&lt;<span class="kw">_</span>&gt; = <span class="kw">match</span> <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_dec_packet_generic</span>()) {
-			<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
-			<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+	<span class="doccomment">/// Reads and decompresses an audio packet from the stream (interleaved).
+	///
+	/// On read errors, it returns Err(e) with the error.
+	///
+	/// On success, it either returns None, when the end of the
+	/// stream has been reached, or Some(packet_data),
+	/// with the data of the decompressed packet.
+	///
+	/// Unlike `read_dec_packet`, this function returns the
+	/// interleaved samples.
+	</span><span class="kw">pub fn </span>read_dec_packet_itl(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt;
+			<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;i16&gt;&gt;, VorbisError&gt; {
+		<span class="kw">let </span>decoded_pck :InterleavedSamples&lt;<span class="kw">_</span>&gt; = <span class="kw">match </span><span class="macro">try!</span>(<span class="self">self</span>.read_dec_packet_generic()) {
+			<span class="prelude-val">Some</span>(p) =&gt; p,
+			<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 		};
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">decoded_pck</span>.<span class="ident">samples</span>));
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(decoded_pck.samples));
 	}
 
-	<span class="doccomment">/// Returns the stream serial of the current stream</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The stream serial can change in chained ogg files.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stream_serial</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-		<span class="self">self</span>.<span class="ident">stream_serial</span>
+	<span class="doccomment">/// Returns the stream serial of the current stream
+	///
+	/// The stream serial can change in chained ogg files.
+	</span><span class="kw">pub fn </span>stream_serial(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+		<span class="self">self</span>.stream_serial
 	}
 
-	<span class="doccomment">/// Returns the absolute granule position of the last read page.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// In the case of ogg/vorbis, the absolute granule position is given</span>
-	<span class="doccomment">/// as number of PCM samples, on a per channel basis.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_last_absgp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt; {
-		<span class="self">self</span>.<span class="ident">cur_absgp</span>
+	<span class="doccomment">/// Returns the absolute granule position of the last read page.
+	///
+	/// In the case of ogg/vorbis, the absolute granule position is given
+	/// as number of PCM samples, on a per channel basis.
+	</span><span class="kw">pub fn </span>get_last_absgp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
+		<span class="self">self</span>.cur_absgp
 	}
 
-	<span class="doccomment">/// Seeks to the specified absolute granule position, with a page granularity.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The granularity is per-page, and the obtained position is</span>
-	<span class="doccomment">/// then &lt;= the seeked absgp.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// In the case of ogg/vorbis, the absolute granule position is given</span>
-	<span class="doccomment">/// as number of PCM samples, on a per channel basis.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">seek_absgp_pg</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">absgp</span> :<span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">VorbisError</span>&gt; {
-		<span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek_absgp</span>(<span class="prelude-val">None</span>, <span class="ident">absgp</span>));
-		<span class="comment">// Reset the internal state after the seek</span>
-		<span class="self">self</span>.<span class="ident">cur_absgp</span> = <span class="prelude-val">None</span>;
-		<span class="self">self</span>.<span class="ident">pwr</span> = <span class="ident">PreviousWindowRight::new</span>();
+	<span class="doccomment">/// Seeks to the specified absolute granule position, with a page granularity.
+	///
+	/// The granularity is per-page, and the obtained position is
+	/// then &lt;= the seeked absgp.
+	///
+	/// In the case of ogg/vorbis, the absolute granule position is given
+	/// as number of PCM samples, on a per channel basis.
+	</span><span class="kw">pub fn </span>seek_absgp_pg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, absgp :u64) -&gt; <span class="prelude-ty">Result</span>&lt;(), VorbisError&gt; {
+		<span class="macro">try!</span>(<span class="self">self</span>.rdr.seek_absgp(<span class="prelude-val">None</span>, absgp));
+		<span class="comment">// Reset the internal state after the seek
+		</span><span class="self">self</span>.cur_absgp = <span class="prelude-val">None</span>;
+		<span class="self">self</span>.pwr = PreviousWindowRight::new();
 		<span class="prelude-val">Ok</span>(())
 	}
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async_ogg&quot;</span>)]</span>
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async_ogg&quot;</span>)]</span>
 <span class="doccomment">/**
 Support for async I/O
 
 This module provides support for asyncronous I/O.
-*/</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">async_api</span> {
+*/
+</span><span class="kw">pub mod </span>async_api {
 
-	<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-	<span class="kw">use</span> <span class="ident">ogg::OggReadError</span>;
-	<span class="kw">use</span> <span class="ident">ogg::reading::async_api::PacketReader</span>;
-	<span class="kw">use</span> <span class="ident">futures::stream::Stream</span>;
-	<span class="kw">use</span> <span class="ident">tokio_io::AsyncRead</span>;
-	<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">Async</span>, <span class="ident">Future</span>, <span class="ident">Poll</span>};
-	<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Error</span>, <span class="ident">ErrorKind</span>};
-	<span class="kw">use</span> <span class="ident">std::mem::replace</span>;
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+	<span class="kw">use </span>ogg::OggReadError;
+	<span class="kw">use </span>ogg::reading::async_api::PacketReader;
+	<span class="kw">use </span>futures::stream::Stream;
+	<span class="kw">use </span>tokio_io::AsyncRead;
+	<span class="kw">use </span>futures::{Async, Future, Poll};
+	<span class="kw">use </span>std::io::{Error, ErrorKind};
+	<span class="kw">use </span>std::mem::replace;
 
-	<span class="doccomment">/// Async ready creator utility to read headers out of an</span>
-	<span class="doccomment">/// ogg stream.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// All functions this struct has are ready to be used for operation with async I/O.</span>
-	<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HeadersReader</span>&lt;<span class="ident">T</span>: <span class="ident">AsyncRead</span>&gt; {
-		<span class="ident">pck_rd</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;,
-		<span class="ident">ident_hdr</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">IdentHeader</span>&gt;,
-		<span class="ident">comment_hdr</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">CommentHeader</span>&gt;,
+	<span class="doccomment">/// Async ready creator utility to read headers out of an
+	/// ogg stream.
+	///
+	/// All functions this struct has are ready to be used for operation with async I/O.
+	</span><span class="kw">pub struct </span>HeadersReader&lt;T: AsyncRead&gt; {
+		pck_rd :PacketReader&lt;T&gt;,
+		ident_hdr :<span class="prelude-ty">Option</span>&lt;IdentHeader&gt;,
+		comment_hdr :<span class="prelude-ty">Option</span>&lt;CommentHeader&gt;,
 	}
-	<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">AsyncRead</span>&gt; <span class="ident">HeadersReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">inner</span> :<span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-			<span class="ident">HeadersReader::from_packet_reader</span>(<span class="ident">PacketReader::new</span>(<span class="ident">inner</span>))
+	<span class="kw">impl</span>&lt;T: AsyncRead&gt; HeadersReader&lt;T&gt; {
+		<span class="kw">pub fn </span>new(inner :T) -&gt; <span class="self">Self </span>{
+			HeadersReader::from_packet_reader(PacketReader::new(inner))
 		}
-		<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_packet_reader</span>(<span class="ident">pck_rd</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;) -&gt; <span class="self">Self</span> {
-			<span class="ident">HeadersReader</span> {
-				<span class="ident">pck_rd</span>,
-				<span class="ident">ident_hdr</span> : <span class="prelude-val">None</span>,
-				<span class="ident">comment_hdr</span> : <span class="prelude-val">None</span>,
+		<span class="kw">pub fn </span>from_packet_reader(pck_rd :PacketReader&lt;T&gt;) -&gt; <span class="self">Self </span>{
+			HeadersReader {
+				pck_rd,
+				ident_hdr : <span class="prelude-val">None</span>,
+				comment_hdr : <span class="prelude-val">None</span>,
 			}
 		}
 	}
-	<span class="kw">impl</span>&lt;<span class="ident">T</span>: <span class="ident">AsyncRead</span>&gt; <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">HeadersReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">HeaderSet</span>;
-		<span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">VorbisError</span>;
-		<span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">Poll</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident"><span class="self">Self</span>::Error</span>&gt; {
-			<span class="macro">macro_rules!</span> <span class="ident">rd_pck</span> {
+	<span class="kw">impl</span>&lt;T: AsyncRead&gt; Future <span class="kw">for </span>HeadersReader&lt;T&gt; {
+		<span class="kw">type </span>Item = HeaderSet;
+		<span class="kw">type </span>Error = VorbisError;
+		<span class="kw">fn </span>poll(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Poll&lt;<span class="self">Self</span>::Item, <span class="self">Self</span>::Error&gt; {
+			<span class="macro">macro_rules!</span> rd_pck {
 				() =&gt; {
-					<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pck</span>) = <span class="macro">try_ready!</span>(<span class="self">self</span>.<span class="ident">pck_rd</span>.<span class="ident">poll</span>()) {
-						<span class="ident">pck</span>
-					} <span class="kw">else</span> {
-						<span class="comment">// Note: we are stealing the Io variant from</span>
-						<span class="comment">// the ogg crate here which is not 100% clean,</span>
-						<span class="comment">// but I think in general it is what the</span>
-						<span class="comment">// read_packet_expected function of the ogg</span>
-						<span class="comment">// crate does too, and adding our own case</span>
-						<span class="comment">// to the VorbisError enum that only fires</span>
-						<span class="comment">// in an async mode is too complicated IMO.</span>
-						<span class="macro">try!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::ReadError</span>(<span class="ident">Error::new</span>(<span class="ident">ErrorKind::UnexpectedEof</span>,
+					<span class="kw">if let </span><span class="prelude-val">Some</span>(pck) = <span class="macro">try_ready!</span>(<span class="self">self</span>.pck_rd.poll()) {
+						pck
+					} <span class="kw">else </span>{
+						<span class="comment">// Note: we are stealing the Io variant from
+						// the ogg crate here which is not 100% clean,
+						// but I think in general it is what the
+						// read_packet_expected function of the ogg
+						// crate does too, and adding our own case
+						// to the VorbisError enum that only fires
+						// in an async mode is too complicated IMO.
+						</span><span class="macro">try!</span>(<span class="prelude-val">Err</span>(OggReadError::ReadError(Error::new(ErrorKind::UnexpectedEof,
 							<span class="string">&quot;Expected header packet but found end of stream&quot;</span>))))
 					}
 				}
 			}
-			<span class="kw">if</span> <span class="self">self</span>.<span class="ident">ident_hdr</span>.<span class="ident">is_none</span>() {
-				<span class="kw">let</span> <span class="ident">pck</span> = <span class="macro">rd_pck!</span>();
-				<span class="self">self</span>.<span class="ident">ident_hdr</span> = <span class="prelude-val">Some</span>(<span class="macro">try!</span>(<span class="ident">read_header_ident</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>)));
+			<span class="kw">if </span><span class="self">self</span>.ident_hdr.is_none() {
+				<span class="kw">let </span>pck = <span class="macro">rd_pck!</span>();
+				<span class="self">self</span>.ident_hdr = <span class="prelude-val">Some</span>(<span class="macro">try!</span>(read_header_ident(<span class="kw-2">&amp;</span>pck.data)));
 			}
-			<span class="kw">if</span> <span class="self">self</span>.<span class="ident">comment_hdr</span>.<span class="ident">is_none</span>() {
-				<span class="kw">let</span> <span class="ident">pck</span> = <span class="macro">rd_pck!</span>();
-				<span class="self">self</span>.<span class="ident">comment_hdr</span> = <span class="prelude-val">Some</span>(<span class="macro">try!</span>(<span class="ident">read_header_comment</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>)));
+			<span class="kw">if </span><span class="self">self</span>.comment_hdr.is_none() {
+				<span class="kw">let </span>pck = <span class="macro">rd_pck!</span>();
+				<span class="self">self</span>.comment_hdr = <span class="prelude-val">Some</span>(<span class="macro">try!</span>(read_header_comment(<span class="kw-2">&amp;</span>pck.data)));
 			}
-			<span class="kw">let</span> <span class="ident">setup_hdr</span> = {
-				<span class="kw">let</span> <span class="ident">ident</span> = <span class="self">self</span>.<span class="ident">ident_hdr</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>();
-				<span class="kw">let</span> <span class="ident">pck</span> = <span class="macro">rd_pck!</span>();
-				<span class="macro">try!</span>(<span class="ident">read_header_setup</span>(<span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>,
-					<span class="ident">ident</span>.<span class="ident">audio_channels</span>, (<span class="ident">ident</span>.<span class="ident">blocksize_0</span>, <span class="ident">ident</span>.<span class="ident">blocksize_1</span>)))
+			<span class="kw">let </span>setup_hdr = {
+				<span class="kw">let </span>ident = <span class="self">self</span>.ident_hdr.as_ref().unwrap();
+				<span class="kw">let </span>pck = <span class="macro">rd_pck!</span>();
+				<span class="macro">try!</span>(read_header_setup(<span class="kw-2">&amp;</span>pck.data,
+					ident.audio_channels, (ident.blocksize_0, ident.blocksize_1)))
 			};
-			<span class="kw">let</span> <span class="ident">ident_hdr</span> = <span class="ident">replace</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">ident_hdr</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-			<span class="kw">let</span> <span class="ident">comment_hdr</span> = <span class="ident">replace</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">comment_hdr</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-			<span class="prelude-val">Ok</span>(<span class="ident">Async::Ready</span>((<span class="ident">ident_hdr</span>, <span class="ident">comment_hdr</span>, <span class="ident">setup_hdr</span>)))
+			<span class="kw">let </span>ident_hdr = replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ident_hdr, <span class="prelude-val">None</span>).unwrap();
+			<span class="kw">let </span>comment_hdr = replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.comment_hdr, <span class="prelude-val">None</span>).unwrap();
+			<span class="prelude-val">Ok</span>(Async::Ready((ident_hdr, comment_hdr, setup_hdr)))
 		}
 	}
-	<span class="doccomment">/// Reading ogg/vorbis files or streams</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// This is a small helper struct to help reading ogg/vorbis files</span>
-	<span class="doccomment">/// or streams in that format.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// It only supports the main use case of pure audio ogg files streams.</span>
-	<span class="doccomment">/// Reading a file where vorbis is only one of multiple streams, like</span>
-	<span class="doccomment">/// in the case of ogv, is not supported.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// If you need support for this, you need to use the lower level methods</span>
-	<span class="doccomment">/// instead.</span>
-	<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OggStreamReader</span>&lt;<span class="ident">T</span> :<span class="ident">AsyncRead</span>&gt; {
-		<span class="ident">pck_rd</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;,
-		<span class="ident">pwr</span> :<span class="ident">PreviousWindowRight</span>,
+	<span class="doccomment">/// Reading ogg/vorbis files or streams
+	///
+	/// This is a small helper struct to help reading ogg/vorbis files
+	/// or streams in that format.
+	///
+	/// It only supports the main use case of pure audio ogg files streams.
+	/// Reading a file where vorbis is only one of multiple streams, like
+	/// in the case of ogv, is not supported.
+	///
+	/// If you need support for this, you need to use the lower level methods
+	/// instead.
+	</span><span class="kw">pub struct </span>OggStreamReader&lt;T :AsyncRead&gt; {
+		pck_rd :PacketReader&lt;T&gt;,
+		pwr :PreviousWindowRight,
 
-		<span class="kw">pub</span> <span class="ident">ident_hdr</span> :<span class="ident">IdentHeader</span>,
-		<span class="kw">pub</span> <span class="ident">comment_hdr</span> :<span class="ident">CommentHeader</span>,
-		<span class="kw">pub</span> <span class="ident">setup_hdr</span> :<span class="ident">SetupHeader</span>,
+		<span class="kw">pub </span>ident_hdr :IdentHeader,
+		<span class="kw">pub </span>comment_hdr :CommentHeader,
+		<span class="kw">pub </span>setup_hdr :SetupHeader,
 
-		<span class="ident">absgp_of_last_read</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">u64</span>&gt;,
+		absgp_of_last_read :<span class="prelude-ty">Option</span>&lt;u64&gt;,
 	}
 
-	<span class="kw">impl</span>&lt;<span class="ident">T</span> :<span class="ident">AsyncRead</span>&gt; <span class="ident">OggStreamReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="doccomment">/// Creates a new OggStreamReader from the given parameters</span>
-		<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">hdr_rdr</span> :<span class="ident">HeadersReader</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">hdrs</span> :<span class="ident">HeaderSet</span>) -&gt; <span class="self">Self</span> {
-			<span class="ident">OggStreamReader::from_pck_rdr</span>(<span class="ident">hdr_rdr</span>.<span class="ident">pck_rd</span>, <span class="ident">hdrs</span>)
+	<span class="kw">impl</span>&lt;T :AsyncRead&gt; OggStreamReader&lt;T&gt; {
+		<span class="doccomment">/// Creates a new OggStreamReader from the given parameters
+		</span><span class="kw">pub fn </span>new(hdr_rdr :HeadersReader&lt;T&gt;, hdrs :HeaderSet) -&gt; <span class="self">Self </span>{
+			OggStreamReader::from_pck_rdr(hdr_rdr.pck_rd, hdrs)
 		}
-		<span class="doccomment">/// Creates a new OggStreamReader from the given parameters</span>
-		<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_pck_rdr</span>(<span class="ident">pck_rd</span> :<span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt;, <span class="ident">hdrs</span> :<span class="ident">HeaderSet</span>) -&gt; <span class="self">Self</span> {
-			<span class="ident">OggStreamReader</span> {
-				<span class="ident">pck_rd</span>,
-				<span class="ident">pwr</span> : <span class="ident">PreviousWindowRight::new</span>(),
+		<span class="doccomment">/// Creates a new OggStreamReader from the given parameters
+		</span><span class="kw">pub fn </span>from_pck_rdr(pck_rd :PacketReader&lt;T&gt;, hdrs :HeaderSet) -&gt; <span class="self">Self </span>{
+			OggStreamReader {
+				pck_rd,
+				pwr : PreviousWindowRight::new(),
 
-				<span class="ident">ident_hdr</span> : <span class="ident">hdrs</span>.<span class="number">0</span>,
-				<span class="ident">comment_hdr</span> : <span class="ident">hdrs</span>.<span class="number">1</span>,
-				<span class="ident">setup_hdr</span> : <span class="ident">hdrs</span>.<span class="number">2</span>,
+				ident_hdr : hdrs.<span class="number">0</span>,
+				comment_hdr : hdrs.<span class="number">1</span>,
+				setup_hdr : hdrs.<span class="number">2</span>,
 
-				<span class="ident">absgp_of_last_read</span> : <span class="prelude-val">None</span>,
+				absgp_of_last_read : <span class="prelude-val">None</span>,
 			}
 		}
 	}
 
-	<span class="kw">impl</span>&lt;<span class="ident">T</span> :<span class="ident">AsyncRead</span>&gt; <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">OggStreamReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;&gt;;
-		<span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">VorbisError</span>;
+	<span class="kw">impl</span>&lt;T :AsyncRead&gt; Stream <span class="kw">for </span>OggStreamReader&lt;T&gt; {
+		<span class="kw">type </span>Item = Vec&lt;Vec&lt;i16&gt;&gt;;
+		<span class="kw">type </span>Error = VorbisError;
 
-		<span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">i16</span>&gt;&gt;&gt;, <span class="ident">VorbisError</span>&gt; {
-			<span class="kw">let</span> <span class="ident">pck</span> = <span class="kw">match</span> <span class="macro">try_ready!</span>(<span class="self">self</span>.<span class="ident">pck_rd</span>.<span class="ident">poll</span>()) {
-				<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
-				<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Async::Ready</span>(<span class="prelude-val">None</span>)),
+		<span class="kw">fn </span>poll(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;Vec&lt;i16&gt;&gt;&gt;, VorbisError&gt; {
+			<span class="kw">let </span>pck = <span class="kw">match </span><span class="macro">try_ready!</span>(<span class="self">self</span>.pck_rd.poll()) {
+				<span class="prelude-val">Some</span>(p) =&gt; p,
+				<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(Async::Ready(<span class="prelude-val">None</span>)),
 			};
-			<span class="kw">let</span> <span class="ident">decoded_pck</span> = <span class="macro">try!</span>(<span class="ident">read_audio_packet</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ident_hdr</span>,
-				<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">setup_hdr</span>, <span class="kw-2">&amp;</span><span class="ident">pck</span>.<span class="ident">data</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">pwr</span>));
-			<span class="self">self</span>.<span class="ident">absgp_of_last_read</span> = <span class="prelude-val">Some</span>(<span class="ident">pck</span>.<span class="ident">absgp_page</span>());
-			<span class="prelude-val">Ok</span>(<span class="ident">Async::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">decoded_pck</span>)))
+			<span class="kw">let </span>decoded_pck = <span class="macro">try!</span>(read_audio_packet(<span class="kw-2">&amp;</span><span class="self">self</span>.ident_hdr,
+				<span class="kw-2">&amp;</span><span class="self">self</span>.setup_hdr, <span class="kw-2">&amp;</span>pck.data, <span class="kw-2">&amp;mut </span><span class="self">self</span>.pwr));
+			<span class="self">self</span>.absgp_of_last_read = <span class="prelude-val">Some</span>(pck.absgp_page());
+			<span class="prelude-val">Ok</span>(Async::Ready(<span class="prelude-val">Some</span>(decoded_pck)))
 		}
 	}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

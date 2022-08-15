@@ -150,157 +150,157 @@
 <span id="150">150</span>
 <span id="151">151</span>
 <span id="152">152</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">echo</span>;
-<span class="kw">mod</span> <span class="ident">pitch</span>;
-<span class="kw">mod</span> <span class="ident">volume</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>echo;
+<span class="kw">mod </span>pitch;
+<span class="kw">mod </span>volume;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{<span class="ident">echo::EchoModifier</span>, <span class="ident">pitch::PitchModifier</span>, <span class="ident">volume::VolumeModifier</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::BoxSource</span>;
-<span class="kw">use</span> <span class="ident">nom</span>::{
-    <span class="ident">branch::alt</span>,
-    <span class="ident">bytes::complete::tag</span>,
-    <span class="ident">combinator</span>::{<span class="ident">map</span>, <span class="ident">opt</span>},
-    <span class="ident">multi::separated_list0</span>,
-    <span class="ident">number::complete::float</span>,
-    <span class="ident">IResult</span>,
+<span class="kw">pub use </span><span class="self">self</span>::{echo::EchoModifier, pitch::PitchModifier, volume::VolumeModifier};
+<span class="kw">use </span><span class="kw">crate</span>::BoxSource;
+<span class="kw">use </span>nom::{
+    branch::alt,
+    bytes::complete::tag,
+    combinator::{map, opt},
+    multi::separated_list0,
+    number::complete::float,
+    IResult,
 };
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ModifierTrait</span>: <span class="ident">Send</span> + <span class="ident">std::fmt::Debug</span> + <span class="ident">PartialEq</span> {
-    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="self">Self</span>&gt;
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>;
+<span class="kw">pub trait </span>ModifierTrait: Send + std::fmt::Debug + PartialEq {
+    <span class="kw">fn </span>parse(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, <span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized;
 
-    <span class="kw">fn</span> <span class="ident">modify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">BoxSource</span>) -&gt; <span class="ident">BoxSource</span>;
+    <span class="kw">fn </span>modify(<span class="kw-2">&amp;</span><span class="self">self</span>, source: BoxSource) -&gt; BoxSource;
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Modifier</span> {
-    <span class="ident">Pitch</span>(<span class="ident">PitchModifier</span>),
-    <span class="ident">Volume</span>(<span class="ident">VolumeModifier</span>),
-    <span class="ident">Echo</span>(<span class="ident">EchoModifier</span>),
+<span class="attribute">#[derive(Debug, PartialEq)]</span>
+<span class="kw">pub enum </span>Modifier {
+    Pitch(PitchModifier),
+    Volume(VolumeModifier),
+    Echo(EchoModifier),
 }
 
-<span class="kw">impl</span> <span class="ident">ModifierTrait</span> <span class="kw">for</span> <span class="ident">Modifier</span> {
-    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="self">Self</span>&gt; {
-        <span class="ident">alt</span>((
-            <span class="ident">map</span>(<span class="ident">PitchModifier::parse</span>, <span class="ident">Modifier::Pitch</span>),
-            <span class="ident">map</span>(<span class="ident">VolumeModifier::parse</span>, <span class="ident">Modifier::Volume</span>),
-            <span class="ident">map</span>(<span class="ident">EchoModifier::parse</span>, <span class="ident">Modifier::Echo</span>),
-        ))(<span class="ident">input</span>)
+<span class="kw">impl </span>ModifierTrait <span class="kw">for </span>Modifier {
+    <span class="kw">fn </span>parse(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, <span class="self">Self</span>&gt; {
+        alt((
+            map(PitchModifier::parse, Modifier::Pitch),
+            map(VolumeModifier::parse, Modifier::Volume),
+            map(EchoModifier::parse, Modifier::Echo),
+        ))(input)
     }
 
-    <span class="kw">fn</span> <span class="ident">modify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">BoxSource</span>) -&gt; <span class="ident">BoxSource</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Modifier::Pitch</span>(<span class="ident">modifier</span>) =&gt; <span class="ident">modifier</span>.<span class="ident">modify</span>(<span class="ident">source</span>),
-            <span class="ident">Modifier::Volume</span>(<span class="ident">modifier</span>) =&gt; <span class="ident">modifier</span>.<span class="ident">modify</span>(<span class="ident">source</span>),
-            <span class="ident">Modifier::Echo</span>(<span class="ident">modifier</span>) =&gt; <span class="ident">modifier</span>.<span class="ident">modify</span>(<span class="ident">source</span>),
+    <span class="kw">fn </span>modify(<span class="kw-2">&amp;</span><span class="self">self</span>, source: BoxSource) -&gt; BoxSource {
+        <span class="kw">match </span><span class="self">self </span>{
+            Modifier::Pitch(modifier) =&gt; modifier.modify(source),
+            Modifier::Volume(modifier) =&gt; modifier.modify(source),
+            Modifier::Echo(modifier) =&gt; modifier.modify(source),
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_modifier</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">Modifier</span>&gt; {
-    <span class="comment">// input = &quot;:pitch(2)&quot;</span>
+<span class="kw">pub fn </span>parse_modifier(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, Modifier&gt; {
+    <span class="comment">// input = &quot;:pitch(2)&quot;
 
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="kw">_</span>) = <span class="ident">tag</span>(<span class="string">&quot;:&quot;</span>)(<span class="ident">input</span>)<span class="question-mark">?</span>;
-    <span class="comment">// input = &quot;pitch(2)&quot;</span>
+    </span><span class="kw">let </span>(input, <span class="kw">_</span>) = tag(<span class="string">&quot;:&quot;</span>)(input)<span class="question-mark">?</span>;
+    <span class="comment">// input = &quot;pitch(2)&quot;
 
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">modifier</span>) = <span class="ident">Modifier::parse</span>(<span class="ident">input</span>)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>(input, modifier) = Modifier::parse(input)<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((<span class="ident">input</span>, <span class="ident">modifier</span>))
+    <span class="prelude-val">Ok</span>((input, modifier))
 }
 
-<span class="kw">type</span> <span class="ident">Args</span> = <span class="ident">Vec</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">f32</span>&gt;&gt;;
+<span class="kw">type </span>Args = Vec&lt;<span class="prelude-ty">Option</span>&lt;f32&gt;&gt;;
 
-<span class="kw">fn</span> <span class="ident">parse_arg</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">f32</span>&gt;&gt; {
-    <span class="comment">// &quot; 123 ,&quot;</span>
-    <span class="comment">//  ^</span>
-    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">input</span>.<span class="ident">trim_start</span>();
+<span class="kw">fn </span>parse_arg(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, <span class="prelude-ty">Option</span>&lt;f32&gt;&gt; {
+    <span class="comment">// &quot; 123 ,&quot;
+    //  ^
+    </span><span class="kw">let </span>input = input.trim_start();
 
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">maybe</span>) = <span class="ident">opt</span>(<span class="ident">float</span>)(<span class="ident">input</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(input, maybe) = opt(float)(input)<span class="question-mark">?</span>;
 
-    <span class="comment">// &quot; ,&quot;</span>
-    <span class="comment">//  ^</span>
-    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">input</span>.<span class="ident">trim_start</span>();
+    <span class="comment">// &quot; ,&quot;
+    //  ^
+    </span><span class="kw">let </span>input = input.trim_start();
 
-    <span class="prelude-val">Ok</span>((<span class="ident">input</span>, <span class="ident">maybe</span>))
+    <span class="prelude-val">Ok</span>((input, maybe))
 }
 
-<span class="kw">fn</span> <span class="ident">parse_arg_list</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">Args</span>&gt; {
-    <span class="kw">let</span> <span class="ident">sep</span> = <span class="ident">tag</span>(<span class="string">&quot;,&quot;</span>);
+<span class="kw">fn </span>parse_arg_list(s: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, Args&gt; {
+    <span class="kw">let </span>sep = tag(<span class="string">&quot;,&quot;</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">list</span> = <span class="ident">Vec::new</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>list = Vec::new();
 
-    <span class="comment">// fix separated_list0 not working if you start with a separator</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> = <span class="ident">s</span>;
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> (<span class="ident">s2</span>, <span class="ident">maybe_first</span>) = <span class="ident">opt</span>(<span class="kw-2">&amp;</span><span class="ident">sep</span>)(<span class="ident">s</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span> = <span class="ident">s2</span>;
+    <span class="comment">// fix separated_list0 not working if you start with a separator
+    </span><span class="kw">let </span><span class="kw-2">mut </span>s = s;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>(s2, maybe_first) = opt(<span class="kw-2">&amp;</span>sep)(s)<span class="question-mark">?</span>;
+        s = s2;
 
-        <span class="kw">if</span> <span class="ident">maybe_first</span>.<span class="ident">is_some</span>() {
-            <span class="ident">list</span>.<span class="ident">push</span>(<span class="prelude-val">None</span>);
-        } <span class="kw">else</span> {
+        <span class="kw">if </span>maybe_first.is_some() {
+            list.push(<span class="prelude-val">None</span>);
+        } <span class="kw">else </span>{
             <span class="kw">break</span>;
         }
     }
 
-    <span class="kw">let</span> (<span class="ident">s</span>, <span class="kw-2">mut</span> <span class="ident">items</span>) = <span class="ident">separated_list0</span>(<span class="kw-2">&amp;</span><span class="ident">sep</span>, <span class="ident">parse_arg</span>)(<span class="ident">s</span>)<span class="question-mark">?</span>;
-    <span class="ident">list</span>.<span class="ident">append</span>(<span class="kw-2">&amp;mut</span> <span class="ident">items</span>);
+    <span class="kw">let </span>(s, <span class="kw-2">mut </span>items) = separated_list0(<span class="kw-2">&amp;</span>sep, parse_arg)(s)<span class="question-mark">?</span>;
+    list.append(<span class="kw-2">&amp;mut </span>items);
 
-    <span class="prelude-val">Ok</span>((<span class="ident">s</span>, <span class="ident">list</span>))
+    <span class="prelude-val">Ok</span>((s, list))
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_args</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">Args</span>&gt; {
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="kw">_</span>) = <span class="ident">tag</span>(<span class="string">&quot;(&quot;</span>)(<span class="ident">input</span>)<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>parse_args(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, Args&gt; {
+    <span class="kw">let </span>(input, <span class="kw">_</span>) = tag(<span class="string">&quot;(&quot;</span>)(input)<span class="question-mark">?</span>;
 
-    <span class="comment">// fix for &quot;( )&quot;</span>
-    <span class="comment">// &quot; )&quot;</span>
-    <span class="comment">//  ^</span>
-    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">input</span>.<span class="ident">trim_start</span>();
+    <span class="comment">// fix for &quot;( )&quot;
+    // &quot; )&quot;
+    //  ^
+    </span><span class="kw">let </span>input = input.trim_start();
 
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">args</span>) = <span class="ident">opt</span>(<span class="ident">parse_arg_list</span>)(<span class="ident">input</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> (<span class="ident">input</span>, <span class="kw">_</span>) = <span class="ident">tag</span>(<span class="string">&quot;)&quot;</span>)(<span class="ident">input</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(input, args) = opt(parse_arg_list)(input)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(input, <span class="kw">_</span>) = tag(<span class="string">&quot;)&quot;</span>)(input)<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((<span class="ident">input</span>, <span class="ident">args</span>.<span class="ident">unwrap_or_default</span>()))
+    <span class="prelude-val">Ok</span>((input, args.unwrap_or_default()))
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_parse_args</span>() {
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;()&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>])));
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;(    )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>])));
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_parse_args() {
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;()&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>])));
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;(    )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>])));
 
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;(1)&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>)])));
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;(1, 3)&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>)])));
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;(1)&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>)])));
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;(1, 3)&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>)])));
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;(1, 3, 5)&quot;</span>),
+        parse_args(<span class="string">&quot;(1, 3, 5)&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">5.0</span>)]))
     );
 
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;( 1 , 3 , 5 )&quot;</span>),
+        parse_args(<span class="string">&quot;( 1 , 3 , 5 )&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">5.0</span>)]))
     );
 
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;( , )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>])));
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;( , )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>])));
 
-    <span class="macro">assert_eq!</span>(<span class="ident">parse_args</span>(<span class="string">&quot;( , 2 )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">2.0</span>)])));
+    <span class="macro">assert_eq!</span>(parse_args(<span class="string">&quot;( , 2 )&quot;</span>), <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">2.0</span>)])));
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;( , 2 , )&quot;</span>),
+        parse_args(<span class="string">&quot;( , 2 , )&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">None</span>]))
     );
 
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;(, , 2 , ,)&quot;</span>),
+        parse_args(<span class="string">&quot;(, , 2 , ,)&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>]))
     );
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;( , 2 , ,)&quot;</span>),
+        parse_args(<span class="string">&quot;( , 2 , ,)&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>]))
     );
 
     <span class="macro">assert_eq!</span>(
-        <span class="ident">parse_args</span>(<span class="string">&quot;( , -2.1 , ,)&quot;</span>),
+        parse_args(<span class="string">&quot;( , -2.1 , ,)&quot;</span>),
         <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(-<span class="number">2.1</span>), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>]))
     );
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

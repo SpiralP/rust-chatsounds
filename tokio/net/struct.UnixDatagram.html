@@ -13,46 +13,46 @@ or use a temporary file that is guaranteed to not already exist.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>Using named sockets, associated with a filesystem path:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind each socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">tx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;tx&quot;</span>);
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">tx_path</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind each socket to a filesystem path
+</span><span class="kw">let </span>tx_path = tmp.path().join(<span class="string">&quot;tx&quot;</span>);
+<span class="kw">let </span>tx = UnixDatagram::bind(<span class="kw-2">&amp;</span>tx_path)<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">tx</span>.<span class="ident">send_to</span>(<span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="ident">rx_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+tx.send_to(bytes, <span class="kw-2">&amp;</span>rx_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> (<span class="ident">size</span>, <span class="ident">addr</span>) = <span class="ident">rx</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>(size, addr) = rx.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_pathname</span>().<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">tx_path</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buf[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
+<span class="macro">assert_eq!</span>(addr.as_pathname().unwrap(), <span class="kw-2">&amp;</span>tx_path);
 </code></pre></div>
 <p>Using unnamed sockets, created as a pair</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create the pair of sockets</span>
-<span class="kw">let</span> (<span class="ident">sock1</span>, <span class="ident">sock2</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create the pair of sockets
+</span><span class="kw">let </span>(sock1, sock2) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="comment">// Since the sockets are paired, the paired send/recv</span>
-<span class="comment">// functions can be used</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">sock1</span>.<span class="ident">send</span>(<span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Since the sockets are paired, the paired send/recv
+// functions can be used
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+sock1.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buff</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> <span class="ident">size</span> = <span class="ident">sock2</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buff</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buff = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>size = sock2.recv(<span class="kw-2">&amp;mut </span>buff).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buff</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buff[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-UnixDatagram" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#98-1400">source</a></span><a href="#impl-UnixDatagram" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.ready" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#167-170">source</a></span><h4 class="code-header">pub async fn <a href="#method.ready" class="fnname">ready</a>(&amp;self, interest: <a class="struct" href="../io/struct.Interest.html" title="struct tokio::io::Interest">Interest</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="../io/struct.Ready.html" title="struct tokio::io::Ready">Ready</a>&gt;</h4></section></summary><div class="docblock"><p>Waits for any of the requested ready states.</p>
 <p>This function is usually paired with <code>try_recv()</code> or <code>try_send()</code>. It
@@ -70,45 +70,45 @@ consumed by an attempt to read or write that fails with <code>WouldBlock</code> 
 <p>Concurrently receive from and send to the socket on the same task
 without splitting.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::io::Interest</span>;
-<span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::io::Interest;
+<span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">ready</span> = <span class="ident">socket</span>.<span class="ident">ready</span>(<span class="ident">Interest::READABLE</span> | <span class="ident">Interest::WRITABLE</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>ready = socket.ready(Interest::READABLE | Interest::WRITABLE).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_readable</span>() {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> = [<span class="number">0</span>; <span class="number">1024</span>];
-            <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">data</span>[..]) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;received {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>[..<span class="ident">n</span>]);
+        <span class="kw">if </span>ready.is_readable() {
+            <span class="kw">let </span><span class="kw-2">mut </span>data = [<span class="number">0</span>; <span class="number">1024</span>];
+            <span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>data[..]) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;received {:?}&quot;</span>, <span class="kw-2">&amp;</span>data[..n]);
                 }
-                <span class="comment">// False-positive, continue</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {}
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+                <span class="comment">// False-positive, continue
+                </span><span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {}
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
             }
         }
 
-        <span class="kw">if</span> <span class="ident">ready</span>.<span class="ident">is_writable</span>() {
-            <span class="comment">// Write some data</span>
-            <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-                <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, <span class="ident">n</span>);
+        <span class="kw">if </span>ready.is_writable() {
+            <span class="comment">// Write some data
+            </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+                <span class="prelude-val">Ok</span>(n) =&gt; {
+                    <span class="macro">println!</span>(<span class="string">&quot;sent {} bytes&quot;</span>, n);
                 }
-                <span class="comment">// False-positive, continue</span>
-                <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {}
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+                <span class="comment">// False-positive, continue
+                </span><span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {}
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
             }
         }
@@ -126,32 +126,32 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to write that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to send data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to send data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -191,38 +191,38 @@ will continue to return immediately until the readiness event is
 consumed by an attempt to read that fails with <code>WouldBlock</code> or
 <code>Poll::Pending</code>.</p>
 <h5 id="examples-3"><a href="#examples-3">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -252,36 +252,36 @@ preferred, as this supports polling from multiple tasks at once.</p>
 <p>This function may encounter any standard I/O error except <code>WouldBlock</code>.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.bind" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#379-385">source</a></span><h4 class="code-header">pub fn <a href="#method.bind" class="fnname">bind</a>&lt;P&gt;(path: P) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a>&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;P: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>&gt;,&nbsp;</span></h4></section></summary><div class="docblock"><p>Creates a new <code>UnixDatagram</code> bound to the specified path.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind the socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">socket_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;socket&quot;</span>);
-<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">socket_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind the socket to a filesystem path
+</span><span class="kw">let </span>socket_path = tmp.path().join(<span class="string">&quot;socket&quot;</span>);
+<span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>socket_path)<span class="question-mark">?</span>;
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.pair" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#416-422">source</a></span><h4 class="code-header">pub fn <a href="#method.pair" class="fnname">pair</a>() -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a>, <a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a>)&gt;</h4></section></summary><div class="docblock"><p>Creates an unnamed pair of connected sockets.</p>
 <p>This function will create a pair of interconnected Unix sockets for
 communicating back and forth between one another.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create the pair of sockets</span>
-<span class="kw">let</span> (<span class="ident">sock1</span>, <span class="ident">sock2</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create the pair of sockets
+</span><span class="kw">let </span>(sock1, sock2) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="comment">// Since the sockets are paired, the paired send/recv</span>
-<span class="comment">// functions can be used</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hail eris&quot;</span>;
-<span class="ident">sock1</span>.<span class="ident">send</span>(<span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Since the sockets are paired, the paired send/recv
+// functions can be used
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hail eris&quot;</span>;
+sock1.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buff</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> <span class="ident">size</span> = <span class="ident">sock2</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buff</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buff = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>size = sock2.recv(<span class="kw-2">&amp;mut </span>buff).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buff</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buff[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.from_std" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#460-464">source</a></span><h4 class="code-header">pub fn <a href="#method.from_std" class="fnname">from_std</a>(datagram: <a class="struct" href="https://doc.rust-lang.org/nightly/std/os/unix/net/datagram/struct.UnixDatagram.html" title="struct std::os::unix::net::datagram::UnixDatagram">UnixDatagram</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a>&gt;</h4></section></summary><div class="docblock"><p>Creates new <code>UnixDatagram</code> from a <code>std::os::unix::net::UnixDatagram</code>.</p>
 <p>This function is intended to be used to wrap a UnixDatagram from the
@@ -294,84 +294,84 @@ it in non-blocking mode.</p>
 from a future driven by a Tokio runtime, otherwise runtime can be set
 explicitly with <a href="../runtime/struct.Runtime.html#method.enter"><code>Runtime::enter</code></a> function.</p>
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::os::unix::net::UnixDatagram</span> <span class="kw">as</span> <span class="ident">StdUDS</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::os::unix::net::UnixDatagram <span class="kw">as </span>StdUDS;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind the socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">socket_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;socket&quot;</span>);
-<span class="kw">let</span> <span class="ident">std_socket</span> = <span class="ident">StdUDS::bind</span>(<span class="kw-2">&amp;</span><span class="ident">socket_path</span>)<span class="question-mark">?</span>;
-<span class="ident">std_socket</span>.<span class="ident">set_nonblocking</span>(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">tokio_socket</span> = <span class="ident">UnixDatagram::from_std</span>(<span class="ident">std_socket</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind the socket to a filesystem path
+</span><span class="kw">let </span>socket_path = tmp.path().join(<span class="string">&quot;socket&quot;</span>);
+<span class="kw">let </span>std_socket = StdUDS::bind(<span class="kw-2">&amp;</span>socket_path)<span class="question-mark">?</span>;
+std_socket.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
+<span class="kw">let </span>tokio_socket = UnixDatagram::from_std(std_socket)<span class="question-mark">?</span>;
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.into_std" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#489-494">source</a></span><h4 class="code-header">pub fn <a href="#method.into_std" class="fnname">into_std</a>(self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/os/unix/net/datagram/struct.UnixDatagram.html" title="struct std::os::unix::net::datagram::UnixDatagram">UnixDatagram</a>&gt;</h4></section></summary><div class="docblock"><p>Turns a <a href="struct.UnixDatagram.html"><code>tokio::net::UnixDatagram</code></a> into a <a href="https://doc.rust-lang.org/nightly/std/os/unix/net/datagram/struct.UnixDatagram.html"><code>std::os::unix::net::UnixDatagram</code></a>.</p>
 <p>The returned <a href="https://doc.rust-lang.org/nightly/std/os/unix/net/datagram/struct.UnixDatagram.html"><code>std::os::unix::net::UnixDatagram</code></a> will have nonblocking
 mode set as <code>true</code>.  Use <a href="https://doc.rust-lang.org/nightly/std/os/unix/net/datagram/struct.UnixDatagram.html#method.set_nonblocking"><code>set_nonblocking</code></a> to change the blocking mode
 if needed.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::error::Error</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::error::Error;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Error</span>&gt;&gt; {
-    <span class="kw">let</span> <span class="ident">tokio_socket</span> = <span class="ident">tokio::net::UnixDatagram::bind</span>(<span class="string">&quot;127.0.0.1:0&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">std_socket</span> = <span class="ident">tokio_socket</span>.<span class="ident">into_std</span>()<span class="question-mark">?</span>;
-    <span class="ident">std_socket</span>.<span class="ident">set_nonblocking</span>(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>tokio_socket = tokio::net::UnixDatagram::bind(<span class="string">&quot;127.0.0.1:0&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>std_socket = tokio_socket.into_std()<span class="question-mark">?</span>;
+    std_socket.set_nonblocking(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.unbound" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#532-535">source</a></span><h4 class="code-header">pub fn <a href="#method.unbound" class="fnname">unbound</a>() -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a>&gt;</h4></section></summary><div class="docblock"><p>Creates a new <code>UnixDatagram</code> which is not bound to any address.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::unbound</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>tx = UnixDatagram::unbound()<span class="question-mark">?</span>;
 
-<span class="comment">// Create another, bound socket</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Create another, bound socket
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="comment">// Send to the bound socket</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">tx</span>.<span class="ident">send_to</span>(<span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="ident">rx_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Send to the bound socket
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+tx.send_to(bytes, <span class="kw-2">&amp;</span>rx_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> (<span class="ident">size</span>, <span class="ident">addr</span>) = <span class="ident">rx</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>(size, addr) = rx.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buf[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.connect" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#574-576">source</a></span><h4 class="code-header">pub fn <a href="#method.connect" class="fnname">connect</a>&lt;P:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>&gt;&gt;(&amp;self, path: P) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Connects the socket to the specified address.</p>
 <p>The <code>send</code> method may be used to send data to the specified address.
 <code>recv</code> and <code>recv_from</code> will only receive data from that address.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::unbound</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>tx = UnixDatagram::unbound()<span class="question-mark">?</span>;
 
-<span class="comment">// Create another, bound socket</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Create another, bound socket
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="comment">// Connect to the bound socket</span>
-<span class="ident">tx</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Connect to the bound socket
+</span>tx.connect(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="comment">// Send to the bound socket</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Send to the bound socket
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+tx.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> (<span class="ident">size</span>, <span class="ident">addr</span>) = <span class="ident">rx</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>(size, addr) = rx.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buf[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#610-615">source</a></span><h4 class="code-header">pub async fn <a href="#method.send" class="fnname">send</a>(&amp;self, buf: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Sends data on the socket to the socket’s peer.</p>
 <h5 id="cancel-safety-3"><a href="#cancel-safety-3">Cancel safety</a></h5>
@@ -379,50 +379,50 @@ if needed.</p>
 <a href="../macro.select.html"><code>tokio::select!</code></a> statement and some other branch
 completes first, then it is guaranteed that the message was not sent.</p>
 <h5 id="examples-10"><a href="#examples-10">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create the pair of sockets</span>
-<span class="kw">let</span> (<span class="ident">sock1</span>, <span class="ident">sock2</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create the pair of sockets
+</span><span class="kw">let </span>(sock1, sock2) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="comment">// Since the sockets are paired, the paired send/recv</span>
-<span class="comment">// functions can be used</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">sock1</span>.<span class="ident">send</span>(<span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Since the sockets are paired, the paired send/recv
+// functions can be used
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+sock1.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buff</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> <span class="ident">size</span> = <span class="ident">sock2</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buff</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buff = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>size = sock2.recv(<span class="kw-2">&amp;mut </span>buff).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buff</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buff[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#655-659">source</a></span><h4 class="code-header">pub fn <a href="#method.try_send" class="fnname">try_send</a>(&amp;self, buf: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to send a datagram to the peer without waiting.</p>
 <h5 id="examples-11"><a href="#examples-11">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to send data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send</span>(<span class="string">b&quot;hello world&quot;</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to send data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_send(<span class="string">b&quot;hello world&quot;</span>) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -431,31 +431,31 @@ completes first, then it is guaranteed that the message was not sent.</p>
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_send_to" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#698-705">source</a></span><h4 class="code-header">pub fn <a href="#method.try_send_to" class="fnname">try_send_to</a>&lt;P&gt;(&amp;self, buf: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>], target: P) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;P: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>&gt;,&nbsp;</span></h4></section></summary><div class="docblock"><p>Tries to send a datagram to the peer without waiting.</p>
 <h5 id="examples-12"><a href="#examples-12">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be writable</span>
-        <span class="ident">socket</span>.<span class="ident">writable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be writable
+        </span>socket.writable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Try to send data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_send_to</span>(<span class="string">b&quot;hello world&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">server_path</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
+        <span class="comment">// Try to send data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_send_to(<span class="string">b&quot;hello world&quot;</span>, <span class="kw-2">&amp;</span>server_path) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -469,56 +469,56 @@ completes first, then it is guaranteed that the message was not sent.</p>
 completes first, it is guaranteed that no messages were received on this
 socket.</p>
 <h5 id="examples-13"><a href="#examples-13">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create the pair of sockets</span>
-<span class="kw">let</span> (<span class="ident">sock1</span>, <span class="ident">sock2</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create the pair of sockets
+</span><span class="kw">let </span>(sock1, sock2) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="comment">// Since the sockets are paired, the paired send/recv</span>
-<span class="comment">// functions can be used</span>
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">sock1</span>.<span class="ident">send</span>(<span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="comment">// Since the sockets are paired, the paired send/recv
+// functions can be used
+</span><span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+sock1.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buff</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> <span class="ident">size</span> = <span class="ident">sock2</span>.<span class="ident">recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buff</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buff = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>size = sock2.recv(<span class="kw-2">&amp;mut </span>buff).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buff</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buff[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_recv" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#791-795">source</a></span><h4 class="code-header">pub fn <a href="#method.try_recv" class="fnname">try_recv</a>(&amp;self, buf: &amp;mut [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to receive a datagram from the peer without waiting.</p>
 <h5 id="examples-14"><a href="#examples-14">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -527,35 +527,35 @@ socket.</p>
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_recv_buf_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#839-857">source</a></span><h4 class="code-header">pub fn <a href="#method.try_recv_buf_from" class="fnname">try_recv_buf_from</a>&lt;B:&nbsp;<a class="trait" href="../../bytes/buf/buf_mut/trait.BufMut.html" title="trait bytes::buf::buf_mut::BufMut">BufMut</a>&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;buf: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>B<br>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>)&gt;</h4></section></summary><div class="docblock"><p>Tries to receive data from the socket without waiting.</p>
 <h5 id="examples-15"><a href="#examples-15">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::with_capacity</span>(<span class="number">1024</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(<span class="number">1024</span>);
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_buf_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>((<span class="ident">n</span>, <span class="ident">_addr</span>)) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_buf_from(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>((n, _addr)) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -565,36 +565,36 @@ socket.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_recv_buf" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#902-918">source</a></span><h4 class="code-header">pub fn <a href="#method.try_recv_buf" class="fnname">try_recv_buf</a>&lt;B:&nbsp;<a class="trait" href="../../bytes/buf/buf_mut/trait.BufMut.html" title="trait bytes::buf::buf_mut::BufMut">BufMut</a>&gt;(&amp;self, buf: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>B) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;</h4></section></summary><div class="docblock"><p>Tries to read data from the stream into the provided buffer, advancing the
 buffer’s internal cursor, returning how many bytes were read.</p>
 <h5 id="examples-16"><a href="#examples-16">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
-    <span class="ident">socket</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">server_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
+    socket.connect(<span class="kw-2">&amp;</span>server_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="ident">Vec::with_capacity</span>(<span class="number">1024</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(<span class="number">1024</span>);
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_buf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">n</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_buf(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>(n) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -607,28 +607,28 @@ buffer’s internal cursor, returning how many bytes were read.</p>
 <a href="../macro.select.html"><code>tokio::select!</code></a> statement and some other branch
 completes first, then it is guaranteed that the message was not sent.</p>
 <h5 id="examples-17"><a href="#examples-17">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind each socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">tx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;tx&quot;</span>);
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">tx_path</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind each socket to a filesystem path
+</span><span class="kw">let </span>tx_path = tmp.path().join(<span class="string">&quot;tx&quot;</span>);
+<span class="kw">let </span>tx = UnixDatagram::bind(<span class="kw-2">&amp;</span>tx_path)<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">tx</span>.<span class="ident">send_to</span>(<span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="ident">rx_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+tx.send_to(bytes, <span class="kw-2">&amp;</span>rx_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> (<span class="ident">size</span>, <span class="ident">addr</span>) = <span class="ident">rx</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>(size, addr) = rx.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_pathname</span>().<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">tx_path</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buf[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
+<span class="macro">assert_eq!</span>(addr.as_pathname().unwrap(), <span class="kw-2">&amp;</span>tx_path);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.recv_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1010-1018">source</a></span><h4 class="code-header">pub async fn <a href="#method.recv_from" class="fnname">recv_from</a>(&amp;self, buf: &amp;mut [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>)&gt;</h4></section></summary><div class="docblock"><p>Receives data from the socket.</p>
 <h5 id="cancel-safety-6"><a href="#cancel-safety-6">Cancel safety</a></h5>
@@ -637,28 +637,28 @@ completes first, then it is guaranteed that the message was not sent.</p>
 completes first, it is guaranteed that no messages were received on this
 socket.</p>
 <h5 id="examples-18"><a href="#examples-18">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind each socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">tx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;tx&quot;</span>);
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">tx_path</span>)<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind each socket to a filesystem path
+</span><span class="kw">let </span>tx_path = tmp.path().join(<span class="string">&quot;tx&quot;</span>);
+<span class="kw">let </span>tx = UnixDatagram::bind(<span class="kw-2">&amp;</span>tx_path)<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">bytes</span> = <span class="string">b&quot;hello world&quot;</span>;
-<span class="ident">tx</span>.<span class="ident">send_to</span>(<span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="ident">rx_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span>bytes = <span class="string">b&quot;hello world&quot;</span>;
+tx.send_to(bytes, <span class="kw-2">&amp;</span>rx_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
-<span class="kw">let</span> (<span class="ident">size</span>, <span class="ident">addr</span>) = <span class="ident">rx</span>.<span class="ident">recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0u8</span>; <span class="number">24</span>];
+<span class="kw">let </span>(size, addr) = rx.recv_from(<span class="kw-2">&amp;mut </span>buf).<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">let</span> <span class="ident">dgram</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">size</span>];
-<span class="macro">assert_eq!</span>(<span class="ident">dgram</span>, <span class="ident">bytes</span>);
-<span class="macro">assert_eq!</span>(<span class="ident">addr</span>.<span class="ident">as_pathname</span>().<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">tx_path</span>);
+<span class="kw">let </span>dgram = <span class="kw-2">&amp;</span>buf[..size];
+<span class="macro">assert_eq!</span>(dgram, bytes);
+<span class="macro">assert_eq!</span>(addr.as_pathname().unwrap(), <span class="kw-2">&amp;</span>tx_path);
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.poll_recv_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1037-1057">source</a></span><h4 class="code-header">pub fn <a href="#method.poll_recv_from" class="fnname">poll_recv_from</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;cx: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/task/wake/struct.Context.html" title="struct core::task::wake::Context">Context</a>&lt;'_&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;buf: &amp;mut <a class="struct" href="../io/struct.ReadBuf.html" title="struct tokio::io::ReadBuf">ReadBuf</a>&lt;'_&gt;<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/task/poll/enum.Poll.html" title="enum core::task::poll::Poll">Poll</a>&lt;<a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Attempts to receive a single datagram on the specified address.</p>
 <p>Note that on multiple calls to a <code>poll_*</code> method in the recv direction, only the
@@ -720,37 +720,37 @@ receive a wakeup.</p>
 <p>This function may encounter any standard I/O error except <code>WouldBlock</code>.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_recv_from" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1203-1210">source</a></span><h4 class="code-header">pub fn <a href="#method.try_recv_from" class="fnname">try_recv_from</a>(&amp;self, buf: &amp;mut [<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>]) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>)&gt;</h4></section></summary><div class="docblock"><p>Tries to receive data from the socket without waiting.</p>
 <h5 id="examples-19"><a href="#examples-19">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::io;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="comment">// Connect to a peer</span>
-    <span class="kw">let</span> <span class="ident">dir</span> = <span class="ident">tempfile::tempdir</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;client.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">server_path</span> = <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;server.sock&quot;</span>);
-    <span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">client_path</span>)<span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="comment">// Connect to a peer
+    </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+    <span class="kw">let </span>client_path = dir.path().join(<span class="string">&quot;client.sock&quot;</span>);
+    <span class="kw">let </span>server_path = dir.path().join(<span class="string">&quot;server.sock&quot;</span>);
+    <span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>client_path)<span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="comment">// Wait for the socket to be readable</span>
-        <span class="ident">socket</span>.<span class="ident">readable</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="comment">// Wait for the socket to be readable
+        </span>socket.readable().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// The buffer is **not** included in the async task and will</span>
-        <span class="comment">// only exist on the stack.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];
+        <span class="comment">// The buffer is **not** included in the async task and will
+        // only exist on the stack.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">1024</span>];
 
-        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`</span>
-        <span class="comment">// if the readiness event is a false positive.</span>
-        <span class="kw">match</span> <span class="ident">socket</span>.<span class="ident">try_recv_from</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>) {
-            <span class="prelude-val">Ok</span>((<span class="ident">n</span>, <span class="ident">_addr</span>)) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">buf</span>[..<span class="ident">n</span>]);
+        <span class="comment">// Try to recv data, this may still fail with `WouldBlock`
+        // if the readiness event is a false positive.
+        </span><span class="kw">match </span>socket.try_recv_from(<span class="kw-2">&amp;mut </span>buf) {
+            <span class="prelude-val">Ok</span>((n, _addr)) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;GOT {:?}&quot;</span>, <span class="kw-2">&amp;</span>buf[..n]);
                 <span class="kw">break</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() == <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
+            <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
                 <span class="kw">continue</span>;
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
     }
@@ -779,67 +779,67 @@ readiness flag and can cause the socket to behave incorrectly.</p>
 <h5 id="examples-20"><a href="#examples-20">Examples</a></h5>
 <p>For a socket bound to a local path</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// We use a temporary directory so that the socket</span>
-<span class="comment">// files left by the bound sockets will get cleaned up.</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
+<span class="comment">// We use a temporary directory so that the socket
+// files left by the bound sockets will get cleaned up.
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
 
-<span class="comment">// Bind socket to a filesystem path</span>
-<span class="kw">let</span> <span class="ident">socket_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;socket&quot;</span>);
-<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">socket_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Bind socket to a filesystem path
+</span><span class="kw">let </span>socket_path = tmp.path().join(<span class="string">&quot;socket&quot;</span>);
+<span class="kw">let </span>socket = UnixDatagram::bind(<span class="kw-2">&amp;</span>socket_path)<span class="question-mark">?</span>;
 
-<span class="macro">assert_eq!</span>(<span class="ident">socket</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>.<span class="ident">as_pathname</span>().<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">socket_path</span>);
+<span class="macro">assert_eq!</span>(socket.local_addr()<span class="question-mark">?</span>.as_pathname().unwrap(), <span class="kw-2">&amp;</span>socket_path);
 </code></pre></div>
 <p>For an unbound socket</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::unbound</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>socket = UnixDatagram::unbound()<span class="question-mark">?</span>;
 
-<span class="macro">assert!</span>(<span class="ident">socket</span>.<span class="ident">local_addr</span>()<span class="question-mark">?</span>.<span class="ident">is_unnamed</span>());
+<span class="macro">assert!</span>(socket.local_addr()<span class="question-mark">?</span>.is_unnamed());
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.peer_addr" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1338-1340">source</a></span><h4 class="code-header">pub fn <a href="#method.peer_addr" class="fnname">peer_addr</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="struct" href="unix/struct.SocketAddr.html" title="struct tokio::net::unix::SocketAddr">SocketAddr</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the address of this socket’s peer.</p>
 <p>The <code>connect</code> method will connect the socket to a peer.</p>
 <h5 id="examples-21"><a href="#examples-21">Examples</a></h5>
 <p>For a peer with a local path</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">tempfile::tempdir</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>tempfile::tempdir;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">UnixDatagram::unbound</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>tx = UnixDatagram::unbound()<span class="question-mark">?</span>;
 
-<span class="comment">// Create another, bound socket</span>
-<span class="kw">let</span> <span class="ident">tmp</span> = <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
-<span class="kw">let</span> <span class="ident">rx_path</span> = <span class="ident">tmp</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;rx&quot;</span>);
-<span class="kw">let</span> <span class="ident">rx</span> = <span class="ident">UnixDatagram::bind</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Create another, bound socket
+</span><span class="kw">let </span>tmp = tempdir()<span class="question-mark">?</span>;
+<span class="kw">let </span>rx_path = tmp.path().join(<span class="string">&quot;rx&quot;</span>);
+<span class="kw">let </span>rx = UnixDatagram::bind(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="comment">// Connect to the bound socket</span>
-<span class="ident">tx</span>.<span class="ident">connect</span>(<span class="kw-2">&amp;</span><span class="ident">rx_path</span>)<span class="question-mark">?</span>;
+<span class="comment">// Connect to the bound socket
+</span>tx.connect(<span class="kw-2">&amp;</span>rx_path)<span class="question-mark">?</span>;
 
-<span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">peer_addr</span>()<span class="question-mark">?</span>.<span class="ident">as_pathname</span>().<span class="ident">unwrap</span>(), <span class="kw-2">&amp;</span><span class="ident">rx_path</span>);
+<span class="macro">assert_eq!</span>(tx.peer_addr()<span class="question-mark">?</span>.as_pathname().unwrap(), <span class="kw-2">&amp;</span>rx_path);
 </code></pre></div>
 <p>For an unbound peer</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create the pair of sockets</span>
-<span class="kw">let</span> (<span class="ident">sock1</span>, <span class="ident">sock2</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create the pair of sockets
+</span><span class="kw">let </span>(sock1, sock2) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="macro">assert!</span>(<span class="ident">sock1</span>.<span class="ident">peer_addr</span>()<span class="question-mark">?</span>.<span class="ident">is_unnamed</span>());
+<span class="macro">assert!</span>(sock1.peer_addr()<span class="question-mark">?</span>.is_unnamed());
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.take_error" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1361-1363">source</a></span><h4 class="code-header">pub fn <a href="#method.take_error" class="fnname">take_error</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the value of the <code>SO_ERROR</code> option.</p>
 <h5 id="examples-22"><a href="#examples-22">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> <span class="ident">socket</span> = <span class="ident">UnixDatagram::unbound</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>socket = UnixDatagram::unbound()<span class="question-mark">?</span>;
 
-<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">err</span>)) = <span class="ident">socket</span>.<span class="ident">take_error</span>() {
-    <span class="macro">println!</span>(<span class="string">&quot;Got error: {:?}&quot;</span>, <span class="ident">err</span>);
+<span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(err)) = socket.take_error() {
+    <span class="macro">println!</span>(<span class="string">&quot;Got error: {:?}&quot;</span>, err);
 }
 </code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.shutdown" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1397-1399">source</a></span><h4 class="code-header">pub fn <a href="#method.shutdown" class="fnname">shutdown</a>(&amp;self, how: <a class="enum" href="https://doc.rust-lang.org/nightly/std/net/enum.Shutdown.html" title="enum std::net::Shutdown">Shutdown</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Shuts down the read, write, or both halves of this connection.</p>
@@ -847,23 +847,23 @@ readiness flag and can cause the socket to behave incorrectly.</p>
 specified portions to immediately return with an appropriate value
 (see the documentation of <code>Shutdown</code>).</p>
 <h5 id="examples-23"><a href="#examples-23">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net::UnixDatagram</span>;
-<span class="kw">use</span> <span class="ident">std::net::Shutdown</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::UnixDatagram;
+<span class="kw">use </span>std::net::Shutdown;
 
-<span class="comment">// Create an unbound socket</span>
-<span class="kw">let</span> (<span class="ident">socket</span>, <span class="ident">other</span>) = <span class="ident">UnixDatagram::pair</span>()<span class="question-mark">?</span>;
+<span class="comment">// Create an unbound socket
+</span><span class="kw">let </span>(socket, other) = UnixDatagram::pair()<span class="question-mark">?</span>;
 
-<span class="ident">socket</span>.<span class="ident">shutdown</span>(<span class="ident">Shutdown::Both</span>)<span class="question-mark">?</span>;
+socket.shutdown(Shutdown::Both)<span class="question-mark">?</span>;
 
-<span class="comment">// NOTE: the following commented out code does NOT work as expected.</span>
-<span class="comment">// Due to an underlying issue, the recv call will block indefinitely.</span>
-<span class="comment">// See: https://github.com/tokio-rs/tokio/issues/1679</span>
-<span class="comment">//let mut buff = vec![0u8; 24];</span>
-<span class="comment">//let size = socket.recv(&amp;mut buff).await?;</span>
-<span class="comment">//assert_eq!(size, 0);</span>
+<span class="comment">// NOTE: the following commented out code does NOT work as expected.
+// Due to an underlying issue, the recv call will block indefinitely.
+// See: https://github.com/tokio-rs/tokio/issues/1679
+//let mut buff = vec![0u8; 24];
+//let size = socket.recv(&amp;mut buff).await?;
+//assert_eq!(size, 0);
 
-<span class="kw">let</span> <span class="ident">send_result</span> = <span class="ident">socket</span>.<span class="ident">send</span>(<span class="string">b&quot;hello world&quot;</span>).<span class="kw">await</span>;
-<span class="macro">assert!</span>(<span class="ident">send_result</span>.<span class="ident">is_err</span>());
+</span><span class="kw">let </span>send_result = socket.send(<span class="string">b&quot;hello world&quot;</span>).<span class="kw">await</span>;
+<span class="macro">assert!</span>(send_result.is_err());
 </code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-AsRawFd-for-UnixDatagram" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1420-1424">source</a></span><a href="#impl-AsRawFd-for-UnixDatagram" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/std/os/fd/raw/trait.AsRawFd.html" title="trait std::os::fd::raw::AsRawFd">AsRawFd</a> for <a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.as_raw_fd" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1421-1423">source</a></span><a href="#method.as_raw_fd" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/std/os/fd/raw/trait.AsRawFd.html#tymethod.as_raw_fd" class="fnname">as_raw_fd</a>(&amp;self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/os/fd/raw/type.RawFd.html" title="type std::os::fd::raw::RawFd">RawFd</a></h4></section></summary><div class='docblock'><p>Extracts the raw file descriptor. <a href="https://doc.rust-lang.org/nightly/std/os/fd/raw/trait.AsRawFd.html#tymethod.as_raw_fd">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-UnixDatagram" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1414-1418">source</a></span><a href="#impl-Debug-for-UnixDatagram" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.UnixDatagram.html" title="struct tokio::net::UnixDatagram">UnixDatagram</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/net/unix/datagram/socket.rs.html#1415-1417">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
@@ -882,4 +882,4 @@ specified portions to immediately return with an appropriate value
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from-1" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from-1" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-UnixDatagram" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-UnixDatagram" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-2" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-2" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

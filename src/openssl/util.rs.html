@@ -91,98 +91,98 @@
 <span id="91">91</span>
 <span id="92">92</span>
 <span id="93">93</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::ErrorStack</span>;
-<span class="kw">use</span> <span class="ident">foreign_types</span>::{<span class="ident">ForeignType</span>, <span class="ident">ForeignTypeRef</span>};
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_char</span>, <span class="ident">c_int</span>, <span class="ident">c_void</span>};
-<span class="kw">use</span> <span class="ident">std::any::Any</span>;
-<span class="kw">use</span> <span class="ident">std::panic</span>::{<span class="self">self</span>, <span class="ident">AssertUnwindSafe</span>};
-<span class="kw">use</span> <span class="ident">std::slice</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::ErrorStack;
+<span class="kw">use </span>foreign_types::{ForeignType, ForeignTypeRef};
+<span class="kw">use </span>libc::{c_char, c_int, c_void};
+<span class="kw">use </span>std::any::Any;
+<span class="kw">use </span>std::panic::{<span class="self">self</span>, AssertUnwindSafe};
+<span class="kw">use </span>std::slice;
 
-<span class="doccomment">/// Wraps a user-supplied callback and a slot for panics thrown inside the callback (while FFI</span>
-<span class="doccomment">/// frames are on the stack).</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// When dropped, checks if the callback has panicked, and resumes unwinding if so.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CallbackState</span>&lt;<span class="ident">F</span>&gt; {
-    <span class="doccomment">/// The user callback. Taken out of the `Option` when called.</span>
-    <span class="ident">cb</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">F</span>&gt;,
-    <span class="doccomment">/// If the callback panics, we place the panic object here, to be re-thrown once OpenSSL</span>
-    <span class="doccomment">/// returns.</span>
-    <span class="ident">panic</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Any</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>&gt;&gt;,
+<span class="doccomment">/// Wraps a user-supplied callback and a slot for panics thrown inside the callback (while FFI
+/// frames are on the stack).
+///
+/// When dropped, checks if the callback has panicked, and resumes unwinding if so.
+</span><span class="kw">pub struct </span>CallbackState&lt;F&gt; {
+    <span class="doccomment">/// The user callback. Taken out of the `Option` when called.
+    </span>cb: <span class="prelude-ty">Option</span>&lt;F&gt;,
+    <span class="doccomment">/// If the callback panics, we place the panic object here, to be re-thrown once OpenSSL
+    /// returns.
+    </span>panic: <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Any + Send + <span class="lifetime">&#39;static</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">F</span>&gt; <span class="ident">CallbackState</span>&lt;<span class="ident">F</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">callback</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">CallbackState</span> {
-            <span class="ident">cb</span>: <span class="prelude-val">Some</span>(<span class="ident">callback</span>),
-            <span class="ident">panic</span>: <span class="prelude-val">None</span>,
+<span class="kw">impl</span>&lt;F&gt; CallbackState&lt;F&gt; {
+    <span class="kw">pub fn </span>new(callback: F) -&gt; <span class="self">Self </span>{
+        CallbackState {
+            cb: <span class="prelude-val">Some</span>(callback),
+            panic: <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">F</span>&gt; <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">CallbackState</span>&lt;<span class="ident">F</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">panic</span>) = <span class="self">self</span>.<span class="ident">panic</span>.<span class="ident">take</span>() {
-            <span class="ident">panic::resume_unwind</span>(<span class="ident">panic</span>);
+<span class="kw">impl</span>&lt;F&gt; Drop <span class="kw">for </span>CallbackState&lt;F&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(panic) = <span class="self">self</span>.panic.take() {
+            panic::resume_unwind(panic);
         }
     }
 }
 
-<span class="doccomment">/// Password callback function, passed to private key loading functions.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `cb_state` is expected to be a pointer to a `CallbackState`.</span>
-<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">extern</span> <span class="string">&quot;C&quot;</span> <span class="kw">fn</span> <span class="ident">invoke_passwd_cb</span>&lt;<span class="ident">F</span>&gt;(
-    <span class="ident">buf</span>: <span class="kw-2">*mut</span> <span class="ident">c_char</span>,
-    <span class="ident">size</span>: <span class="ident">c_int</span>,
-    <span class="ident">_rwflag</span>: <span class="ident">c_int</span>,
-    <span class="ident">cb_state</span>: <span class="kw-2">*mut</span> <span class="ident">c_void</span>,
-) -&gt; <span class="ident">c_int</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>, <span class="ident">ErrorStack</span>&gt;,
+<span class="doccomment">/// Password callback function, passed to private key loading functions.
+///
+/// `cb_state` is expected to be a pointer to a `CallbackState`.
+</span><span class="kw">pub unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>invoke_passwd_cb&lt;F&gt;(
+    buf: <span class="kw-2">*mut </span>c_char,
+    size: c_int,
+    _rwflag: c_int,
+    cb_state: <span class="kw-2">*mut </span>c_void,
+) -&gt; c_int
+<span class="kw">where
+    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize, ErrorStack&gt;,
 {
-    <span class="kw">let</span> <span class="ident">callback</span> = <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span>(<span class="ident">cb_state</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">CallbackState</span>&lt;<span class="ident">F</span>&gt;);
+    <span class="kw">let </span>callback = <span class="kw-2">&amp;mut *</span>(cb_state <span class="kw">as </span><span class="kw-2">*mut </span>CallbackState&lt;F&gt;);
 
-    <span class="kw">let</span> <span class="ident">result</span> = <span class="ident">panic::catch_unwind</span>(<span class="ident">AssertUnwindSafe</span>(|| {
-        <span class="kw">let</span> <span class="ident">pass_slice</span> = <span class="ident">slice::from_raw_parts_mut</span>(<span class="ident">buf</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">size</span> <span class="kw">as</span> <span class="ident">usize</span>);
-        <span class="ident">callback</span>.<span class="ident">cb</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>()(<span class="ident">pass_slice</span>)
+    <span class="kw">let </span>result = panic::catch_unwind(AssertUnwindSafe(|| {
+        <span class="kw">let </span>pass_slice = slice::from_raw_parts_mut(buf <span class="kw">as </span><span class="kw-2">*mut </span>u8, size <span class="kw">as </span>usize);
+        callback.cb.take().unwrap()(pass_slice)
     }));
 
-    <span class="kw">match</span> <span class="ident">result</span> {
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">len</span>)) =&gt; <span class="ident">len</span> <span class="kw">as</span> <span class="ident">c_int</span>,
+    <span class="kw">match </span>result {
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(len)) =&gt; len <span class="kw">as </span>c_int,
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(<span class="kw">_</span>)) =&gt; {
-            <span class="comment">// FIXME restore error stack</span>
-            <span class="number">0</span>
-        }
-        <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
-            <span class="ident">callback</span>.<span class="ident">panic</span> = <span class="prelude-val">Some</span>(<span class="ident">err</span>);
-            <span class="number">0</span>
-        }
+            <span class="comment">// FIXME restore error stack
+            </span><span class="number">0
+        </span>}
+        <span class="prelude-val">Err</span>(err) =&gt; {
+            callback.panic = <span class="prelude-val">Some</span>(err);
+            <span class="number">0
+        </span>}
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ForeignTypeExt</span>: <span class="ident">ForeignType</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_ptr_opt</span>(<span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident"><span class="self">Self</span>::CType</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">if</span> <span class="ident">ptr</span>.<span class="ident">is_null</span>() {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Some</span>(<span class="ident"><span class="self">Self</span>::from_ptr</span>(<span class="ident">ptr</span>))
+<span class="kw">pub trait </span>ForeignTypeExt: ForeignType {
+    <span class="kw">unsafe fn </span>from_ptr_opt(ptr: <span class="kw-2">*mut </span><span class="self">Self</span>::CType) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">if </span>ptr.is_null() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(<span class="self">Self</span>::from_ptr(ptr))
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">FT</span>: <span class="ident">ForeignType</span>&gt; <span class="ident">ForeignTypeExt</span> <span class="kw">for</span> <span class="ident">FT</span> {}
+<span class="kw">impl</span>&lt;FT: ForeignType&gt; ForeignTypeExt <span class="kw">for </span>FT {}
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ForeignTypeRefExt</span>: <span class="ident">ForeignTypeRef</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_const_ptr</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="ident">ptr</span>: <span class="kw-2">*const</span> <span class="ident"><span class="self">Self</span>::CType</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::from_ptr</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident"><span class="self">Self</span>::CType</span>)
+<span class="kw">pub trait </span>ForeignTypeRefExt: ForeignTypeRef {
+    <span class="kw">unsafe fn </span>from_const_ptr&lt;<span class="lifetime">&#39;a</span>&gt;(ptr: <span class="kw-2">*const </span><span class="self">Self</span>::CType) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self </span>{
+        <span class="self">Self</span>::from_ptr(ptr <span class="kw">as </span><span class="kw-2">*mut </span><span class="self">Self</span>::CType)
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">from_const_ptr_opt</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="ident">ptr</span>: <span class="kw-2">*const</span> <span class="ident"><span class="self">Self</span>::CType</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">Self</span>&gt; {
-        <span class="kw">if</span> <span class="ident">ptr</span>.<span class="ident">is_null</span>() {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Some</span>(<span class="ident"><span class="self">Self</span>::from_const_ptr</span>(<span class="ident">ptr</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident"><span class="self">Self</span>::CType</span>))
+    <span class="kw">unsafe fn </span>from_const_ptr_opt&lt;<span class="lifetime">&#39;a</span>&gt;(ptr: <span class="kw-2">*const </span><span class="self">Self</span>::CType) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>&gt; {
+        <span class="kw">if </span>ptr.is_null() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(<span class="self">Self</span>::from_const_ptr(ptr <span class="kw">as </span><span class="kw-2">*mut </span><span class="self">Self</span>::CType))
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="ident">FT</span>: <span class="ident">ForeignTypeRef</span>&gt; <span class="ident">ForeignTypeRefExt</span> <span class="kw">for</span> <span class="ident">FT</span> {}
+<span class="kw">impl</span>&lt;FT: ForeignTypeRef&gt; ForeignTypeRefExt <span class="kw">for </span>FT {}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="openssl" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

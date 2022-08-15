@@ -53,60 +53,60 @@
 <span id="53">53</span>
 <span id="54">54</span>
 <span id="55">55</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Asynchronous Services</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! A [`Service`](Service) is a trait representing an asynchronous</span>
-<span class="doccomment">//! function of a request to a response. It&#39;s similar to</span>
-<span class="doccomment">//! `async fn(Request) -&gt; Result&lt;Response, Error&gt;`.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The argument and return value isn&#39;t strictly required to be for HTTP.</span>
-<span class="doccomment">//! Therefore, hyper uses several &quot;trait aliases&quot; to reduce clutter around</span>
-<span class="doccomment">//! bounds. These are:</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! - `HttpService`: This is blanketly implemented for all types that</span>
-<span class="doccomment">//!   implement `Service&lt;http::Request&lt;B1&gt;, Response = http::Response&lt;B2&gt;&gt;`.</span>
-<span class="doccomment">//! - `MakeService`: When a `Service` returns a new `Service` as its &quot;response&quot;,</span>
-<span class="doccomment">//!   we consider it a `MakeService`. Again, blanketly implemented in those cases.</span>
-<span class="doccomment">//! - `MakeConnection`: A `Service` that returns a &quot;connection&quot;, a type that</span>
-<span class="doccomment">//!   implements `AsyncRead` and `AsyncWrite`.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # HttpService</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! In hyper, especially in the server setting, a `Service` is usually bound</span>
-<span class="doccomment">//! to a single connection. It defines how to respond to **all** requests that</span>
-<span class="doccomment">//! connection will receive.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The helper [`service_fn`](service_fn) should be sufficient for most cases, but</span>
-<span class="doccomment">//! if you need to implement `Service` for a type manually, you can follow the example</span>
-<span class="doccomment">//! in `service_struct_impl.rs`.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # MakeService</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Since a `Service` is bound to a single connection, a [`Server`](crate::Server)</span>
-<span class="doccomment">//! needs a way to make them as it accepts connections. This is what a</span>
-<span class="doccomment">//! `MakeService` does.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Resources that need to be shared by all `Service`s can be put into a</span>
-<span class="doccomment">//! `MakeService`, and then passed to individual `Service`s when `call`</span>
-<span class="doccomment">//! is called.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Asynchronous Services
+//!
+//! A [`Service`](Service) is a trait representing an asynchronous
+//! function of a request to a response. It&#39;s similar to
+//! `async fn(Request) -&gt; Result&lt;Response, Error&gt;`.
+//!
+//! The argument and return value isn&#39;t strictly required to be for HTTP.
+//! Therefore, hyper uses several &quot;trait aliases&quot; to reduce clutter around
+//! bounds. These are:
+//!
+//! - `HttpService`: This is blanketly implemented for all types that
+//!   implement `Service&lt;http::Request&lt;B1&gt;, Response = http::Response&lt;B2&gt;&gt;`.
+//! - `MakeService`: When a `Service` returns a new `Service` as its &quot;response&quot;,
+//!   we consider it a `MakeService`. Again, blanketly implemented in those cases.
+//! - `MakeConnection`: A `Service` that returns a &quot;connection&quot;, a type that
+//!   implements `AsyncRead` and `AsyncWrite`.
+//!
+//! # HttpService
+//!
+//! In hyper, especially in the server setting, a `Service` is usually bound
+//! to a single connection. It defines how to respond to **all** requests that
+//! connection will receive.
+//!
+//! The helper [`service_fn`](service_fn) should be sufficient for most cases, but
+//! if you need to implement `Service` for a type manually, you can follow the example
+//! in `service_struct_impl.rs`.
+//!
+//! # MakeService
+//!
+//! Since a `Service` is bound to a single connection, a [`Server`](crate::Server)
+//! needs a way to make them as it accepts connections. This is what a
+//! `MakeService` does.
+//!
+//! Resources that need to be shared by all `Service`s can be put into a
+//! `MakeService`, and then passed to individual `Service`s when `call`
+//! is called.
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tower_service::Service</span>;
+</span><span class="kw">pub use </span>tower_service::Service;
 
-<span class="kw">mod</span> <span class="ident">http</span>;
-<span class="kw">mod</span> <span class="ident">make</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;http2&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;client&quot;</span>))]</span>
-<span class="kw">mod</span> <span class="ident">oneshot</span>;
-<span class="kw">mod</span> <span class="ident">util</span>;
+<span class="kw">mod </span>http;
+<span class="kw">mod </span>make;
+<span class="attribute">#[cfg(all(any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>), feature = <span class="string">&quot;client&quot;</span>))]</span>
+<span class="kw">mod </span>oneshot;
+<span class="kw">mod </span>util;
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::http::HttpService</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;http2&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;client&quot;</span>))]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::make::MakeConnection</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;http2&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;server&quot;</span>))]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::make::MakeServiceRef</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">any</span>(<span class="ident">feature</span> = <span class="string">&quot;http1&quot;</span>, <span class="ident">feature</span> = <span class="string">&quot;http2&quot;</span>), <span class="ident">feature</span> = <span class="string">&quot;client&quot;</span>))]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::oneshot</span>::{<span class="ident">oneshot</span>, <span class="ident">Oneshot</span>};
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::http::HttpService;
+<span class="attribute">#[cfg(all(any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>), feature = <span class="string">&quot;client&quot;</span>))]</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::make::MakeConnection;
+<span class="attribute">#[cfg(all(any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>), feature = <span class="string">&quot;server&quot;</span>))]</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::make::MakeServiceRef;
+<span class="attribute">#[cfg(all(any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>), feature = <span class="string">&quot;client&quot;</span>))]</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::oneshot::{oneshot, Oneshot};
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::make::make_service_fn</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::util::service_fn</span>;
+<span class="kw">pub use </span><span class="self">self</span>::make::make_service_fn;
+<span class="kw">pub use </span><span class="self">self</span>::util::service_fn;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="hyper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

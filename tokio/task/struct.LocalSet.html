@@ -5,22 +5,22 @@ cases, a <a href="struct.LocalSet.html">local task set</a> may be used to schedu
 futures to run together on the same thread.</p>
 <p>For example, the following code will not compile:</p>
 
-<div class='information'><div class='tooltip compile_fail'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail"><code><span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<div class='information'><div class='tooltip compile_fail'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail"><code><span class="kw">use </span>std::rc::Rc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="comment">// `Rc` does not implement `Send`, and thus may not be sent between</span>
-    <span class="comment">// threads safely.</span>
-    <span class="kw">let</span> <span class="ident">unsend_data</span> = <span class="ident">Rc::new</span>(<span class="string">&quot;my unsend data...&quot;</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="comment">// `Rc` does not implement `Send`, and thus may not be sent between
+    // threads safely.
+    </span><span class="kw">let </span>unsend_data = Rc::new(<span class="string">&quot;my unsend data...&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">unsend_data</span> = <span class="ident">unsend_data</span>.<span class="ident">clone</span>();
-    <span class="comment">// Because the `async` block here moves `unsend_data`, the future is `!Send`.</span>
-    <span class="comment">// Since `tokio::spawn` requires the spawned future to implement `Send`, this</span>
-    <span class="comment">// will not compile.</span>
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">unsend_data</span>);
-        <span class="comment">// ...</span>
-    }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">let </span>unsend_data = unsend_data.clone();
+    <span class="comment">// Because the `async` block here moves `unsend_data`, the future is `!Send`.
+    // Since `tokio::spawn` requires the spawned future to implement `Send`, this
+    // will not compile.
+    </span>tokio::spawn(<span class="kw">async move </span>{
+        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unsend_data);
+        <span class="comment">// ...
+    </span>}).<span class="kw">await</span>.unwrap();
 }</code></pre></div>
 <h2 id="use-with-run_until"><a href="#use-with-run_until">Use with <code>run_until</code></a></h2>
 <p>To spawn <code>!Send</code> futures, we can use a local task set to schedule them
@@ -28,25 +28,25 @@ on the thread calling <a href="../runtime/struct.Runtime.html#method.block_on"><
 local task set, we can use <a href="fn.spawn_local.html"><code>task::spawn_local</code></a>, which can spawn
 <code>!Send</code> futures. For example:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
-<span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::rc::Rc;
+<span class="kw">use </span>tokio::task;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">unsend_data</span> = <span class="ident">Rc::new</span>(<span class="string">&quot;my unsend data...&quot;</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>unsend_data = Rc::new(<span class="string">&quot;my unsend data...&quot;</span>);
 
-    <span class="comment">// Construct a local task set that can run `!Send` futures.</span>
-    <span class="kw">let</span> <span class="ident">local</span> = <span class="ident">task::LocalSet::new</span>();
+    <span class="comment">// Construct a local task set that can run `!Send` futures.
+    </span><span class="kw">let </span>local = task::LocalSet::new();
 
-    <span class="comment">// Run the local task set.</span>
-    <span class="ident">local</span>.<span class="ident">run_until</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">let</span> <span class="ident">unsend_data</span> = <span class="ident">unsend_data</span>.<span class="ident">clone</span>();
-        <span class="comment">// `spawn_local` ensures that the future is spawned on the local</span>
-        <span class="comment">// task set.</span>
-        <span class="ident">task::spawn_local</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">unsend_data</span>);
-            <span class="comment">// ...</span>
-        }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// Run the local task set.
+    </span>local.run_until(<span class="kw">async move </span>{
+        <span class="kw">let </span>unsend_data = unsend_data.clone();
+        <span class="comment">// `spawn_local` ensures that the future is spawned on the local
+        // task set.
+        </span>task::spawn_local(<span class="kw">async move </span>{
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, unsend_data);
+            <span class="comment">// ...
+        </span>}).<span class="kw">await</span>.unwrap();
     }).<span class="kw">await</span>;
 }</code></pre></div>
 <p><strong>Note:</strong> The <code>run_until</code> method can only be used in <code>#[tokio::main]</code>,
@@ -58,28 +58,28 @@ cannot be used inside a task spawned with <code>tokio::spawn</code>.</p>
 several futures on a <code>LocalSet</code> and drive the whole set until they
 complete. For example,</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio</span>::{<span class="ident">task</span>, <span class="ident">time</span>};
-<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::{task, time};
+<span class="kw">use </span>std::rc::Rc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">unsend_data</span> = <span class="ident">Rc::new</span>(<span class="string">&quot;world&quot;</span>);
-    <span class="kw">let</span> <span class="ident">local</span> = <span class="ident">task::LocalSet::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>unsend_data = Rc::new(<span class="string">&quot;world&quot;</span>);
+    <span class="kw">let </span>local = task::LocalSet::new();
 
-    <span class="kw">let</span> <span class="ident">unsend_data2</span> = <span class="ident">unsend_data</span>.<span class="ident">clone</span>();
-    <span class="ident">local</span>.<span class="ident">spawn_local</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="comment">// ...</span>
-        <span class="macro">println!</span>(<span class="string">&quot;hello {}&quot;</span>, <span class="ident">unsend_data2</span>)
+    <span class="kw">let </span>unsend_data2 = unsend_data.clone();
+    local.spawn_local(<span class="kw">async move </span>{
+        <span class="comment">// ...
+        </span><span class="macro">println!</span>(<span class="string">&quot;hello {}&quot;</span>, unsend_data2)
     });
 
-    <span class="ident">local</span>.<span class="ident">spawn_local</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">time::sleep</span>(<span class="ident">time::Duration::from_millis</span>(<span class="number">100</span>)).<span class="kw">await</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;goodbye {}&quot;</span>, <span class="ident">unsend_data</span>)
+    local.spawn_local(<span class="kw">async move </span>{
+        time::sleep(time::Duration::from_millis(<span class="number">100</span>)).<span class="kw">await</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;goodbye {}&quot;</span>, unsend_data)
     });
 
-    <span class="comment">// ...</span>
+    <span class="comment">// ...
 
-    <span class="ident">local</span>.<span class="kw">await</span>;
+    </span>local.<span class="kw">await</span>;
 }</code></pre></div>
 <p><strong>Note:</strong> Awaiting a <code>LocalSet</code> can only be done inside
 <code>#[tokio::main]</code>, <code>#[tokio::test]</code> or directly inside a call to
@@ -92,84 +92,84 @@ something else. The solution is to create the <code>LocalSet</code> somewhere el
 and communicate with it using an <a href="../sync/mpsc/index.html"><code>mpsc</code></a> channel.</p>
 <p>The following example puts the <code>LocalSet</code> inside a new thread.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::runtime::Builder</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync</span>::{<span class="ident">mpsc</span>, <span class="ident">oneshot</span>};
-<span class="kw">use</span> <span class="ident">tokio::task::LocalSet</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::runtime::Builder;
+<span class="kw">use </span>tokio::sync::{mpsc, oneshot};
+<span class="kw">use </span>tokio::task::LocalSet;
 
-<span class="comment">// This struct describes the task you want to spawn. Here we include</span>
-<span class="comment">// some simple examples. The oneshot channel allows sending a response</span>
-<span class="comment">// to the spawner.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">enum</span> <span class="ident">Task</span> {
-    <span class="ident">PrintNumber</span>(<span class="ident">u32</span>),
-    <span class="ident">AddOne</span>(<span class="ident">u32</span>, <span class="ident">oneshot::Sender</span>&lt;<span class="ident">u32</span>&gt;),
+<span class="comment">// This struct describes the task you want to spawn. Here we include
+// some simple examples. The oneshot channel allows sending a response
+// to the spawner.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">enum </span>Task {
+    PrintNumber(u32),
+    AddOne(u32, oneshot::Sender&lt;u32&gt;),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">struct</span> <span class="ident">LocalSpawner</span> {
-   <span class="ident">send</span>: <span class="ident">mpsc::UnboundedSender</span>&lt;<span class="ident">Task</span>&gt;,
+<span class="attribute">#[derive(Clone)]</span>
+<span class="kw">struct </span>LocalSpawner {
+   send: mpsc::UnboundedSender&lt;Task&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">LocalSpawner</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">send</span>, <span class="kw-2">mut</span> <span class="ident">recv</span>) = <span class="ident">mpsc::unbounded_channel</span>();
+<span class="kw">impl </span>LocalSpawner {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>(send, <span class="kw-2">mut </span>recv) = mpsc::unbounded_channel();
 
-        <span class="kw">let</span> <span class="ident">rt</span> = <span class="ident">Builder::new_current_thread</span>()
-            .<span class="ident">enable_all</span>()
-            .<span class="ident">build</span>()
-            .<span class="ident">unwrap</span>();
+        <span class="kw">let </span>rt = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
-        <span class="ident">std::thread::spawn</span>(<span class="kw">move</span> || {
-            <span class="kw">let</span> <span class="ident">local</span> = <span class="ident">LocalSet::new</span>();
+        std::thread::spawn(<span class="kw">move </span>|| {
+            <span class="kw">let </span>local = LocalSet::new();
 
-            <span class="ident">local</span>.<span class="ident">spawn_local</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">new_task</span>) = <span class="ident">recv</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-                    <span class="ident">tokio::task::spawn_local</span>(<span class="ident">run_task</span>(<span class="ident">new_task</span>));
+            local.spawn_local(<span class="kw">async move </span>{
+                <span class="kw">while let </span><span class="prelude-val">Some</span>(new_task) = recv.recv().<span class="kw">await </span>{
+                    tokio::task::spawn_local(run_task(new_task));
                 }
-                <span class="comment">// If the while loop returns, then all the LocalSpawner</span>
-                <span class="comment">// objects have have been dropped.</span>
-            });
+                <span class="comment">// If the while loop returns, then all the LocalSpawner
+                // objects have have been dropped.
+            </span>});
 
-            <span class="comment">// This will return once all senders are dropped and all</span>
-            <span class="comment">// spawned tasks have returned.</span>
-            <span class="ident">rt</span>.<span class="ident">block_on</span>(<span class="ident">local</span>);
+            <span class="comment">// This will return once all senders are dropped and all
+            // spawned tasks have returned.
+            </span>rt.block_on(local);
         });
 
-        <span class="self">Self</span> {
-            <span class="ident">send</span>,
+        <span class="self">Self </span>{
+            send,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">task</span>: <span class="ident">Task</span>) {
-        <span class="self">self</span>.<span class="ident">send</span>.<span class="ident">send</span>(<span class="ident">task</span>).<span class="ident">expect</span>(<span class="string">&quot;Thread with LocalSet has shut down.&quot;</span>);
+    <span class="kw">pub fn </span>spawn(<span class="kw-2">&amp;</span><span class="self">self</span>, task: Task) {
+        <span class="self">self</span>.send.send(task).expect(<span class="string">&quot;Thread with LocalSet has shut down.&quot;</span>);
     }
 }
 
-<span class="comment">// This task may do !Send stuff. We use printing a number as an example,</span>
-<span class="comment">// but it could be anything.</span>
-<span class="comment">//</span>
-<span class="comment">// The Task struct is an enum to support spawning many different kinds</span>
-<span class="comment">// of operations.</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_task</span>(<span class="ident">task</span>: <span class="ident">Task</span>) {
-    <span class="kw">match</span> <span class="ident">task</span> {
-        <span class="ident">Task::PrintNumber</span>(<span class="ident">n</span>) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">n</span>);
+<span class="comment">// This task may do !Send stuff. We use printing a number as an example,
+// but it could be anything.
+//
+// The Task struct is an enum to support spawning many different kinds
+// of operations.
+</span><span class="kw">async fn </span>run_task(task: Task) {
+    <span class="kw">match </span>task {
+        Task::PrintNumber(n) =&gt; {
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, n);
         },
-        <span class="ident">Task::AddOne</span>(<span class="ident">n</span>, <span class="ident">response</span>) =&gt; {
-            <span class="comment">// We ignore failures to send the response.</span>
-            <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">response</span>.<span class="ident">send</span>(<span class="ident">n</span> + <span class="number">1</span>);
+        Task::AddOne(n, response) =&gt; {
+            <span class="comment">// We ignore failures to send the response.
+            </span><span class="kw">let _ </span>= response.send(n + <span class="number">1</span>);
         },
     }
 }
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">spawner</span> = <span class="ident">LocalSpawner::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>spawner = LocalSpawner::new();
 
-    <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">response</span>) = <span class="ident">oneshot::channel</span>();
-    <span class="ident">spawner</span>.<span class="ident">spawn</span>(<span class="ident">Task::AddOne</span>(<span class="number">10</span>, <span class="ident">send</span>));
-    <span class="kw">let</span> <span class="ident">eleven</span> = <span class="ident">response</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">eleven</span>, <span class="number">11</span>);
+    <span class="kw">let </span>(send, response) = oneshot::channel();
+    spawner.spawn(Task::AddOne(<span class="number">10</span>, send));
+    <span class="kw">let </span>eleven = response.<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(eleven, <span class="number">11</span>);
 }</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-LocalSet" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#330-584">source</a></span><a href="#impl-LocalSet" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.new" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#332-348">source</a></span><h4 class="code-header">pub fn <a href="#method.new" class="fnname">new</a>() -&gt; <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a><span class="notable-traits"><span class="notable-traits-tooltip">ⓘ<span class="notable-traits-tooltiptext"><span class="docblock"><span class="notable">Notable traits for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></span><code class="content"><span class="where fmt-newline">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a> for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></span><span class="where fmt-newline">    type <a href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" class="associatedtype">Output</a> = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>;</span></code></span></span></span></span></h4></section></summary><div class="docblock"><p>Returns a new local task set.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.spawn_local" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#387-393">source</a></span><h4 class="code-header">pub fn <a href="#method.spawn_local" class="fnname">spawn_local</a>&lt;F&gt;(&amp;self, future: F) -&gt; <a class="struct" href="struct.JoinHandle.html" title="struct tokio::task::JoinHandle">JoinHandle</a>&lt;F::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" title="type core::future::future::Future::Output">Output</a>&gt;<span class="notable-traits"><span class="notable-traits-tooltip">ⓘ<span class="notable-traits-tooltiptext"><span class="docblock"><span class="notable">Notable traits for <a class="struct" href="struct.JoinHandle.html" title="struct tokio::task::JoinHandle">JoinHandle</a>&lt;T&gt;</span><code class="content"><span class="where fmt-newline">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a> for <a class="struct" href="struct.JoinHandle.html" title="struct tokio::task::JoinHandle">JoinHandle</a>&lt;T&gt;</span><span class="where fmt-newline">    type <a href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" class="associatedtype">Output</a> = <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, <a class="struct" href="struct.JoinError.html" title="struct tokio::task::JoinError">JoinError</a>&gt;;</span></code></span></span></span></span> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a> + 'static,<br>&nbsp;&nbsp;&nbsp;&nbsp;F::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" title="type core::future::future::Future::Output">Output</a>: 'static,&nbsp;</span></h4></section></summary><div class="docblock"><p>Spawns a <code>!Send</code> task onto the local task set.</p>
@@ -177,32 +177,32 @@ and communicate with it using an <a href="../sync/mpsc/index.html"><code>mpsc</c
 <p>Unlike the free function <a href="fn.spawn_local.html"><code>spawn_local</code></a>, this method may be used to
 spawn local tasks when the task set is <em>not</em> running. For example:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::task;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">local</span> = <span class="ident">task::LocalSet::new</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>local = task::LocalSet::new();
 
-    <span class="comment">// Spawn a future on the local set. This future will be run when</span>
-    <span class="comment">// we call `run_until` to drive the task set.</span>
-    <span class="ident">local</span>.<span class="ident">spawn_local</span>(<span class="kw">async</span> {
-       <span class="comment">// ...</span>
-    });
+    <span class="comment">// Spawn a future on the local set. This future will be run when
+    // we call `run_until` to drive the task set.
+    </span>local.spawn_local(<span class="kw">async </span>{
+       <span class="comment">// ...
+    </span>});
 
-    <span class="comment">// Run the local task set.</span>
-    <span class="ident">local</span>.<span class="ident">run_until</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="comment">// ...</span>
-    }).<span class="kw">await</span>;
+    <span class="comment">// Run the local task set.
+    </span>local.run_until(<span class="kw">async move </span>{
+        <span class="comment">// ...
+    </span>}).<span class="kw">await</span>;
 
-    <span class="comment">// When `run` finishes, we can spawn _more_ futures, which will</span>
-    <span class="comment">// run in subsequent calls to `run_until`.</span>
-    <span class="ident">local</span>.<span class="ident">spawn_local</span>(<span class="kw">async</span> {
-       <span class="comment">// ...</span>
-    });
+    <span class="comment">// When `run` finishes, we can spawn _more_ futures, which will
+    // run in subsequent calls to `run_until`.
+    </span>local.spawn_local(<span class="kw">async </span>{
+       <span class="comment">// ...
+    </span>});
 
-    <span class="ident">local</span>.<span class="ident">run_until</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="comment">// ...</span>
-    }).<span class="kw">await</span>;
+    local.run_until(<span class="kw">async move </span>{
+        <span class="comment">// ...
+    </span>}).<span class="kw">await</span>;
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.block_on" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#459-464">source</a></span><h4 class="code-header">pub fn <a href="#method.block_on" class="fnname">block_on</a>&lt;F&gt;(&amp;self, rt: &amp;<a class="struct" href="../runtime/struct.Runtime.html" title="struct tokio::runtime::Runtime">Runtime</a>, future: F) -&gt; F::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" title="type core::future::future::Future::Output">Output</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>,&nbsp;</span></h4></section></summary><div class="docblock"><p>Runs a future to completion on the provided runtime, driving any local
 futures spawned on this task set on the current thread.</p>
@@ -222,35 +222,35 @@ futures may not use <a href="fn@crate::task::block_in_place">in-place blocking</
 issued from a local task, the <a href="fn.spawn_blocking.html"><code>spawn_blocking</code></a> API may be used instead.</p>
 <p>For example, this will panic:</p>
 
-<div class='information'><div class='tooltip should_panic'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered should_panic"><code><span class="kw">use</span> <span class="ident">tokio::runtime::Runtime</span>;
-<span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class='information'><div class='tooltip should_panic'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered should_panic"><code><span class="kw">use </span>tokio::runtime::Runtime;
+<span class="kw">use </span>tokio::task;
 
-<span class="kw">let</span> <span class="ident">rt</span>  = <span class="ident">Runtime::new</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">local</span> = <span class="ident">task::LocalSet::new</span>();
-<span class="ident">local</span>.<span class="ident">block_on</span>(<span class="kw-2">&amp;</span><span class="ident">rt</span>, <span class="kw">async</span> {
-    <span class="kw">let</span> <span class="ident">join</span> = <span class="ident">task::spawn_local</span>(<span class="kw">async</span> {
-        <span class="kw">let</span> <span class="ident">blocking_result</span> = <span class="ident">task::block_in_place</span>(|| {
-            <span class="comment">// ...</span>
-        });
-        <span class="comment">// ...</span>
-    });
-    <span class="ident">join</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+<span class="kw">let </span>rt  = Runtime::new().unwrap();
+<span class="kw">let </span>local = task::LocalSet::new();
+local.block_on(<span class="kw-2">&amp;</span>rt, <span class="kw">async </span>{
+    <span class="kw">let </span>join = task::spawn_local(<span class="kw">async </span>{
+        <span class="kw">let </span>blocking_result = task::block_in_place(|| {
+            <span class="comment">// ...
+        </span>});
+        <span class="comment">// ...
+    </span>});
+    join.<span class="kw">await</span>.unwrap();
 })</code></pre></div>
 <p>This, however, will not panic:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::runtime::Runtime</span>;
-<span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::runtime::Runtime;
+<span class="kw">use </span>tokio::task;
 
-<span class="kw">let</span> <span class="ident">rt</span>  = <span class="ident">Runtime::new</span>().<span class="ident">unwrap</span>();
-<span class="kw">let</span> <span class="ident">local</span> = <span class="ident">task::LocalSet::new</span>();
-<span class="ident">local</span>.<span class="ident">block_on</span>(<span class="kw-2">&amp;</span><span class="ident">rt</span>, <span class="kw">async</span> {
-    <span class="kw">let</span> <span class="ident">join</span> = <span class="ident">task::spawn_local</span>(<span class="kw">async</span> {
-        <span class="kw">let</span> <span class="ident">blocking_result</span> = <span class="ident">task::spawn_blocking</span>(|| {
-            <span class="comment">// ...</span>
-        }).<span class="kw">await</span>;
-        <span class="comment">// ...</span>
-    });
-    <span class="ident">join</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+<span class="kw">let </span>rt  = Runtime::new().unwrap();
+<span class="kw">let </span>local = task::LocalSet::new();
+local.block_on(<span class="kw-2">&amp;</span>rt, <span class="kw">async </span>{
+    <span class="kw">let </span>join = task::spawn_local(<span class="kw">async </span>{
+        <span class="kw">let </span>blocking_result = task::spawn_blocking(|| {
+            <span class="comment">// ...
+        </span>}).<span class="kw">await</span>;
+        <span class="comment">// ...
+    </span>});
+    join.<span class="kw">await</span>.unwrap();
 })</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.run_until" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#494-503">source</a></span><h4 class="code-header">pub async fn <a href="#method.run_until" class="fnname">run_until</a>&lt;F&gt;(&amp;self, future: F) -&gt; F::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" title="type core::future::future::Future::Output">Output</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>,&nbsp;</span></h4></section></summary><div class="docblock"><p>Runs a future to completion on the local set, returning its output.</p>
 <p>This returns a future that runs the given future with a local set,
@@ -261,16 +261,16 @@ passed to <code>run</code> finishes, any local futures which have not completed
 will remain on the local set, and will be driven on subsequent calls to
 <code>run_until</code> or when <a href="#awaiting-a-localset">awaiting the local set</a> itself.</p>
 <h5 id="examples"><a href="#examples">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::task;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="ident">task::LocalSet::new</span>().<span class="ident">run_until</span>(<span class="kw">async</span> {
-        <span class="ident">task::spawn_local</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// ...</span>
-        }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="comment">// ...</span>
-    }).<span class="kw">await</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    task::LocalSet::new().run_until(<span class="kw">async </span>{
+        task::spawn_local(<span class="kw">async move </span>{
+            <span class="comment">// ...
+        </span>}).<span class="kw">await</span>.unwrap();
+        <span class="comment">// ...
+    </span>}).<span class="kw">await</span>;
 }</code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Debug-for-LocalSet" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#656-660">source</a></span><a href="#impl-Debug-for-LocalSet" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#657-659">source</a></span><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, fmt: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Default-for-LocalSet" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#686-690">source</a></span><a href="#impl-Default-for-LocalSet" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.default" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../src/tokio/task/local.rs.html#687-689">source</a></span><a href="#method.default" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default" class="fnname">default</a>() -&gt; <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a><span class="notable-traits"><span class="notable-traits-tooltip">ⓘ<span class="notable-traits-tooltiptext"><span class="docblock"><span class="notable">Notable traits for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></span><code class="content"><span class="where fmt-newline">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a> for <a class="struct" href="struct.LocalSet.html" title="struct tokio::task::LocalSet">LocalSet</a></span><span class="where fmt-newline">    type <a href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html#associatedtype.Output" class="associatedtype">Output</a> = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>;</span></code></span></span></span></span></h4></section></summary><div class='docblock'><p>Returns the “default value” for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
@@ -292,4 +292,4 @@ the current task for wakeup if the value is not yet available. <a href="https://
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-LocalSet" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-LocalSet" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

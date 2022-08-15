@@ -267,274 +267,274 @@
 <span id="267">267</span>
 <span id="268">268</span>
 <span id="269">269</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>};
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Weak</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error</span>, <span class="ident">fmt</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::io::{Read, Seek};
+<span class="kw">use </span>std::sync::{Arc, Weak};
+<span class="kw">use </span>std::{error, fmt};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::decoder</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dynamic_mixer</span>::{<span class="self">self</span>, <span class="ident">DynamicMixerController</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sink::Sink</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Source</span>;
-<span class="kw">use</span> <span class="ident">cpal::traits</span>::{<span class="ident">DeviceTrait</span>, <span class="ident">HostTrait</span>, <span class="ident">StreamTrait</span>};
-<span class="kw">use</span> <span class="ident">cpal::Sample</span>;
+<span class="kw">use </span><span class="kw">crate</span>::decoder;
+<span class="kw">use </span><span class="kw">crate</span>::dynamic_mixer::{<span class="self">self</span>, DynamicMixerController};
+<span class="kw">use </span><span class="kw">crate</span>::sink::Sink;
+<span class="kw">use </span><span class="kw">crate</span>::source::Source;
+<span class="kw">use </span>cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+<span class="kw">use </span>cpal::Sample;
 
-<span class="doccomment">/// `cpal::Stream` container. Also see the more useful `OutputStreamHandle`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If this is dropped playback will end &amp; attached `OutputStreamHandle`s will no longer work.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputStream</span> {
-    <span class="ident">mixer</span>: <span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;,
-    <span class="ident">_stream</span>: <span class="ident">cpal::Stream</span>,
+<span class="doccomment">/// `cpal::Stream` container. Also see the more useful `OutputStreamHandle`.
+///
+/// If this is dropped playback will end &amp; attached `OutputStreamHandle`s will no longer work.
+</span><span class="kw">pub struct </span>OutputStream {
+    mixer: Arc&lt;DynamicMixerController&lt;f32&gt;&gt;,
+    _stream: cpal::Stream,
 }
 
-<span class="doccomment">/// More flexible handle to a `OutputStream` that provides playback.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputStreamHandle</span> {
-    <span class="ident">mixer</span>: <span class="ident">Weak</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;,
+<span class="doccomment">/// More flexible handle to a `OutputStream` that provides playback.
+</span><span class="attribute">#[derive(Clone)]</span>
+<span class="kw">pub struct </span>OutputStreamHandle {
+    mixer: Weak&lt;DynamicMixerController&lt;f32&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">OutputStream</span> {
-    <span class="doccomment">/// Returns a new stream &amp; handle using the given output device.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_from_device</span>(
-        <span class="ident">device</span>: <span class="kw-2">&amp;</span><span class="ident">cpal::Device</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="self">Self</span>, <span class="ident">OutputStreamHandle</span>), <span class="ident">StreamError</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">mixer</span>, <span class="ident">_stream</span>) = <span class="ident">device</span>.<span class="ident">try_new_output_stream</span>()<span class="question-mark">?</span>;
-        <span class="ident">_stream</span>.<span class="ident">play</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">out</span> = <span class="self">Self</span> { <span class="ident">mixer</span>, <span class="ident">_stream</span> };
-        <span class="kw">let</span> <span class="ident">handle</span> = <span class="ident">OutputStreamHandle</span> {
-            <span class="ident">mixer</span>: <span class="ident">Arc::downgrade</span>(<span class="kw-2">&amp;</span><span class="ident">out</span>.<span class="ident">mixer</span>),
+<span class="kw">impl </span>OutputStream {
+    <span class="doccomment">/// Returns a new stream &amp; handle using the given output device.
+    </span><span class="kw">pub fn </span>try_from_device(
+        device: <span class="kw-2">&amp;</span>cpal::Device,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="self">Self</span>, OutputStreamHandle), StreamError&gt; {
+        <span class="kw">let </span>(mixer, _stream) = device.try_new_output_stream()<span class="question-mark">?</span>;
+        _stream.play()<span class="question-mark">?</span>;
+        <span class="kw">let </span>out = <span class="self">Self </span>{ mixer, _stream };
+        <span class="kw">let </span>handle = OutputStreamHandle {
+            mixer: Arc::downgrade(<span class="kw-2">&amp;</span>out.mixer),
         };
-        <span class="prelude-val">Ok</span>((<span class="ident">out</span>, <span class="ident">handle</span>))
+        <span class="prelude-val">Ok</span>((out, handle))
     }
 
-    <span class="doccomment">/// Return a new stream &amp; handle using the default output device.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// On failure will fallback to trying any non-default output devices.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_default</span>() -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="self">Self</span>, <span class="ident">OutputStreamHandle</span>), <span class="ident">StreamError</span>&gt; {
-        <span class="kw">let</span> <span class="ident">default_device</span> = <span class="ident">cpal::default_host</span>()
-            .<span class="ident">default_output_device</span>()
-            .<span class="ident">ok_or</span>(<span class="ident">StreamError::NoDevice</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Return a new stream &amp; handle using the default output device.
+    ///
+    /// On failure will fallback to trying any non-default output devices.
+    </span><span class="kw">pub fn </span>try_default() -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="self">Self</span>, OutputStreamHandle), StreamError&gt; {
+        <span class="kw">let </span>default_device = cpal::default_host()
+            .default_output_device()
+            .ok_or(StreamError::NoDevice)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">default_stream</span> = <span class="ident"><span class="self">Self</span>::try_from_device</span>(<span class="kw-2">&amp;</span><span class="ident">default_device</span>);
+        <span class="kw">let </span>default_stream = <span class="self">Self</span>::try_from_device(<span class="kw-2">&amp;</span>default_device);
 
-        <span class="ident">default_stream</span>.<span class="ident">or_else</span>(|<span class="ident">original_err</span>| {
-            <span class="comment">// default device didn&#39;t work, try other ones</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">devices</span> = <span class="kw">match</span> <span class="ident">cpal::default_host</span>().<span class="ident">output_devices</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">d</span>) =&gt; <span class="ident">d</span>,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">original_err</span>),
+        default_stream.or_else(|original_err| {
+            <span class="comment">// default device didn&#39;t work, try other ones
+            </span><span class="kw">let </span><span class="kw-2">mut </span>devices = <span class="kw">match </span>cpal::default_host().output_devices() {
+                <span class="prelude-val">Ok</span>(d) =&gt; d,
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(original_err),
             };
 
-            <span class="ident">devices</span>
-                .<span class="ident">find_map</span>(|<span class="ident">d</span>| <span class="ident"><span class="self">Self</span>::try_from_device</span>(<span class="kw-2">&amp;</span><span class="ident">d</span>).<span class="ident">ok</span>())
-                .<span class="ident">ok_or</span>(<span class="ident">original_err</span>)
+            devices
+                .find_map(|d| <span class="self">Self</span>::try_from_device(<span class="kw-2">&amp;</span>d).ok())
+                .ok_or(original_err)
         })
     }
 }
 
-<span class="kw">impl</span> <span class="ident">OutputStreamHandle</span> {
-    <span class="doccomment">/// Plays a source with a device until it ends.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">play_raw</span>&lt;<span class="ident">S</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">PlayError</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">f32</span>&gt; + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl </span>OutputStreamHandle {
+    <span class="doccomment">/// Plays a source with a device until it ends.
+    </span><span class="kw">pub fn </span>play_raw&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: S) -&gt; <span class="prelude-ty">Result</span>&lt;(), PlayError&gt;
+    <span class="kw">where
+        </span>S: Source&lt;Item = f32&gt; + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">mixer</span> = <span class="self">self</span>.<span class="ident">mixer</span>.<span class="ident">upgrade</span>().<span class="ident">ok_or</span>(<span class="ident">PlayError::NoDevice</span>)<span class="question-mark">?</span>;
-        <span class="ident">mixer</span>.<span class="ident">add</span>(<span class="ident">source</span>);
+        <span class="kw">let </span>mixer = <span class="self">self</span>.mixer.upgrade().ok_or(PlayError::NoDevice)<span class="question-mark">?</span>;
+        mixer.add(source);
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Plays a sound once. Returns a `Sink` that can be used to control the sound.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">play_once</span>&lt;<span class="ident">R</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Sink</span>, <span class="ident">PlayError</span>&gt;
-    <span class="kw">where</span>
-        <span class="ident">R</span>: <span class="ident">Read</span> + <span class="ident">Seek</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Plays a sound once. Returns a `Sink` that can be used to control the sound.
+    </span><span class="kw">pub fn </span>play_once&lt;R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, input: R) -&gt; <span class="prelude-ty">Result</span>&lt;Sink, PlayError&gt;
+    <span class="kw">where
+        </span>R: Read + Seek + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">decoder::Decoder::new</span>(<span class="ident">input</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">sink</span> = <span class="ident">Sink::try_new</span>(<span class="self">self</span>)<span class="question-mark">?</span>;
-        <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">input</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">sink</span>)
+        <span class="kw">let </span>input = decoder::Decoder::new(input)<span class="question-mark">?</span>;
+        <span class="kw">let </span>sink = Sink::try_new(<span class="self">self</span>)<span class="question-mark">?</span>;
+        sink.append(input);
+        <span class="prelude-val">Ok</span>(sink)
     }
 }
 
-<span class="doccomment">/// An error occurred while attemping to play a sound.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PlayError</span> {
-    <span class="doccomment">/// Attempting to decode the audio failed.</span>
-    <span class="ident">DecoderError</span>(<span class="ident">decoder::DecoderError</span>),
-    <span class="doccomment">/// The output device was lost.</span>
-    <span class="ident">NoDevice</span>,
+<span class="doccomment">/// An error occurred while attemping to play a sound.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub enum </span>PlayError {
+    <span class="doccomment">/// Attempting to decode the audio failed.
+    </span>DecoderError(decoder::DecoderError),
+    <span class="doccomment">/// The output device was lost.
+    </span>NoDevice,
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">decoder::DecoderError</span>&gt; <span class="kw">for</span> <span class="ident">PlayError</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">decoder::DecoderError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::DecoderError</span>(<span class="ident">err</span>)
+<span class="kw">impl </span>From&lt;decoder::DecoderError&gt; <span class="kw">for </span>PlayError {
+    <span class="kw">fn </span>from(err: decoder::DecoderError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::DecoderError(err)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">PlayError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::DecoderError</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">fmt</span>(<span class="ident">f</span>),
-            <span class="ident"><span class="self">Self</span>::NoDevice</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;NoDevice&quot;</span>),
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>PlayError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::DecoderError(e) =&gt; e.fmt(f),
+            <span class="self">Self</span>::NoDevice =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;NoDevice&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">PlayError</span> {
-    <span class="kw">fn</span> <span class="ident">source</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn</span> <span class="ident">error::Error</span> + <span class="lifetime">&#39;static</span>)&gt; {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::DecoderError</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">e</span>),
-            <span class="ident"><span class="self">Self</span>::NoDevice</span> =&gt; <span class="prelude-val">None</span>,
+<span class="kw">impl </span>error::Error <span class="kw">for </span>PlayError {
+    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>error::Error + <span class="lifetime">&#39;static</span>)&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::DecoderError(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="self">Self</span>::NoDevice =&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">StreamError</span> {
-    <span class="ident">PlayStreamError</span>(<span class="ident">cpal::PlayStreamError</span>),
-    <span class="ident">DefaultStreamConfigError</span>(<span class="ident">cpal::DefaultStreamConfigError</span>),
-    <span class="ident">BuildStreamError</span>(<span class="ident">cpal::BuildStreamError</span>),
-    <span class="ident">SupportedStreamConfigsError</span>(<span class="ident">cpal::SupportedStreamConfigsError</span>),
-    <span class="ident">NoDevice</span>,
+<span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub enum </span>StreamError {
+    PlayStreamError(cpal::PlayStreamError),
+    DefaultStreamConfigError(cpal::DefaultStreamConfigError),
+    BuildStreamError(cpal::BuildStreamError),
+    SupportedStreamConfigsError(cpal::SupportedStreamConfigsError),
+    NoDevice,
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">cpal::DefaultStreamConfigError</span>&gt; <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">cpal::DefaultStreamConfigError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::DefaultStreamConfigError</span>(<span class="ident">err</span>)
+<span class="kw">impl </span>From&lt;cpal::DefaultStreamConfigError&gt; <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>from(err: cpal::DefaultStreamConfigError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::DefaultStreamConfigError(err)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">cpal::SupportedStreamConfigsError</span>&gt; <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">cpal::SupportedStreamConfigsError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::SupportedStreamConfigsError</span>(<span class="ident">err</span>)
+<span class="kw">impl </span>From&lt;cpal::SupportedStreamConfigsError&gt; <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>from(err: cpal::SupportedStreamConfigsError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::SupportedStreamConfigsError(err)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">cpal::BuildStreamError</span>&gt; <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">cpal::BuildStreamError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::BuildStreamError</span>(<span class="ident">err</span>)
+<span class="kw">impl </span>From&lt;cpal::BuildStreamError&gt; <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>from(err: cpal::BuildStreamError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::BuildStreamError(err)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">cpal::PlayStreamError</span>&gt; <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">cpal::PlayStreamError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::PlayStreamError</span>(<span class="ident">err</span>)
+<span class="kw">impl </span>From&lt;cpal::PlayStreamError&gt; <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>from(err: cpal::PlayStreamError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::PlayStreamError(err)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::PlayStreamError</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">fmt</span>(<span class="ident">f</span>),
-            <span class="ident"><span class="self">Self</span>::BuildStreamError</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">fmt</span>(<span class="ident">f</span>),
-            <span class="ident"><span class="self">Self</span>::DefaultStreamConfigError</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">fmt</span>(<span class="ident">f</span>),
-            <span class="ident"><span class="self">Self</span>::SupportedStreamConfigsError</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">fmt</span>(<span class="ident">f</span>),
-            <span class="ident"><span class="self">Self</span>::NoDevice</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;NoDevice&quot;</span>),
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::PlayStreamError(e) =&gt; e.fmt(f),
+            <span class="self">Self</span>::BuildStreamError(e) =&gt; e.fmt(f),
+            <span class="self">Self</span>::DefaultStreamConfigError(e) =&gt; e.fmt(f),
+            <span class="self">Self</span>::SupportedStreamConfigsError(e) =&gt; e.fmt(f),
+            <span class="self">Self</span>::NoDevice =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;NoDevice&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">StreamError</span> {
-    <span class="kw">fn</span> <span class="ident">source</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn</span> <span class="ident">error::Error</span> + <span class="lifetime">&#39;static</span>)&gt; {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::PlayStreamError</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">e</span>),
-            <span class="ident"><span class="self">Self</span>::BuildStreamError</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">e</span>),
-            <span class="ident"><span class="self">Self</span>::DefaultStreamConfigError</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">e</span>),
-            <span class="ident"><span class="self">Self</span>::SupportedStreamConfigsError</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">e</span>),
-            <span class="ident"><span class="self">Self</span>::NoDevice</span> =&gt; <span class="prelude-val">None</span>,
+<span class="kw">impl </span>error::Error <span class="kw">for </span>StreamError {
+    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>error::Error + <span class="lifetime">&#39;static</span>)&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::PlayStreamError(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="self">Self</span>::BuildStreamError(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="self">Self</span>::DefaultStreamConfigError(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="self">Self</span>::SupportedStreamConfigsError(e) =&gt; <span class="prelude-val">Some</span>(e),
+            <span class="self">Self</span>::NoDevice =&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="doccomment">/// Extensions to `cpal::Device`</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait</span> <span class="ident">CpalDeviceExt</span> {
-    <span class="kw">fn</span> <span class="ident">new_output_stream_with_format</span>(
+<span class="doccomment">/// Extensions to `cpal::Device`
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>CpalDeviceExt {
+    <span class="kw">fn </span>new_output_stream_with_format(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">format</span>: <span class="ident">cpal::SupportedStreamConfig</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;, <span class="ident">cpal::Stream</span>), <span class="ident">cpal::BuildStreamError</span>&gt;;
+        format: cpal::SupportedStreamConfig,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Arc&lt;DynamicMixerController&lt;f32&gt;&gt;, cpal::Stream), cpal::BuildStreamError&gt;;
 
-    <span class="kw">fn</span> <span class="ident">try_new_output_stream</span>(
+    <span class="kw">fn </span>try_new_output_stream(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;, <span class="ident">cpal::Stream</span>), <span class="ident">StreamError</span>&gt;;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Arc&lt;DynamicMixerController&lt;f32&gt;&gt;, cpal::Stream), StreamError&gt;;
 }
 
-<span class="kw">impl</span> <span class="ident">CpalDeviceExt</span> <span class="kw">for</span> <span class="ident">cpal::Device</span> {
-    <span class="kw">fn</span> <span class="ident">new_output_stream_with_format</span>(
+<span class="kw">impl </span>CpalDeviceExt <span class="kw">for </span>cpal::Device {
+    <span class="kw">fn </span>new_output_stream_with_format(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">format</span>: <span class="ident">cpal::SupportedStreamConfig</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;, <span class="ident">cpal::Stream</span>), <span class="ident">cpal::BuildStreamError</span>&gt; {
-        <span class="kw">let</span> (<span class="ident">mixer_tx</span>, <span class="kw-2">mut</span> <span class="ident">mixer_rx</span>) =
-            <span class="ident">dynamic_mixer::mixer</span>::&lt;<span class="ident">f32</span>&gt;(<span class="ident">format</span>.<span class="ident">channels</span>(), <span class="ident">format</span>.<span class="ident">sample_rate</span>().<span class="number">0</span>);
+        format: cpal::SupportedStreamConfig,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Arc&lt;DynamicMixerController&lt;f32&gt;&gt;, cpal::Stream), cpal::BuildStreamError&gt; {
+        <span class="kw">let </span>(mixer_tx, <span class="kw-2">mut </span>mixer_rx) =
+            dynamic_mixer::mixer::&lt;f32&gt;(format.channels(), format.sample_rate().<span class="number">0</span>);
 
-        <span class="kw">let</span> <span class="ident">error_callback</span> = |<span class="ident">err</span>| <span class="macro">eprintln!</span>(<span class="string">&quot;an error occurred on output stream: {}&quot;</span>, <span class="ident">err</span>);
+        <span class="kw">let </span>error_callback = |err| <span class="macro">eprintln!</span>(<span class="string">&quot;an error occurred on output stream: {}&quot;</span>, err);
 
-        <span class="kw">match</span> <span class="ident">format</span>.<span class="ident">sample_format</span>() {
-            <span class="ident">cpal::SampleFormat::F32</span> =&gt; <span class="self">self</span>.<span class="ident">build_output_stream</span>::&lt;<span class="ident">f32</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
-                <span class="kw-2">&amp;</span><span class="ident">format</span>.<span class="ident">config</span>(),
-                <span class="kw">move</span> |<span class="ident">data</span>, <span class="kw">_</span>| {
-                    <span class="ident">data</span>.<span class="ident">iter_mut</span>()
-                        .<span class="ident">for_each</span>(|<span class="ident">d</span>| <span class="kw-2">*</span><span class="ident">d</span> = <span class="ident">mixer_rx</span>.<span class="ident">next</span>().<span class="ident">unwrap_or</span>(<span class="number">0f32</span>))
+        <span class="kw">match </span>format.sample_format() {
+            cpal::SampleFormat::F32 =&gt; <span class="self">self</span>.build_output_stream::&lt;f32, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+                <span class="kw-2">&amp;</span>format.config(),
+                <span class="kw">move </span>|data, <span class="kw">_</span>| {
+                    data.iter_mut()
+                        .for_each(|d| <span class="kw-2">*</span>d = mixer_rx.next().unwrap_or(<span class="number">0f32</span>))
                 },
-                <span class="ident">error_callback</span>,
+                error_callback,
             ),
-            <span class="ident">cpal::SampleFormat::I16</span> =&gt; <span class="self">self</span>.<span class="ident">build_output_stream</span>::&lt;<span class="ident">i16</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
-                <span class="kw-2">&amp;</span><span class="ident">format</span>.<span class="ident">config</span>(),
-                <span class="kw">move</span> |<span class="ident">data</span>, <span class="kw">_</span>| {
-                    <span class="ident">data</span>.<span class="ident">iter_mut</span>()
-                        .<span class="ident">for_each</span>(|<span class="ident">d</span>| <span class="kw-2">*</span><span class="ident">d</span> = <span class="ident">mixer_rx</span>.<span class="ident">next</span>().<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">to_i16</span>()).<span class="ident">unwrap_or</span>(<span class="number">0i16</span>))
+            cpal::SampleFormat::I16 =&gt; <span class="self">self</span>.build_output_stream::&lt;i16, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+                <span class="kw-2">&amp;</span>format.config(),
+                <span class="kw">move </span>|data, <span class="kw">_</span>| {
+                    data.iter_mut()
+                        .for_each(|d| <span class="kw-2">*</span>d = mixer_rx.next().map(|s| s.to_i16()).unwrap_or(<span class="number">0i16</span>))
                 },
-                <span class="ident">error_callback</span>,
+                error_callback,
             ),
-            <span class="ident">cpal::SampleFormat::U16</span> =&gt; <span class="self">self</span>.<span class="ident">build_output_stream</span>::&lt;<span class="ident">u16</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
-                <span class="kw-2">&amp;</span><span class="ident">format</span>.<span class="ident">config</span>(),
-                <span class="kw">move</span> |<span class="ident">data</span>, <span class="kw">_</span>| {
-                    <span class="ident">data</span>.<span class="ident">iter_mut</span>().<span class="ident">for_each</span>(|<span class="ident">d</span>| {
-                        <span class="kw-2">*</span><span class="ident">d</span> = <span class="ident">mixer_rx</span>
-                            .<span class="ident">next</span>()
-                            .<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">to_u16</span>())
-                            .<span class="ident">unwrap_or</span>(<span class="ident">u16::max_value</span>() / <span class="number">2</span>)
+            cpal::SampleFormat::U16 =&gt; <span class="self">self</span>.build_output_stream::&lt;u16, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+                <span class="kw-2">&amp;</span>format.config(),
+                <span class="kw">move </span>|data, <span class="kw">_</span>| {
+                    data.iter_mut().for_each(|d| {
+                        <span class="kw-2">*</span>d = mixer_rx
+                            .next()
+                            .map(|s| s.to_u16())
+                            .unwrap_or(u16::max_value() / <span class="number">2</span>)
                     })
                 },
-                <span class="ident">error_callback</span>,
+                error_callback,
             ),
         }
-        .<span class="ident">map</span>(|<span class="ident">stream</span>| (<span class="ident">mixer_tx</span>, <span class="ident">stream</span>))
+        .map(|stream| (mixer_tx, stream))
     }
 
-    <span class="kw">fn</span> <span class="ident">try_new_output_stream</span>(
+    <span class="kw">fn </span>try_new_output_stream(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">f32</span>&gt;&gt;, <span class="ident">cpal::Stream</span>), <span class="ident">StreamError</span>&gt; {
-        <span class="comment">// Determine the format to use for the new stream.</span>
-        <span class="kw">let</span> <span class="ident">default_format</span> = <span class="self">self</span>.<span class="ident">default_output_config</span>()<span class="question-mark">?</span>;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Arc&lt;DynamicMixerController&lt;f32&gt;&gt;, cpal::Stream), StreamError&gt; {
+        <span class="comment">// Determine the format to use for the new stream.
+        </span><span class="kw">let </span>default_format = <span class="self">self</span>.default_output_config()<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.<span class="ident">new_output_stream_with_format</span>(<span class="ident">default_format</span>)
-            .<span class="ident">or_else</span>(|<span class="ident">err</span>| {
-                <span class="comment">// look through all supported formats to see if another works</span>
-                <span class="ident">supported_output_formats</span>(<span class="self">self</span>)<span class="question-mark">?</span>
-                .<span class="ident">filter_map</span>(|<span class="ident">format</span>| <span class="self">self</span>.<span class="ident">new_output_stream_with_format</span>(<span class="ident">format</span>).<span class="ident">ok</span>())
-                .<span class="ident">next</span>()
-                <span class="comment">// return original error if nothing works</span>
-                .<span class="ident">ok_or</span>(<span class="ident">StreamError::BuildStreamError</span>(<span class="ident">err</span>))
+        <span class="self">self</span>.new_output_stream_with_format(default_format)
+            .or_else(|err| {
+                <span class="comment">// look through all supported formats to see if another works
+                </span>supported_output_formats(<span class="self">self</span>)<span class="question-mark">?
+                </span>.filter_map(|format| <span class="self">self</span>.new_output_stream_with_format(format).ok())
+                .next()
+                <span class="comment">// return original error if nothing works
+                </span>.ok_or(StreamError::BuildStreamError(err))
             })
     }
 }
 
-<span class="doccomment">/// All the supported output formats with sample rates</span>
-<span class="kw">fn</span> <span class="ident">supported_output_formats</span>(
-    <span class="ident">device</span>: <span class="kw-2">&amp;</span><span class="ident">cpal::Device</span>,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl</span> <span class="ident">Iterator</span>&lt;<span class="ident">Item</span> = <span class="ident">cpal::SupportedStreamConfig</span>&gt;, <span class="ident">StreamError</span>&gt; {
-    <span class="kw">const</span> <span class="ident">HZ_44100</span>: <span class="ident">cpal::SampleRate</span> = <span class="ident">cpal::SampleRate</span>(<span class="number">44_100</span>);
+<span class="doccomment">/// All the supported output formats with sample rates
+</span><span class="kw">fn </span>supported_output_formats(
+    device: <span class="kw-2">&amp;</span>cpal::Device,
+) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>Iterator&lt;Item = cpal::SupportedStreamConfig&gt;, StreamError&gt; {
+    <span class="kw">const </span>HZ_44100: cpal::SampleRate = cpal::SampleRate(<span class="number">44_100</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">supported</span>: <span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt; = <span class="ident">device</span>.<span class="ident">supported_output_configs</span>()<span class="question-mark">?</span>.<span class="ident">collect</span>();
-    <span class="ident">supported</span>.<span class="ident">sort_by</span>(|<span class="ident">a</span>, <span class="ident">b</span>| <span class="ident">b</span>.<span class="ident">cmp_default_heuristics</span>(<span class="ident">a</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>supported: Vec&lt;<span class="kw">_</span>&gt; = device.supported_output_configs()<span class="question-mark">?</span>.collect();
+    supported.sort_by(|a, b| b.cmp_default_heuristics(a));
 
-    <span class="prelude-val">Ok</span>(<span class="ident">supported</span>.<span class="ident">into_iter</span>().<span class="ident">flat_map</span>(|<span class="ident">sf</span>| {
-        <span class="kw">let</span> <span class="ident">max_rate</span> = <span class="ident">sf</span>.<span class="ident">max_sample_rate</span>();
-        <span class="kw">let</span> <span class="ident">min_rate</span> = <span class="ident">sf</span>.<span class="ident">min_sample_rate</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">formats</span> = <span class="macro">vec!</span>[<span class="ident">sf</span>.<span class="ident">clone</span>().<span class="ident">with_max_sample_rate</span>()];
-        <span class="kw">if</span> <span class="ident">HZ_44100</span> &lt; <span class="ident">max_rate</span> &amp;&amp; <span class="ident">HZ_44100</span> &gt; <span class="ident">min_rate</span> {
-            <span class="ident">formats</span>.<span class="ident">push</span>(<span class="ident">sf</span>.<span class="ident">clone</span>().<span class="ident">with_sample_rate</span>(<span class="ident">HZ_44100</span>))
+    <span class="prelude-val">Ok</span>(supported.into_iter().flat_map(|sf| {
+        <span class="kw">let </span>max_rate = sf.max_sample_rate();
+        <span class="kw">let </span>min_rate = sf.min_sample_rate();
+        <span class="kw">let </span><span class="kw-2">mut </span>formats = <span class="macro">vec!</span>[sf.clone().with_max_sample_rate()];
+        <span class="kw">if </span>HZ_44100 &lt; max_rate &amp;&amp; HZ_44100 &gt; min_rate {
+            formats.push(sf.clone().with_sample_rate(HZ_44100))
         }
-        <span class="ident">formats</span>.<span class="ident">push</span>(<span class="ident">sf</span>.<span class="ident">with_sample_rate</span>(<span class="ident">min_rate</span>));
-        <span class="ident">formats</span>
+        formats.push(sf.with_sample_rate(min_rate));
+        formats
     }))
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

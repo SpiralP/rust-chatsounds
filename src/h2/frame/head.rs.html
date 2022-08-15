@@ -92,99 +92,99 @@
 <span id="92">92</span>
 <span id="93">93</span>
 <span id="94">94</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::StreamId</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::StreamId;
 
-<span class="kw">use</span> <span class="ident">bytes::BufMut</span>;
+<span class="kw">use </span>bytes::BufMut;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Head</span> {
-    <span class="ident">kind</span>: <span class="ident">Kind</span>,
-    <span class="ident">flag</span>: <span class="ident">u8</span>,
-    <span class="ident">stream_id</span>: <span class="ident">StreamId</span>,
+<span class="attribute">#[derive(Debug, Copy, Clone, PartialEq, Eq)]</span>
+<span class="kw">pub struct </span>Head {
+    kind: Kind,
+    flag: u8,
+    stream_id: StreamId,
 }
 
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">u8</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Kind</span> {
-    <span class="ident">Data</span> = <span class="number">0</span>,
-    <span class="ident">Headers</span> = <span class="number">1</span>,
-    <span class="ident">Priority</span> = <span class="number">2</span>,
-    <span class="ident">Reset</span> = <span class="number">3</span>,
-    <span class="ident">Settings</span> = <span class="number">4</span>,
-    <span class="ident">PushPromise</span> = <span class="number">5</span>,
-    <span class="ident">Ping</span> = <span class="number">6</span>,
-    <span class="ident">GoAway</span> = <span class="number">7</span>,
-    <span class="ident">WindowUpdate</span> = <span class="number">8</span>,
-    <span class="ident">Continuation</span> = <span class="number">9</span>,
-    <span class="ident">Unknown</span>,
+<span class="attribute">#[repr(u8)]</span>
+<span class="attribute">#[derive(Debug, Copy, Clone, PartialEq, Eq)]</span>
+<span class="kw">pub enum </span>Kind {
+    Data = <span class="number">0</span>,
+    Headers = <span class="number">1</span>,
+    Priority = <span class="number">2</span>,
+    Reset = <span class="number">3</span>,
+    Settings = <span class="number">4</span>,
+    PushPromise = <span class="number">5</span>,
+    Ping = <span class="number">6</span>,
+    GoAway = <span class="number">7</span>,
+    WindowUpdate = <span class="number">8</span>,
+    Continuation = <span class="number">9</span>,
+    Unknown,
 }
 
-<span class="comment">// ===== impl Head =====</span>
+<span class="comment">// ===== impl Head =====
 
-<span class="kw">impl</span> <span class="ident">Head</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">kind</span>: <span class="ident">Kind</span>, <span class="ident">flag</span>: <span class="ident">u8</span>, <span class="ident">stream_id</span>: <span class="ident">StreamId</span>) -&gt; <span class="ident">Head</span> {
-        <span class="ident">Head</span> {
-            <span class="ident">kind</span>,
-            <span class="ident">flag</span>,
-            <span class="ident">stream_id</span>,
+</span><span class="kw">impl </span>Head {
+    <span class="kw">pub fn </span>new(kind: Kind, flag: u8, stream_id: StreamId) -&gt; Head {
+        Head {
+            kind,
+            flag,
+            stream_id,
         }
     }
 
-    <span class="doccomment">/// Parse an HTTP/2 frame header</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">header</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">Head</span> {
-        <span class="kw">let</span> (<span class="ident">stream_id</span>, <span class="kw">_</span>) = <span class="ident">StreamId::parse</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>[<span class="number">5</span>..]);
+    <span class="doccomment">/// Parse an HTTP/2 frame header
+    </span><span class="kw">pub fn </span>parse(header: <span class="kw-2">&amp;</span>[u8]) -&gt; Head {
+        <span class="kw">let </span>(stream_id, <span class="kw">_</span>) = StreamId::parse(<span class="kw-2">&amp;</span>header[<span class="number">5</span>..]);
 
-        <span class="ident">Head</span> {
-            <span class="ident">kind</span>: <span class="ident">Kind::new</span>(<span class="ident">header</span>[<span class="number">3</span>]),
-            <span class="ident">flag</span>: <span class="ident">header</span>[<span class="number">4</span>],
-            <span class="ident">stream_id</span>,
+        Head {
+            kind: Kind::new(header[<span class="number">3</span>]),
+            flag: header[<span class="number">4</span>],
+            stream_id,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stream_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">StreamId</span> {
-        <span class="self">self</span>.<span class="ident">stream_id</span>
+    <span class="kw">pub fn </span>stream_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; StreamId {
+        <span class="self">self</span>.stream_id
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kind</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Kind</span> {
-        <span class="self">self</span>.<span class="ident">kind</span>
+    <span class="kw">pub fn </span>kind(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Kind {
+        <span class="self">self</span>.kind
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">flag</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u8</span> {
-        <span class="self">self</span>.<span class="ident">flag</span>
+    <span class="kw">pub fn </span>flag(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
+        <span class="self">self</span>.flag
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident"><span class="kw">super</span>::HEADER_LEN</span>
+    <span class="kw">pub fn </span>encode_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">super</span>::HEADER_LEN
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode</span>&lt;<span class="ident">T</span>: <span class="ident">BufMut</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">payload_len</span>: <span class="ident">usize</span>, <span class="ident">dst</span>: <span class="kw-2">&amp;mut</span> <span class="ident">T</span>) {
-        <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">encode_len</span>() &lt;= <span class="ident">dst</span>.<span class="ident">remaining_mut</span>());
+    <span class="kw">pub fn </span>encode&lt;T: BufMut&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, payload_len: usize, dst: <span class="kw-2">&amp;mut </span>T) {
+        <span class="macro">debug_assert!</span>(<span class="self">self</span>.encode_len() &lt;= dst.remaining_mut());
 
-        <span class="ident">dst</span>.<span class="ident">put_uint</span>(<span class="ident">payload_len</span> <span class="kw">as</span> <span class="ident">u64</span>, <span class="number">3</span>);
-        <span class="ident">dst</span>.<span class="ident">put_u8</span>(<span class="self">self</span>.<span class="ident">kind</span> <span class="kw">as</span> <span class="ident">u8</span>);
-        <span class="ident">dst</span>.<span class="ident">put_u8</span>(<span class="self">self</span>.<span class="ident">flag</span>);
-        <span class="ident">dst</span>.<span class="ident">put_u32</span>(<span class="self">self</span>.<span class="ident">stream_id</span>.<span class="ident">into</span>());
+        dst.put_uint(payload_len <span class="kw">as </span>u64, <span class="number">3</span>);
+        dst.put_u8(<span class="self">self</span>.kind <span class="kw">as </span>u8);
+        dst.put_u8(<span class="self">self</span>.flag);
+        dst.put_u32(<span class="self">self</span>.stream_id.into());
     }
 }
 
-<span class="comment">// ===== impl Kind =====</span>
+<span class="comment">// ===== impl Kind =====
 
-<span class="kw">impl</span> <span class="ident">Kind</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">byte</span>: <span class="ident">u8</span>) -&gt; <span class="ident">Kind</span> {
-        <span class="kw">match</span> <span class="ident">byte</span> {
-            <span class="number">0</span> =&gt; <span class="ident">Kind::Data</span>,
-            <span class="number">1</span> =&gt; <span class="ident">Kind::Headers</span>,
-            <span class="number">2</span> =&gt; <span class="ident">Kind::Priority</span>,
-            <span class="number">3</span> =&gt; <span class="ident">Kind::Reset</span>,
-            <span class="number">4</span> =&gt; <span class="ident">Kind::Settings</span>,
-            <span class="number">5</span> =&gt; <span class="ident">Kind::PushPromise</span>,
-            <span class="number">6</span> =&gt; <span class="ident">Kind::Ping</span>,
-            <span class="number">7</span> =&gt; <span class="ident">Kind::GoAway</span>,
-            <span class="number">8</span> =&gt; <span class="ident">Kind::WindowUpdate</span>,
-            <span class="number">9</span> =&gt; <span class="ident">Kind::Continuation</span>,
-            <span class="kw">_</span> =&gt; <span class="ident">Kind::Unknown</span>,
+</span><span class="kw">impl </span>Kind {
+    <span class="kw">pub fn </span>new(byte: u8) -&gt; Kind {
+        <span class="kw">match </span>byte {
+            <span class="number">0 </span>=&gt; Kind::Data,
+            <span class="number">1 </span>=&gt; Kind::Headers,
+            <span class="number">2 </span>=&gt; Kind::Priority,
+            <span class="number">3 </span>=&gt; Kind::Reset,
+            <span class="number">4 </span>=&gt; Kind::Settings,
+            <span class="number">5 </span>=&gt; Kind::PushPromise,
+            <span class="number">6 </span>=&gt; Kind::Ping,
+            <span class="number">7 </span>=&gt; Kind::GoAway,
+            <span class="number">8 </span>=&gt; Kind::WindowUpdate,
+            <span class="number">9 </span>=&gt; Kind::Continuation,
+            <span class="kw">_ </span>=&gt; Kind::Unknown,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="h2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

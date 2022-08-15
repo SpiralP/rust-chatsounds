@@ -629,564 +629,564 @@
 <span id="629">629</span>
 <span id="630">630</span>
 <span id="631">631</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Mixer API - Simple Mixer API for mixer control</span>
-<span class="doccomment">//!</span>
-<span class="kw">use</span> <span class="ident">std::ffi</span>::{<span class="ident">CStr</span>, <span class="ident">CString</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ptr</span>, <span class="ident">mem</span>, <span class="ident">fmt</span>, <span class="ident">ops</span>};
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_long</span>, <span class="ident">c_int</span>, <span class="ident">c_uint</span>, <span class="ident">c_short</span>, <span class="ident">pollfd</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::poll</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Mixer API - Simple Mixer API for mixer control
+//!
+</span><span class="kw">use </span>std::ffi::{CStr, CString};
+<span class="kw">use </span>std::{ptr, mem, fmt, ops};
+<span class="kw">use </span>libc::{c_long, c_int, c_uint, c_short, pollfd};
+<span class="kw">use </span><span class="kw">crate</span>::poll;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alsa</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Round</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::error</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::alsa;
+<span class="kw">use </span><span class="kw">super</span>::Round;
+<span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
 
-<span class="kw">const</span> <span class="ident">SELEM_ID_SIZE</span>: <span class="ident">usize</span> = <span class="number">64</span>;
+<span class="kw">const </span>SELEM_ID_SIZE: usize = <span class="number">64</span>;
 
-<span class="doccomment">/// wraps [snd_mixer_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___mixer.html)</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Mixer</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_mixer_t</span>);
+<span class="doccomment">/// wraps [snd_mixer_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___mixer.html)
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub struct </span>Mixer(<span class="kw-2">*mut </span>alsa::snd_mixer_t);
 
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Mixer</span> {}
+<span class="kw">unsafe impl </span>Send <span class="kw">for </span>Mixer {}
 
-<span class="kw">impl</span> <span class="ident">Mixer</span> {
-    <span class="doccomment">/// Opens a mixer and attaches it to a card identified by its name (like hw:0) and loads the</span>
-    <span class="doccomment">/// mixer after registering a Selem.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Mixer</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mixer</span> = <span class="ident">Mixer::open</span>(<span class="ident">nonblock</span>)<span class="question-mark">?</span>;
-        <span class="ident">mixer</span>.<span class="ident">attach</span>(<span class="kw-2">&amp;</span><span class="ident">CString::new</span>(<span class="ident">name</span>).<span class="ident">unwrap</span>())<span class="question-mark">?</span>;
-        <span class="ident">Selem::register</span>(<span class="kw-2">&amp;mut</span> <span class="ident">mixer</span>)<span class="question-mark">?</span>;
-        <span class="ident">mixer</span>.<span class="ident">load</span>()<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">mixer</span>)
+<span class="kw">impl </span>Mixer {
+    <span class="doccomment">/// Opens a mixer and attaches it to a card identified by its name (like hw:0) and loads the
+    /// mixer after registering a Selem.
+    </span><span class="kw">pub fn </span>new(name: <span class="kw-2">&amp;</span>str, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Mixer&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>mixer = Mixer::open(nonblock)<span class="question-mark">?</span>;
+        mixer.attach(<span class="kw-2">&amp;</span>CString::new(name).unwrap())<span class="question-mark">?</span>;
+        Selem::register(<span class="kw-2">&amp;mut </span>mixer)<span class="question-mark">?</span>;
+        mixer.load()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(mixer)
     }
 
-    <span class="doccomment">/// Creates a Selem by looking for a specific selem by name given a mixer (of a card)</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">find_selem</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">SelemId</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Selem</span>&gt; {
-        <span class="kw">let</span> <span class="ident">selem</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_find_selem</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">id</span>.<span class="ident">as_ptr</span>()) };
+    <span class="doccomment">/// Creates a Selem by looking for a specific selem by name given a mixer (of a card)
+    </span><span class="kw">pub fn </span>find_selem(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>SelemId) -&gt; <span class="prelude-ty">Option</span>&lt;Selem&gt; {
+        <span class="kw">let </span>selem = <span class="kw">unsafe </span>{ alsa::snd_mixer_find_selem(<span class="self">self</span>.<span class="number">0</span>, id.as_ptr()) };
 
-        <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">is_null</span>() { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="prelude-val">Some</span>(<span class="ident">Selem</span>(<span class="ident">Elem</span> {<span class="ident">handle</span>: <span class="ident">selem</span>, <span class="ident">_mixer</span>: <span class="self">self</span>})) }
+        <span class="kw">if </span>selem.is_null() { <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="prelude-val">Some</span>(Selem(Elem {handle: selem, _mixer: <span class="self">self</span>})) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Mixer</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="kw">let</span> <span class="ident">flags</span> = <span class="kw">if</span> <span class="ident">nonblock</span> { <span class="number">1</span> } <span class="kw">else</span> { <span class="number">0</span> }; <span class="comment">// FIXME: alsa::SND_CTL_NONBLOCK does not exist in alsa-sys</span>
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_open</span>(<span class="kw-2">&amp;mut</span> <span class="ident">r</span>, <span class="ident">flags</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Mixer</span>(<span class="ident">r</span>))
+    <span class="kw">pub fn </span>open(nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Mixer&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>r = ptr::null_mut();
+        <span class="kw">let </span>flags = <span class="kw">if </span>nonblock { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>}; <span class="comment">// FIXME: alsa::SND_CTL_NONBLOCK does not exist in alsa-sys
+        </span><span class="macro">acheck!</span>(snd_mixer_open(<span class="kw-2">&amp;mut </span>r, flags)).map(|<span class="kw">_</span>| Mixer(r))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">attach</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_attach</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">name</span>.<span class="ident">as_ptr</span>())).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>attach(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>CStr) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_attach(<span class="self">self</span>.<span class="number">0</span>, name.as_ptr())).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_load</span>(<span class="self">self</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>load(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_load(<span class="self">self</span>.<span class="number">0</span>)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Iter</span> {
-        <span class="ident">Iter</span> {
-            <span class="ident">last_handle</span>: <span class="ident">ptr::null_mut</span>(),
-            <span class="ident">mixer</span>: <span class="self">self</span>
-        }
+    <span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter {
+        Iter {
+            last_handle: ptr::null_mut(),
+            mixer: <span class="self">self
+        </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle_events</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_handle_events</span>(<span class="self">self</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>)
+    <span class="kw">pub fn </span>handle_events(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_handle_events(<span class="self">self</span>.<span class="number">0</span>)).map(|x| x <span class="kw">as </span>u32)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wait</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">timeout_ms</span>: <span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">bool</span>&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_wait</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">timeout_ms</span>.<span class="ident">map</span>(|<span class="ident">x</span>| <span class="ident">x</span> <span class="kw">as</span> <span class="ident">c_int</span>).<span class="ident">unwrap_or</span>(-<span class="number">1</span>))).<span class="ident">map</span>(|<span class="ident">i</span>| <span class="ident">i</span> == <span class="number">1</span>) }
+    <span class="kw">pub fn </span>wait(<span class="kw-2">&amp;</span><span class="self">self</span>, timeout_ms: <span class="prelude-ty">Option</span>&lt;u32&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_wait(<span class="self">self</span>.<span class="number">0</span>, timeout_ms.map(|x| x <span class="kw">as </span>c_int).unwrap_or(-<span class="number">1</span>))).map(|i| i == <span class="number">1</span>) }
 }
 
-<span class="doccomment">/// Closes mixer and frees used resources</span>
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Mixer</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_close</span>(<span class="self">self</span>.<span class="number">0</span>) };
-    }
-}
-
-
-<span class="kw">impl</span> <span class="ident">poll::Descriptors</span> <span class="kw">for</span> <span class="ident">Mixer</span> {
-    <span class="kw">fn</span> <span class="ident">count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_poll_descriptors_count</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span> }
-    }
-    <span class="kw">fn</span> <span class="ident">fill</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_poll_descriptors</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_mut_ptr</span>(), <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_mixer_poll_descriptors&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">z</span> <span class="kw">as</span> <span class="ident">usize</span>)
-    }
-    <span class="kw">fn</span> <span class="ident">revents</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;</span>[<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">poll::Flags</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_poll_descriptors_revents</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">pollfd</span>, <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="kw-2">&amp;mut</span> <span class="ident">r</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_mixer_poll_descriptors_revents&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">poll::Flags::from_bits_truncate</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">c_short</span>))
+<span class="doccomment">/// Closes mixer and frees used resources
+</span><span class="kw">impl </span>Drop <span class="kw">for </span>Mixer {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_close(<span class="self">self</span>.<span class="number">0</span>) };
     }
 }
 
 
-<span class="doccomment">/// Wrapper for a mB (millibel) value.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Despite some ALSA functions named &quot;dB&quot;, they actually take mB values instead.</span>
-<span class="doccomment">/// This is a wrapper type to help with those calculations. Its interior is the</span>
-<span class="doccomment">/// actual mB value.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MilliBel</span>(<span class="kw">pub</span> <span class="ident">i64</span>);
-
-<span class="kw">impl</span> <span class="ident">MilliBel</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_db</span>(<span class="self">self</span>) -&gt; <span class="ident">f32</span> { (<span class="self">self</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">f32</span>) / <span class="number">100.0</span> }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_db</span>(<span class="ident">db</span>: <span class="ident">f32</span>) -&gt; <span class="self">Self</span> { <span class="ident">MilliBel</span>((<span class="ident">db</span> * <span class="number">100.0</span>) <span class="kw">as</span> <span class="ident">i64</span>) }
+<span class="kw">impl </span>poll::Descriptors <span class="kw">for </span>Mixer {
+    <span class="kw">fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_poll_descriptors_count(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>usize }
+    }
+    <span class="kw">fn </span>fill(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_mixer_poll_descriptors(<span class="self">self</span>.<span class="number">0</span>, p.as_mut_ptr(), p.len() <span class="kw">as </span>c_uint) };
+        from_code(<span class="string">&quot;snd_mixer_poll_descriptors&quot;</span>, z).map(|<span class="kw">_</span>| z <span class="kw">as </span>usize)
+    }
+    <span class="kw">fn </span>revents(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;</span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;poll::Flags&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>r = <span class="number">0</span>;
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_mixer_poll_descriptors_revents(<span class="self">self</span>.<span class="number">0</span>, p.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>pollfd, p.len() <span class="kw">as </span>c_uint, <span class="kw-2">&amp;mut </span>r) };
+        from_code(<span class="string">&quot;snd_mixer_poll_descriptors_revents&quot;</span>, z).map(|<span class="kw">_</span>| poll::Flags::from_bits_truncate(r <span class="kw">as </span>c_short))
+    }
 }
 
-<span class="kw">impl</span> <span class="ident">ops::Deref</span> <span class="kw">for</span> <span class="ident">MilliBel</span> {
-    <span class="kw">type</span> <span class="ident">Target</span> = <span class="ident">i64</span>;
-    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">i64</span> { <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span> }
+
+<span class="doccomment">/// Wrapper for a mB (millibel) value.
+///
+/// Despite some ALSA functions named &quot;dB&quot;, they actually take mB values instead.
+/// This is a wrapper type to help with those calculations. Its interior is the
+/// actual mB value.
+</span><span class="attribute">#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]</span>
+<span class="kw">pub struct </span>MilliBel(<span class="kw">pub </span>i64);
+
+<span class="kw">impl </span>MilliBel {
+    <span class="kw">pub fn </span>to_db(<span class="self">self</span>) -&gt; f32 { (<span class="self">self</span>.<span class="number">0 </span><span class="kw">as </span>f32) / <span class="number">100.0 </span>}
+    <span class="kw">pub fn </span>from_db(db: f32) -&gt; <span class="self">Self </span>{ MilliBel((db * <span class="number">100.0</span>) <span class="kw">as </span>i64) }
 }
 
-<span class="kw">impl</span> <span class="ident">ops::Add</span> <span class="kw">for</span> <span class="ident">MilliBel</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> = <span class="ident">MilliBel</span>;
-    <span class="kw">fn</span> <span class="ident">add</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> { <span class="ident">MilliBel</span>(<span class="self">self</span>.<span class="number">0</span> + <span class="ident">rhs</span>.<span class="number">0</span>) }
+<span class="kw">impl </span>ops::Deref <span class="kw">for </span>MilliBel {
+    <span class="kw">type </span>Target = i64;
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>i64 { <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>}
 }
 
-<span class="kw">impl</span> <span class="ident">ops::AddAssign</span> <span class="kw">for</span> <span class="ident">MilliBel</span> {
-    <span class="kw">fn</span> <span class="ident">add_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="self">Self</span>) { <span class="self">self</span>.<span class="number">0</span> += <span class="ident">rhs</span>.<span class="number">0</span> }
+<span class="kw">impl </span>ops::Add <span class="kw">for </span>MilliBel {
+    <span class="kw">type </span>Output = MilliBel;
+    <span class="kw">fn </span>add(<span class="self">self</span>, rhs: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{ MilliBel(<span class="self">self</span>.<span class="number">0 </span>+ rhs.<span class="number">0</span>) }
 }
 
-<span class="kw">impl</span> <span class="ident">ops::Sub</span> <span class="kw">for</span> <span class="ident">MilliBel</span> {
-    <span class="kw">type</span> <span class="ident">Output</span> = <span class="ident">MilliBel</span>;
-    <span class="kw">fn</span> <span class="ident">sub</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> { <span class="ident">MilliBel</span>(<span class="self">self</span>.<span class="number">0</span> - <span class="ident">rhs</span>.<span class="number">0</span>) }
+<span class="kw">impl </span>ops::AddAssign <span class="kw">for </span>MilliBel {
+    <span class="kw">fn </span>add_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="self">Self</span>) { <span class="self">self</span>.<span class="number">0 </span>+= rhs.<span class="number">0 </span>}
 }
 
-<span class="kw">impl</span> <span class="ident">ops::SubAssign</span> <span class="kw">for</span> <span class="ident">MilliBel</span> {
-    <span class="kw">fn</span> <span class="ident">sub_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="self">Self</span>) { <span class="self">self</span>.<span class="number">0</span> -= <span class="ident">rhs</span>.<span class="number">0</span> }
+<span class="kw">impl </span>ops::Sub <span class="kw">for </span>MilliBel {
+    <span class="kw">type </span>Output = MilliBel;
+    <span class="kw">fn </span>sub(<span class="self">self</span>, rhs: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{ MilliBel(<span class="self">self</span>.<span class="number">0 </span>- rhs.<span class="number">0</span>) }
 }
 
-<span class="doccomment">/// Wraps [snd_mixer_elem_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___mixer.html)</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;{
-    <span class="ident">handle</span>: <span class="kw-2">*mut</span> <span class="ident">alsa::snd_mixer_elem_t</span>,
-    <span class="ident">_mixer</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Mixer</span>
+<span class="kw">impl </span>ops::SubAssign <span class="kw">for </span>MilliBel {
+    <span class="kw">fn </span>sub_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="self">Self</span>) { <span class="self">self</span>.<span class="number">0 </span>-= rhs.<span class="number">0 </span>}
 }
 
-<span class="doccomment">/// Iterator for all elements of mixer</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt;{
-    <span class="ident">last_handle</span>: <span class="kw-2">*mut</span> <span class="ident">alsa::snd_mixer_elem_t</span>,
-    <span class="ident">mixer</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Mixer</span>
+<span class="doccomment">/// Wraps [snd_mixer_elem_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___mixer.html)
+</span><span class="attribute">#[derive(Copy, Clone, Debug)]</span>
+<span class="kw">pub struct </span>Elem&lt;<span class="lifetime">&#39;a</span>&gt;{
+    handle: <span class="kw-2">*mut </span>alsa::snd_mixer_elem_t,
+    _mixer: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Mixer
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;;
+<span class="doccomment">/// Iterator for all elements of mixer
+</span><span class="attribute">#[derive(Copy, Clone)]</span>
+<span class="kw">pub struct </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt;{
+    last_handle: <span class="kw-2">*mut </span>alsa::snd_mixer_elem_t,
+    mixer: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Mixer
+}
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="ident">elem</span> = <span class="kw">if</span> <span class="self">self</span>.<span class="ident">last_handle</span>.<span class="ident">is_null</span>() {
-            <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_first_elem</span>(<span class="self">self</span>.<span class="ident">mixer</span>.<span class="number">0</span>) }
-        } <span class="kw">else</span> {
-            <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_elem_next</span>(<span class="self">self</span>.<span class="ident">last_handle</span>) }
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = Elem&lt;<span class="lifetime">&#39;a</span>&gt;;
+
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Elem&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">let </span>elem = <span class="kw">if </span><span class="self">self</span>.last_handle.is_null() {
+            <span class="kw">unsafe </span>{ alsa::snd_mixer_first_elem(<span class="self">self</span>.mixer.<span class="number">0</span>) }
+        } <span class="kw">else </span>{
+            <span class="kw">unsafe </span>{ alsa::snd_mixer_elem_next(<span class="self">self</span>.last_handle) }
         };
 
-        <span class="kw">if</span> <span class="ident">elem</span>.<span class="ident">is_null</span>() {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">last_handle</span> = <span class="ident">elem</span>;
-            <span class="prelude-val">Some</span>(<span class="ident">Elem</span> { <span class="ident">handle</span>: <span class="ident">elem</span>, <span class="ident">_mixer</span>: <span class="self">self</span>.<span class="ident">mixer</span>})
+        <span class="kw">if </span>elem.is_null() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="self">self</span>.last_handle = elem;
+            <span class="prelude-val">Some</span>(Elem { handle: elem, _mixer: <span class="self">self</span>.mixer})
         }
     }
 
 }
 
-<span class="doccomment">/// Wrapper for [snd_mixer_selem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html)</span>
-<span class="doccomment">/// No allocation (uses fixed array)</span>
-<span class="comment">// #[derive(Copy, Clone, Debug)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SelemId</span>([<span class="ident">u8</span>; <span class="ident">SELEM_ID_SIZE</span>]);
+<span class="doccomment">/// Wrapper for [snd_mixer_selem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html)
+/// No allocation (uses fixed array)
+</span><span class="comment">// #[derive(Copy, Clone, Debug)]
+</span><span class="kw">pub struct </span>SelemId([u8; SELEM_ID_SIZE]);
 
-<span class="kw">impl</span> <span class="ident">SelemId</span> {
+<span class="kw">impl </span>SelemId {
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">index</span>: <span class="ident">u32</span>) -&gt; <span class="ident">SelemId</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> = <span class="ident">SelemId::empty</span>();
-        <span class="ident">s</span>.<span class="ident">set_name</span>(<span class="kw-2">&amp;</span><span class="ident">CString::new</span>(<span class="ident">name</span>).<span class="ident">unwrap</span>());
-        <span class="ident">s</span>.<span class="ident">set_index</span>(<span class="ident">index</span>);
-        <span class="ident">s</span>
+    <span class="kw">pub fn </span>new(name: <span class="kw-2">&amp;</span>str, index: u32) -&gt; SelemId {
+        <span class="kw">let </span><span class="kw-2">mut </span>s = SelemId::empty();
+        s.set_name(<span class="kw-2">&amp;</span>CString::new(name).unwrap());
+        s.set_index(index);
+        s
     }
 
-    <span class="doccomment">/// Returns an empty (zeroed) SelemId. This id is not a usable id and need to be initialized</span>
-    <span class="doccomment">/// like `SelemId::new()` does</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>() -&gt; <span class="ident">SelemId</span> {
-        <span class="macro">assert!</span>(<span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span> &lt;= <span class="ident">SELEM_ID_SIZE</span>);
-        <span class="comment">// Create empty selem_id and fill from mixer</span>
-        <span class="ident">SelemId</span>(<span class="kw">unsafe</span> { <span class="ident">mem::zeroed</span>() })
+    <span class="doccomment">/// Returns an empty (zeroed) SelemId. This id is not a usable id and need to be initialized
+    /// like `SelemId::new()` does
+    </span><span class="kw">pub fn </span>empty() -&gt; SelemId {
+        <span class="macro">assert!</span>(<span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_sizeof() } <span class="kw">as </span>usize &lt;= SELEM_ID_SIZE);
+        <span class="comment">// Create empty selem_id and fill from mixer
+        </span>SelemId(<span class="kw">unsafe </span>{ mem::zeroed() })
     }
 
-    <span class="doccomment">/// Convert SelemId into ``*mut snd_mixer_selem_id_t` that the alsa call needs.</span>
-    <span class="doccomment">/// See [snd_mixer_selem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html)</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">as_ptr</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">alsa::snd_mixer_selem_id_t</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">alsa::snd_mixer_selem_id_t</span>
+    <span class="doccomment">/// Convert SelemId into ``*mut snd_mixer_selem_id_t` that the alsa call needs.
+    /// See [snd_mixer_selem_id_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html)
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>alsa::snd_mixer_selem_id_t {
+        <span class="self">self</span>.<span class="number">0</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*mut </span>alsa::snd_mixer_selem_id_t
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>&gt; {
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_get_name</span>(<span class="self">self</span>.<span class="ident">as_ptr</span>()) };
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_mixer_selem_id_get_name&quot;</span>, <span class="ident">c</span>)
+    <span class="kw">pub fn </span>get_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        <span class="kw">let </span>c = <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_get_name(<span class="self">self</span>.as_ptr()) };
+        from_const(<span class="string">&quot;snd_mixer_selem_id_get_name&quot;</span>, c)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_get_index</span>(<span class="self">self</span>.<span class="ident">as_ptr</span>()) }
+    <span class="kw">pub fn </span>get_index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_get_index(<span class="self">self</span>.as_ptr()) }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_name</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>) {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_set_name</span>(<span class="self">self</span>.<span class="ident">as_ptr</span>(), <span class="ident">name</span>.<span class="ident">as_ptr</span>()) };
+    <span class="kw">pub fn </span>set_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>CStr) {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_set_name(<span class="self">self</span>.as_ptr(), name.as_ptr()) };
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_index</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">index</span>: <span class="ident">u32</span>) {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_set_index</span>(<span class="self">self</span>.<span class="ident">as_ptr</span>(), <span class="ident">index</span>) };
+    <span class="kw">pub fn </span>set_index(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: u32) {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_set_index(<span class="self">self</span>.as_ptr(), index) };
     }
 
 }
 
-<span class="doccomment">/// Wraps an Elem as a Selem</span>
-<span class="comment">// #[derive(Copy, Clone)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Selem</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;);
+<span class="doccomment">/// Wraps an Elem as a Selem
+</span><span class="comment">// #[derive(Copy, Clone)]
+</span><span class="kw">pub struct </span>Selem&lt;<span class="lifetime">&#39;a</span>&gt;(Elem&lt;<span class="lifetime">&#39;a</span>&gt;);
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Selem</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="doccomment">/// Creates a Selem by wrapping `elem`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">elem</span>: <span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Selem</span>&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-        <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_elem_get_type</span>(<span class="ident">elem</span>.<span class="ident">handle</span>) } == <span class="ident">alsa::SND_MIXER_ELEM_SIMPLE</span>
-           { <span class="prelude-val">Some</span>(<span class="ident">Selem</span>(<span class="ident">elem</span>)) } <span class="kw">else</span> { <span class="prelude-val">None</span> }
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Selem&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// Creates a Selem by wrapping `elem`.
+    </span><span class="kw">pub fn </span>new(elem: Elem&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Selem&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">if unsafe </span>{ alsa::snd_mixer_elem_get_type(elem.handle) } == alsa::SND_MIXER_ELEM_SIMPLE
+           { <span class="prelude-val">Some</span>(Selem(elem)) } <span class="kw">else </span>{ <span class="prelude-val">None </span>}
     }
 
-    <span class="doccomment">/// TODO: This function might change to support regopt and to return the mixer class</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register</span>(<span class="ident">mixer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Mixer</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_register</span>(<span class="ident">mixer</span>.<span class="number">0</span>, <span class="ident">ptr::null_mut</span>(), <span class="ident">ptr::null_mut</span>())).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="doccomment">/// TODO: This function might change to support regopt and to return the mixer class
+    </span><span class="kw">pub fn </span>register(mixer: <span class="kw-2">&amp;mut </span>Mixer) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_register(mixer.<span class="number">0</span>, ptr::null_mut(), ptr::null_mut())).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SelemId</span> {
-        <span class="kw">let</span> <span class="ident">id</span> = <span class="ident">SelemId::empty</span>();
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_get_id</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">id</span>.<span class="ident">as_ptr</span>()) };
-        <span class="ident">id</span>
+    <span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SelemId {
+        <span class="kw">let </span>id = SelemId::empty();
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_get_id(<span class="self">self</span>.handle, id.as_ptr()) };
+        id
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_capture_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_capture_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_capture_volume(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_capture_volume(<span class="self">self</span>.handle) &gt; <span class="number">0 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_capture_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_capture_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_capture_switch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_capture_switch(<span class="self">self</span>.handle) &gt; <span class="number">0 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_playback_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_playback_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_playback_volume(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_playback_volume(<span class="self">self</span>.handle) &gt; <span class="number">0 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_playback_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_playback_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_playback_switch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_playback_switch(<span class="self">self</span>.handle) &gt; <span class="number">0 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">can_capture</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">has_capture_volume</span>() || <span class="self">self</span>.<span class="ident">has_capture_switch</span>()
+    <span class="kw">pub fn </span>can_capture(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.has_capture_volume() || <span class="self">self</span>.has_capture_switch()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">can_playback</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">has_playback_volume</span>() || <span class="self">self</span>.<span class="ident">has_playback_switch</span>()
+    <span class="kw">pub fn </span>can_playback(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.has_playback_volume() || <span class="self">self</span>.has_playback_switch()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">has_capture_volume</span>() || <span class="self">self</span>.<span class="ident">has_playback_volume</span>()
+    <span class="kw">pub fn </span>has_volume(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.has_capture_volume() || <span class="self">self</span>.has_playback_volume()
     }
 
-    <span class="doccomment">/// returns range for capture volume as (min, max) values</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_capture_volume_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">i64</span>, <span class="ident">i64</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">min</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_get_capture_volume_range</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">&amp;mut</span> <span class="ident">min</span>, <span class="kw-2">&amp;mut</span> <span class="ident">max</span>) };
-        (<span class="ident">min</span> <span class="kw">as</span> <span class="ident">i64</span>, <span class="ident">max</span> <span class="kw">as</span> <span class="ident">i64</span>)
+    <span class="doccomment">/// returns range for capture volume as (min, max) values
+    </span><span class="kw">pub fn </span>get_capture_volume_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (i64, i64) {
+        <span class="kw">let </span><span class="kw-2">mut </span>min: c_long = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>max: c_long = <span class="number">0</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_get_capture_volume_range(<span class="self">self</span>.handle, <span class="kw-2">&amp;mut </span>min, <span class="kw-2">&amp;mut </span>max) };
+        (min <span class="kw">as </span>i64, max <span class="kw">as </span>i64)
     }
 
-    <span class="doccomment">/// returns (min, max) values.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_capture_db_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">MilliBel</span>, <span class="ident">MilliBel</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">min</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_get_capture_dB_range</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">&amp;mut</span> <span class="ident">min</span>, <span class="kw-2">&amp;mut</span> <span class="ident">max</span>) };
-        (<span class="ident">MilliBel</span>(<span class="ident">min</span> <span class="kw">as</span> <span class="ident">i64</span>), <span class="ident">MilliBel</span>(<span class="ident">max</span> <span class="kw">as</span> <span class="ident">i64</span>))
+    <span class="doccomment">/// returns (min, max) values.
+    </span><span class="kw">pub fn </span>get_capture_db_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (MilliBel, MilliBel) {
+        <span class="kw">let </span><span class="kw-2">mut </span>min: c_long = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>max: c_long = <span class="number">0</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_get_capture_dB_range(<span class="self">self</span>.handle, <span class="kw-2">&amp;mut </span>min, <span class="kw-2">&amp;mut </span>max) };
+        (MilliBel(min <span class="kw">as </span>i64), MilliBel(max <span class="kw">as </span>i64))
     }
 
-    <span class="doccomment">/// returns (min, max) values.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_playback_volume_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">i64</span>, <span class="ident">i64</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">min</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_get_playback_volume_range</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">&amp;mut</span> <span class="ident">min</span>, <span class="kw-2">&amp;mut</span> <span class="ident">max</span>) };
-        (<span class="ident">min</span> <span class="kw">as</span> <span class="ident">i64</span>, <span class="ident">max</span> <span class="kw">as</span> <span class="ident">i64</span>)
+    <span class="doccomment">/// returns (min, max) values.
+    </span><span class="kw">pub fn </span>get_playback_volume_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (i64, i64) {
+        <span class="kw">let </span><span class="kw-2">mut </span>min: c_long = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>max: c_long = <span class="number">0</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_get_playback_volume_range(<span class="self">self</span>.handle, <span class="kw-2">&amp;mut </span>min, <span class="kw-2">&amp;mut </span>max) };
+        (min <span class="kw">as </span>i64, max <span class="kw">as </span>i64)
     }
 
-    <span class="doccomment">/// returns (min, max) values.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_playback_db_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">MilliBel</span>, <span class="ident">MilliBel</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">min</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_get_playback_dB_range</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">&amp;mut</span> <span class="ident">min</span>, <span class="kw-2">&amp;mut</span> <span class="ident">max</span>) };
-        (<span class="ident">MilliBel</span>(<span class="ident">min</span> <span class="kw">as</span> <span class="ident">i64</span>), <span class="ident">MilliBel</span>(<span class="ident">max</span> <span class="kw">as</span> <span class="ident">i64</span>))
+    <span class="doccomment">/// returns (min, max) values.
+    </span><span class="kw">pub fn </span>get_playback_db_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (MilliBel, MilliBel) {
+        <span class="kw">let </span><span class="kw-2">mut </span>min: c_long = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>max: c_long = <span class="number">0</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_get_playback_dB_range(<span class="self">self</span>.handle, <span class="kw-2">&amp;mut </span>min, <span class="kw-2">&amp;mut </span>max) };
+        (MilliBel(min <span class="kw">as </span>i64), MilliBel(max <span class="kw">as </span>i64))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_playback_mono</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_is_playback_mono</span>(<span class="self">self</span>.<span class="ident">handle</span>) == <span class="number">1</span> }
+    <span class="kw">pub fn </span>is_playback_mono(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_is_playback_mono(<span class="self">self</span>.handle) == <span class="number">1 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_capture_channel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_capture_channel</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_capture_channel(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_capture_channel(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32) &gt; <span class="number">0 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">has_playback_channel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_has_playback_channel</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>) &gt; <span class="number">0</span> }
+    <span class="kw">pub fn </span>has_playback_channel(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_has_playback_channel(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32) &gt; <span class="number">0 </span>}
     }
 
-    <span class="doccomment">/// Gets name from snd_mixer_selem_channel_name</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel_name</span>(<span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>&gt; {
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_channel_name</span>(<span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>) };
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_mixer_selem_channel_name&quot;</span>, <span class="ident">c</span>)
+    <span class="doccomment">/// Gets name from snd_mixer_selem_channel_name
+    </span><span class="kw">pub fn </span>channel_name(channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt; {
+        <span class="kw">let </span>c = <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_channel_name(channel <span class="kw">as </span>i32) };
+        from_const(<span class="string">&quot;snd_mixer_selem_channel_name&quot;</span>, c)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_playback_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">i64</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_playback_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">value</span>)).<span class="ident">and_then</span>(|<span class="kw">_</span>| <span class="prelude-val">Ok</span>(<span class="ident">value</span> <span class="kw">as</span> <span class="ident">i64</span>))
+    <span class="kw">pub fn </span>get_playback_volume(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;i64&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>value: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_playback_volume(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">&amp;mut </span>value)).and_then(|<span class="kw">_</span>| <span class="prelude-val">Ok</span>(value <span class="kw">as </span>i64))
     }
 
-    <span class="doccomment">/// returns volume in millibels.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_playback_vol_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">MilliBel</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get_playback_volume</span>(<span class="ident">channel</span>)
-            .<span class="ident">and_then</span>(|<span class="ident">volume</span>| <span class="self">self</span>.<span class="ident">ask_playback_vol_db</span>(<span class="ident">volume</span>))
+    <span class="doccomment">/// returns volume in millibels.
+    </span><span class="kw">pub fn </span>get_playback_vol_db(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;MilliBel&gt; {
+        <span class="self">self</span>.get_playback_volume(channel)
+            .and_then(|volume| <span class="self">self</span>.ask_playback_vol_db(volume))
     }
 
-    <span class="doccomment">/// Asks alsa to convert playback volume to millibels.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ask_playback_vol_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">MilliBel</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decibel_value</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_ask_playback_vol_dB</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">volume</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="kw-2">&amp;mut</span> <span class="ident">decibel_value</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">MilliBel</span>(<span class="ident">decibel_value</span> <span class="kw">as</span> <span class="ident">i64</span>))
+    <span class="doccomment">/// Asks alsa to convert playback volume to millibels.
+    </span><span class="kw">pub fn </span>ask_playback_vol_db(<span class="kw-2">&amp;</span><span class="self">self</span>, volume: i64) -&gt; <span class="prelude-ty">Result</span>&lt;MilliBel&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>decibel_value: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_ask_playback_vol_dB(<span class="self">self</span>.handle, volume <span class="kw">as </span>c_long, <span class="kw-2">&amp;mut </span>decibel_value))
+            .map(|<span class="kw">_</span>| MilliBel(decibel_value <span class="kw">as </span>i64))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_capture_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">i64</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_capture_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">value</span> <span class="kw">as</span> <span class="ident">i64</span>)
+    <span class="kw">pub fn </span>get_capture_volume(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;i64&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>value: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_capture_volume(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">&amp;mut </span>value)).map(|<span class="kw">_</span>| value <span class="kw">as </span>i64)
     }
 
-    <span class="doccomment">/// returns volume in millibels.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_capture_vol_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">MilliBel</span>&gt; {
-        <span class="self">self</span>.<span class="ident">get_capture_volume</span>(<span class="ident">channel</span>)
-            .<span class="ident">and_then</span>(|<span class="ident">volume</span>| <span class="self">self</span>.<span class="ident">ask_capture_vol_db</span>(<span class="ident">volume</span>))
+    <span class="doccomment">/// returns volume in millibels.
+    </span><span class="kw">pub fn </span>get_capture_vol_db(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;MilliBel&gt; {
+        <span class="self">self</span>.get_capture_volume(channel)
+            .and_then(|volume| <span class="self">self</span>.ask_capture_vol_db(volume))
     }
 
-    <span class="doccomment">/// Asks alsa to convert capture volume to millibels</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ask_capture_vol_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">MilliBel</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decibel_value</span>: <span class="ident">c_long</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_ask_capture_vol_dB</span> (<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">volume</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="kw-2">&amp;mut</span> <span class="ident">decibel_value</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">MilliBel</span>(<span class="ident">decibel_value</span> <span class="kw">as</span> <span class="ident">i64</span>))
+    <span class="doccomment">/// Asks alsa to convert capture volume to millibels
+    </span><span class="kw">pub fn </span>ask_capture_vol_db(<span class="kw-2">&amp;</span><span class="self">self</span>, volume: i64) -&gt; <span class="prelude-ty">Result</span>&lt;MilliBel&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>decibel_value: c_long = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_ask_capture_vol_dB (<span class="self">self</span>.handle, volume <span class="kw">as </span>c_long, <span class="kw-2">&amp;mut </span>decibel_value))
+            .map(|<span class="kw">_</span>| MilliBel(decibel_value <span class="kw">as </span>i64))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_volume(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: i64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_volume(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, value <span class="kw">as </span>c_long)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_volume_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_volume_all</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_volume_all(<span class="kw-2">&amp;</span><span class="self">self</span>, value: i64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_volume_all(<span class="self">self</span>.handle, value <span class="kw">as </span>c_long)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">MilliBel</span>, <span class="ident">dir</span>: <span class="ident">Round</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_dB</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">*</span><span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="ident">dir</span> <span class="kw">as</span> <span class="ident">c_int</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_db(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: MilliBel, dir: Round) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_dB(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">*</span>value <span class="kw">as </span>c_long, dir <span class="kw">as </span>c_int)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capture_db</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">MilliBel</span>, <span class="ident">dir</span>: <span class="ident">Round</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_capture_dB</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">*</span><span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="ident">dir</span> <span class="kw">as</span> <span class="ident">c_int</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_capture_db(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: MilliBel, dir: Round) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_capture_dB(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">*</span>value <span class="kw">as </span>c_long, dir <span class="kw">as </span>c_int)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_db_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">MilliBel</span>, <span class="ident">dir</span>: <span class="ident">Round</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_dB_all</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">*</span><span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="ident">dir</span> <span class="kw">as</span> <span class="ident">c_int</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_db_all(<span class="kw-2">&amp;</span><span class="self">self</span>, value: MilliBel, dir: Round) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_dB_all(<span class="self">self</span>.handle, <span class="kw-2">*</span>value <span class="kw">as </span>c_long, dir <span class="kw">as </span>c_int)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capture_db_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">MilliBel</span>, <span class="ident">dir</span>: <span class="ident">Round</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_capture_dB_all</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="kw-2">*</span><span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>, <span class="ident">dir</span> <span class="kw">as</span> <span class="ident">c_int</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_capture_db_all(<span class="kw-2">&amp;</span><span class="self">self</span>, value: MilliBel, dir: Round) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_capture_dB_all(<span class="self">self</span>.handle, <span class="kw-2">*</span>value <span class="kw">as </span>c_long, dir <span class="kw">as </span>c_int)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capture_volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">i64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_capture_volume</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="ident">value</span> <span class="kw">as</span> <span class="ident">c_long</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_capture_volume(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: i64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_capture_volume(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, value <span class="kw">as </span>c_long)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">i32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_switch(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: i32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_switch(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, value)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_playback_switch_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">i32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_playback_switch_all</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_playback_switch_all(<span class="kw-2">&amp;</span><span class="self">self</span>, value: i32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_playback_switch_all(<span class="self">self</span>.handle, value)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capture_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">value</span>: <span class="ident">i32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_capture_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_capture_switch(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, value: i32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_capture_switch(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, value)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capture_switch_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="ident">i32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_capture_switch_all</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ())
+    <span class="kw">pub fn </span>set_capture_switch_all(<span class="kw-2">&amp;</span><span class="self">self</span>, value: i32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_capture_switch_all(<span class="self">self</span>.handle, value)).map(|<span class="kw">_</span>| ())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_playback_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">i32</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">i32</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_playback_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">value</span>)
+    <span class="kw">pub fn </span>get_playback_switch(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>value: i32 = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_playback_switch(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">&amp;mut </span>value)).map(|<span class="kw">_</span>| value)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_capture_switch</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">i32</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">i32</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_capture_switch</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">value</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">value</span>)
+    <span class="kw">pub fn </span>get_capture_switch(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>value: i32 = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_capture_switch(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">&amp;mut </span>value)).map(|<span class="kw">_</span>| value)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_enumerated</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_is_enumerated</span>(<span class="self">self</span>.<span class="ident">handle</span>) == <span class="number">1</span> }
+    <span class="kw">pub fn </span>is_enumerated(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_is_enumerated(<span class="self">self</span>.handle) == <span class="number">1 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_enum_playback</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_is_enum_playback</span>(<span class="self">self</span>.<span class="ident">handle</span>) == <span class="number">1</span> }
+    <span class="kw">pub fn </span>is_enum_playback(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_is_enum_playback(<span class="self">self</span>.handle) == <span class="number">1 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_enum_capture</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_is_enum_capture</span>(<span class="self">self</span>.<span class="ident">handle</span>) == <span class="number">1</span> }
+    <span class="kw">pub fn </span>is_enum_capture(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_is_enum_capture(<span class="self">self</span>.handle) == <span class="number">1 </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_enum_items</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_enum_items</span>(<span class="self">self</span>.<span class="ident">handle</span>)).<span class="ident">map</span>(|<span class="ident">v</span>| <span class="ident">v</span> <span class="kw">as</span> <span class="ident">u32</span>)
+    <span class="kw">pub fn </span>get_enum_items(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_enum_items(<span class="self">self</span>.handle)).map(|v| v <span class="kw">as </span>u32)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_enum_item_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">temp</span> = [<span class="number">0</span> <span class="kw">as</span> <span class="ident">::libc::c_char</span>; <span class="number">128</span>];
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_enum_item_name</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">idx</span>, <span class="ident">temp</span>.<span class="ident">len</span>()-<span class="number">1</span>, <span class="ident">temp</span>.<span class="ident">as_mut_ptr</span>()))
-            .<span class="ident">and_then</span>(|<span class="kw">_</span>| <span class="ident">from_const</span>(<span class="string">&quot;snd_mixer_selem_get_enum_item_name&quot;</span>, <span class="ident">temp</span>.<span class="ident">as_ptr</span>()))
-            .<span class="ident">map</span>(|<span class="ident">v</span>| <span class="ident">v</span>.<span class="ident">into</span>())
+    <span class="kw">pub fn </span>get_enum_item_name(<span class="kw-2">&amp;</span><span class="self">self</span>, idx: u32) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>temp = [<span class="number">0 </span><span class="kw">as </span>::libc::c_char; <span class="number">128</span>];
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_enum_item_name(<span class="self">self</span>.handle, idx, temp.len()-<span class="number">1</span>, temp.as_mut_ptr()))
+            .and_then(|<span class="kw">_</span>| from_const(<span class="string">&quot;snd_mixer_selem_get_enum_item_name&quot;</span>, temp.as_ptr()))
+            .map(|v| v.into())
     }
 
-    <span class="doccomment">/// Enumerates over valid Enum values</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter_enum</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">IterEnum</span>&gt; {
-        <span class="prelude-val">Ok</span>(<span class="ident">IterEnum</span>(<span class="self">self</span>, <span class="number">0</span>, <span class="self">self</span>.<span class="ident">get_enum_items</span>()<span class="question-mark">?</span>))
+    <span class="doccomment">/// Enumerates over valid Enum values
+    </span><span class="kw">pub fn </span>iter_enum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;IterEnum&gt; {
+        <span class="prelude-val">Ok</span>(IterEnum(<span class="self">self</span>, <span class="number">0</span>, <span class="self">self</span>.get_enum_items()<span class="question-mark">?</span>))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_enum_item</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">temp</span> = <span class="number">0</span>;
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_get_enum_item</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="kw-2">&amp;mut</span> <span class="ident">temp</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">temp</span>)
+    <span class="kw">pub fn </span>get_enum_item(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId) -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>temp = <span class="number">0</span>;
+        <span class="macro">acheck!</span>(snd_mixer_selem_get_enum_item(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, <span class="kw-2">&amp;mut </span>temp))
+            .map(|<span class="kw">_</span>| temp)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_enum_item</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">channel</span>: <span class="ident">SelemChannelId</span>, <span class="ident">idx</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">acheck!</span>(<span class="ident">snd_mixer_selem_set_enum_item</span>(<span class="self">self</span>.<span class="ident">handle</span>, <span class="ident">channel</span> <span class="kw">as</span> <span class="ident">i32</span>, <span class="ident">idx</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| ())
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">ops::Deref</span> <span class="kw">for</span> <span class="ident">Selem</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Target</span> = <span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt;;
-
-    <span class="doccomment">/// returns the elem of this selem</span>
-    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Elem</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>
+    <span class="kw">pub fn </span>set_enum_item(<span class="kw-2">&amp;</span><span class="self">self</span>, channel: SelemChannelId, idx: u32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">acheck!</span>(snd_mixer_selem_set_enum_item(<span class="self">self</span>.handle, channel <span class="kw">as </span>i32, idx))
+            .map(|<span class="kw">_</span>| ())
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IterEnum</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Selem</span>&lt;<span class="lifetime">&#39;a</span>&gt;, <span class="ident">u32</span>, <span class="ident">u32</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ops::Deref <span class="kw">for </span>Selem&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Target = Elem&lt;<span class="lifetime">&#39;a</span>&gt;;
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">IterEnum</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="number">1</span> &gt;= <span class="self">self</span>.<span class="number">2</span> { <span class="prelude-val">None</span> }
-        <span class="kw">else</span> { <span class="self">self</span>.<span class="number">1</span> += <span class="number">1</span>; <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">get_enum_item_name</span>(<span class="self">self</span>.<span class="number">1</span>-<span class="number">1</span>)) }
+    <span class="doccomment">/// returns the elem of this selem
+    </span><span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Elem&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+    </span>}
+}
+
+<span class="kw">pub struct </span>IterEnum&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Selem&lt;<span class="lifetime">&#39;a</span>&gt;, u32, u32);
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>IterEnum&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;String&gt;;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">if </span><span class="self">self</span>.<span class="number">1 </span>&gt;= <span class="self">self</span>.<span class="number">2 </span>{ <span class="prelude-val">None </span>}
+        <span class="kw">else </span>{ <span class="self">self</span>.<span class="number">1 </span>+= <span class="number">1</span>; <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="number">0</span>.get_enum_item_name(<span class="self">self</span>.<span class="number">1</span>-<span class="number">1</span>)) }
     }
 }
 
 <span class="macro">alsa_enum!</span>(
-    <span class="doccomment">/// Wrapper for [SND_MIXER_SCHN_*](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html) constants</span>
-    <span class="ident">SelemChannelId</span>, <span class="ident">ALL_SELEM_CHANNEL_ID</span>[<span class="number">11</span>],
+    <span class="doccomment">/// Wrapper for [SND_MIXER_SCHN_*](http://www.alsa-project.org/alsa-doc/alsa-lib/group___simple_mixer.html) constants
+    </span>SelemChannelId, ALL_SELEM_CHANNEL_ID[<span class="number">11</span>],
 
-    <span class="ident">Unknown</span>     = <span class="ident">SND_MIXER_SCHN_UNKNOWN</span>,
-    <span class="ident">FrontLeft</span>   = <span class="ident">SND_MIXER_SCHN_FRONT_LEFT</span>,
-    <span class="ident">FrontRight</span>  = <span class="ident">SND_MIXER_SCHN_FRONT_RIGHT</span>,
-    <span class="ident">RearLeft</span>    = <span class="ident">SND_MIXER_SCHN_REAR_LEFT</span>,
-    <span class="ident">RearRight</span>   = <span class="ident">SND_MIXER_SCHN_REAR_RIGHT</span>,
-    <span class="ident">FrontCenter</span> = <span class="ident">SND_MIXER_SCHN_FRONT_CENTER</span>,
-    <span class="ident">Woofer</span>      = <span class="ident">SND_MIXER_SCHN_WOOFER</span>,
-    <span class="ident">SideLeft</span>    = <span class="ident">SND_MIXER_SCHN_SIDE_LEFT</span>,
-    <span class="ident">SideRight</span>   = <span class="ident">SND_MIXER_SCHN_SIDE_RIGHT</span>,
-    <span class="ident">RearCenter</span>  = <span class="ident">SND_MIXER_SCHN_REAR_CENTER</span>,
-    <span class="ident">Last</span>        = <span class="ident">SND_MIXER_SCHN_LAST</span>,
+    Unknown     = SND_MIXER_SCHN_UNKNOWN,
+    FrontLeft   = SND_MIXER_SCHN_FRONT_LEFT,
+    FrontRight  = SND_MIXER_SCHN_FRONT_RIGHT,
+    RearLeft    = SND_MIXER_SCHN_REAR_LEFT,
+    RearRight   = SND_MIXER_SCHN_REAR_RIGHT,
+    FrontCenter = SND_MIXER_SCHN_FRONT_CENTER,
+    Woofer      = SND_MIXER_SCHN_WOOFER,
+    SideLeft    = SND_MIXER_SCHN_SIDE_LEFT,
+    SideRight   = SND_MIXER_SCHN_SIDE_RIGHT,
+    RearCenter  = SND_MIXER_SCHN_REAR_CENTER,
+    Last        = SND_MIXER_SCHN_LAST,
 );
 
-<span class="kw">impl</span> <span class="ident">SelemChannelId</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mono</span>() -&gt; <span class="ident">SelemChannelId</span> { <span class="ident">SelemChannelId::FrontLeft</span> }
+<span class="kw">impl </span>SelemChannelId {
+    <span class="kw">pub fn </span>mono() -&gt; SelemChannelId { SelemChannelId::FrontLeft }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">SelemChannelId</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">Selem::channel_name</span>(<span class="kw-2">*</span><span class="self">self</span>).<span class="ident">unwrap</span>())
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>SelemChannelId {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, Selem::channel_name(<span class="kw-2">*</span><span class="self">self</span>).unwrap())
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">print_mixer_of_cards</span>() {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::card</span>;
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>print_mixer_of_cards() {
+    <span class="kw">use </span><span class="kw">super</span>::card;
 
-    <span class="kw">for</span> <span class="ident">card</span> <span class="kw">in</span> <span class="ident">card::Iter::new</span>().<span class="ident">map</span>(|<span class="ident">c</span>| <span class="ident">c</span>.<span class="ident">unwrap</span>()) {
-        <span class="macro">println!</span>(<span class="string">&quot;Card #{}: {} ({})&quot;</span>, <span class="ident">card</span>.<span class="ident">get_index</span>(), <span class="ident">card</span>.<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">card</span>.<span class="ident">get_longname</span>().<span class="ident">unwrap</span>());
+    <span class="kw">for </span>card <span class="kw">in </span>card::Iter::new().map(|c| c.unwrap()) {
+        <span class="macro">println!</span>(<span class="string">&quot;Card #{}: {} ({})&quot;</span>, card.get_index(), card.get_name().unwrap(), card.get_longname().unwrap());
 
-        <span class="kw">let</span> <span class="ident">mixer</span> = <span class="ident">Mixer::new</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;hw:{}&quot;</span>, <span class="ident">card</span>.<span class="ident">get_index</span>()), <span class="bool-val">false</span>).<span class="ident">unwrap</span>();
-        <span class="kw">for</span> <span class="ident">selem</span> <span class="kw">in</span> <span class="ident">mixer</span>.<span class="ident">iter</span>().<span class="ident">filter_map</span>(|<span class="ident">e</span>| <span class="ident">Selem::new</span>(<span class="ident">e</span>)) {
+        <span class="kw">let </span>mixer = Mixer::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;hw:{}&quot;</span>, card.get_index()), <span class="bool-val">false</span>).unwrap();
+        <span class="kw">for </span>selem <span class="kw">in </span>mixer.iter().filter_map(|e| Selem::new(e)) {
 
-            <span class="kw">let</span> <span class="ident">sid</span> = <span class="ident">selem</span>.<span class="ident">get_id</span>();
-            <span class="macro">println!</span>(<span class="string">&quot;\tMixer element {},{}:&quot;</span>, <span class="ident">sid</span>.<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">sid</span>.<span class="ident">get_index</span>());
+            <span class="kw">let </span>sid = selem.get_id();
+            <span class="macro">println!</span>(<span class="string">&quot;\tMixer element {},{}:&quot;</span>, sid.get_name().unwrap(), sid.get_index());
 
-            <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_volume</span>() {
+            <span class="kw">if </span>selem.has_volume() {
                 <span class="macro">print!</span>(<span class="string">&quot;\t  Volume limits: &quot;</span>);
-                <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_capture_volume</span>() {
-                    <span class="kw">let</span> (<span class="ident">vmin</span>, <span class="ident">vmax</span>) = <span class="ident">selem</span>.<span class="ident">get_capture_volume_range</span>();
-                    <span class="kw">let</span> (<span class="ident">mbmin</span>, <span class="ident">mbmax</span>) = <span class="ident">selem</span>.<span class="ident">get_capture_db_range</span>();
-                    <span class="macro">print!</span>(<span class="string">&quot;Capture = {} - {}&quot;</span>, <span class="ident">vmin</span>, <span class="ident">vmax</span>);
-                    <span class="macro">print!</span>(<span class="string">&quot; ({} dB - {} dB)&quot;</span>, <span class="ident">mbmin</span>.<span class="ident">to_db</span>(), <span class="ident">mbmax</span>.<span class="ident">to_db</span>());
+                <span class="kw">if </span>selem.has_capture_volume() {
+                    <span class="kw">let </span>(vmin, vmax) = selem.get_capture_volume_range();
+                    <span class="kw">let </span>(mbmin, mbmax) = selem.get_capture_db_range();
+                    <span class="macro">print!</span>(<span class="string">&quot;Capture = {} - {}&quot;</span>, vmin, vmax);
+                    <span class="macro">print!</span>(<span class="string">&quot; ({} dB - {} dB)&quot;</span>, mbmin.to_db(), mbmax.to_db());
                 }
-                <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_volume</span>() {
-                    <span class="kw">let</span> (<span class="ident">vmin</span>, <span class="ident">vmax</span>) = <span class="ident">selem</span>.<span class="ident">get_playback_volume_range</span>();
-                    <span class="kw">let</span> (<span class="ident">mbmin</span>, <span class="ident">mbmax</span>) = <span class="ident">selem</span>.<span class="ident">get_playback_db_range</span>();
-                    <span class="macro">print!</span>(<span class="string">&quot;Playback = {} - {}&quot;</span>, <span class="ident">vmin</span>, <span class="ident">vmax</span>);
-                    <span class="macro">print!</span>(<span class="string">&quot; ({} dB - {} dB)&quot;</span>, <span class="ident">mbmin</span>.<span class="ident">to_db</span>(), <span class="ident">mbmax</span>.<span class="ident">to_db</span>());
+                <span class="kw">if </span>selem.has_playback_volume() {
+                    <span class="kw">let </span>(vmin, vmax) = selem.get_playback_volume_range();
+                    <span class="kw">let </span>(mbmin, mbmax) = selem.get_playback_db_range();
+                    <span class="macro">print!</span>(<span class="string">&quot;Playback = {} - {}&quot;</span>, vmin, vmax);
+                    <span class="macro">print!</span>(<span class="string">&quot; ({} dB - {} dB)&quot;</span>, mbmin.to_db(), mbmax.to_db());
                 }
                 <span class="macro">println!</span>();
             }
 
-            <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">is_enumerated</span>() {
+            <span class="kw">if </span>selem.is_enumerated() {
                 <span class="macro">print!</span>(<span class="string">&quot;\t  Valid values: &quot;</span>);
-                <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">selem</span>.<span class="ident">iter_enum</span>().<span class="ident">unwrap</span>() { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, <span class="ident">v</span>.<span class="ident">unwrap</span>()) };
+                <span class="kw">for </span>v <span class="kw">in </span>selem.iter_enum().unwrap() { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, v.unwrap()) };
                 <span class="macro">print!</span>(<span class="string">&quot;\n\t  Current values: &quot;</span>);
-                <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>().<span class="ident">iter</span>().<span class="ident">filter_map</span>(|<span class="kw-2">&amp;</span><span class="ident">v</span>| <span class="ident">selem</span>.<span class="ident">get_enum_item</span>(<span class="ident">v</span>).<span class="ident">ok</span>()) {
-                    <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, <span class="ident">selem</span>.<span class="ident">get_enum_item_name</span>(<span class="ident">v</span>).<span class="ident">unwrap</span>());
+                <span class="kw">for </span>v <span class="kw">in </span>SelemChannelId::all().iter().filter_map(|<span class="kw-2">&amp;</span>v| selem.get_enum_item(v).ok()) {
+                    <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, selem.get_enum_item_name(v).unwrap());
                 }
                 <span class="macro">println!</span>();
             }
 
-            <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">can_capture</span>() {
+            <span class="kw">if </span>selem.can_capture() {
                 <span class="macro">print!</span>(<span class="string">&quot;\t  Capture channels: &quot;</span>);
-                <span class="kw">for</span> <span class="ident">channel</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>() {
-                    <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_capture_channel</span>(<span class="kw-2">*</span><span class="ident">channel</span>) { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, <span class="ident">channel</span>) };
+                <span class="kw">for </span>channel <span class="kw">in </span>SelemChannelId::all() {
+                    <span class="kw">if </span>selem.has_capture_channel(<span class="kw-2">*</span>channel) { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, channel) };
                 }
                 <span class="macro">println!</span>();
                 <span class="macro">print!</span>(<span class="string">&quot;\t  Capture volumes: &quot;</span>);
-                <span class="kw">for</span> <span class="ident">channel</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>() {
-                    <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_capture_channel</span>(<span class="kw-2">*</span><span class="ident">channel</span>) { <span class="macro">print!</span>(<span class="string">&quot;{}: {} ({} dB), &quot;</span>, <span class="ident">channel</span>,
-                        <span class="kw">match</span> <span class="ident">selem</span>.<span class="ident">get_capture_volume</span>(<span class="kw-2">*</span><span class="ident">channel</span>) {<span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">v</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.<span class="ident">to_string</span>()},
-                        <span class="kw">match</span> <span class="ident">selem</span>.<span class="ident">get_capture_vol_db</span>(<span class="kw-2">*</span><span class="ident">channel</span>) {<span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">v</span>.<span class="ident">to_db</span>()), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.<span class="ident">to_string</span>()}
+                <span class="kw">for </span>channel <span class="kw">in </span>SelemChannelId::all() {
+                    <span class="kw">if </span>selem.has_capture_channel(<span class="kw-2">*</span>channel) { <span class="macro">print!</span>(<span class="string">&quot;{}: {} ({} dB), &quot;</span>, channel,
+                        <span class="kw">match </span>selem.get_capture_volume(<span class="kw-2">*</span>channel) {<span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, v), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.to_string()},
+                        <span class="kw">match </span>selem.get_capture_vol_db(<span class="kw-2">*</span>channel) {<span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, v.to_db()), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.to_string()}
                     );}
                 }
                 <span class="macro">println!</span>();
             }
 
-            <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">can_playback</span>() {
+            <span class="kw">if </span>selem.can_playback() {
                 <span class="macro">print!</span>(<span class="string">&quot;\t  Playback channels: &quot;</span>);
-                <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">is_playback_mono</span>() {
+                <span class="kw">if </span>selem.is_playback_mono() {
                     <span class="macro">print!</span>(<span class="string">&quot;Mono&quot;</span>);
-                } <span class="kw">else</span> {
-                    <span class="kw">for</span> <span class="ident">channel</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>() {
-                        <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_channel</span>(<span class="kw-2">*</span><span class="ident">channel</span>) { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, <span class="ident">channel</span>) };
+                } <span class="kw">else </span>{
+                    <span class="kw">for </span>channel <span class="kw">in </span>SelemChannelId::all() {
+                        <span class="kw">if </span>selem.has_playback_channel(<span class="kw-2">*</span>channel) { <span class="macro">print!</span>(<span class="string">&quot;{}, &quot;</span>, channel) };
                     }
                 }
                 <span class="macro">println!</span>();
-                <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_volume</span>() {
+                <span class="kw">if </span>selem.has_playback_volume() {
                     <span class="macro">print!</span>(<span class="string">&quot;\t  Playback volumes: &quot;</span>);
-                    <span class="kw">for</span> <span class="ident">channel</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>() {
-                        <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_channel</span>(<span class="kw-2">*</span><span class="ident">channel</span>) { <span class="macro">print!</span>(<span class="string">&quot;{}: {} / {}dB, &quot;</span>,
-                            <span class="ident">channel</span>,
-                            <span class="kw">match</span> <span class="ident">selem</span>.<span class="ident">get_playback_volume</span>(<span class="kw-2">*</span><span class="ident">channel</span>) {<span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">v</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.<span class="ident">to_string</span>()},
-                            <span class="kw">match</span> <span class="ident">selem</span>.<span class="ident">get_playback_vol_db</span>(<span class="kw-2">*</span><span class="ident">channel</span>) {<span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">v</span>.<span class="ident">to_db</span>()), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.<span class="ident">to_string</span>()}
+                    <span class="kw">for </span>channel <span class="kw">in </span>SelemChannelId::all() {
+                        <span class="kw">if </span>selem.has_playback_channel(<span class="kw-2">*</span>channel) { <span class="macro">print!</span>(<span class="string">&quot;{}: {} / {}dB, &quot;</span>,
+                            channel,
+                            <span class="kw">match </span>selem.get_playback_volume(<span class="kw-2">*</span>channel) {<span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, v), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.to_string()},
+                            <span class="kw">match </span>selem.get_playback_vol_db(<span class="kw-2">*</span>channel) {<span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, v.to_db()), <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;n/a&quot;</span>.to_string()}
                         );}
                     }
                     <span class="macro">println!</span>();
@@ -1196,69 +1196,69 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="attribute">#[<span class="ident">ignore</span>]</span>
-<span class="kw">fn</span> <span class="ident">get_and_set_playback_volume</span>() {
-    <span class="kw">let</span> <span class="ident">mixer</span> = <span class="ident">Mixer::new</span>(<span class="string">&quot;hw:1&quot;</span>, <span class="bool-val">false</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">selem</span> = <span class="ident">mixer</span>.<span class="ident">find_selem</span>(<span class="kw-2">&amp;</span><span class="ident">SelemId::new</span>(<span class="string">&quot;Master&quot;</span>, <span class="number">0</span>)).<span class="ident">unwrap</span>();
+<span class="attribute">#[test]</span>
+<span class="attribute">#[ignore]</span>
+<span class="kw">fn </span>get_and_set_playback_volume() {
+    <span class="kw">let </span>mixer = Mixer::new(<span class="string">&quot;hw:1&quot;</span>, <span class="bool-val">false</span>).unwrap();
+    <span class="kw">let </span>selem = mixer.find_selem(<span class="kw-2">&amp;</span>SelemId::new(<span class="string">&quot;Master&quot;</span>, <span class="number">0</span>)).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">rmin</span>, <span class="ident">rmax</span>) = <span class="ident">selem</span>.<span class="ident">get_playback_volume_range</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> = <span class="ident">SelemChannelId::mono</span>();
-    <span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>().<span class="ident">iter</span>() {
-        <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_channel</span>(<span class="kw-2">*</span><span class="ident">c</span>) { <span class="ident">channel</span> = <span class="kw-2">*</span><span class="ident">c</span>; <span class="kw">break</span> }
+    <span class="kw">let </span>(rmin, rmax) = selem.get_playback_volume_range();
+    <span class="kw">let </span><span class="kw-2">mut </span>channel = SelemChannelId::mono();
+    <span class="kw">for </span>c <span class="kw">in </span>SelemChannelId::all().iter() {
+        <span class="kw">if </span>selem.has_playback_channel(<span class="kw-2">*</span>c) { channel = <span class="kw-2">*</span>c; <span class="kw">break </span>}
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Testing on {} with limits {}-{} on channel {}&quot;</span>, <span class="ident">selem</span>.<span class="ident">get_id</span>().<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">rmin</span>, <span class="ident">rmax</span>, <span class="ident">channel</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Testing on {} with limits {}-{} on channel {}&quot;</span>, selem.get_id().get_name().unwrap(), rmin, rmax, channel);
 
-    <span class="kw">let</span> <span class="ident">old</span>: <span class="ident">i64</span> = <span class="ident">selem</span>.<span class="ident">get_playback_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">new</span>: <span class="ident">i64</span> = <span class="ident">rmax</span> / <span class="number">2</span>;
-    <span class="macro">assert_ne!</span>(<span class="ident">new</span>, <span class="ident">old</span>);
+    <span class="kw">let </span>old: i64 = selem.get_playback_volume(channel).unwrap();
+    <span class="kw">let </span>new: i64 = rmax / <span class="number">2</span>;
+    <span class="macro">assert_ne!</span>(new, old);
 
-    <span class="macro">println!</span>(<span class="string">&quot;Changing volume of {} from {} to {}&quot;</span>, <span class="ident">channel</span>, <span class="ident">old</span>, <span class="ident">new</span>);
-    <span class="ident">selem</span>.<span class="ident">set_playback_volume</span>(<span class="ident">channel</span>, <span class="ident">new</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span>: <span class="ident">i64</span> = <span class="ident">selem</span>.<span class="ident">get_playback_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">new</span>, <span class="ident">result</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Changing volume of {} from {} to {}&quot;</span>, channel, old, new);
+    selem.set_playback_volume(channel, new).unwrap();
+    <span class="kw">let </span><span class="kw-2">mut </span>result: i64 = selem.get_playback_volume(channel).unwrap();
+    <span class="macro">assert_eq!</span>(new, result);
 
-    <span class="comment">// return volume to old value</span>
-    <span class="ident">selem</span>.<span class="ident">set_playback_volume</span>(<span class="ident">channel</span>, <span class="ident">old</span>).<span class="ident">unwrap</span>();
-    <span class="ident">result</span> = <span class="ident">selem</span>.<span class="ident">get_playback_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">old</span>, <span class="ident">result</span>);
+    <span class="comment">// return volume to old value
+    </span>selem.set_playback_volume(channel, old).unwrap();
+    result = selem.get_playback_volume(channel).unwrap();
+    <span class="macro">assert_eq!</span>(old, result);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="attribute">#[<span class="ident">ignore</span>]</span>
-<span class="kw">fn</span> <span class="ident">get_and_set_capture_volume</span>() {
-    <span class="kw">let</span> <span class="ident">mixer</span> = <span class="ident">Mixer::new</span>(<span class="string">&quot;hw:1&quot;</span>, <span class="bool-val">false</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">selem</span> = <span class="ident">mixer</span>.<span class="ident">find_selem</span>(<span class="kw-2">&amp;</span><span class="ident">SelemId::new</span>(<span class="string">&quot;Capture&quot;</span>, <span class="number">0</span>)).<span class="ident">unwrap</span>();
+<span class="attribute">#[test]</span>
+<span class="attribute">#[ignore]</span>
+<span class="kw">fn </span>get_and_set_capture_volume() {
+    <span class="kw">let </span>mixer = Mixer::new(<span class="string">&quot;hw:1&quot;</span>, <span class="bool-val">false</span>).unwrap();
+    <span class="kw">let </span>selem = mixer.find_selem(<span class="kw-2">&amp;</span>SelemId::new(<span class="string">&quot;Capture&quot;</span>, <span class="number">0</span>)).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">rmin</span>, <span class="ident">rmax</span>) = <span class="ident">selem</span>.<span class="ident">get_capture_volume_range</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> = <span class="ident">SelemChannelId::mono</span>();
-    <span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">SelemChannelId::all</span>().<span class="ident">iter</span>() {
-        <span class="kw">if</span> <span class="ident">selem</span>.<span class="ident">has_playback_channel</span>(<span class="kw-2">*</span><span class="ident">c</span>) { <span class="ident">channel</span> = <span class="kw-2">*</span><span class="ident">c</span>; <span class="kw">break</span> }
+    <span class="kw">let </span>(rmin, rmax) = selem.get_capture_volume_range();
+    <span class="kw">let </span><span class="kw-2">mut </span>channel = SelemChannelId::mono();
+    <span class="kw">for </span>c <span class="kw">in </span>SelemChannelId::all().iter() {
+        <span class="kw">if </span>selem.has_playback_channel(<span class="kw-2">*</span>c) { channel = <span class="kw-2">*</span>c; <span class="kw">break </span>}
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Testing on {} with limits {}-{} on channel {}&quot;</span>, <span class="ident">selem</span>.<span class="ident">get_id</span>().<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">rmin</span>, <span class="ident">rmax</span>, <span class="ident">channel</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Testing on {} with limits {}-{} on channel {}&quot;</span>, selem.get_id().get_name().unwrap(), rmin, rmax, channel);
 
-    <span class="kw">let</span> <span class="ident">old</span>: <span class="ident">i64</span> = <span class="ident">selem</span>.<span class="ident">get_capture_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">new</span>: <span class="ident">i64</span> = <span class="ident">rmax</span> / <span class="number">2</span>;
-    <span class="macro">assert_ne!</span>(<span class="ident">new</span>, <span class="ident">old</span>);
+    <span class="kw">let </span>old: i64 = selem.get_capture_volume(channel).unwrap();
+    <span class="kw">let </span>new: i64 = rmax / <span class="number">2</span>;
+    <span class="macro">assert_ne!</span>(new, old);
 
-    <span class="macro">println!</span>(<span class="string">&quot;Changing volume of {} from {} to {}&quot;</span>, <span class="ident">channel</span>, <span class="ident">old</span>, <span class="ident">new</span>);
-    <span class="ident">selem</span>.<span class="ident">set_capture_volume</span>(<span class="ident">channel</span>, <span class="ident">new</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span>: <span class="ident">i64</span> = <span class="ident">selem</span>.<span class="ident">get_capture_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">new</span>, <span class="ident">result</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;Changing volume of {} from {} to {}&quot;</span>, channel, old, new);
+    selem.set_capture_volume(channel, new).unwrap();
+    <span class="kw">let </span><span class="kw-2">mut </span>result: i64 = selem.get_capture_volume(channel).unwrap();
+    <span class="macro">assert_eq!</span>(new, result);
 
-    <span class="comment">// return volume to old value</span>
-    <span class="ident">selem</span>.<span class="ident">set_capture_volume</span>(<span class="ident">channel</span>, <span class="ident">old</span>).<span class="ident">unwrap</span>();
-    <span class="ident">result</span> = <span class="ident">selem</span>.<span class="ident">get_capture_volume</span>(<span class="ident">channel</span>).<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">old</span>, <span class="ident">result</span>);
+    <span class="comment">// return volume to old value
+    </span>selem.set_capture_volume(channel, old).unwrap();
+    result = selem.get_capture_volume(channel).unwrap();
+    <span class="macro">assert_eq!</span>(old, result);
 }
 
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">print_sizeof</span>() {
-    <span class="kw">let</span> <span class="ident">selemid</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_mixer_selem_id_sizeof</span>() } <span class="kw">as</span> <span class="ident">usize</span>;
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>print_sizeof() {
+    <span class="kw">let </span>selemid = <span class="kw">unsafe </span>{ alsa::snd_mixer_selem_id_sizeof() } <span class="kw">as </span>usize;
 
-    <span class="macro">assert!</span>(<span class="ident">selemid</span> &lt;= <span class="ident">SELEM_ID_SIZE</span>);
-    <span class="macro">println!</span>(<span class="string">&quot;Selem id: {}&quot;</span>, <span class="ident">selemid</span>);
+    <span class="macro">assert!</span>(selemid &lt;= SELEM_ID_SIZE);
+    <span class="macro">println!</span>(<span class="string">&quot;Selem id: {}&quot;</span>, selemid);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

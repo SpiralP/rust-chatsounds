@@ -14,25 +14,25 @@ using the <a href="../runtime/struct.Runtime.html#method.enter"><code>Runtime::e
 <p>In this example, a server is started and <code>spawn</code> is used to start a new task
 that processes each received connection.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::net</span>::{<span class="ident">TcpListener</span>, <span class="ident">TcpStream</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 
-<span class="kw">use</span> <span class="ident">std::io</span>;
+<span class="kw">use </span>std::io;
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">process</span>(<span class="ident">socket</span>: <span class="ident">TcpStream</span>) {
-    <span class="comment">// ...</span>
-}
+<span class="kw">async fn </span>process(socket: TcpStream) {
+    <span class="comment">// ...
+</span>}
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="ident">io::Result</span>&lt;()&gt; {
-    <span class="kw">let</span> <span class="ident">listener</span> = <span class="ident">TcpListener::bind</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span>listener = TcpListener::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> (<span class="ident">socket</span>, <span class="kw">_</span>) = <span class="ident">listener</span>.<span class="ident">accept</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>(socket, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">// Process each socket concurrently.</span>
-            <span class="ident">process</span>(<span class="ident">socket</span>).<span class="kw">await</span>
-        });
+        tokio::spawn(<span class="kw">async move </span>{
+            <span class="comment">// Process each socket concurrently.
+            </span>process(socket).<span class="kw">await
+        </span>});
     }
 }</code></pre></div>
 <h2 id="panics"><a href="#panics">Panics</a></h2>
@@ -43,48 +43,48 @@ possible to <strong>use</strong> <code>!Send</code> values from the task as long
 exist between calls to <code>.await</code>.</p>
 <p>For example, this will work:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::task;
 
-<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">fn</span> <span class="ident">use_rc</span>(<span class="ident">rc</span>: <span class="ident">Rc</span>&lt;()&gt;) {
-    <span class="comment">// Do stuff w/ rc</span>
-}
+<span class="kw">fn </span>use_rc(rc: Rc&lt;()&gt;) {
+    <span class="comment">// Do stuff w/ rc
+</span>}
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> {
-        <span class="comment">// Force the `Rc` to stay in a scope with no `.await`</span>
-        {
-            <span class="kw">let</span> <span class="ident">rc</span> = <span class="ident">Rc::new</span>(());
-            <span class="ident">use_rc</span>(<span class="ident">rc</span>.<span class="ident">clone</span>());
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    tokio::spawn(<span class="kw">async </span>{
+        <span class="comment">// Force the `Rc` to stay in a scope with no `.await`
+        </span>{
+            <span class="kw">let </span>rc = Rc::new(());
+            use_rc(rc.clone());
         }
 
-        <span class="ident">task::yield_now</span>().<span class="kw">await</span>;
-    }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+        task::yield_now().<span class="kw">await</span>;
+    }).<span class="kw">await</span>.unwrap();
 }</code></pre></div>
 <p>This will <strong>not</strong> work:</p>
 
-<div class='information'><div class='tooltip compile_fail'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail"><code><span class="kw">use</span> <span class="ident">tokio::task</span>;
+<div class='information'><div class='tooltip compile_fail'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail"><code><span class="kw">use </span>tokio::task;
 
-<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">fn</span> <span class="ident">use_rc</span>(<span class="ident">rc</span>: <span class="ident">Rc</span>&lt;()&gt;) {
-    <span class="comment">// Do stuff w/ rc</span>
-}
+<span class="kw">fn </span>use_rc(rc: Rc&lt;()&gt;) {
+    <span class="comment">// Do stuff w/ rc
+</span>}
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> {
-        <span class="kw">let</span> <span class="ident">rc</span> = <span class="ident">Rc::new</span>(());
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    tokio::spawn(<span class="kw">async </span>{
+        <span class="kw">let </span>rc = Rc::new(());
 
-        <span class="ident">task::yield_now</span>().<span class="kw">await</span>;
+        task::yield_now().<span class="kw">await</span>;
 
-        <span class="ident">use_rc</span>(<span class="ident">rc</span>.<span class="ident">clone</span>());
-    }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+        use_rc(rc.clone());
+    }).<span class="kw">await</span>.unwrap();
 }</code></pre></div>
 <p>Holding on to a <code>!Send</code> value across calls to <code>.await</code> will result in
 an unfriendly compile error message similar to:</p>
 <div class="example-wrap"><pre class="language-text"><code>`[... some type ...]` cannot be sent between threads safely</code></pre></div>
 <p>or:</p>
-<div class="example-wrap"><pre class="language-text"><code>error[E0391]: cycle detected when processing `main`</code></pre></div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+<div class="example-wrap"><pre class="language-text"><code>error[E0391]: cycle detected when processing `main`</code></pre></div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

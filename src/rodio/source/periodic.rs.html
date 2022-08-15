@@ -165,172 +165,172 @@
 <span id="165">165</span>
 <span id="166">166</span>
 <span id="167">167</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Sample</span>, <span class="ident">Source</span>};
+<span class="kw">use crate</span>::{Sample, Source};
 
-<span class="doccomment">/// Internal function that builds a `PeriodicAccess` object.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">periodic</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt;(<span class="ident">source</span>: <span class="ident">I</span>, <span class="ident">period</span>: <span class="ident">Duration</span>, <span class="ident">modifier</span>: <span class="ident">F</span>) -&gt; <span class="ident">PeriodicAccess</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Internal function that builds a `PeriodicAccess` object.
+</span><span class="kw">pub fn </span>periodic&lt;I, F&gt;(source: I, period: Duration, modifier: F) -&gt; PeriodicAccess&lt;I, F&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="comment">// TODO: handle the fact that the samples rate can change</span>
-    <span class="comment">// TODO: generally, just wrong</span>
-    <span class="kw">let</span> <span class="ident">update_ms</span> = <span class="ident">period</span>.<span class="ident">as_secs</span>() <span class="kw">as</span> <span class="ident">u32</span> * <span class="number">1_000</span> + <span class="ident">period</span>.<span class="ident">subsec_millis</span>();
-    <span class="kw">let</span> <span class="ident">update_frequency</span> = (<span class="ident">update_ms</span> * <span class="ident">source</span>.<span class="ident">sample_rate</span>()) / <span class="number">1000</span> * <span class="ident">source</span>.<span class="ident">channels</span>() <span class="kw">as</span> <span class="ident">u32</span>;
+    <span class="comment">// TODO: handle the fact that the samples rate can change
+    // TODO: generally, just wrong
+    </span><span class="kw">let </span>update_ms = period.as_secs() <span class="kw">as </span>u32 * <span class="number">1_000 </span>+ period.subsec_millis();
+    <span class="kw">let </span>update_frequency = (update_ms * source.sample_rate()) / <span class="number">1000 </span>* source.channels() <span class="kw">as </span>u32;
 
-    <span class="ident">PeriodicAccess</span> {
-        <span class="ident">input</span>: <span class="ident">source</span>,
-        <span class="ident">modifier</span>,
-        <span class="comment">// Can overflow when subtracting if this is 0</span>
-        <span class="ident">update_frequency</span>: <span class="kw">if</span> <span class="ident">update_frequency</span> == <span class="number">0</span> {
-            <span class="number">1</span>
-        } <span class="kw">else</span> {
-            <span class="ident">update_frequency</span>
+    PeriodicAccess {
+        input: source,
+        modifier,
+        <span class="comment">// Can overflow when subtracting if this is 0
+        </span>update_frequency: <span class="kw">if </span>update_frequency == <span class="number">0 </span>{
+            <span class="number">1
+        </span>} <span class="kw">else </span>{
+            update_frequency
         },
-        <span class="ident">samples_until_update</span>: <span class="number">1</span>,
+        samples_until_update: <span class="number">1</span>,
     }
 }
 
-<span class="doccomment">/// Calls a function on a source every time a period elapsed.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PeriodicAccess</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt; {
-    <span class="comment">// The inner source.</span>
-    <span class="ident">input</span>: <span class="ident">I</span>,
+<span class="doccomment">/// Calls a function on a source every time a period elapsed.
+</span><span class="attribute">#[derive(Clone, Debug)]</span>
+<span class="kw">pub struct </span>PeriodicAccess&lt;I, F&gt; {
+    <span class="comment">// The inner source.
+    </span>input: I,
 
-    <span class="comment">// Closure that gets access to `inner`.</span>
-    <span class="ident">modifier</span>: <span class="ident">F</span>,
+    <span class="comment">// Closure that gets access to `inner`.
+    </span>modifier: F,
 
-    <span class="comment">// The frequency with which local_volume should be updated by remote_volume</span>
-    <span class="ident">update_frequency</span>: <span class="ident">u32</span>,
+    <span class="comment">// The frequency with which local_volume should be updated by remote_volume
+    </span>update_frequency: u32,
 
-    <span class="comment">// How many samples remain until it is time to update local_volume with remote_volume.</span>
-    <span class="ident">samples_until_update</span>: <span class="ident">u32</span>,
+    <span class="comment">// How many samples remain until it is time to update local_volume with remote_volume.
+    </span>samples_until_update: u32,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt; <span class="ident">PeriodicAccess</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">I</span>),
+<span class="kw">impl</span>&lt;I, F&gt; PeriodicAccess&lt;I, F&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
+    F: FnMut(<span class="kw-2">&amp;mut </span>I),
 {
-    <span class="doccomment">/// Returns a reference to the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">I</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Returns a reference to the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>I {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.input
     }
 
-    <span class="doccomment">/// Returns a mutable reference to the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inner_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">I</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Returns a mutable reference to the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>inner_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>I {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.input
     }
 
-    <span class="doccomment">/// Returns the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">I</span> {
-        <span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Returns the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; I {
+        <span class="self">self</span>.input
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">PeriodicAccess</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">I</span>),
+<span class="kw">impl</span>&lt;I, F&gt; Iterator <span class="kw">for </span>PeriodicAccess&lt;I, F&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
+    F: FnMut(<span class="kw-2">&amp;mut </span>I),
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">I::Item</span>;
+    <span class="kw">type </span>Item = I::Item;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">I::Item</span>&gt; {
-        <span class="self">self</span>.<span class="ident">samples_until_update</span> -= <span class="number">1</span>;
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">samples_until_update</span> == <span class="number">0</span> {
-            (<span class="self">self</span>.<span class="ident">modifier</span>)(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">input</span>);
-            <span class="self">self</span>.<span class="ident">samples_until_update</span> = <span class="self">self</span>.<span class="ident">update_frequency</span>;
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;I::Item&gt; {
+        <span class="self">self</span>.samples_until_update -= <span class="number">1</span>;
+        <span class="kw">if </span><span class="self">self</span>.samples_until_update == <span class="number">0 </span>{
+            (<span class="self">self</span>.modifier)(<span class="kw-2">&amp;mut </span><span class="self">self</span>.input);
+            <span class="self">self</span>.samples_until_update = <span class="self">self</span>.update_frequency;
         }
 
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>()
+        <span class="self">self</span>.input.next()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">size_hint</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="self">self</span>.input.size_hint()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">PeriodicAccess</span>&lt;<span class="ident">I</span>, <span class="ident">F</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
-    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">I</span>),
+<span class="kw">impl</span>&lt;I, F&gt; Source <span class="kw">for </span>PeriodicAccess&lt;I, F&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
+    F: FnMut(<span class="kw-2">&amp;mut </span>I),
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">current_frame_len</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="self">self</span>.input.current_frame_len()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">channels</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.input.channels()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">sample_rate</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.input.sample_rate()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">total_duration</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="self">self</span>.input.total_duration()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
-    <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::cell::RefCell;
+    <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::SamplesBuffer</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Source</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::buffer::SamplesBuffer;
+    <span class="kw">use </span><span class="kw">crate</span>::source::Source;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">stereo_access</span>() {
-        <span class="comment">// Stereo, 1Hz audio buffer</span>
-        <span class="kw">let</span> <span class="ident">inner</span> = <span class="ident">SamplesBuffer::new</span>(<span class="number">2</span>, <span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>, <span class="number">20</span>, -<span class="number">20</span>]);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>stereo_access() {
+        <span class="comment">// Stereo, 1Hz audio buffer
+        </span><span class="kw">let </span>inner = SamplesBuffer::new(<span class="number">2</span>, <span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>, <span class="number">20</span>, -<span class="number">20</span>]);
 
-        <span class="kw">let</span> <span class="ident">cnt</span> = <span class="ident">RefCell::new</span>(<span class="number">0</span>);
+        <span class="kw">let </span>cnt = RefCell::new(<span class="number">0</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">inner</span>.<span class="ident">periodic_access</span>(<span class="ident">Duration::from_millis</span>(<span class="number">1000</span>), |<span class="ident">_src</span>| {
-            <span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow_mut</span>() += <span class="number">1</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>source = inner.periodic_access(Duration::from_millis(<span class="number">1000</span>), |_src| {
+            <span class="kw-2">*</span>cnt.borrow_mut() += <span class="number">1</span>;
         });
 
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">0</span>);
-        <span class="comment">// Always called on first access!</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">1</span>);
-        <span class="comment">// Called every 1 second afterwards</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">20</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">3</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">source</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">20</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span><span class="ident">cnt</span>.<span class="ident">borrow</span>(), <span class="number">3</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">0</span>);
+        <span class="comment">// Always called on first access!
+        </span><span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">1</span>);
+        <span class="comment">// Called every 1 second afterwards
+        </span><span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(<span class="number">20</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">3</span>);
+        <span class="macro">assert_eq!</span>(source.next(), <span class="prelude-val">Some</span>(-<span class="number">20</span>));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>cnt.borrow(), <span class="number">3</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">fast_access_overflow</span>() {
-        <span class="comment">// 1hz is lower than 0.5 samples per 5ms</span>
-        <span class="kw">let</span> <span class="ident">inner</span> = <span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>, <span class="number">20</span>, -<span class="number">20</span>]);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> = <span class="ident">inner</span>.<span class="ident">periodic_access</span>(<span class="ident">Duration::from_millis</span>(<span class="number">5</span>), |<span class="ident">_src</span>| {});
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>fast_access_overflow() {
+        <span class="comment">// 1hz is lower than 0.5 samples per 5ms
+        </span><span class="kw">let </span>inner = SamplesBuffer::new(<span class="number">1</span>, <span class="number">1</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>, <span class="number">20</span>, -<span class="number">20</span>]);
+        <span class="kw">let </span><span class="kw-2">mut </span>source = inner.periodic_access(Duration::from_millis(<span class="number">5</span>), |_src| {});
 
-        <span class="ident">source</span>.<span class="ident">next</span>();
-        <span class="ident">source</span>.<span class="ident">next</span>(); <span class="comment">// Would overflow here.</span>
-    }
+        source.next();
+        source.next(); <span class="comment">// Would overflow here.
+    </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

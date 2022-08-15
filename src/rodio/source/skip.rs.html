@@ -250,257 +250,257 @@
 <span id="250">250</span>
 <span id="251">251</span>
 <span id="252">252</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Sample</span>, <span class="ident">Source</span>};
+<span class="kw">use crate</span>::{Sample, Source};
 
-<span class="kw">const</span> <span class="ident">NS_PER_SECOND</span>: <span class="ident">u128</span> = <span class="number">1_000_000_000</span>;
+<span class="kw">const </span>NS_PER_SECOND: u128 = <span class="number">1_000_000_000</span>;
 
-<span class="doccomment">/// Internal function that builds a `SkipDuration` object.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">skip_duration</span>&lt;<span class="ident">I</span>&gt;(<span class="kw-2">mut</span> <span class="ident">input</span>: <span class="ident">I</span>, <span class="ident">duration</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">SkipDuration</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Internal function that builds a `SkipDuration` object.
+</span><span class="kw">pub fn </span>skip_duration&lt;I&gt;(<span class="kw-2">mut </span>input: I, duration: Duration) -&gt; SkipDuration&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="ident">do_skip_duration</span>(<span class="kw-2">&amp;mut</span> <span class="ident">input</span>, <span class="ident">duration</span>);
-    <span class="ident">SkipDuration</span> {
-        <span class="ident">input</span>,
-        <span class="ident">skipped_duration</span>: <span class="ident">duration</span>,
+    do_skip_duration(<span class="kw-2">&amp;mut </span>input, duration);
+    SkipDuration {
+        input,
+        skipped_duration: duration,
     }
 }
 
-<span class="doccomment">/// Skips specified `duration` of the given `input` source from it&#39;s current position.</span>
-<span class="kw">fn</span> <span class="ident">do_skip_duration</span>&lt;<span class="ident">I</span>&gt;(<span class="ident">input</span>: <span class="kw-2">&amp;mut</span> <span class="ident">I</span>, <span class="kw-2">mut</span> <span class="ident">duration</span>: <span class="ident">Duration</span>)
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Skips specified `duration` of the given `input` source from it&#39;s current position.
+</span><span class="kw">fn </span>do_skip_duration&lt;I&gt;(input: <span class="kw-2">&amp;mut </span>I, <span class="kw-2">mut </span>duration: Duration)
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">while</span> <span class="ident">duration</span> &gt; <span class="ident">Duration::new</span>(<span class="number">0</span>, <span class="number">0</span>) {
-        <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">current_frame_len</span>().<span class="ident">is_none</span>() {
-            <span class="comment">// Sample rate and the amount of channels will be the same till the end.</span>
-            <span class="ident">do_skip_duration_unchecked</span>(<span class="ident">input</span>, <span class="ident">duration</span>);
+    <span class="kw">while </span>duration &gt; Duration::new(<span class="number">0</span>, <span class="number">0</span>) {
+        <span class="kw">if </span>input.current_frame_len().is_none() {
+            <span class="comment">// Sample rate and the amount of channels will be the same till the end.
+            </span>do_skip_duration_unchecked(input, duration);
             <span class="kw">return</span>;
         }
 
-        <span class="comment">// .unwrap() safety: if `current_frame_len()` is None, the body of the `if` statement</span>
-        <span class="comment">// above returns before we get here.</span>
-        <span class="kw">let</span> <span class="ident">frame_len</span>: <span class="ident">usize</span> = <span class="ident">input</span>.<span class="ident">current_frame_len</span>().<span class="ident">unwrap</span>();
-        <span class="comment">// If frame_len is zero, then there is no more data to skip. Instead</span>
-        <span class="comment">// just bail out.</span>
-        <span class="kw">if</span> <span class="ident">frame_len</span> == <span class="number">0</span> {
+        <span class="comment">// .unwrap() safety: if `current_frame_len()` is None, the body of the `if` statement
+        // above returns before we get here.
+        </span><span class="kw">let </span>frame_len: usize = input.current_frame_len().unwrap();
+        <span class="comment">// If frame_len is zero, then there is no more data to skip. Instead
+        // just bail out.
+        </span><span class="kw">if </span>frame_len == <span class="number">0 </span>{
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">ns_per_sample</span>: <span class="ident">u128</span> =
-            <span class="ident">NS_PER_SECOND</span> / <span class="ident">input</span>.<span class="ident">sample_rate</span>() <span class="kw">as</span> <span class="ident">u128</span> / <span class="ident">input</span>.<span class="ident">channels</span>() <span class="kw">as</span> <span class="ident">u128</span>;
+        <span class="kw">let </span>ns_per_sample: u128 =
+            NS_PER_SECOND / input.sample_rate() <span class="kw">as </span>u128 / input.channels() <span class="kw">as </span>u128;
 
-        <span class="comment">// Check if we need to skip only part of the current frame.</span>
-        <span class="kw">if</span> <span class="ident">frame_len</span> <span class="kw">as</span> <span class="ident">u128</span> * <span class="ident">ns_per_sample</span> &gt; <span class="ident">duration</span>.<span class="ident">as_nanos</span>() {
-            <span class="ident">skip_samples</span>(<span class="ident">input</span>, (<span class="ident">duration</span>.<span class="ident">as_nanos</span>() / <span class="ident">ns_per_sample</span>) <span class="kw">as</span> <span class="ident">usize</span>);
+        <span class="comment">// Check if we need to skip only part of the current frame.
+        </span><span class="kw">if </span>frame_len <span class="kw">as </span>u128 * ns_per_sample &gt; duration.as_nanos() {
+            skip_samples(input, (duration.as_nanos() / ns_per_sample) <span class="kw">as </span>usize);
             <span class="kw">return</span>;
         }
 
-        <span class="ident">skip_samples</span>(<span class="ident">input</span>, <span class="ident">frame_len</span> <span class="kw">as</span> <span class="ident">usize</span>);
+        skip_samples(input, frame_len <span class="kw">as </span>usize);
 
-        <span class="ident">duration</span> -= <span class="ident">Duration::from_nanos</span>((<span class="ident">frame_len</span> * <span class="ident">ns_per_sample</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="kw">as</span> <span class="ident">u64</span>);
+        duration -= Duration::from_nanos((frame_len * ns_per_sample <span class="kw">as </span>usize) <span class="kw">as </span>u64);
     }
 }
 
-<span class="doccomment">/// Skips specified `duration` from the `input` source assuming that sample rate</span>
-<span class="doccomment">/// and amount of channels are not changing.</span>
-<span class="kw">fn</span> <span class="ident">do_skip_duration_unchecked</span>&lt;<span class="ident">I</span>&gt;(<span class="ident">input</span>: <span class="kw-2">&amp;mut</span> <span class="ident">I</span>, <span class="ident">duration</span>: <span class="ident">Duration</span>)
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Skips specified `duration` from the `input` source assuming that sample rate
+/// and amount of channels are not changing.
+</span><span class="kw">fn </span>do_skip_duration_unchecked&lt;I&gt;(input: <span class="kw-2">&amp;mut </span>I, duration: Duration)
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">let</span> <span class="ident">samples_per_channel</span>: <span class="ident">u128</span> =
-        <span class="ident">duration</span>.<span class="ident">as_nanos</span>() * <span class="ident">input</span>.<span class="ident">sample_rate</span>() <span class="kw">as</span> <span class="ident">u128</span> / <span class="ident">NS_PER_SECOND</span>;
-    <span class="kw">let</span> <span class="ident">samples_to_skip</span>: <span class="ident">u128</span> = <span class="ident">samples_per_channel</span> * <span class="ident">input</span>.<span class="ident">channels</span>() <span class="kw">as</span> <span class="ident">u128</span>;
+    <span class="kw">let </span>samples_per_channel: u128 =
+        duration.as_nanos() * input.sample_rate() <span class="kw">as </span>u128 / NS_PER_SECOND;
+    <span class="kw">let </span>samples_to_skip: u128 = samples_per_channel * input.channels() <span class="kw">as </span>u128;
 
-    <span class="ident">skip_samples</span>(<span class="ident">input</span>, <span class="ident">samples_to_skip</span> <span class="kw">as</span> <span class="ident">usize</span>);
+    skip_samples(input, samples_to_skip <span class="kw">as </span>usize);
 }
 
-<span class="doccomment">/// Skips `n` samples from the given `input` source.</span>
-<span class="kw">fn</span> <span class="ident">skip_samples</span>&lt;<span class="ident">I</span>&gt;(<span class="ident">input</span>: <span class="kw-2">&amp;mut</span> <span class="ident">I</span>, <span class="ident">n</span>: <span class="ident">usize</span>)
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="doccomment">/// Skips `n` samples from the given `input` source.
+</span><span class="kw">fn </span>skip_samples&lt;I&gt;(input: <span class="kw-2">&amp;mut </span>I, n: usize)
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">n</span> {
-        <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">next</span>().<span class="ident">is_none</span>() {
+    <span class="kw">for _ in </span><span class="number">0</span>..n {
+        <span class="kw">if </span>input.next().is_none() {
             <span class="kw">break</span>;
         }
     }
 }
 
-<span class="doccomment">/// A source that skips specified duration of the given source from it&#39;s current position.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SkipDuration</span>&lt;<span class="ident">I</span>&gt; {
-    <span class="ident">input</span>: <span class="ident">I</span>,
-    <span class="ident">skipped_duration</span>: <span class="ident">Duration</span>,
+<span class="doccomment">/// A source that skips specified duration of the given source from it&#39;s current position.
+</span><span class="attribute">#[derive(Clone, Debug)]</span>
+<span class="kw">pub struct </span>SkipDuration&lt;I&gt; {
+    input: I,
+    skipped_duration: Duration,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">SkipDuration</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; SkipDuration&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="doccomment">/// Returns a reference to the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">I</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Returns a reference to the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>I {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.input
     }
 
-    <span class="doccomment">/// Returns a mutable reference to the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inner_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">I</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">input</span>
+    <span class="doccomment">/// Returns a mutable reference to the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>inner_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>I {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.input
     }
 
-    <span class="doccomment">/// Returns the inner source.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">I</span> {
-        <span class="self">self</span>.<span class="ident">input</span>
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SkipDuration</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
-{
-    <span class="kw">type</span> <span class="ident">Item</span> = &lt;<span class="ident">I</span> <span class="kw">as</span> <span class="ident">Iterator</span>&gt;<span class="ident">::Item</span>;
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident"><span class="self">Self</span>::Item</span>&gt; {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">next</span>()
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">size_hint</span>()
+    <span class="doccomment">/// Returns the inner source.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; I {
+        <span class="self">self</span>.input
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">I</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">SkipDuration</span>&lt;<span class="ident">I</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Source</span>,
-    <span class="ident">I::Item</span>: <span class="ident">Sample</span>,
+<span class="kw">impl</span>&lt;I&gt; Iterator <span class="kw">for </span>SkipDuration&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">current_frame_len</span>()
+    <span class="kw">type </span>Item = &lt;I <span class="kw">as </span>Iterator&gt;::Item;
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.input.next()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">channels</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="self">self</span>.input.size_hint()
+    }
+}
+
+<span class="kw">impl</span>&lt;I&gt; Source <span class="kw">for </span>SkipDuration&lt;I&gt;
+<span class="kw">where
+    </span>I: Source,
+    I::Item: Sample,
+{
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="self">self</span>.input.current_frame_len()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">sample_rate</span>()
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.input.channels()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">total_duration</span>().<span class="ident">map</span>(|<span class="ident">val</span>| {
-            <span class="ident">val</span>.<span class="ident">checked_sub</span>(<span class="self">self</span>.<span class="ident">skipped_duration</span>)
-                .<span class="ident">unwrap_or_else</span>(|| <span class="ident">Duration::from_secs</span>(<span class="number">0</span>))
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.input.sample_rate()
+    }
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="self">self</span>.input.total_duration().map(|val| {
+            val.checked_sub(<span class="self">self</span>.skipped_duration)
+                .unwrap_or_else(|| Duration::from_secs(<span class="number">0</span>))
         })
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::SamplesBuffer</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Source</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::buffer::SamplesBuffer;
+    <span class="kw">use </span><span class="kw">crate</span>::source::Source;
 
-    <span class="kw">fn</span> <span class="ident">test_skip_duration_samples_left</span>(
-        <span class="ident">channels</span>: <span class="ident">u16</span>,
-        <span class="ident">sample_rate</span>: <span class="ident">u32</span>,
-        <span class="ident">seconds</span>: <span class="ident">u32</span>,
-        <span class="ident">seconds_to_skip</span>: <span class="ident">u32</span>,
+    <span class="kw">fn </span>test_skip_duration_samples_left(
+        channels: u16,
+        sample_rate: u32,
+        seconds: u32,
+        seconds_to_skip: u32,
     ) {
-        <span class="kw">let</span> <span class="ident">data</span>: <span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt; = (<span class="number">1</span>..=(<span class="ident">sample_rate</span> * <span class="ident">channels</span> <span class="kw">as</span> <span class="ident">u32</span> * <span class="ident">seconds</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="number">0f32</span>)
-            .<span class="ident">collect</span>();
-        <span class="kw">let</span> <span class="ident">test_buffer</span> = <span class="ident">SamplesBuffer::new</span>(<span class="ident">channels</span>, <span class="ident">sample_rate</span>, <span class="ident">data</span>);
-        <span class="kw">let</span> <span class="ident">seconds_left</span> = <span class="ident">seconds</span>.<span class="ident">saturating_sub</span>(<span class="ident">seconds_to_skip</span>);
+        <span class="kw">let </span>data: Vec&lt;f32&gt; = (<span class="number">1</span>..=(sample_rate * channels <span class="kw">as </span>u32 * seconds))
+            .map(|<span class="kw">_</span>| <span class="number">0f32</span>)
+            .collect();
+        <span class="kw">let </span>test_buffer = SamplesBuffer::new(channels, sample_rate, data);
+        <span class="kw">let </span>seconds_left = seconds.saturating_sub(seconds_to_skip);
 
-        <span class="kw">let</span> <span class="ident">samples_left_expected</span> = (<span class="ident">sample_rate</span> * <span class="ident">channels</span> <span class="kw">as</span> <span class="ident">u32</span> * <span class="ident">seconds_left</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-        <span class="kw">let</span> <span class="ident">samples_left</span> = <span class="ident">test_buffer</span>
-            .<span class="ident">skip_duration</span>(<span class="ident">Duration::from_secs</span>(<span class="ident">seconds_to_skip</span> <span class="kw">as</span> <span class="ident">u64</span>))
-            .<span class="ident">count</span>();
+        <span class="kw">let </span>samples_left_expected = (sample_rate * channels <span class="kw">as </span>u32 * seconds_left) <span class="kw">as </span>usize;
+        <span class="kw">let </span>samples_left = test_buffer
+            .skip_duration(Duration::from_secs(seconds_to_skip <span class="kw">as </span>u64))
+            .count();
 
-        <span class="macro">assert_eq!</span>(<span class="ident">samples_left</span>, <span class="ident">samples_left_expected</span>);
+        <span class="macro">assert_eq!</span>(samples_left, samples_left_expected);
     }
 
-    <span class="macro">macro_rules!</span> <span class="ident">skip_duration_test_block</span> {
-        ($(<span class="ident">channels</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">ch</span>:<span class="ident">expr</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sr</span>:<span class="ident">expr</span>, <span class="ident">seconds</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sec</span>:<span class="ident">expr</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sec_to_skip</span>:<span class="ident">expr</span>;)+) =&gt; {
+    <span class="macro">macro_rules!</span> skip_duration_test_block {
+        ($(channels: <span class="macro-nonterminal">$ch</span>:expr, sample rate: <span class="macro-nonterminal">$sr</span>:expr, seconds: <span class="macro-nonterminal">$sec</span>:expr, seconds to skip: <span class="macro-nonterminal">$sec_to_skip</span>:expr;)+) =&gt; {
             $(
-                <span class="ident">test_skip_duration_samples_left</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ch</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sec</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">sec_to_skip</span>);
+                test_skip_duration_samples_left(<span class="macro-nonterminal">$ch</span>, <span class="macro-nonterminal">$sr</span>, <span class="macro-nonterminal">$sec</span>, <span class="macro-nonterminal">$sec_to_skip</span>);
             )+
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">skip_duration_shorter_than_source</span>() {
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>skip_duration_shorter_than_source() {
         <span class="macro">skip_duration_test_block!</span> {
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
 
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
 
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">3</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">3</span>;
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">skip_duration_zero_duration</span>() {
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>skip_duration_zero_duration() {
         <span class="macro">skip_duration_test_block!</span> {
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
 
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
 
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">5</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">0</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">5</span>, seconds to skip: <span class="number">0</span>;
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">skip_duration_longer_than_source</span>() {
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>skip_duration_longer_than_source() {
         <span class="macro">skip_duration_test_block!</span> {
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">5</span>;
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">11</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">5</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">11</span>;
 
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">5</span>;
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">11</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">5</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">11</span>;
 
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">5</span>;
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">11</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">5</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">11</span>;
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">skip_duration_equal_to_source_length</span>() {
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>skip_duration_equal_to_source_length() {
         <span class="macro">skip_duration_test_block!</span> {
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">1</span>;
-            <span class="ident">channels</span>: <span class="number">1</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">10</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">1</span>;
+            channels: <span class="number">1</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">10</span>;
 
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">1</span>;
-            <span class="ident">channels</span>: <span class="number">2</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">10</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">1</span>;
+            channels: <span class="number">2</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">10</span>;
 
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">44100</span>, <span class="ident">seconds</span>: <span class="number">1</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">1</span>;
-            <span class="ident">channels</span>: <span class="number">4</span>, <span class="ident">sample</span> <span class="ident">rate</span>: <span class="number">96000</span>, <span class="ident">seconds</span>: <span class="number">10</span>, <span class="ident">seconds</span> <span class="ident">to</span> <span class="ident">skip</span>: <span class="number">10</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">44100</span>, seconds: <span class="number">1</span>, seconds to skip: <span class="number">1</span>;
+            channels: <span class="number">4</span>, sample rate: <span class="number">96000</span>, seconds: <span class="number">10</span>, seconds to skip: <span class="number">10</span>;
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

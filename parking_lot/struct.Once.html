@@ -10,13 +10,13 @@ performance on some architectures.</li>
 <li>Efficient handling of micro-contention using adaptive spinning.</li>
 </ul>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">parking_lot::Once</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>parking_lot::Once;
 
-<span class="kw">static</span> <span class="ident">START</span>: <span class="ident">Once</span> = <span class="ident">Once::new</span>();
+<span class="kw">static </span>START: Once = Once::new();
 
-<span class="ident">START</span>.<span class="ident">call_once</span>(|| {
-    <span class="comment">// run initialization here</span>
-});</code></pre></div>
+START.call_once(|| {
+    <span class="comment">// run initialization here
+</span>});</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><div id="implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Once" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../src/parking_lot/once.rs.html#85-316">source</a></span><a href="#impl-Once" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.Once.html" title="struct parking_lot::Once">Once</a></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.new" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/parking_lot/once.rs.html#88-90">source</a></span><h4 class="code-header">pub const fn <a href="#method.new" class="fnname">new</a>() -&gt; <a class="struct" href="struct.Once.html" title="struct parking_lot::Once">Once</a></h4></section></summary><div class="docblock"><p>Creates a new <code>Once</code> value.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.state" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/parking_lot/once.rs.html#94-105">source</a></span><h4 class="code-header">pub fn <a href="#method.state" class="fnname">state</a>(&amp;self) -&gt; <a class="enum" href="enum.OnceState.html" title="enum parking_lot::OnceState">OnceState</a></h4></section></summary><div class="docblock"><p>Returns the current state of this <code>Once</code>.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.call_once" class="method has-srclink"><span class="rightside"><a class="srclink" href="../src/parking_lot/once.rs.html#157-167">source</a></span><h4 class="code-header">pub fn <a href="#method.call_once" class="fnname">call_once</a>&lt;F&gt;(&amp;self, f: F) <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>(),&nbsp;</span></h4></section></summary><div class="docblock"><p>Performs an initialization routine once and only once. The given closure
@@ -31,29 +31,29 @@ be reliably observed by other threads at this point (there is a
 happens-before relation between the closure and code executing after the
 return).</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">parking_lot::Once</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>parking_lot::Once;
 
-<span class="kw">static</span> <span class="kw-2">mut</span> <span class="ident">VAL</span>: <span class="ident">usize</span> = <span class="number">0</span>;
-<span class="kw">static</span> <span class="ident">INIT</span>: <span class="ident">Once</span> = <span class="ident">Once::new</span>();
+<span class="kw">static </span><span class="kw-2">mut </span>VAL: usize = <span class="number">0</span>;
+<span class="kw">static </span>INIT: Once = Once::new();
 
-<span class="comment">// Accessing a `static mut` is unsafe much of the time, but if we do so</span>
-<span class="comment">// in a synchronized fashion (e.g. write once or read all) then we&#39;re</span>
-<span class="comment">// good to go!</span>
-<span class="comment">//</span>
-<span class="comment">// This function will only call `expensive_computation` once, and will</span>
-<span class="comment">// otherwise always return the value returned from the first invocation.</span>
-<span class="kw">fn</span> <span class="ident">get_cached_val</span>() -&gt; <span class="ident">usize</span> {
-    <span class="kw">unsafe</span> {
-        <span class="ident">INIT</span>.<span class="ident">call_once</span>(|| {
-            <span class="ident">VAL</span> = <span class="ident">expensive_computation</span>();
+<span class="comment">// Accessing a `static mut` is unsafe much of the time, but if we do so
+// in a synchronized fashion (e.g. write once or read all) then we&#39;re
+// good to go!
+//
+// This function will only call `expensive_computation` once, and will
+// otherwise always return the value returned from the first invocation.
+</span><span class="kw">fn </span>get_cached_val() -&gt; usize {
+    <span class="kw">unsafe </span>{
+        INIT.call_once(|| {
+            VAL = expensive_computation();
         });
-        <span class="ident">VAL</span>
+        VAL
     }
 }
 
-<span class="kw">fn</span> <span class="ident">expensive_computation</span>() -&gt; <span class="ident">usize</span> {
-    <span class="comment">// ...</span>
-}</code></pre></div>
+<span class="kw">fn </span>expensive_computation() -&gt; usize {
+    <span class="comment">// ...
+</span>}</code></pre></div>
 <h5 id="panics"><a href="#panics">Panics</a></h5>
 <p>The closure <code>f</code> will only be executed once if this is called
 concurrently amongst many threads. If that closure panics, however, then
@@ -79,4 +79,4 @@ not).</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Once" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Once" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="parking_lot" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="parking_lot" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

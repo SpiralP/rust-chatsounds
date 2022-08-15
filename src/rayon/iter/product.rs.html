@@ -112,119 +112,119 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::plumbing</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ParallelIterator</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::plumbing::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">super</span>::ParallelIterator;
 
-<span class="kw">use</span> <span class="ident">std::iter</span>::{<span class="self">self</span>, <span class="ident">Product</span>};
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use </span>std::iter::{<span class="self">self</span>, Product};
+<span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">product</span>&lt;<span class="ident">PI</span>, <span class="ident">P</span>&gt;(<span class="ident">pi</span>: <span class="ident">PI</span>) -&gt; <span class="ident">P</span>
-<span class="kw">where</span>
-    <span class="ident">PI</span>: <span class="ident">ParallelIterator</span>,
-    <span class="ident">P</span>: <span class="ident">Send</span> + <span class="ident">Product</span>&lt;<span class="ident">PI::Item</span>&gt; + <span class="ident">Product</span>,
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>product&lt;PI, P&gt;(pi: PI) -&gt; P
+<span class="kw">where
+    </span>PI: ParallelIterator,
+    P: Send + Product&lt;PI::Item&gt; + Product,
 {
-    <span class="ident">pi</span>.<span class="ident">drive_unindexed</span>(<span class="ident">ProductConsumer::new</span>())
+    pi.drive_unindexed(ProductConsumer::new())
 }
 
-<span class="kw">fn</span> <span class="ident">mul</span>&lt;<span class="ident">T</span>: <span class="ident">Product</span>&gt;(<span class="ident">left</span>: <span class="ident">T</span>, <span class="ident">right</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span> {
-    <span class="ident">iter::once</span>(<span class="ident">left</span>).<span class="ident">chain</span>(<span class="ident">iter::once</span>(<span class="ident">right</span>)).<span class="ident">product</span>()
+<span class="kw">fn </span>mul&lt;T: Product&gt;(left: T, right: T) -&gt; T {
+    iter::once(left).chain(iter::once(right)).product()
 }
 
-<span class="kw">struct</span> <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>: <span class="ident">Send</span>&gt; {
-    <span class="ident">_marker</span>: <span class="ident">PhantomData</span>&lt;<span class="kw-2">*const</span> <span class="ident">P</span>&gt;,
+<span class="kw">struct </span>ProductConsumer&lt;P: Send&gt; {
+    _marker: PhantomData&lt;<span class="kw-2">*const </span>P&gt;,
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span>&lt;<span class="ident">P</span>: <span class="ident">Send</span>&gt; <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt; {}
+<span class="kw">unsafe impl</span>&lt;P: Send&gt; Send <span class="kw">for </span>ProductConsumer&lt;P&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>: <span class="ident">Send</span>&gt; <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt; {
-        <span class="ident">ProductConsumer</span> {
-            <span class="ident">_marker</span>: <span class="ident">PhantomData</span>,
+<span class="kw">impl</span>&lt;P: Send&gt; ProductConsumer&lt;P&gt; {
+    <span class="kw">fn </span>new() -&gt; ProductConsumer&lt;P&gt; {
+        ProductConsumer {
+            _marker: PhantomData,
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>, <span class="ident">T</span>&gt; <span class="ident">Consumer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Send</span> + <span class="ident">Product</span>&lt;<span class="ident">T</span>&gt; + <span class="ident">Product</span>,
+<span class="kw">impl</span>&lt;P, T&gt; Consumer&lt;T&gt; <span class="kw">for </span>ProductConsumer&lt;P&gt;
+<span class="kw">where
+    </span>P: Send + Product&lt;T&gt; + Product,
 {
-    <span class="kw">type</span> <span class="ident">Folder</span> = <span class="ident">ProductFolder</span>&lt;<span class="ident">P</span>&gt;;
-    <span class="kw">type</span> <span class="ident">Reducer</span> = <span class="self">Self</span>;
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> = <span class="ident">P</span>;
+    <span class="kw">type </span>Folder = ProductFolder&lt;P&gt;;
+    <span class="kw">type </span>Reducer = <span class="self">Self</span>;
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= P;
 
-    <span class="kw">fn</span> <span class="ident">split_at</span>(<span class="self">self</span>, <span class="ident">_index</span>: <span class="ident">usize</span>) -&gt; (<span class="self">Self</span>, <span class="self">Self</span>, <span class="self">Self</span>) {
+    <span class="kw">fn </span>split_at(<span class="self">self</span>, _index: usize) -&gt; (<span class="self">Self</span>, <span class="self">Self</span>, <span class="self">Self</span>) {
         (
-            <span class="ident">ProductConsumer::new</span>(),
-            <span class="ident">ProductConsumer::new</span>(),
-            <span class="ident">ProductConsumer::new</span>(),
+            ProductConsumer::new(),
+            ProductConsumer::new(),
+            ProductConsumer::new(),
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">into_folder</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Folder</span> {
-        <span class="ident">ProductFolder</span> {
-            <span class="ident">product</span>: <span class="ident">iter::empty</span>::&lt;<span class="ident">T</span>&gt;().<span class="ident">product</span>(),
+    <span class="kw">fn </span>into_folder(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Folder {
+        ProductFolder {
+            product: iter::empty::&lt;T&gt;().product(),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">full</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">false</span>
-    }
+    <span class="kw">fn </span>full(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">false
+    </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>, <span class="ident">T</span>&gt; <span class="ident">UnindexedConsumer</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Send</span> + <span class="ident">Product</span>&lt;<span class="ident">T</span>&gt; + <span class="ident">Product</span>,
+<span class="kw">impl</span>&lt;P, T&gt; UnindexedConsumer&lt;T&gt; <span class="kw">for </span>ProductConsumer&lt;P&gt;
+<span class="kw">where
+    </span>P: Send + Product&lt;T&gt; + Product,
 {
-    <span class="kw">fn</span> <span class="ident">split_off_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ProductConsumer::new</span>()
+    <span class="kw">fn </span>split_off_left(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        ProductConsumer::new()
     }
 
-    <span class="kw">fn</span> <span class="ident">to_reducer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Reducer</span> {
-        <span class="ident">ProductConsumer::new</span>()
+    <span class="kw">fn </span>to_reducer(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Reducer {
+        ProductConsumer::new()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>&gt; <span class="ident">Reducer</span>&lt;<span class="ident">P</span>&gt; <span class="kw">for</span> <span class="ident">ProductConsumer</span>&lt;<span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Send</span> + <span class="ident">Product</span>,
+<span class="kw">impl</span>&lt;P&gt; Reducer&lt;P&gt; <span class="kw">for </span>ProductConsumer&lt;P&gt;
+<span class="kw">where
+    </span>P: Send + Product,
 {
-    <span class="kw">fn</span> <span class="ident">reduce</span>(<span class="self">self</span>, <span class="ident">left</span>: <span class="ident">P</span>, <span class="ident">right</span>: <span class="ident">P</span>) -&gt; <span class="ident">P</span> {
-        <span class="ident">mul</span>(<span class="ident">left</span>, <span class="ident">right</span>)
+    <span class="kw">fn </span>reduce(<span class="self">self</span>, left: P, right: P) -&gt; P {
+        mul(left, right)
     }
 }
 
-<span class="kw">struct</span> <span class="ident">ProductFolder</span>&lt;<span class="ident">P</span>&gt; {
-    <span class="ident">product</span>: <span class="ident">P</span>,
+<span class="kw">struct </span>ProductFolder&lt;P&gt; {
+    product: P,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">P</span>, <span class="ident">T</span>&gt; <span class="ident">Folder</span>&lt;<span class="ident">T</span>&gt; <span class="kw">for</span> <span class="ident">ProductFolder</span>&lt;<span class="ident">P</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Product</span>&lt;<span class="ident">T</span>&gt; + <span class="ident">Product</span>,
+<span class="kw">impl</span>&lt;P, T&gt; Folder&lt;T&gt; <span class="kw">for </span>ProductFolder&lt;P&gt;
+<span class="kw">where
+    </span>P: Product&lt;T&gt; + Product,
 {
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> = <span class="ident">P</span>;
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= P;
 
-    <span class="kw">fn</span> <span class="ident">consume</span>(<span class="self">self</span>, <span class="ident">item</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ProductFolder</span> {
-            <span class="ident">product</span>: <span class="ident">mul</span>(<span class="self">self</span>.<span class="ident">product</span>, <span class="ident">iter::once</span>(<span class="ident">item</span>).<span class="ident">product</span>()),
+    <span class="kw">fn </span>consume(<span class="self">self</span>, item: T) -&gt; <span class="self">Self </span>{
+        ProductFolder {
+            product: mul(<span class="self">self</span>.product, iter::once(item).product()),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">consume_iter</span>&lt;<span class="ident">I</span>&gt;(<span class="self">self</span>, <span class="ident">iter</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">I</span>: <span class="ident">IntoIterator</span>&lt;<span class="ident">Item</span> = <span class="ident">T</span>&gt;,
+    <span class="kw">fn </span>consume_iter&lt;I&gt;(<span class="self">self</span>, iter: I) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>I: IntoIterator&lt;Item = T&gt;,
     {
-        <span class="ident">ProductFolder</span> {
-            <span class="ident">product</span>: <span class="ident">mul</span>(<span class="self">self</span>.<span class="ident">product</span>, <span class="ident">iter</span>.<span class="ident">into_iter</span>().<span class="ident">product</span>()),
+        ProductFolder {
+            product: mul(<span class="self">self</span>.product, iter.into_iter().product()),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">complete</span>(<span class="self">self</span>) -&gt; <span class="ident">P</span> {
-        <span class="self">self</span>.<span class="ident">product</span>
+    <span class="kw">fn </span>complete(<span class="self">self</span>) -&gt; P {
+        <span class="self">self</span>.product
     }
 
-    <span class="kw">fn</span> <span class="ident">full</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">false</span>
-    }
+    <span class="kw">fn </span>full(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">false
+    </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rayon" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

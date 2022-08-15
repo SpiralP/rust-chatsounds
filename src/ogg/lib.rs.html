@@ -101,50 +101,50 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
-</pre><pre class="rust"><code><span class="comment">// Ogg decoder and encoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Redistribution or use only under the terms</span>
-<span class="comment">// specified in the LICENSE file attached to this</span>
-<span class="comment">// source distribution.</span>
+</pre><pre class="rust"><code><span class="comment">// Ogg decoder and encoder written in Rust
+//
+// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Redistribution or use only under the terms
+// specified in the LICENSE file attached to this
+// source distribution.
 
-<span class="attribute">#![<span class="ident">forbid</span>(<span class="ident">unsafe_code</span>)]</span>
+</span><span class="attribute">#![forbid(unsafe_code)]</span>
 
 <span class="doccomment">/*!
 Ogg container decoder and encoder
 
 The most interesting structures for in this
 mod are `PacketReader` and `PacketWriter`.
-*/</span>
+*/
 
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">byteorder</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">tokio_io</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">macro_use</span>]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">futures</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">bytes</span>;
+</span><span class="kw">extern crate </span>byteorder;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]</span>
+<span class="kw">extern crate </span>tokio_io;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]</span>
+<span class="attribute">#[macro_use]</span>
+<span class="kw">extern crate </span>futures;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]</span>
+<span class="kw">extern crate </span>bytes;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>test;
 
-<span class="macro">macro_rules!</span> <span class="ident">tri</span> {
-	(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>:<span class="ident">expr</span>) =&gt; {
-		<span class="kw">match</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span> {
-			<span class="prelude-val">Ok</span>(<span class="ident">val</span>) =&gt; <span class="ident">val</span>,
-			<span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>.<span class="ident">into</span>()),
+<span class="macro">macro_rules!</span> tri {
+	(<span class="macro-nonterminal">$e</span>:expr) =&gt; {
+		<span class="kw">match </span><span class="macro-nonterminal">$e </span>{
+			<span class="prelude-val">Ok</span>(val) =&gt; val,
+			<span class="prelude-val">Err</span>(err) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(err.into()),
 		}
 	};
 }
 
-<span class="kw">mod</span> <span class="ident">crc</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">reading</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">writing</span>;
+<span class="kw">mod </span>crc;
+<span class="kw">pub mod </span>reading;
+<span class="kw">pub mod </span>writing;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">writing</span>::{<span class="ident">PacketWriter</span>, <span class="ident">PacketWriteEndInfo</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">reading</span>::{<span class="ident">PacketReader</span>, <span class="ident">OggReadError</span>};
+<span class="kw">pub use </span>writing::{PacketWriter, PacketWriteEndInfo};
+<span class="kw">pub use </span>reading::{PacketReader, OggReadError};
 
 <span class="doccomment">/**
 Ogg packet representation.
@@ -154,55 +154,55 @@ For the Ogg format, packets are the logically smallest subdivision it handles.
 Every packet belongs to a *logical* bitstream. The *logical* bitstreams then form a *physical* bitstream, with the data combined in multiple different ways.
 
 Every logical bitstream is identified by the serial number its pages have stored. The Packet struct contains a field for that number as well, so that one can find out which logical bitstream the Packet belongs to.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Packet</span> {
-	<span class="doccomment">/// The data the `Packet` contains</span>
-	<span class="kw">pub</span> <span class="ident">data</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-	<span class="doccomment">/// `true` iff this packet is the first one in the page.</span>
-	<span class="ident">first_packet_pg</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// `true` iff this packet is the first one in the logical bitstream.</span>
-	<span class="ident">first_packet_stream</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// `true` iff this packet is the last one in the page.</span>
-	<span class="ident">last_packet_pg</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// `true` iff this packet is the last one in the logical bitstream</span>
-	<span class="ident">last_packet_stream</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// Absolute granule position of the last page the packet was in.</span>
-	<span class="doccomment">/// The meaning of the absolute granule position is defined by the codec.</span>
-	<span class="ident">absgp_page</span> :<span class="ident">u64</span>,
-	<span class="doccomment">/// Serial number. Uniquely identifying the logical bitstream.</span>
-	<span class="ident">stream_serial</span> :<span class="ident">u32</span>,
+*/
+</span><span class="kw">pub struct </span>Packet {
+	<span class="doccomment">/// The data the `Packet` contains
+	</span><span class="kw">pub </span>data :Vec&lt;u8&gt;,
+	<span class="doccomment">/// `true` iff this packet is the first one in the page.
+	</span>first_packet_pg :bool,
+	<span class="doccomment">/// `true` iff this packet is the first one in the logical bitstream.
+	</span>first_packet_stream :bool,
+	<span class="doccomment">/// `true` iff this packet is the last one in the page.
+	</span>last_packet_pg :bool,
+	<span class="doccomment">/// `true` iff this packet is the last one in the logical bitstream
+	</span>last_packet_stream :bool,
+	<span class="doccomment">/// Absolute granule position of the last page the packet was in.
+	/// The meaning of the absolute granule position is defined by the codec.
+	</span>absgp_page :u64,
+	<span class="doccomment">/// Serial number. Uniquely identifying the logical bitstream.
+	</span>stream_serial :u32,
 	<span class="comment">/*/// Packet counter
 	/// Why u64? There are MAX_U32 pages, and every page has up to 128 packets. u32 wouldn&#39;t be sufficient here...
-	pub sequence_num :u64,*/</span> <span class="comment">// TODO perhaps add this later on...</span>
-}
+	pub sequence_num :u64,*/ // TODO perhaps add this later on...
+</span>}
 
-<span class="kw">impl</span> <span class="ident">Packet</span> {
-	<span class="doccomment">/// Returns whether the packet is the first one starting in the page</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">first_in_page</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="self">self</span>.<span class="ident">first_packet_pg</span>
+<span class="kw">impl </span>Packet {
+	<span class="doccomment">/// Returns whether the packet is the first one starting in the page
+	</span><span class="kw">pub fn </span>first_in_page(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="self">self</span>.first_packet_pg
 	}
-	<span class="doccomment">/// Returns whether the packet is the first one of the entire stream</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">first_in_stream</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="self">self</span>.<span class="ident">first_packet_stream</span>
+	<span class="doccomment">/// Returns whether the packet is the first one of the entire stream
+	</span><span class="kw">pub fn </span>first_in_stream(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="self">self</span>.first_packet_stream
 	}
-	<span class="doccomment">/// Returns whether the packet is the last one starting in the page</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">last_in_page</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="self">self</span>.<span class="ident">last_packet_pg</span>
+	<span class="doccomment">/// Returns whether the packet is the last one starting in the page
+	</span><span class="kw">pub fn </span>last_in_page(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="self">self</span>.last_packet_pg
 	}
-	<span class="doccomment">/// Returns whether the packet is the last one of the entire stream</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">last_in_stream</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="self">self</span>.<span class="ident">last_packet_stream</span>
+	<span class="doccomment">/// Returns whether the packet is the last one of the entire stream
+	</span><span class="kw">pub fn </span>last_in_stream(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="self">self</span>.last_packet_stream
 	}
-	<span class="doccomment">/// Returns the absolute granule position of the page the packet ended in.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The meaning of the absolute granule position is defined by the codec.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">absgp_page</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-		<span class="self">self</span>.<span class="ident">absgp_page</span>
+	<span class="doccomment">/// Returns the absolute granule position of the page the packet ended in.
+	///
+	/// The meaning of the absolute granule position is defined by the codec.
+	</span><span class="kw">pub fn </span>absgp_page(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+		<span class="self">self</span>.absgp_page
 	}
-	<span class="doccomment">/// Returns the serial number that uniquely identifies the logical bitstream.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stream_serial</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-		<span class="self">self</span>.<span class="ident">stream_serial</span>
+	<span class="doccomment">/// Returns the serial number that uniquely identifies the logical bitstream.
+	</span><span class="kw">pub fn </span>stream_serial(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+		<span class="self">self</span>.stream_serial
 	}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ogg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ogg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

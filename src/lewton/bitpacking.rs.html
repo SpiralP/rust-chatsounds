@@ -587,15 +587,15 @@
 <span id="587">587</span>
 <span id="588">588</span>
 <span id="589">589</span>
-</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Licensed under MIT license, or Apache 2 license,</span>
-<span class="comment">// at your option. Please see the LICENSE file</span>
-<span class="comment">// attached to this source distribution for details.</span>
+</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust
+//
+// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Licensed under MIT license, or Apache 2 license,
+// at your option. Please see the LICENSE file
+// attached to this source distribution for details.
 
-<span class="doccomment">/*!
+</span><span class="doccomment">/*!
 Vorbis bitpacking layer
 
 Functionality to read content from the bitpacking layer.
@@ -609,572 +609,572 @@ Note that this implementation doesn&#39;t fully align with the spec in the regar
 This is no problem on most architectures.
 This non-alignment to the spec is due to the fact that the rust language is highly leaned towards byte == u8,
 and doesn&#39;t even have a builtin single byte type.
-*/</span>
+*/
 
-<span class="kw">use</span> <span class="ident">::huffman_tree</span>::{<span class="ident">VorbisHuffmanTree</span>, <span class="ident">PeekedDataLookupResult</span>};
+</span><span class="kw">use </span>::huffman_tree::{VorbisHuffmanTree, PeekedDataLookupResult};
 
-<span class="doccomment">/// A Cursor on slices to read numbers and bitflags, bit aligned.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BitpackCursor</span> &lt;<span class="lifetime">&#39;a</span>&gt; {
-	<span class="ident">bit_cursor</span> :<span class="ident">u8</span>,
-	<span class="ident">byte_cursor</span> :<span class="ident">usize</span>,
-	<span class="ident">inner</span> :<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span>[<span class="ident">u8</span>],
+<span class="doccomment">/// A Cursor on slices to read numbers and bitflags, bit aligned.
+</span><span class="kw">pub struct </span>BitpackCursor &lt;<span class="lifetime">&#39;a</span>&gt; {
+	bit_cursor :u8,
+	byte_cursor :usize,
+	inner :<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span>[u8],
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">sign_extend</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">num</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">desttype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_cnt_large</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_cnt_small</span>:<span class="ident">expr</span>) =&gt; { {
-	<span class="kw">let</span> <span class="ident">n</span> = <span class="macro-nonterminal">$</span><span class="macro-nonterminal">num</span>;
-	<span class="kw">let</span> <span class="ident">res</span> :<span class="macro-nonterminal">$</span><span class="macro-nonterminal">desttype</span> = <span class="ident">n</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">desttype</span>;
-	<span class="kw">let</span> <span class="ident">k</span> :<span class="ident">u8</span> = <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_cnt_large</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_cnt_small</span>;
-	<span class="ident">res</span> &lt;&lt; <span class="ident">k</span> &gt;&gt; <span class="ident">k</span>
+<span class="macro">macro_rules!</span> sign_extend {
+( <span class="macro-nonterminal">$num</span>:expr, <span class="macro-nonterminal">$desttype</span>:ident, <span class="macro-nonterminal">$bit_cnt_large</span>:expr, <span class="macro-nonterminal">$bit_cnt_small</span>:expr) =&gt; { {
+	<span class="kw">let </span>n = <span class="macro-nonterminal">$num</span>;
+	<span class="kw">let </span>res :<span class="macro-nonterminal">$desttype </span>= n <span class="kw">as </span><span class="macro-nonterminal">$desttype</span>;
+	<span class="kw">let </span>k :u8 = <span class="macro-nonterminal">$bit_cnt_large </span>- <span class="macro-nonterminal">$bit_cnt_small</span>;
+	res &lt;&lt; k &gt;&gt; k
 } }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_sign_extend</span>() {
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b00</span>,  <span class="ident">i8</span>,  <span class="number">8</span>,  <span class="number">2</span>),  <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b01</span>,  <span class="ident">i8</span>,  <span class="number">8</span>,  <span class="number">2</span>),  <span class="number">1</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b11</span>,  <span class="ident">i8</span>,  <span class="number">8</span>,  <span class="number">2</span>), -<span class="number">1</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b111</span>, <span class="ident">i8</span>,  <span class="number">8</span>,  <span class="number">3</span>), -<span class="number">1</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b101</span>, <span class="ident">i8</span>,  <span class="number">8</span>,  <span class="number">3</span>), -<span class="number">3</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b01111110</span>, <span class="ident">i16</span>, <span class="number">16</span>, <span class="number">8</span>),  <span class="number">126</span>);
-	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b10000010</span>, <span class="ident">i16</span>, <span class="number">16</span>, <span class="number">8</span>), -<span class="number">126</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_sign_extend() {
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b00</span>,  i8,  <span class="number">8</span>,  <span class="number">2</span>),  <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b01</span>,  i8,  <span class="number">8</span>,  <span class="number">2</span>),  <span class="number">1</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b11</span>,  i8,  <span class="number">8</span>,  <span class="number">2</span>), -<span class="number">1</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b111</span>, i8,  <span class="number">8</span>,  <span class="number">3</span>), -<span class="number">1</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b101</span>, i8,  <span class="number">8</span>,  <span class="number">3</span>), -<span class="number">3</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b01111110</span>, i16, <span class="number">16</span>, <span class="number">8</span>),  <span class="number">126</span>);
+	<span class="macro">assert_eq!</span>(<span class="macro">sign_extend!</span>(<span class="number">0b10000010</span>, i16, <span class="number">16</span>, <span class="number">8</span>), -<span class="number">126</span>);
 }
 
-<span class="doccomment">/// Returns `num` bits of 1 (but never more than 8).</span>
-<span class="kw">fn</span> <span class="ident">mask_bits</span>(<span class="ident">num</span> : <span class="ident">u8</span>) -&gt; <span class="ident">u8</span> {
-	!((!<span class="number">0u8</span>).<span class="ident">wrapping_shl</span>(<span class="ident">num</span> <span class="kw">as</span> <span class="ident">u32</span>)) | <span class="kw">if</span> <span class="ident">num</span> &gt;= <span class="number">8</span> { <span class="number">0xff</span> } <span class="kw">else</span> { <span class="number">0</span> }
+<span class="doccomment">/// Returns `num` bits of 1 (but never more than 8).
+</span><span class="kw">fn </span>mask_bits(num : u8) -&gt; u8 {
+	!((!<span class="number">0u8</span>).wrapping_shl(num <span class="kw">as </span>u32)) | <span class="kw">if </span>num &gt;= <span class="number">8 </span>{ <span class="number">0xff </span>} <span class="kw">else </span>{ <span class="number">0 </span>}
 }
 
-<span class="comment">// Same as mask_bits but different in a special case: for num % 8 == 0</span>
-<span class="comment">// Make sure that 0 &lt;= num &lt;= 8.</span>
-<span class="kw">fn</span> <span class="ident">bmask_bits</span>(<span class="ident">num</span> : <span class="ident">u8</span>) -&gt; <span class="ident">u8</span> {
-	(!<span class="number">0u8</span>).<span class="ident">wrapping_shr</span>(<span class="number">8</span> - <span class="ident">num</span> <span class="kw">as</span> <span class="ident">u32</span>)
+<span class="comment">// Same as mask_bits but different in a special case: for num % 8 == 0
+// Make sure that 0 &lt;= num &lt;= 8.
+</span><span class="kw">fn </span>bmask_bits(num : u8) -&gt; u8 {
+	(!<span class="number">0u8</span>).wrapping_shr(<span class="number">8 </span>- num <span class="kw">as </span>u32)
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_mask_bits</span>() {
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">0</span>), <span class="number">0b00000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">1</span>), <span class="number">0b00000001</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">2</span>), <span class="number">0b00000011</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">3</span>), <span class="number">0b00000111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">4</span>), <span class="number">0b00001111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">5</span>), <span class="number">0b00011111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">6</span>), <span class="number">0b00111111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">7</span>), <span class="number">0b01111111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">mask_bits</span>(<span class="number">8</span>), <span class="number">0b11111111</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_mask_bits() {
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">0</span>), <span class="number">0b00000000</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">1</span>), <span class="number">0b00000001</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">2</span>), <span class="number">0b00000011</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">3</span>), <span class="number">0b00000111</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">4</span>), <span class="number">0b00001111</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">5</span>), <span class="number">0b00011111</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">6</span>), <span class="number">0b00111111</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">7</span>), <span class="number">0b01111111</span>);
+	<span class="macro">assert_eq!</span>(mask_bits(<span class="number">8</span>), <span class="number">0b11111111</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_bmask_bits</span>() {
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">0</span>), <span class="number">0b11111111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">1</span>), <span class="number">0b00000001</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">2</span>), <span class="number">0b00000011</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">3</span>), <span class="number">0b00000111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">4</span>), <span class="number">0b00001111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">5</span>), <span class="number">0b00011111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">6</span>), <span class="number">0b00111111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">7</span>), <span class="number">0b01111111</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">bmask_bits</span>(<span class="number">8</span>), <span class="number">0b11111111</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_bmask_bits() {
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">0</span>), <span class="number">0b11111111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">1</span>), <span class="number">0b00000001</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">2</span>), <span class="number">0b00000011</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">3</span>), <span class="number">0b00000111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">4</span>), <span class="number">0b00001111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">5</span>), <span class="number">0b00011111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">6</span>), <span class="number">0b00111111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">7</span>), <span class="number">0b01111111</span>);
+	<span class="macro">assert_eq!</span>(bmask_bits(<span class="number">8</span>), <span class="number">0b11111111</span>);
 }
 
-<span class="comment">// The main macro to read bit aligned</span>
-<span class="comment">// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)</span>
-<span class="macro">macro_rules!</span> <span class="ident">bpc_read_body</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>:<span class="ident">expr</span> ) =&gt; { {
-	<span class="kw">let</span> <span class="ident">last_octet_partial</span> :<span class="ident">usize</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> <span class="kw">as</span> <span class="ident">i8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span> <span class="kw">as</span> <span class="ident">i8</span> * <span class="number">8</span> &gt; <span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">let</span> <span class="ident">octetnum_rounded_up</span> :<span class="ident">usize</span> = <span class="ident">last_octet_partial</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>;
-	<span class="kw">let</span> <span class="ident">bit_cursor_after</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) % <span class="number">8</span>;
+<span class="comment">// The main macro to read bit aligned
+// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)
+</span><span class="macro">macro_rules!</span> bpc_read_body {
+( <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bitnum</span>:expr, <span class="macro-nonterminal">$octetnum</span>:expr, <span class="macro-nonterminal">$selfarg</span>:expr ) =&gt; { {
+	<span class="kw">let </span>last_octet_partial :usize = (<span class="macro-nonterminal">$bitnum </span><span class="kw">as </span>i8 - <span class="macro-nonterminal">$octetnum </span><span class="kw">as </span>i8 * <span class="number">8 </span>&gt; <span class="number">0</span>) <span class="kw">as </span>usize;
+	<span class="kw">let </span>octetnum_rounded_up :usize = last_octet_partial + <span class="macro-nonterminal">$octetnum</span>;
+	<span class="kw">let </span>bit_cursor_after = (<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) % <span class="number">8</span>;
 
-	<span class="kw">if</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) <span class="kw">as</span> <span class="ident">usize</span> &gt; <span class="number">8</span> * <span class="ident">octetnum_rounded_up</span> {
+	<span class="kw">if </span>(<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) <span class="kw">as </span>usize &gt; <span class="number">8 </span>* octetnum_rounded_up {
 		<span class="comment">/*println!(&quot;Reading {} bits (octetnum={}, last_partial={}, total_touched={}+1)&quot;,
 			$bitnum, $octetnum, last_octet_partial, $octetnum + last_octet_partial);
-		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */</span>
-		<span class="comment">/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
+		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */
+		/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
 			$selfarg.byte_cursor, $selfarg.bit_cursor,
 			&amp;$selfarg.inner[$selfarg.byte_cursor .. $selfarg.byte_cursor +
-			1 + octetnum_rounded_up]);// */</span>
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="number">1</span> + <span class="ident">octetnum_rounded_up</span> &gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>.<span class="ident">len</span>() {
-			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);</span>
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(());
+			1 + octetnum_rounded_up]);// */
+		</span><span class="kw">if </span><span class="macro-nonterminal">$selfarg</span>.byte_cursor + <span class="number">1 </span>+ octetnum_rounded_up &gt; <span class="macro-nonterminal">$selfarg</span>.inner.len() {
+			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);
+			</span><span class="kw">return </span><span class="prelude-val">Err</span>(());
 		}
-		<span class="kw">let</span> <span class="ident">buf</span> = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span>
-			.. <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="number">1</span> + <span class="ident">octetnum_rounded_up</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> :<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span> = <span class="ident">buf</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
-		<span class="ident">res</span> &gt;&gt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_bit_cursor</span> = <span class="number">8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span> .. <span class="ident">octetnum_rounded_up</span> {
-			<span class="ident">res</span> |= (<span class="ident">buf</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-			<span class="ident">cur_bit_cursor</span> += <span class="number">8</span>;
+		<span class="kw">let </span>buf = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$selfarg</span>.inner[<span class="macro-nonterminal">$selfarg</span>.byte_cursor
+			.. <span class="macro-nonterminal">$selfarg</span>.byte_cursor + <span class="number">1 </span>+ octetnum_rounded_up];
+		<span class="kw">let </span><span class="kw-2">mut </span>res :<span class="macro-nonterminal">$rettype </span>= buf[<span class="number">0</span>] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
+		res &gt;&gt;= <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_bit_cursor = <span class="number">8 </span>- <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">1 </span>.. octetnum_rounded_up {
+			res |= (buf[i] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+			cur_bit_cursor += <span class="number">8</span>;
 		}
-		<span class="kw">let</span> <span class="ident">last_bits</span> = <span class="ident">buf</span>[<span class="ident">octetnum_rounded_up</span>] &amp; <span class="ident">mask_bits</span>(<span class="ident">bit_cursor_after</span>);
-		<span class="ident">res</span> |= (<span class="ident">last_bits</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += <span class="ident">octetnum_rounded_up</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> = <span class="ident">bit_cursor_after</span>;
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
-	} <span class="kw">else</span> {
+		<span class="kw">let </span>last_bits = buf[octetnum_rounded_up] &amp; mask_bits(bit_cursor_after);
+		res |= (last_bits <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += octetnum_rounded_up;
+		<span class="macro-nonterminal">$selfarg</span>.bit_cursor = bit_cursor_after;
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(res)
+	} <span class="kw">else </span>{
 		<span class="comment">/*println!(&quot;Reading {} bits (octetnum={}, last_partial={}, total_touched={})&quot;,
 			$bitnum, $octetnum, last_octet_partial, $octetnum + last_octet_partial);
-		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */</span>
-		<span class="comment">/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
+		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */
+		/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
 			$selfarg.byte_cursor, $selfarg.bit_cursor,
 			&amp;$selfarg.inner[$selfarg.byte_cursor .. $selfarg.byte_cursor +
-			octetnum_rounded_up]);// */</span>
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="ident">octetnum_rounded_up</span> &gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>.<span class="ident">len</span>() {
-			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);</span>
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(());
+			octetnum_rounded_up]);// */
+		</span><span class="kw">if </span><span class="macro-nonterminal">$selfarg</span>.byte_cursor + octetnum_rounded_up &gt; <span class="macro-nonterminal">$selfarg</span>.inner.len() {
+			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);
+			</span><span class="kw">return </span><span class="prelude-val">Err</span>(());
 		}
-		<span class="kw">let</span> <span class="ident">buf</span> = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> ..
-			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="ident">octetnum_rounded_up</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> :<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span> = <span class="ident">buf</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
-		<span class="ident">res</span> &gt;&gt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> &lt;= <span class="number">8</span> {
-			<span class="ident">res</span> &amp;= <span class="ident">mask_bits</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
+		<span class="kw">let </span>buf = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$selfarg</span>.inner[<span class="macro-nonterminal">$selfarg</span>.byte_cursor ..
+			<span class="macro-nonterminal">$selfarg</span>.byte_cursor + octetnum_rounded_up];
+		<span class="kw">let </span><span class="kw-2">mut </span>res :<span class="macro-nonterminal">$rettype </span>= buf[<span class="number">0</span>] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
+		res &gt;&gt;= <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">if </span><span class="macro-nonterminal">$bitnum </span>&lt;= <span class="number">8 </span>{
+			res &amp;= mask_bits(<span class="macro-nonterminal">$bitnum</span>) <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
 		}
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_bit_cursor</span> = <span class="number">8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span> .. <span class="ident">octetnum_rounded_up</span> - <span class="number">1</span> {
-			<span class="ident">res</span> |= (<span class="ident">buf</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-			<span class="ident">cur_bit_cursor</span> += <span class="number">8</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_bit_cursor = <span class="number">8 </span>- <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">1 </span>.. octetnum_rounded_up - <span class="number">1 </span>{
+			res |= (buf[i] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+			cur_bit_cursor += <span class="number">8</span>;
 		}
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> &gt; <span class="number">8</span> {
-			<span class="kw">let</span> <span class="ident">last_bits</span> = <span class="ident">buf</span>[<span class="ident">octetnum_rounded_up</span> - <span class="number">1</span>] &amp; <span class="ident">bmask_bits</span>(<span class="ident">bit_cursor_after</span>);
-			<span class="ident">res</span> |= (<span class="ident">last_bits</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
+		<span class="kw">if </span><span class="macro-nonterminal">$bitnum </span>&gt; <span class="number">8 </span>{
+			<span class="kw">let </span>last_bits = buf[octetnum_rounded_up - <span class="number">1</span>] &amp; bmask_bits(bit_cursor_after);
+			res |= (last_bits <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
 		}
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> == <span class="number">8</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> % <span class="number">8</span>)) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> = <span class="ident">bit_cursor_after</span>;
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += <span class="macro-nonterminal">$octetnum</span>;
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += (<span class="macro-nonterminal">$selfarg</span>.bit_cursor == <span class="number">8 </span>- (<span class="macro-nonterminal">$bitnum </span>% <span class="number">8</span>)) <span class="kw">as </span>usize;
+		<span class="macro-nonterminal">$selfarg</span>.bit_cursor = bit_cursor_after;
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(res)
 	}
 } }
 }
 
-<span class="comment">// The main macro to peek bit aligned</span>
-<span class="comment">// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)</span>
-<span class="macro">macro_rules!</span> <span class="ident">bpc_peek_body</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>:<span class="ident">expr</span> ) =&gt; { {
-	<span class="kw">let</span> <span class="ident">last_octet_partial</span> :<span class="ident">usize</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> <span class="kw">as</span> <span class="ident">i8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span> <span class="kw">as</span> <span class="ident">i8</span> * <span class="number">8</span> &gt; <span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">let</span> <span class="ident">octetnum_rounded_up</span> :<span class="ident">usize</span> = <span class="ident">last_octet_partial</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>;
-	<span class="kw">let</span> <span class="ident">bit_cursor_after</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) % <span class="number">8</span>;
+<span class="comment">// The main macro to peek bit aligned
+// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)
+</span><span class="macro">macro_rules!</span> bpc_peek_body {
+( <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bitnum</span>:expr, <span class="macro-nonterminal">$octetnum</span>:expr, <span class="macro-nonterminal">$selfarg</span>:expr ) =&gt; { {
+	<span class="kw">let </span>last_octet_partial :usize = (<span class="macro-nonterminal">$bitnum </span><span class="kw">as </span>i8 - <span class="macro-nonterminal">$octetnum </span><span class="kw">as </span>i8 * <span class="number">8 </span>&gt; <span class="number">0</span>) <span class="kw">as </span>usize;
+	<span class="kw">let </span>octetnum_rounded_up :usize = last_octet_partial + <span class="macro-nonterminal">$octetnum</span>;
+	<span class="kw">let </span>bit_cursor_after = (<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) % <span class="number">8</span>;
 
-	<span class="kw">if</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) <span class="kw">as</span> <span class="ident">usize</span> &gt; <span class="number">8</span> * <span class="ident">octetnum_rounded_up</span> {
+	<span class="kw">if </span>(<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) <span class="kw">as </span>usize &gt; <span class="number">8 </span>* octetnum_rounded_up {
 		<span class="comment">/*println!(&quot;Reading {} bits (octetnum={}, last_partial={}, total_touched={}+1)&quot;,
 			$bitnum, $octetnum, last_octet_partial, $octetnum + last_octet_partial);
-		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */</span>
-		<span class="comment">/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
+		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */
+		/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
 			$selfarg.byte_cursor, $selfarg.bit_cursor,
 			&amp;$selfarg.inner[$selfarg.byte_cursor .. $selfarg.byte_cursor +
-			1 + octetnum_rounded_up]);// */</span>
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="number">1</span> + <span class="ident">octetnum_rounded_up</span> &gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>.<span class="ident">len</span>() {
-			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);</span>
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(());
+			1 + octetnum_rounded_up]);// */
+		</span><span class="kw">if </span><span class="macro-nonterminal">$selfarg</span>.byte_cursor + <span class="number">1 </span>+ octetnum_rounded_up &gt; <span class="macro-nonterminal">$selfarg</span>.inner.len() {
+			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);
+			</span><span class="kw">return </span><span class="prelude-val">Err</span>(());
 		}
-		<span class="kw">let</span> <span class="ident">buf</span> = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span>
-			.. <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="number">1</span> + <span class="ident">octetnum_rounded_up</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> :<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span> = <span class="ident">buf</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
-		<span class="ident">res</span> &gt;&gt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_bit_cursor</span> = <span class="number">8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span> .. <span class="ident">octetnum_rounded_up</span> {
-			<span class="ident">res</span> |= (<span class="ident">buf</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-			<span class="ident">cur_bit_cursor</span> += <span class="number">8</span>;
+		<span class="kw">let </span>buf = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$selfarg</span>.inner[<span class="macro-nonterminal">$selfarg</span>.byte_cursor
+			.. <span class="macro-nonterminal">$selfarg</span>.byte_cursor + <span class="number">1 </span>+ octetnum_rounded_up];
+		<span class="kw">let </span><span class="kw-2">mut </span>res :<span class="macro-nonterminal">$rettype </span>= buf[<span class="number">0</span>] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
+		res &gt;&gt;= <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_bit_cursor = <span class="number">8 </span>- <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">1 </span>.. octetnum_rounded_up {
+			res |= (buf[i] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+			cur_bit_cursor += <span class="number">8</span>;
 		}
-		<span class="kw">let</span> <span class="ident">last_bits</span> = <span class="ident">buf</span>[<span class="ident">octetnum_rounded_up</span>] &amp; <span class="ident">mask_bits</span>(<span class="ident">bit_cursor_after</span>);
-		<span class="ident">res</span> |= (<span class="ident">last_bits</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
-	} <span class="kw">else</span> {
+		<span class="kw">let </span>last_bits = buf[octetnum_rounded_up] &amp; mask_bits(bit_cursor_after);
+		res |= (last_bits <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(res)
+	} <span class="kw">else </span>{
 		<span class="comment">/*println!(&quot;Reading {} bits (octetnum={}, last_partial={}, total_touched={})&quot;,
 			$bitnum, $octetnum, last_octet_partial, $octetnum + last_octet_partial);
-		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */</span>
-		<span class="comment">/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
+		println!(&quot;    byte_c={}; bit_c={}&quot;, $selfarg.byte_cursor, $selfarg.bit_cursor);// */
+		/*print!(&quot;Reading {} bits (byte_c={}; bit_c={}) [] = {:?}&quot;, $bitnum,
 			$selfarg.byte_cursor, $selfarg.bit_cursor,
 			&amp;$selfarg.inner[$selfarg.byte_cursor .. $selfarg.byte_cursor +
-			octetnum_rounded_up]);// */</span>
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="ident">octetnum_rounded_up</span> &gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>.<span class="ident">len</span>() {
-			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);</span>
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(());
+			octetnum_rounded_up]);// */
+		</span><span class="kw">if </span><span class="macro-nonterminal">$selfarg</span>.byte_cursor + octetnum_rounded_up &gt; <span class="macro-nonterminal">$selfarg</span>.inner.len() {
+			<span class="comment">//println!(&quot; =&gt; Out of bounds :\\&quot;);
+			</span><span class="kw">return </span><span class="prelude-val">Err</span>(());
 		}
-		<span class="kw">let</span> <span class="ident">buf</span> = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">inner</span>[<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> ..
-			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> + <span class="ident">octetnum_rounded_up</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> :<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span> = <span class="ident">buf</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
-		<span class="ident">res</span> &gt;&gt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> &lt;= <span class="number">8</span> {
-			<span class="ident">res</span> &amp;= <span class="ident">mask_bits</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>;
+		<span class="kw">let </span>buf = <span class="kw-2">&amp;</span><span class="macro-nonterminal">$selfarg</span>.inner[<span class="macro-nonterminal">$selfarg</span>.byte_cursor ..
+			<span class="macro-nonterminal">$selfarg</span>.byte_cursor + octetnum_rounded_up];
+		<span class="kw">let </span><span class="kw-2">mut </span>res :<span class="macro-nonterminal">$rettype </span>= buf[<span class="number">0</span>] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
+		res &gt;&gt;= <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">if </span><span class="macro-nonterminal">$bitnum </span>&lt;= <span class="number">8 </span>{
+			res &amp;= mask_bits(<span class="macro-nonterminal">$bitnum</span>) <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>;
 		}
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_bit_cursor</span> = <span class="number">8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span>;
-		<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span> .. <span class="ident">octetnum_rounded_up</span> - <span class="number">1</span> {
-			<span class="ident">res</span> |= (<span class="ident">buf</span>[<span class="ident">i</span>] <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
-			<span class="ident">cur_bit_cursor</span> += <span class="number">8</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_bit_cursor = <span class="number">8 </span>- <span class="macro-nonterminal">$selfarg</span>.bit_cursor;
+		<span class="kw">for </span>i <span class="kw">in </span><span class="number">1 </span>.. octetnum_rounded_up - <span class="number">1 </span>{
+			res |= (buf[i] <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
+			cur_bit_cursor += <span class="number">8</span>;
 		}
-		<span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> &gt; <span class="number">8</span> {
-			<span class="kw">let</span> <span class="ident">last_bits</span> = <span class="ident">buf</span>[<span class="ident">octetnum_rounded_up</span> - <span class="number">1</span>] &amp; <span class="ident">bmask_bits</span>(<span class="ident">bit_cursor_after</span>);
-			<span class="ident">res</span> |= (<span class="ident">last_bits</span> <span class="kw">as</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>) &lt;&lt; <span class="ident">cur_bit_cursor</span>;
+		<span class="kw">if </span><span class="macro-nonterminal">$bitnum </span>&gt; <span class="number">8 </span>{
+			<span class="kw">let </span>last_bits = buf[octetnum_rounded_up - <span class="number">1</span>] &amp; bmask_bits(bit_cursor_after);
+			res |= (last_bits <span class="kw">as </span><span class="macro-nonterminal">$rettype</span>) &lt;&lt; cur_bit_cursor;
 		}
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(res)
 	}
 } }
 }
 
-<span class="comment">// The main macro to advance bit aligned</span>
-<span class="comment">// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)</span>
-<span class="macro">macro_rules!</span> <span class="ident">bpc_advance_body</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>:<span class="ident">expr</span> ) =&gt; { {
-	<span class="kw">let</span> <span class="ident">last_octet_partial</span> :<span class="ident">usize</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> <span class="kw">as</span> <span class="ident">i8</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span> <span class="kw">as</span> <span class="ident">i8</span> * <span class="number">8</span> &gt; <span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">let</span> <span class="ident">octetnum_rounded_up</span> :<span class="ident">usize</span> = <span class="ident">last_octet_partial</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>;
-	<span class="kw">let</span> <span class="ident">bit_cursor_after</span> = (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) % <span class="number">8</span>;
+<span class="comment">// The main macro to advance bit aligned
+// Note that `$octetnum` is the number of octets in $bitnum ($bitnum / 8 rounded down)
+</span><span class="macro">macro_rules!</span> bpc_advance_body {
+( <span class="macro-nonterminal">$bitnum</span>:expr, <span class="macro-nonterminal">$octetnum</span>:expr, <span class="macro-nonterminal">$selfarg</span>:expr ) =&gt; { {
+	<span class="kw">let </span>last_octet_partial :usize = (<span class="macro-nonterminal">$bitnum </span><span class="kw">as </span>i8 - <span class="macro-nonterminal">$octetnum </span><span class="kw">as </span>i8 * <span class="number">8 </span>&gt; <span class="number">0</span>) <span class="kw">as </span>usize;
+	<span class="kw">let </span>octetnum_rounded_up :usize = last_octet_partial + <span class="macro-nonterminal">$octetnum</span>;
+	<span class="kw">let </span>bit_cursor_after = (<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) % <span class="number">8</span>;
 
-	<span class="kw">if</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>) <span class="kw">as</span> <span class="ident">usize</span> &gt; <span class="number">8</span> * <span class="ident">octetnum_rounded_up</span> {
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += <span class="ident">octetnum_rounded_up</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> = <span class="ident">bit_cursor_after</span>;
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(())
-	} <span class="kw">else</span> {
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">byte_cursor</span> += (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> == <span class="number">8</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span> % <span class="number">8</span>)) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="macro-nonterminal">$</span><span class="macro-nonterminal">selfarg</span>.<span class="ident">bit_cursor</span> = <span class="ident">bit_cursor_after</span>;
-		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);</span>
-		<span class="prelude-val">Ok</span>(())
+	<span class="kw">if </span>(<span class="macro-nonterminal">$selfarg</span>.bit_cursor + <span class="macro-nonterminal">$bitnum</span>) <span class="kw">as </span>usize &gt; <span class="number">8 </span>* octetnum_rounded_up {
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += octetnum_rounded_up;
+		<span class="macro-nonterminal">$selfarg</span>.bit_cursor = bit_cursor_after;
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(())
+	} <span class="kw">else </span>{
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += <span class="macro-nonterminal">$octetnum</span>;
+		<span class="macro-nonterminal">$selfarg</span>.byte_cursor += (<span class="macro-nonterminal">$selfarg</span>.bit_cursor == <span class="number">8 </span>- (<span class="macro-nonterminal">$bitnum </span>% <span class="number">8</span>)) <span class="kw">as </span>usize;
+		<span class="macro-nonterminal">$selfarg</span>.bit_cursor = bit_cursor_after;
+		<span class="comment">//println!(&quot; =&gt; {:?}&quot;, res);
+		</span><span class="prelude-val">Ok</span>(())
 	}
 } }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">uk_reader</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>:<span class="ident">expr</span>) =&gt; {
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, ()&gt; {
-		<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>, <span class="self">self</span>)
+<span class="macro">macro_rules!</span> uk_reader {
+( <span class="macro-nonterminal">$fnname</span>:ident, <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bitnum</span>:expr, <span class="macro-nonterminal">$octetnum</span>:expr) =&gt; {
+	<span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span><span class="macro-nonterminal">$fnname</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$rettype</span>, ()&gt; {
+		<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$rettype</span>, <span class="macro-nonterminal">$bitnum</span>, <span class="macro-nonterminal">$octetnum</span>, <span class="self">self</span>)
 	}
 }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">ik_reader</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum_of_rettype</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>:<span class="ident">expr</span>) =&gt; {
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, ()&gt; {
+<span class="macro">macro_rules!</span> ik_reader {
+( <span class="macro-nonterminal">$fnname</span>:ident, <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bitnum_of_rettype</span>:expr, <span class="macro-nonterminal">$bitnum</span>:expr, <span class="macro-nonterminal">$octetnum</span>:expr) =&gt; {
+	<span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span><span class="macro-nonterminal">$fnname</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$rettype</span>, ()&gt; {
 		<span class="prelude-val">Ok</span>(<span class="macro">sign_extend!</span>(<span class="macro">try!</span>(
-			<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">octetnum</span>, <span class="self">self</span>)),
-			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum_of_rettype</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum</span>))
+			<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$rettype</span>, <span class="macro-nonterminal">$bitnum</span>, <span class="macro-nonterminal">$octetnum</span>, <span class="self">self</span>)),
+			<span class="macro-nonterminal">$rettype</span>, <span class="macro-nonterminal">$bitnum_of_rettype</span>, <span class="macro-nonterminal">$bitnum</span>))
 	}
 }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">ik_dynamic_reader</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum_of_rettype</span>:<span class="ident">expr</span>) =&gt; {
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">bit_num</span> :<span class="ident">u8</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, ()&gt; {
-		<span class="kw">let</span> <span class="ident">octet_num</span> :<span class="ident">usize</span> = (<span class="ident">bit_num</span> / <span class="number">8</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="macro">assert!</span>(<span class="ident">bit_num</span> &lt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum_of_rettype</span>);
+<span class="macro">macro_rules!</span> ik_dynamic_reader {
+( <span class="macro-nonterminal">$fnname</span>:ident, <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bitnum_of_rettype</span>:expr) =&gt; {
+	<span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span><span class="macro-nonterminal">$fnname</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bit_num :u8) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$rettype</span>, ()&gt; {
+		<span class="kw">let </span>octet_num :usize = (bit_num / <span class="number">8</span>) <span class="kw">as </span>usize;
+		<span class="macro">assert!</span>(bit_num &lt;= <span class="macro-nonterminal">$bitnum_of_rettype</span>);
 		<span class="prelude-val">Ok</span>(<span class="macro">sign_extend!</span>(<span class="macro">try!</span>(
-			<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="ident">bit_num</span>, <span class="ident">octet_num</span>, <span class="self">self</span>)),
-			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bitnum_of_rettype</span>, <span class="ident">bit_num</span>))
+			<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$rettype</span>, bit_num, octet_num, <span class="self">self</span>)),
+			<span class="macro-nonterminal">$rettype</span>, <span class="macro-nonterminal">$bitnum_of_rettype</span>, bit_num))
 	}
 }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">uk_dynamic_reader</span> {
-( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_num_max</span>:<span class="ident">expr</span>) =&gt; {
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">fnname</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">bit_num</span> :<span class="ident">u8</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, ()&gt; {
-		<span class="kw">let</span> <span class="ident">octet_num</span> :<span class="ident">usize</span> = (<span class="ident">bit_num</span> / <span class="number">8</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="kw">if</span> <span class="ident">bit_num</span> == <span class="number">0</span> {
-			<span class="comment">// TODO: one day let bpc_read_body handle this,</span>
-			<span class="comment">// if its smartly doable in there.</span>
-			<span class="comment">// For why it is required, see comment in the</span>
-			<span class="comment">// test_bitpacking_reader_empty function.</span>
-			<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="number">0</span>);
+<span class="macro">macro_rules!</span> uk_dynamic_reader {
+( <span class="macro-nonterminal">$fnname</span>:ident, <span class="macro-nonterminal">$rettype</span>:ident, <span class="macro-nonterminal">$bit_num_max</span>:expr) =&gt; {
+	<span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span><span class="macro-nonterminal">$fnname</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bit_num :u8) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="macro-nonterminal">$rettype</span>, ()&gt; {
+		<span class="kw">let </span>octet_num :usize = (bit_num / <span class="number">8</span>) <span class="kw">as </span>usize;
+		<span class="kw">if </span>bit_num == <span class="number">0 </span>{
+			<span class="comment">// TODO: one day let bpc_read_body handle this,
+			// if its smartly doable in there.
+			// For why it is required, see comment in the
+			// test_bitpacking_reader_empty function.
+			</span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="number">0</span>);
 		}
-		<span class="macro">assert!</span>(<span class="ident">bit_num</span> &lt;= <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bit_num_max</span>);
-		<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rettype</span>, <span class="ident">bit_num</span>, <span class="ident">octet_num</span>, <span class="self">self</span>)
+		<span class="macro">assert!</span>(bit_num &lt;= <span class="macro-nonterminal">$bit_num_max</span>);
+		<span class="macro">bpc_read_body!</span>(<span class="macro-nonterminal">$rettype</span>, bit_num, octet_num, <span class="self">self</span>)
 	}
 }
 }
 
-<span class="kw">fn</span> <span class="ident">float32_unpack</span>(<span class="ident">val</span> :<span class="ident">u32</span>) -&gt; <span class="ident">f32</span> {
-	<span class="kw">let</span> <span class="ident">sgn</span> = <span class="ident">val</span> &amp; <span class="number">0x80000000</span>;
-	<span class="kw">let</span> <span class="ident">exp</span> = (<span class="ident">val</span> &amp; <span class="number">0x7fe00000</span>) &gt;&gt; <span class="number">21</span>;
-	<span class="kw">let</span> <span class="ident">mantissa</span> = (<span class="ident">val</span> &amp; <span class="number">0x1fffff</span>) <span class="kw">as</span> <span class="ident">f64</span>;
-	<span class="kw">let</span> <span class="ident">signed_mantissa</span> = <span class="kw">if</span> <span class="ident">sgn</span> != <span class="number">0</span> {
-		-<span class="ident">mantissa</span>
-	} <span class="kw">else</span> {
-		<span class="ident">mantissa</span>
+<span class="kw">fn </span>float32_unpack(val :u32) -&gt; f32 {
+	<span class="kw">let </span>sgn = val &amp; <span class="number">0x80000000</span>;
+	<span class="kw">let </span>exp = (val &amp; <span class="number">0x7fe00000</span>) &gt;&gt; <span class="number">21</span>;
+	<span class="kw">let </span>mantissa = (val &amp; <span class="number">0x1fffff</span>) <span class="kw">as </span>f64;
+	<span class="kw">let </span>signed_mantissa = <span class="kw">if </span>sgn != <span class="number">0 </span>{
+		-mantissa
+	} <span class="kw">else </span>{
+		mantissa
 	};
-	<span class="kw">return</span> <span class="ident">signed_mantissa</span> <span class="kw">as</span> <span class="ident">f32</span> * (<span class="ident">exp</span> <span class="kw">as</span> <span class="ident">f32</span> - <span class="number">788.0</span>).<span class="ident">exp2</span>();
+	<span class="kw">return </span>signed_mantissa <span class="kw">as </span>f32 * (exp <span class="kw">as </span>f32 - <span class="number">788.0</span>).exp2();
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_float_32_unpack</span>() {
-	<span class="comment">// Values were printed out from what stb_vorbis</span>
-	<span class="comment">// calculated for this function from a test file.</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1611661312</span>),      <span class="number">1.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1616117760</span>),      <span class="number">5.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1618345984</span>),     <span class="number">11.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1620115456</span>),     <span class="number">17.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1627381760</span>),    <span class="number">255.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3759144960</span>),     -<span class="number">1.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3761242112</span>),     -<span class="number">2.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3763339264</span>),     -<span class="number">4.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3763601408</span>),     -<span class="number">5.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3765436416</span>),     -<span class="number">8.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3765829632</span>),    -<span class="number">11.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3768451072</span>),    -<span class="number">30.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3772628992</span>),   -<span class="number">119.000000</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3780634624</span>),  -<span class="number">1530.000000</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_float_32_unpack() {
+	<span class="comment">// Values were printed out from what stb_vorbis
+	// calculated for this function from a test file.
+	</span><span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1611661312</span>),      <span class="number">1.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1616117760</span>),      <span class="number">5.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1618345984</span>),     <span class="number">11.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1620115456</span>),     <span class="number">17.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1627381760</span>),    <span class="number">255.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3759144960</span>),     -<span class="number">1.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3761242112</span>),     -<span class="number">2.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3763339264</span>),     -<span class="number">4.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3763601408</span>),     -<span class="number">5.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3765436416</span>),     -<span class="number">8.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3765829632</span>),    -<span class="number">11.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3768451072</span>),    -<span class="number">30.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3772628992</span>),   -<span class="number">119.000000</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3780634624</span>),  -<span class="number">1530.000000</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_float_32_unpack_issue_24</span>() {
-	<span class="comment">// Regression test for issue #24, a</span>
-	<span class="comment">// mismatch in decoded output for audio_simple_with_error.ogg</span>
-	<span class="comment">// and singlemap-test.ogg.</span>
-	<span class="comment">// The values are taken from the codebook_delta_value and</span>
-	<span class="comment">// codebook_minimum_value values of the singlemap-test.ogg file.</span>
-	<span class="comment">// The expected values come from stb_vorbis.</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1628434432</span>), <span class="number">255.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1621655552</span>), <span class="number">17.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1619722240</span>), <span class="number">11.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">1613234176</span>), <span class="number">1.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3760717824</span>), -<span class="number">1.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3762814976</span>), -<span class="number">2.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3764912128</span>), -<span class="number">4.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3765043200</span>), -<span class="number">5.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3767009280</span>), -<span class="number">8.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3767205888</span>), -<span class="number">11.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3769565184</span>), -<span class="number">30.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3773751296</span>), -<span class="number">119.0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">float32_unpack</span>(<span class="number">3781948416</span>), -<span class="number">1530.0</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_float_32_unpack_issue_24() {
+	<span class="comment">// Regression test for issue #24, a
+	// mismatch in decoded output for audio_simple_with_error.ogg
+	// and singlemap-test.ogg.
+	// The values are taken from the codebook_delta_value and
+	// codebook_minimum_value values of the singlemap-test.ogg file.
+	// The expected values come from stb_vorbis.
+	</span><span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1628434432</span>), <span class="number">255.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1621655552</span>), <span class="number">17.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1619722240</span>), <span class="number">11.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">1613234176</span>), <span class="number">1.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3760717824</span>), -<span class="number">1.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3762814976</span>), -<span class="number">2.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3764912128</span>), -<span class="number">4.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3765043200</span>), -<span class="number">5.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3767009280</span>), -<span class="number">8.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3767205888</span>), -<span class="number">11.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3769565184</span>), -<span class="number">30.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3773751296</span>), -<span class="number">119.0</span>);
+	<span class="macro">assert_eq!</span>(float32_unpack(<span class="number">3781948416</span>), -<span class="number">1530.0</span>);
 }
 
-<span class="comment">// allow some code that is only used in the tests</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="kw">impl</span> &lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">BitpackCursor</span> &lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="comment">// allow some code that is only used in the tests
+</span><span class="attribute">#[allow(dead_code)]</span>
+<span class="kw">impl </span>&lt;<span class="lifetime">&#39;a</span>&gt; BitpackCursor &lt;<span class="lifetime">&#39;a</span>&gt; {
 
-	<span class="doccomment">/// Creates a new `BitpackCursor` for the given data array</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">arr</span> : <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">BitpackCursor</span> {
-		<span class="kw">return</span> <span class="ident">BitpackCursor</span>::&lt;<span class="lifetime">&#39;a</span>&gt; { <span class="ident">bit_cursor</span>: <span class="number">0</span>, <span class="ident">byte_cursor</span>: <span class="number">0</span>, <span class="ident">inner</span>: <span class="ident">arr</span> };
+	<span class="doccomment">/// Creates a new `BitpackCursor` for the given data array
+	</span><span class="kw">pub fn </span>new(arr : <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span>[u8]) -&gt; BitpackCursor {
+		<span class="kw">return </span>BitpackCursor::&lt;<span class="lifetime">&#39;a</span>&gt; { bit_cursor: <span class="number">0</span>, byte_cursor: <span class="number">0</span>, inner: arr };
 	}
 
-	<span class="comment">// Unsigned, non-dynamic reader methods</span>
+	<span class="comment">// Unsigned, non-dynamic reader methods
 
-	<span class="comment">// u32 based</span>
+	// u32 based
 
-	<span class="comment">// TODO add here if needed</span>
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u32</span>, <span class="ident">u32</span>, <span class="number">32</span>, <span class="number">4</span>);
-	<span class="comment">// TODO add here if needed</span>
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u24</span>, <span class="ident">u32</span>, <span class="number">24</span>, <span class="number">3</span>);
-	<span class="comment">// TODO add here if needed</span>
+	// TODO add here if needed
+	</span><span class="macro">uk_reader!</span>(read_u32, u32, <span class="number">32</span>, <span class="number">4</span>);
+	<span class="comment">// TODO add here if needed
+	</span><span class="macro">uk_reader!</span>(read_u24, u32, <span class="number">24</span>, <span class="number">3</span>);
+	<span class="comment">// TODO add here if needed
 
-	<span class="comment">// u16 based</span>
+	// u16 based
 
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u16</span>, <span class="ident">u16</span>, <span class="number">16</span>, <span class="number">2</span>);
+	</span><span class="macro">uk_reader!</span>(read_u16, u16, <span class="number">16</span>, <span class="number">2</span>);
 
-	<span class="comment">// TODO add here if needed</span>
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u13</span>, <span class="ident">u16</span>, <span class="number">13</span>, <span class="number">1</span>);
-	<span class="comment">// TODO add here if needed</span>
+	<span class="comment">// TODO add here if needed
+	</span><span class="macro">uk_reader!</span>(read_u13, u16, <span class="number">13</span>, <span class="number">1</span>);
+	<span class="comment">// TODO add here if needed
 
-	<span class="comment">// u8 based</span>
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u8</span>, <span class="ident">u8</span>, <span class="number">8</span>, <span class="number">1</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u7</span>, <span class="ident">u8</span>, <span class="number">7</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u6</span>, <span class="ident">u8</span>, <span class="number">6</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u5</span>, <span class="ident">u8</span>, <span class="number">5</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u4</span>, <span class="ident">u8</span>, <span class="number">4</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u3</span>, <span class="ident">u8</span>, <span class="number">3</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u2</span>, <span class="ident">u8</span>, <span class="number">2</span>, <span class="number">0</span>);
-	<span class="macro">uk_reader!</span>(<span class="ident">read_u1</span>, <span class="ident">u8</span>, <span class="number">1</span>, <span class="number">0</span>);
+	// u8 based
+	</span><span class="macro">uk_reader!</span>(read_u8, u8, <span class="number">8</span>, <span class="number">1</span>);
+	<span class="macro">uk_reader!</span>(read_u7, u8, <span class="number">7</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u6, u8, <span class="number">6</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u5, u8, <span class="number">5</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u4, u8, <span class="number">4</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u3, u8, <span class="number">3</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u2, u8, <span class="number">2</span>, <span class="number">0</span>);
+	<span class="macro">uk_reader!</span>(read_u1, u8, <span class="number">1</span>, <span class="number">0</span>);
 
-	<span class="comment">// Returning bool:</span>
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_bit_flag</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">bool</span>, ()&gt; {
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_u1</span>()) == <span class="number">1</span>);
+	<span class="comment">// Returning bool:
+	</span><span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span>read_bit_flag(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool, ()&gt; {
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">try!</span>(<span class="self">self</span>.read_u1()) == <span class="number">1</span>);
 	}
 
-	<span class="comment">// Unsigned dynamic reader methods</span>
-	<span class="comment">// They panic if you give them invalid params</span>
-	<span class="comment">// (bit_num larger than maximum allowed bit number for the type)</span>
-	<span class="macro">uk_dynamic_reader!</span>(<span class="ident">read_dyn_u8</span>,  <span class="ident">u8</span>,  <span class="number">8</span>);
-	<span class="macro">uk_dynamic_reader!</span>(<span class="ident">read_dyn_u16</span>, <span class="ident">u16</span>, <span class="number">16</span>);
-	<span class="macro">uk_dynamic_reader!</span>(<span class="ident">read_dyn_u32</span>, <span class="ident">u32</span>, <span class="number">32</span>);
-	<span class="macro">uk_dynamic_reader!</span>(<span class="ident">read_dyn_u64</span>, <span class="ident">u64</span>, <span class="number">64</span>);
+	<span class="comment">// Unsigned dynamic reader methods
+	// They panic if you give them invalid params
+	// (bit_num larger than maximum allowed bit number for the type)
+	</span><span class="macro">uk_dynamic_reader!</span>(read_dyn_u8,  u8,  <span class="number">8</span>);
+	<span class="macro">uk_dynamic_reader!</span>(read_dyn_u16, u16, <span class="number">16</span>);
+	<span class="macro">uk_dynamic_reader!</span>(read_dyn_u32, u32, <span class="number">32</span>);
+	<span class="macro">uk_dynamic_reader!</span>(read_dyn_u64, u64, <span class="number">64</span>);
 
-	<span class="comment">// Signed non-dynamic reader methods</span>
+	<span class="comment">// Signed non-dynamic reader methods
 
-	<span class="macro">ik_reader!</span>(<span class="ident">read_i32</span>, <span class="ident">i32</span>, <span class="number">32</span>, <span class="number">32</span>, <span class="number">4</span>);
-	<span class="comment">// TODO add here if needed</span>
+	</span><span class="macro">ik_reader!</span>(read_i32, i32, <span class="number">32</span>, <span class="number">32</span>, <span class="number">4</span>);
+	<span class="comment">// TODO add here if needed
 
-	<span class="macro">ik_reader!</span>(<span class="ident">read_i8</span>, <span class="ident">i8</span>, <span class="number">8</span>, <span class="number">8</span>, <span class="number">1</span>);
-	<span class="macro">ik_reader!</span>(<span class="ident">read_i7</span>, <span class="ident">i8</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">0</span>);
-	<span class="comment">// TODO add here if needed</span>
+	</span><span class="macro">ik_reader!</span>(read_i8, i8, <span class="number">8</span>, <span class="number">8</span>, <span class="number">1</span>);
+	<span class="macro">ik_reader!</span>(read_i7, i8, <span class="number">8</span>, <span class="number">7</span>, <span class="number">0</span>);
+	<span class="comment">// TODO add here if needed
 
-	<span class="comment">// Signed dynamic reader methods</span>
-	<span class="comment">// They panic if you give them invalid params</span>
-	<span class="comment">// (bit_num larger than maximum allowed bit number for the type)</span>
-	<span class="macro">ik_dynamic_reader!</span>(<span class="ident">read_dyn_i8</span>,  <span class="ident">i8</span>,  <span class="number">8</span>);
-	<span class="macro">ik_dynamic_reader!</span>(<span class="ident">read_dyn_i16</span>, <span class="ident">i16</span>, <span class="number">16</span>);
-	<span class="macro">ik_dynamic_reader!</span>(<span class="ident">read_dyn_i32</span>, <span class="ident">i32</span>, <span class="number">32</span>);
+	// Signed dynamic reader methods
+	// They panic if you give them invalid params
+	// (bit_num larger than maximum allowed bit number for the type)
+	</span><span class="macro">ik_dynamic_reader!</span>(read_dyn_i8,  i8,  <span class="number">8</span>);
+	<span class="macro">ik_dynamic_reader!</span>(read_dyn_i16, i16, <span class="number">16</span>);
+	<span class="macro">ik_dynamic_reader!</span>(read_dyn_i32, i32, <span class="number">32</span>);
 
-	<span class="comment">// Float reading methods</span>
+	<span class="comment">// Float reading methods
 
-	<span class="doccomment">/// Reads a single floating point number in the vorbis-float32 format</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_f32</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">f32</span>, ()&gt; {
-		<span class="kw">let</span> <span class="ident">val</span> = <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_u32</span>());
-		<span class="prelude-val">Ok</span>(<span class="ident">float32_unpack</span>(<span class="ident">val</span>))
+	</span><span class="doccomment">/// Reads a single floating point number in the vorbis-float32 format
+	</span><span class="kw">pub fn </span>read_f32(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;f32, ()&gt; {
+		<span class="kw">let </span>val = <span class="macro">try!</span>(<span class="self">self</span>.read_u32());
+		<span class="prelude-val">Ok</span>(float32_unpack(val))
 	}
 
-	<span class="doccomment">/// Peeks 8 bits of non read yet content without advancing the reader</span>
-	<span class="attribute">#[<span class="ident">inline</span>]</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">peek_u8</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u8</span>, ()&gt; {
-		<span class="macro">bpc_peek_body!</span>(<span class="ident">u8</span>, <span class="number">8</span>, <span class="number">1</span>, <span class="self">self</span>)
+	<span class="doccomment">/// Peeks 8 bits of non read yet content without advancing the reader
+	</span><span class="attribute">#[inline]</span>
+	<span class="kw">pub fn </span>peek_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8, ()&gt; {
+		<span class="macro">bpc_peek_body!</span>(u8, <span class="number">8</span>, <span class="number">1</span>, <span class="self">self</span>)
 	}
 
-	<span class="comment">// Advances the reader by the given number of bits (up to 8).</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">advance_dyn_u8</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">bit_num</span> :<span class="ident">u8</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
-		<span class="kw">let</span> <span class="ident">octet_num</span> :<span class="ident">usize</span> = (<span class="ident">bit_num</span> / <span class="number">8</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="kw">if</span> <span class="ident">bit_num</span> == <span class="number">0</span> {
-			<span class="comment">// TODO: one day let bpc_advance_body handle this,</span>
-			<span class="comment">// if its smartly doable in there.</span>
-			<span class="comment">// For why it is required, see comment in the</span>
-			<span class="comment">// test_bitpacking_reader_empty function.</span>
-			<span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+	<span class="comment">// Advances the reader by the given number of bits (up to 8).
+	</span><span class="kw">pub fn </span>advance_dyn_u8(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bit_num :u8) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+		<span class="kw">let </span>octet_num :usize = (bit_num / <span class="number">8</span>) <span class="kw">as </span>usize;
+		<span class="kw">if </span>bit_num == <span class="number">0 </span>{
+			<span class="comment">// TODO: one day let bpc_advance_body handle this,
+			// if its smartly doable in there.
+			// For why it is required, see comment in the
+			// test_bitpacking_reader_empty function.
+			</span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
 		}
-		<span class="macro">assert!</span>(<span class="ident">bit_num</span> &lt;= <span class="number">8</span>);
-		<span class="macro">bpc_advance_body!</span>(<span class="ident">bit_num</span>, <span class="ident">octet_num</span>, <span class="self">self</span>)
+		<span class="macro">assert!</span>(bit_num &lt;= <span class="number">8</span>);
+		<span class="macro">bpc_advance_body!</span>(bit_num, octet_num, <span class="self">self</span>)
 	}
 
-	<span class="doccomment">/// Reads a huffman word using the codebook abstraction</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_huffman</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">tree</span> :<span class="kw-2">&amp;</span><span class="ident">VorbisHuffmanTree</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u32</span>, ()&gt; {
-		<span class="comment">//let mut c :usize = 0;</span>
-		<span class="comment">//let mut w :usize = 0;</span>
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> = <span class="kw">match</span> <span class="self">self</span>.<span class="ident">peek_u8</span>() {
-			<span class="prelude-val">Ok</span>(<span class="ident">data</span>) =&gt; <span class="kw">match</span> <span class="ident">tree</span>.<span class="ident">lookup_peeked_data</span>(<span class="number">8</span>, <span class="ident">data</span> <span class="kw">as</span> <span class="ident">u32</span>) {
-				<span class="ident">PeekedDataLookupResult::Iter</span>(<span class="ident">advance</span>, <span class="ident">iter</span>) =&gt; {
-					<span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">advance_dyn_u8</span>(<span class="ident">advance</span>));
-					<span class="ident">iter</span>
+	<span class="doccomment">/// Reads a huffman word using the codebook abstraction
+	</span><span class="kw">pub fn </span>read_huffman(<span class="kw-2">&amp;mut </span><span class="self">self</span>, tree :<span class="kw-2">&amp;</span>VorbisHuffmanTree) -&gt; <span class="prelude-ty">Result</span>&lt;u32, ()&gt; {
+		<span class="comment">//let mut c :usize = 0;
+		//let mut w :usize = 0;
+		</span><span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="kw">match </span><span class="self">self</span>.peek_u8() {
+			<span class="prelude-val">Ok</span>(data) =&gt; <span class="kw">match </span>tree.lookup_peeked_data(<span class="number">8</span>, data <span class="kw">as </span>u32) {
+				PeekedDataLookupResult::Iter(advance, iter) =&gt; {
+					<span class="macro">try!</span>(<span class="self">self</span>.advance_dyn_u8(advance));
+					iter
 				},
-				<span class="ident">PeekedDataLookupResult::PayloadFound</span>(<span class="ident">advance</span>, <span class="ident">payload</span>) =&gt; {
-					<span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">advance_dyn_u8</span>(<span class="ident">advance</span>));
-					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">payload</span>);
+				PeekedDataLookupResult::PayloadFound(advance, payload) =&gt; {
+					<span class="macro">try!</span>(<span class="self">self</span>.advance_dyn_u8(advance));
+					<span class="kw">return </span><span class="prelude-val">Ok</span>(payload);
 				},
 			},
-			<span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="ident">tree</span>.<span class="ident">iter</span>(),
+			<span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; tree.iter(),
 		};
 
-		<span class="kw">loop</span> {
-			<span class="kw">let</span> <span class="ident">b</span> = <span class="macro">try!</span>(<span class="self">self</span>.<span class="ident">read_bit_flag</span>());
+		<span class="kw">loop </span>{
+			<span class="kw">let </span>b = <span class="macro">try!</span>(<span class="self">self</span>.read_bit_flag());
 			<span class="comment">/*
 			c +=1;
 			w &gt;&gt;= 1;
 			w |= (b as usize) &lt;&lt; 63;
 			// Put this into the Some arm of the match below in order to debug:
 			{print!(&quot;({}:{}:{}) &quot;, w &gt;&gt; (64 - c), v, c); }
-			// */</span>
-			<span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>(<span class="ident">b</span>) {
-				<span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">v</span>),
-				<span class="prelude-val">None</span> =&gt; (),
+			// */
+			</span><span class="kw">match </span>iter.next(b) {
+				<span class="prelude-val">Some</span>(v) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(v),
+				<span class="prelude-val">None </span>=&gt; (),
 			}
 		}
 	}
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_bitpacking_reader_static</span>() {
-	<span class="comment">// Test vectors taken from Vorbis I spec, section 2.1.6</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u4</span>().<span class="ident">unwrap</span>(),  <span class="number">12</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u3</span>().<span class="ident">unwrap</span>(),  <span class="number">7</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u7</span>().<span class="ident">unwrap</span>(),  <span class="number">17</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u13</span>().<span class="ident">unwrap</span>(), <span class="number">6969</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_bitpacking_reader_static() {
+	<span class="comment">// Test vectors taken from Vorbis I spec, section 2.1.6
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_u4().unwrap(),  <span class="number">12</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u3().unwrap(),  <span class="number">7</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u7().unwrap(),  <span class="number">17</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u13().unwrap(), <span class="number">6969</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_bitpacking_reader_dynamic</span>() {
-	<span class="comment">// Test vectors taken from Vorbis I spec, section 2.1.6</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">4</span>).<span class="ident">unwrap</span>(),   <span class="number">12</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">3</span>).<span class="ident">unwrap</span>(),   <span class="number">7</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">7</span>).<span class="ident">unwrap</span>(),  <span class="number">17</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">13</span>).<span class="ident">unwrap</span>(), <span class="number">6969</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_bitpacking_reader_dynamic() {
+	<span class="comment">// Test vectors taken from Vorbis I spec, section 2.1.6
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">4</span>).unwrap(),   <span class="number">12</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">3</span>).unwrap(),   <span class="number">7</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">7</span>).unwrap(),  <span class="number">17</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">13</span>).unwrap(), <span class="number">6969</span>);
 
-	<span class="comment">// Regression test for bug</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">93</span>, <span class="number">92</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u32</span>(<span class="number">10</span>).<span class="ident">unwrap</span>(), <span class="number">93</span>);
+	<span class="comment">// Regression test for bug
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">93</span>, <span class="number">92</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u32(<span class="number">10</span>).unwrap(), <span class="number">93</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_bitpacking_reader_empty</span>() {
-	<span class="comment">// Same as the normal bitpacking test</span>
-	<span class="comment">// but with some additional empty reads.</span>
-	<span class="comment">//</span>
-	<span class="comment">// This is expected to happen by the vorbis spec.</span>
-	<span class="comment">// For example, the mode_number read in the audio packet</span>
-	<span class="comment">// decode at first position may be 0 bit long (if there</span>
-	<span class="comment">// is only one mode, ilog([vorbis_mode_count] - 1) is zero).</span>
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_bitpacking_reader_empty() {
+	<span class="comment">// Same as the normal bitpacking test
+	// but with some additional empty reads.
+	//
+	// This is expected to happen by the vorbis spec.
+	// For example, the mode_number read in the audio packet
+	// decode at first position may be 0 bit long (if there
+	// is only one mode, ilog([vorbis_mode_count] - 1) is zero).
 
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">4</span>).<span class="ident">unwrap</span>(),   <span class="number">12</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">3</span>).<span class="ident">unwrap</span>(),   <span class="number">7</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">7</span>).<span class="ident">unwrap</span>(),  <span class="number">17</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">13</span>).<span class="ident">unwrap</span>(), <span class="number">6969</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u16</span>(<span class="number">0</span>).<span class="ident">unwrap</span>(),   <span class="number">0</span>);
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0b11111100</span>, <span class="number">0b01001000</span>, <span class="number">0b11001110</span>, <span class="number">0b00000110</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">4</span>).unwrap(),   <span class="number">12</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">3</span>).unwrap(),   <span class="number">7</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">7</span>).unwrap(),  <span class="number">17</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">13</span>).unwrap(), <span class="number">6969</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u16(<span class="number">0</span>).unwrap(),   <span class="number">0</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_bitpacking_reader_byte_aligned</span>() {
-	<span class="comment">// Check that bitpacking readers work with &quot;normal&quot; byte aligned types:</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u32</span>(<span class="number">32</span>).<span class="ident">unwrap</span>(), <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_dyn_u8</span>(<span class="number">8</span>).<span class="ident">unwrap</span>(),   <span class="number">1</span>);
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_bitpacking_reader_byte_aligned() {
+	<span class="comment">// Check that bitpacking readers work with &quot;normal&quot; byte aligned types:
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u32(<span class="number">32</span>).unwrap(), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_dyn_u8(<span class="number">8</span>).unwrap(),   <span class="number">1</span>);
 
-	<span class="comment">// We not just check here whether it works for byte aligned</span>
-	<span class="comment">// &quot;normal&quot; (non-dynamic) reader methods, we also check</span>
-	<span class="comment">// whether, after reading first one, then seven bits,</span>
-	<span class="comment">// it &quot;gets back&quot; to byte alignment (and increases the byte ctr)</span>
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x09</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u1</span>().<span class="ident">unwrap</span>(), <span class="number">1</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u7</span>().<span class="ident">unwrap</span>(), <span class="number">4</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_i8</span>().<span class="ident">unwrap</span>(), <span class="number">2</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u32</span>().<span class="ident">unwrap</span>(), <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u8</span>().<span class="ident">unwrap</span>(), <span class="number">1</span>);
+	<span class="comment">// We not just check here whether it works for byte aligned
+	// &quot;normal&quot; (non-dynamic) reader methods, we also check
+	// whether, after reading first one, then seven bits,
+	// it &quot;gets back&quot; to byte alignment (and increases the byte ctr)
+	</span><span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0x09</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	<span class="macro">assert_eq!</span>(cur.read_u1().unwrap(), <span class="number">1</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u7().unwrap(), <span class="number">4</span>);
+	<span class="macro">assert_eq!</span>(cur.read_i8().unwrap(), <span class="number">2</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u32().unwrap(), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u8().unwrap(), <span class="number">1</span>);
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_capture_pattern_nonaligned</span>() {
-	<span class="comment">// Regression test from test OGG file</span>
-	<span class="comment">// Tests for proper codebook capture</span>
-	<span class="comment">// pattern reading.</span>
-	<span class="comment">//</span>
-	<span class="comment">// The OGG vorbis capture pattern</span>
-	<span class="comment">// is a three octet (24 bits) value.</span>
-	<span class="comment">//</span>
-	<span class="comment">// The first block tests capture pattern</span>
-	<span class="comment">// reading in a byte aligned scenario.</span>
-	<span class="comment">// The actually problematic part was</span>
-	<span class="comment">// the second block: it tests capture</span>
-	<span class="comment">// pattern reading in a non-aligned</span>
-	<span class="comment">// situation.</span>
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_capture_pattern_nonaligned() {
+	<span class="comment">// Regression test from test OGG file
+	// Tests for proper codebook capture
+	// pattern reading.
+	//
+	// The OGG vorbis capture pattern
+	// is a three octet (24 bits) value.
+	//
+	// The first block tests capture pattern
+	// reading in a byte aligned scenario.
+	// The actually problematic part was
+	// the second block: it tests capture
+	// pattern reading in a non-aligned
+	// situation.
 
-	<span class="kw">let</span> <span class="ident">capture_pattern_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x42</span>, <span class="number">0x43</span>, <span class="number">0x56</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">capture_pattern_arr</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u24</span>().<span class="ident">unwrap</span>(), <span class="number">0x564342</span>);
+	</span><span class="kw">let </span>capture_pattern_arr = <span class="kw-2">&amp;</span>[<span class="number">0x42</span>, <span class="number">0x43</span>, <span class="number">0x56</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(capture_pattern_arr);
+	<span class="macro">assert_eq!</span>(cur.read_u24().unwrap(), <span class="number">0x564342</span>);
 
-	<span class="kw">let</span> <span class="ident">test_arr</span> = <span class="kw-2">&amp;</span>[<span class="number">0x28</span>, <span class="number">0x81</span>, <span class="number">0xd0</span>, <span class="number">0x90</span>, <span class="number">0x55</span>, <span class="number">0x00</span>, <span class="number">0x00</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> = <span class="ident">BitpackCursor::new</span>(<span class="ident">test_arr</span>);
-	<span class="ident">cur</span>.<span class="ident">read_u5</span>().<span class="ident">unwrap</span>(); <span class="comment">// some value we are not interested in</span>
-	<span class="ident">cur</span>.<span class="ident">read_u5</span>().<span class="ident">unwrap</span>(); <span class="comment">// some value we are not interested in</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u4</span>().<span class="ident">unwrap</span>(), <span class="number">0</span>);
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u24</span>().<span class="ident">unwrap</span>(), <span class="number">0x564342</span>);
-	<span class="comment">// Ensure that we incremented by only three bytes, not four</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">cur</span>.<span class="ident">read_u16</span>().<span class="ident">unwrap</span>(), <span class="number">1</span>);
+	<span class="kw">let </span>test_arr = <span class="kw-2">&amp;</span>[<span class="number">0x28</span>, <span class="number">0x81</span>, <span class="number">0xd0</span>, <span class="number">0x90</span>, <span class="number">0x55</span>, <span class="number">0x00</span>, <span class="number">0x00</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>cur = BitpackCursor::new(test_arr);
+	cur.read_u5().unwrap(); <span class="comment">// some value we are not interested in
+	</span>cur.read_u5().unwrap(); <span class="comment">// some value we are not interested in
+	</span><span class="macro">assert_eq!</span>(cur.read_u4().unwrap(), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>(cur.read_u24().unwrap(), <span class="number">0x564342</span>);
+	<span class="comment">// Ensure that we incremented by only three bytes, not four
+	</span><span class="macro">assert_eq!</span>(cur.read_u16().unwrap(), <span class="number">1</span>);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

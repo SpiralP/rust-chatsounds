@@ -45,52 +45,52 @@
 <span id="45">45</span>
 <span id="46">46</span>
 <span id="47">47</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">parse_args</span>, <span class="ident">ModifierTrait</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::BoxSource</span>;
-<span class="kw">use</span> <span class="ident">nom</span>::{<span class="ident">branch::alt</span>, <span class="ident">bytes::complete::tag</span>, <span class="ident">IResult</span>};
-<span class="kw">use</span> <span class="ident">rodio::Source</span>;
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::{parse_args, ModifierTrait};
+<span class="kw">use </span><span class="kw">crate</span>::BoxSource;
+<span class="kw">use </span>nom::{branch::alt, bytes::complete::tag, IResult};
+<span class="kw">use </span>rodio::Source;
+<span class="kw">use </span>std::time::Duration;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EchoModifier</span> {
-    <span class="doccomment">/// in seconds</span>
-    <span class="kw">pub</span> <span class="ident">duration</span>: <span class="ident">f32</span>,
-    <span class="kw">pub</span> <span class="ident">amplitude</span>: <span class="ident">f32</span>,
+<span class="attribute">#[derive(Debug, PartialEq)]</span>
+<span class="kw">pub struct </span>EchoModifier {
+    <span class="doccomment">/// in seconds
+    </span><span class="kw">pub </span>duration: f32,
+    <span class="kw">pub </span>amplitude: f32,
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">EchoModifier</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">duration</span>: <span class="number">0.25</span>,
-            <span class="ident">amplitude</span>: <span class="number">0.25</span>,
+<span class="kw">impl </span>Default <span class="kw">for </span>EchoModifier {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            duration: <span class="number">0.25</span>,
+            amplitude: <span class="number">0.25</span>,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ModifierTrait</span> <span class="kw">for</span> <span class="ident">EchoModifier</span> {
-    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">IResult</span>&lt;<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="self">Self</span>&gt; {
-        <span class="comment">// input = &quot;echo(2)&quot;</span>
+<span class="kw">impl </span>ModifierTrait <span class="kw">for </span>EchoModifier {
+    <span class="kw">fn </span>parse(input: <span class="kw-2">&amp;</span>str) -&gt; IResult&lt;<span class="kw-2">&amp;</span>str, <span class="self">Self</span>&gt; {
+        <span class="comment">// input = &quot;echo(2)&quot;
 
-        <span class="kw">let</span> (<span class="ident">input</span>, <span class="kw">_</span>) = <span class="ident">alt</span>((<span class="ident">tag</span>(<span class="string">&quot;echo&quot;</span>), <span class="ident">tag</span>(<span class="string">&quot;reverb&quot;</span>)))(<span class="ident">input</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">args</span>) = <span class="ident">parse_args</span>(<span class="ident">input</span>)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>(input, <span class="kw">_</span>) = alt((tag(<span class="string">&quot;echo&quot;</span>), tag(<span class="string">&quot;reverb&quot;</span>)))(input)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(input, args) = parse_args(input)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">modifier</span> = <span class="ident">EchoModifier::default</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>modifier = EchoModifier::default();
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">duration</span>) = <span class="ident">args</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">copied</span>().<span class="ident">unwrap_or</span>(<span class="prelude-val">None</span>) {
-            <span class="ident">modifier</span>.<span class="ident">duration</span> = <span class="ident">duration</span>.<span class="ident">max</span>(<span class="number">0.0</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(duration) = args.get(<span class="number">0</span>).copied().unwrap_or(<span class="prelude-val">None</span>) {
+            modifier.duration = duration.max(<span class="number">0.0</span>);
         }
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">amplitude</span>) = <span class="ident">args</span>.<span class="ident">get</span>(<span class="number">1</span>).<span class="ident">copied</span>().<span class="ident">unwrap_or</span>(<span class="prelude-val">None</span>) {
-            <span class="ident">modifier</span>.<span class="ident">amplitude</span> = <span class="ident">amplitude</span>.<span class="ident">max</span>(<span class="number">0.0</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(amplitude) = args.get(<span class="number">1</span>).copied().unwrap_or(<span class="prelude-val">None</span>) {
+            modifier.amplitude = amplitude.max(<span class="number">0.0</span>);
         }
 
-        <span class="prelude-val">Ok</span>((<span class="ident">input</span>, <span class="ident">modifier</span>))
+        <span class="prelude-val">Ok</span>((input, modifier))
     }
 
-    <span class="kw">fn</span> <span class="ident">modify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">BoxSource</span>) -&gt; <span class="ident">BoxSource</span> {
-        <span class="kw">let</span> <span class="ident">duration</span> = <span class="ident">Duration::from_secs_f32</span>(<span class="self">self</span>.<span class="ident">duration</span>);
-        <span class="ident">Box::new</span>(<span class="ident">source</span>.<span class="ident">buffered</span>().<span class="ident">reverb</span>(<span class="ident">duration</span>, <span class="self">self</span>.<span class="ident">amplitude</span>))
+    <span class="kw">fn </span>modify(<span class="kw-2">&amp;</span><span class="self">self</span>, source: BoxSource) -&gt; BoxSource {
+        <span class="kw">let </span>duration = Duration::from_secs_f32(<span class="self">self</span>.duration);
+        Box::new(source.buffered().reverb(duration, <span class="self">self</span>.amplitude))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

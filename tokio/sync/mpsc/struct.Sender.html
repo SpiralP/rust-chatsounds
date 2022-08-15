@@ -25,23 +25,23 @@ complete in the order they were requested.  Cancelling a call to
 <p>In the following example, each call to <code>send</code> will block until the
 previously sent value was received.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="kw">_</span>) = <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">i</span>).<span class="kw">await</span> {
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) = tx.send(i).<span class="kw">await </span>{
                 <span class="macro">println!</span>(<span class="string">&quot;receiver dropped&quot;</span>);
                 <span class="kw">return</span>;
             }
         }
     });
 
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-        <span class="macro">println!</span>(<span class="string">&quot;got = {}&quot;</span>, <span class="ident">i</span>);
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(i) = rx.recv().<span class="kw">await </span>{
+        <span class="macro">println!</span>(<span class="string">&quot;got = {}&quot;</span>, i);
     }
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#477-479">source</a></span><h4 class="code-header">pub async fn <a href="#method.closed" class="fnname">closed</a>(&amp;self)</h4></section></summary><div class="docblock"><p>Completes when the receiver has dropped.</p>
@@ -51,25 +51,25 @@ values is canceled and immediately stop doing work.</p>
 <p>This method is cancel safe. Once the channel is closed, it stays closed
 forever and all future calls to <code>closed</code> will return immediately.</p>
 <h5 id="examples-1"><a href="#examples-1">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx1</span>, <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>::&lt;()&gt;(<span class="number">1</span>);
-    <span class="kw">let</span> <span class="ident">tx2</span> = <span class="ident">tx1</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">tx3</span> = <span class="ident">tx1</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">tx4</span> = <span class="ident">tx1</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">tx5</span> = <span class="ident">tx1</span>.<span class="ident">clone</span>();
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">drop</span>(<span class="ident">rx</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx1, rx) = mpsc::channel::&lt;()&gt;(<span class="number">1</span>);
+    <span class="kw">let </span>tx2 = tx1.clone();
+    <span class="kw">let </span>tx3 = tx1.clone();
+    <span class="kw">let </span>tx4 = tx1.clone();
+    <span class="kw">let </span>tx5 = tx1.clone();
+    tokio::spawn(<span class="kw">async move </span>{
+        drop(rx);
     });
 
     <span class="macro">futures::join!</span>(
-        <span class="ident">tx1</span>.<span class="ident">closed</span>(),
-        <span class="ident">tx2</span>.<span class="ident">closed</span>(),
-        <span class="ident">tx3</span>.<span class="ident">closed</span>(),
-        <span class="ident">tx4</span>.<span class="ident">closed</span>(),
-        <span class="ident">tx5</span>.<span class="ident">closed</span>()
+        tx1.closed(),
+        tx2.closed(),
+        tx3.closed(),
+        tx4.closed(),
+        tx5.closed()
     );
     <span class="macro">println!</span>(<span class="string">&quot;Receiver dropped&quot;</span>);
 }</code></pre></div>
@@ -86,37 +86,37 @@ error is returned.</p>
 being called or the <a href="struct.Receiver.html" title="Receiver"><code>Receiver</code></a> handle dropping, the function returns
 an error. The error includes the value passed to <code>send</code>.</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="comment">// Create a channel with buffer size 1</span>
-    <span class="kw">let</span> (<span class="ident">tx1</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
-    <span class="kw">let</span> <span class="ident">tx2</span> = <span class="ident">tx1</span>.<span class="ident">clone</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="comment">// Create a channel with buffer size 1
+    </span><span class="kw">let </span>(tx1, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
+    <span class="kw">let </span>tx2 = tx1.clone();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="ident">tx1</span>.<span class="ident">send</span>(<span class="number">1</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="ident">tx1</span>.<span class="ident">send</span>(<span class="number">2</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="comment">// task waits until the receiver receives a value.</span>
+    tokio::spawn(<span class="kw">async move </span>{
+        tx1.send(<span class="number">1</span>).<span class="kw">await</span>.unwrap();
+        tx1.send(<span class="number">2</span>).<span class="kw">await</span>.unwrap();
+        <span class="comment">// task waits until the receiver receives a value.
+    </span>});
+
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="comment">// This will return an error and send
+        // no message if the buffer is full
+        </span><span class="kw">let _ </span>= tx2.try_send(<span class="number">3</span>);
     });
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="comment">// This will return an error and send</span>
-        <span class="comment">// no message if the buffer is full</span>
-        <span class="kw">let</span> <span class="kw">_</span> = <span class="ident">tx2</span>.<span class="ident">try_send</span>(<span class="number">3</span>);
-    });
+    <span class="kw">let </span><span class="kw-2">mut </span>msg;
+    msg = rx.recv().<span class="kw">await</span>.unwrap();
+    <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, msg);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">msg</span>;
-    <span class="ident">msg</span> = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, <span class="ident">msg</span>);
+    msg = rx.recv().<span class="kw">await</span>.unwrap();
+    <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, msg);
 
-    <span class="ident">msg</span> = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, <span class="ident">msg</span>);
-
-    <span class="comment">// Third message may have never been sent</span>
-    <span class="kw">match</span> <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">msg</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, <span class="ident">msg</span>),
-        <span class="prelude-val">None</span> =&gt; <span class="macro">println!</span>(<span class="string">&quot;the third message was never sent&quot;</span>),
+    <span class="comment">// Third message may have never been sent
+    </span><span class="kw">match </span>rx.recv().<span class="kw">await </span>{
+        <span class="prelude-val">Some</span>(msg) =&gt; <span class="macro">println!</span>(<span class="string">&quot;message {} received&quot;</span>, msg),
+        <span class="prelude-val">None </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;the third message was never sent&quot;</span>),
     }
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.send_timeout" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#603-620">source</a></span><h4 class="code-header">pub async fn <a href="#method.send_timeout" class="fnname">send_timeout</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self,<br>&nbsp;&nbsp;&nbsp;&nbsp;value: T,<br>&nbsp;&nbsp;&nbsp;&nbsp;timeout: <a class="struct" href="https://doc.rust-lang.org/nightly/core/time/struct.Duration.html" title="struct core::time::Duration">Duration</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="error/enum.SendTimeoutError.html" title="enum tokio::sync::mpsc::error::SendTimeoutError">SendTimeoutError</a>&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Sends a value, waiting until there is capacity, but only for a limited time.</p>
@@ -134,25 +134,25 @@ runtime <a href="../../runtime/struct.Builder.html#method.enable_time">with time
 <p>In the following example, each call to <code>send_timeout</code> will block until the
 previously sent value was received, unless the timeout has elapsed.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
-<span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="ident">sleep</span>, <span class="ident">Duration</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
+<span class="kw">use </span>tokio::time::{sleep, Duration};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) = <span class="ident">tx</span>.<span class="ident">send_timeout</span>(<span class="ident">i</span>, <span class="ident">Duration::from_millis</span>(<span class="number">100</span>)).<span class="kw">await</span> {
-                <span class="macro">println!</span>(<span class="string">&quot;send error: #{:?}&quot;</span>, <span class="ident">e</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = tx.send_timeout(i, Duration::from_millis(<span class="number">100</span>)).<span class="kw">await </span>{
+                <span class="macro">println!</span>(<span class="string">&quot;send error: #{:?}&quot;</span>, e);
                 <span class="kw">return</span>;
             }
         }
     });
 
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>) = <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span> {
-        <span class="macro">println!</span>(<span class="string">&quot;got = {}&quot;</span>, <span class="ident">i</span>);
-        <span class="ident">sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">200</span>)).<span class="kw">await</span>;
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(i) = rx.recv().<span class="kw">await </span>{
+        <span class="macro">println!</span>(<span class="string">&quot;got = {}&quot;</span>, i);
+        sleep(Duration::from_millis(<span class="number">200</span>)).<span class="kw">await</span>;
     }
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.blocking_send" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#657-659">source</a></span><h4 class="code-header">pub fn <a href="#method.blocking_send" class="fnname">blocking_send</a>(&amp;self, value: T) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="struct" href="error/struct.SendError.html" title="struct tokio::sync::mpsc::error::SendError">SendError</a>&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Blocking send to call outside of asynchronous contexts.</p>
@@ -163,35 +163,35 @@ receiver is not using <a href="struct.Receiver.html#method.blocking_recv"><code>
 <p>This function panics if called within an asynchronous execution
 context.</p>
 <h5 id="examples-4"><a href="#examples-4">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::thread</span>;
-<span class="kw">use</span> <span class="ident">tokio::runtime::Runtime</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::thread;
+<span class="kw">use </span>tokio::runtime::Runtime;
+<span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>::&lt;<span class="ident">u8</span>&gt;(<span class="number">1</span>);
+<span class="kw">fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel::&lt;u8&gt;(<span class="number">1</span>);
 
-    <span class="kw">let</span> <span class="ident">sync_code</span> = <span class="ident">thread::spawn</span>(<span class="kw">move</span> || {
-        <span class="ident">tx</span>.<span class="ident">blocking_send</span>(<span class="number">10</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>sync_code = thread::spawn(<span class="kw">move </span>|| {
+        tx.blocking_send(<span class="number">10</span>).unwrap();
     });
 
-    <span class="ident">Runtime::new</span>().<span class="ident">unwrap</span>().<span class="ident">block_on</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">10</span>), <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>);
+    Runtime::new().unwrap().block_on(<span class="kw">async move </span>{
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">10</span>), rx.recv().<span class="kw">await</span>);
     });
-    <span class="ident">sync_code</span>.<span class="ident">join</span>().<span class="ident">unwrap</span>()
+    sync_code.join().unwrap()
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.is_closed" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#679-681">source</a></span><h4 class="code-header">pub fn <a href="#method.is_closed" class="fnname">is_closed</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks if the channel has been closed. This happens when the
 <a href="struct.Receiver.html"><code>Receiver</code></a> is dropped, or when the <a href="struct.Receiver.html#method.close"><code>Receiver::close</code></a> method is
 called.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">tokio::sync::mpsc::channel</span>::&lt;()&gt;(<span class="number">42</span>);
-<span class="macro">assert!</span>(!<span class="ident">tx</span>.<span class="ident">is_closed</span>());
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>(tx, rx) = tokio::sync::mpsc::channel::&lt;()&gt;(<span class="number">42</span>);
+<span class="macro">assert!</span>(!tx.is_closed());
 
-<span class="kw">let</span> <span class="ident">tx2</span> = <span class="ident">tx</span>.<span class="ident">clone</span>();
-<span class="macro">assert!</span>(!<span class="ident">tx2</span>.<span class="ident">is_closed</span>());
+<span class="kw">let </span>tx2 = tx.clone();
+<span class="macro">assert!</span>(!tx2.is_closed());
 
-<span class="ident">drop</span>(<span class="ident">rx</span>);
-<span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">is_closed</span>());
-<span class="macro">assert!</span>(<span class="ident">tx2</span>.<span class="ident">is_closed</span>());</code></pre></div>
+drop(rx);
+<span class="macro">assert!</span>(tx.is_closed());
+<span class="macro">assert!</span>(tx2.is_closed());</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.reserve" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#727-730">source</a></span><h4 class="code-header">pub async fn <a href="#method.reserve" class="fnname">reserve</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.Permit.html" title="struct tokio::sync::mpsc::Permit">Permit</a>&lt;'_, T&gt;, <a class="struct" href="error/struct.SendError.html" title="struct tokio::sync::mpsc::error::SendError">SendError</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Waits for channel capacity. Once capacity to send one message is
 available, it is reserved for the caller.</p>
 <p>If the channel is full, the function waits for the number of unreceived
@@ -206,24 +206,24 @@ to the channel.</p>
 complete in the order they were requested.  Cancelling a call to
 <code>reserve</code> makes you lose your place in the queue.</p>
 <h5 id="examples-5"><a href="#examples-5">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="comment">// Reserve capacity</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">reserve</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// Reserve capacity
+    </span><span class="kw">let </span>permit = tx.reserve().<span class="kw">await</span>.unwrap();
 
-    <span class="comment">// Trying to send directly on the `tx` will fail due to no</span>
-    <span class="comment">// available capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="number">123</span>).<span class="ident">is_err</span>());
+    <span class="comment">// Trying to send directly on the `tx` will fail due to no
+    // available capacity.
+    </span><span class="macro">assert!</span>(tx.try_send(<span class="number">123</span>).is_err());
 
-    <span class="comment">// Sending on the permit succeeds</span>
-    <span class="ident">permit</span>.<span class="ident">send</span>(<span class="number">456</span>);
+    <span class="comment">// Sending on the permit succeeds
+    </span>permit.send(<span class="number">456</span>);
 
-    <span class="comment">// The value sent on the permit is received</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">456</span>);
+    <span class="comment">// The value sent on the permit is received
+    </span><span class="macro">assert_eq!</span>(rx.recv().<span class="kw">await</span>.unwrap(), <span class="number">456</span>);
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.reserve_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#812-817">source</a></span><h4 class="code-header">pub async fn <a href="#method.reserve_owned" class="fnname">reserve_owned</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedPermit.html" title="struct tokio::sync::mpsc::OwnedPermit">OwnedPermit</a>&lt;T&gt;, <a class="struct" href="error/struct.SendError.html" title="struct tokio::sync::mpsc::error::SendError">SendError</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Waits for channel capacity, moving the <code>Sender</code> and returning an owned
 permit. Once capacity to send one message is available, it is reserved
@@ -249,46 +249,46 @@ complete in the order they were requested.  Cancelling a call to
 <h5 id="examples-6"><a href="#examples-6">Examples</a></h5>
 <p>Sending a message using an <a href="struct.OwnedPermit.html"><code>OwnedPermit</code></a>:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="comment">// Reserve capacity, moving the sender.</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">reserve_owned</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// Reserve capacity, moving the sender.
+    </span><span class="kw">let </span>permit = tx.reserve_owned().<span class="kw">await</span>.unwrap();
 
-    <span class="comment">// Send a message, consuming the permit and returning</span>
-    <span class="comment">// the moved sender.</span>
-    <span class="kw">let</span> <span class="ident">tx</span> = <span class="ident">permit</span>.<span class="ident">send</span>(<span class="number">123</span>);
+    <span class="comment">// Send a message, consuming the permit and returning
+    // the moved sender.
+    </span><span class="kw">let </span>tx = permit.send(<span class="number">123</span>);
 
-    <span class="comment">// The value sent on the permit is received.</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">123</span>);
+    <span class="comment">// The value sent on the permit is received.
+    </span><span class="macro">assert_eq!</span>(rx.recv().<span class="kw">await</span>.unwrap(), <span class="number">123</span>);
 
-    <span class="comment">// The sender can now be used again.</span>
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">456</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// The sender can now be used again.
+    </span>tx.send(<span class="number">456</span>).<span class="kw">await</span>.unwrap();
 }</code></pre></div>
 <p>When multiple <a href="struct.OwnedPermit.html"><code>OwnedPermit</code></a>s are needed, or the sender cannot be moved
 by value, it can be inexpensively cloned before calling <code>reserve_owned</code>:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="comment">// Clone the sender and reserve capacity.</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">clone</span>().<span class="ident">reserve_owned</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="comment">// Clone the sender and reserve capacity.
+    </span><span class="kw">let </span>permit = tx.clone().reserve_owned().<span class="kw">await</span>.unwrap();
 
-    <span class="comment">// Trying to send directly on the `tx` will fail due to no</span>
-    <span class="comment">// available capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="number">123</span>).<span class="ident">is_err</span>());
+    <span class="comment">// Trying to send directly on the `tx` will fail due to no
+    // available capacity.
+    </span><span class="macro">assert!</span>(tx.try_send(<span class="number">123</span>).is_err());
 
-    <span class="comment">// Sending on the permit succeeds.</span>
-    <span class="ident">permit</span>.<span class="ident">send</span>(<span class="number">456</span>);
+    <span class="comment">// Sending on the permit succeeds.
+    </span>permit.send(<span class="number">456</span>);
 
-    <span class="comment">// The value sent on the permit is received</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">456</span>);
+    <span class="comment">// The value sent on the permit is received
+    </span><span class="macro">assert_eq!</span>(rx.recv().<span class="kw">await</span>.unwrap(), <span class="number">456</span>);
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_reserve" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#869-877">source</a></span><h4 class="code-header">pub fn <a href="#method.try_reserve" class="fnname">try_reserve</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.Permit.html" title="struct tokio::sync::mpsc::Permit">Permit</a>&lt;'_, T&gt;, <a class="enum" href="error/enum.TrySendError.html" title="enum tokio::sync::mpsc::error::TrySendError">TrySendError</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire a slot in the channel without waiting for the slot to become
 available.</p>
@@ -299,28 +299,28 @@ to <a href="struct.Permit.html#method.send"><code>send</code></a> on the channel
 <p>Dropping <a href="struct.Permit.html"><code>Permit</code></a> without sending a message releases the capacity back
 to the channel.</p>
 <h5 id="examples-7"><a href="#examples-7">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="comment">// Reserve capacity</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">try_reserve</span>().<span class="ident">unwrap</span>();
+    <span class="comment">// Reserve capacity
+    </span><span class="kw">let </span>permit = tx.try_reserve().unwrap();
 
-    <span class="comment">// Trying to send directly on the `tx` will fail due to no</span>
-    <span class="comment">// available capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="number">123</span>).<span class="ident">is_err</span>());
+    <span class="comment">// Trying to send directly on the `tx` will fail due to no
+    // available capacity.
+    </span><span class="macro">assert!</span>(tx.try_send(<span class="number">123</span>).is_err());
 
-    <span class="comment">// Trying to reserve an additional slot on the `tx` will</span>
-    <span class="comment">// fail because there is no capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_reserve</span>().<span class="ident">is_err</span>());
+    <span class="comment">// Trying to reserve an additional slot on the `tx` will
+    // fail because there is no capacity.
+    </span><span class="macro">assert!</span>(tx.try_reserve().is_err());
 
-    <span class="comment">// Sending on the permit succeeds</span>
-    <span class="ident">permit</span>.<span class="ident">send</span>(<span class="number">456</span>);
+    <span class="comment">// Sending on the permit succeeds
+    </span>permit.send(<span class="number">456</span>);
 
-    <span class="comment">// The value sent on the permit is received</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">456</span>);
+    <span class="comment">// The value sent on the permit is received
+    </span><span class="macro">assert_eq!</span>(rx.recv().<span class="kw">await</span>.unwrap(), <span class="number">456</span>);
 
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_reserve_owned" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#934-944">source</a></span><h4 class="code-header">pub fn <a href="#method.try_reserve_owned" class="fnname">try_reserve_owned</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.OwnedPermit.html" title="struct tokio::sync::mpsc::OwnedPermit">OwnedPermit</a>&lt;T&gt;, <a class="enum" href="error/enum.TrySendError.html" title="enum tokio::sync::mpsc::error::TrySendError">TrySendError</a>&lt;Self&gt;&gt;</h4></section></summary><div class="docblock"><p>Tries to acquire a slot in the channel without waiting for the slot to become
@@ -342,58 +342,58 @@ for the slot to become available.</p>
 <p>Dropping the <a href="struct.OwnedPermit.html"><code>OwnedPermit</code></a> without sending a message releases the capacity back
 to the channel.</p>
 <h5 id="examples-8"><a href="#examples-8">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>(<span class="number">1</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-    <span class="comment">// Reserve capacity</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">clone</span>().<span class="ident">try_reserve_owned</span>().<span class="ident">unwrap</span>();
+    <span class="comment">// Reserve capacity
+    </span><span class="kw">let </span>permit = tx.clone().try_reserve_owned().unwrap();
 
-    <span class="comment">// Trying to send directly on the `tx` will fail due to no</span>
-    <span class="comment">// available capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="number">123</span>).<span class="ident">is_err</span>());
+    <span class="comment">// Trying to send directly on the `tx` will fail due to no
+    // available capacity.
+    </span><span class="macro">assert!</span>(tx.try_send(<span class="number">123</span>).is_err());
 
-    <span class="comment">// Trying to reserve an additional slot on the `tx` will</span>
-    <span class="comment">// fail because there is no capacity.</span>
-    <span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">try_reserve</span>().<span class="ident">is_err</span>());
+    <span class="comment">// Trying to reserve an additional slot on the `tx` will
+    // fail because there is no capacity.
+    </span><span class="macro">assert!</span>(tx.try_reserve().is_err());
 
-    <span class="comment">// Sending on the permit succeeds</span>
-    <span class="ident">permit</span>.<span class="ident">send</span>(<span class="number">456</span>);
+    <span class="comment">// Sending on the permit succeeds
+    </span>permit.send(<span class="number">456</span>);
 
-    <span class="comment">// The value sent on the permit is received</span>
-    <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">456</span>);
+    <span class="comment">// The value sent on the permit is received
+    </span><span class="macro">assert_eq!</span>(rx.recv().<span class="kw">await</span>.unwrap(), <span class="number">456</span>);
 
 }</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.same_channel" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#958-960">source</a></span><h4 class="code-header">pub fn <a href="#method.same_channel" class="fnname">same_channel</a>(&amp;self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if senders belong to the same channel.</p>
 <h5 id="examples-9"><a href="#examples-9">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) = <span class="ident">tokio::sync::mpsc::channel</span>::&lt;()&gt;(<span class="number">1</span>);
-<span class="kw">let</span>  <span class="ident">tx2</span> = <span class="ident">tx</span>.<span class="ident">clone</span>();
-<span class="macro">assert!</span>(<span class="ident">tx</span>.<span class="ident">same_channel</span>(<span class="kw-2">&amp;</span><span class="ident">tx2</span>));
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>(tx, rx) = tokio::sync::mpsc::channel::&lt;()&gt;(<span class="number">1</span>);
+<span class="kw">let  </span>tx2 = tx.clone();
+<span class="macro">assert!</span>(tx.same_channel(<span class="kw-2">&amp;</span>tx2));
 
-<span class="kw">let</span> (<span class="ident">tx3</span>, <span class="ident">rx3</span>) = <span class="ident">tokio::sync::mpsc::channel</span>::&lt;()&gt;(<span class="number">1</span>);
-<span class="macro">assert!</span>(!<span class="ident">tx3</span>.<span class="ident">same_channel</span>(<span class="kw-2">&amp;</span><span class="ident">tx2</span>));</code></pre></div>
+<span class="kw">let </span>(tx3, rx3) = tokio::sync::mpsc::channel::&lt;()&gt;(<span class="number">1</span>);
+<span class="macro">assert!</span>(!tx3.same_channel(<span class="kw-2">&amp;</span>tx2));</code></pre></div>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.capacity" class="method has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#991-993">source</a></span><h4 class="code-header">pub fn <a href="#method.capacity" class="fnname">capacity</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Returns the current capacity of the channel.</p>
 <p>The capacity goes down when sending a value by calling <a href="struct.Sender.html#method.send"><code>send</code></a> or by reserving capacity
 with <a href="struct.Sender.html#method.reserve"><code>reserve</code></a>. The capacity goes up when values are received by the <a href="struct.Receiver.html" title="Receiver"><code>Receiver</code></a>.</p>
 <h5 id="examples-10"><a href="#examples-10">Examples</a></h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::mpsc;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">mpsc::channel</span>::&lt;()&gt;(<span class="number">5</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel::&lt;()&gt;(<span class="number">5</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">capacity</span>(), <span class="number">5</span>);
+    <span class="macro">assert_eq!</span>(tx.capacity(), <span class="number">5</span>);
 
-    <span class="comment">// Making a reservation drops the capacity by one.</span>
-    <span class="kw">let</span> <span class="ident">permit</span> = <span class="ident">tx</span>.<span class="ident">reserve</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">capacity</span>(), <span class="number">4</span>);
+    <span class="comment">// Making a reservation drops the capacity by one.
+    </span><span class="kw">let </span>permit = tx.reserve().<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(tx.capacity(), <span class="number">4</span>);
 
-    <span class="comment">// Sending and receiving a value increases the capacity by one.</span>
-    <span class="ident">permit</span>.<span class="ident">send</span>(());
-    <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">tx</span>.<span class="ident">capacity</span>(), <span class="number">5</span>);
+    <span class="comment">// Sending and receiving a value increases the capacity by one.
+    </span>permit.send(());
+    rx.recv().<span class="kw">await</span>.unwrap();
+    <span class="macro">assert_eq!</span>(tx.capacity(), <span class="number">5</span>);
 }</code></pre></div>
 </div></details></div></details></div><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><section id="impl-Clone-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#996-1002">source</a></span><a href="#impl-Clone-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.Sender.html" title="struct tokio::sync::mpsc::Sender">Sender</a>&lt;T&gt;</h3></section></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl has-srclink"><span class="rightside"><a class="srclink" href="../../../src/tokio/sync/mpsc/bounded.rs.html#997-1001">source</a></span><a href="#method.clone" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fnname">clone</a>(&amp;self) -&gt; Self</h4></section></summary><div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/clone.rs.html#132-134">source</a></span><a href="#method.clone_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from" class="fnname">clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</h4></section></summary><div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
@@ -412,4 +412,4 @@ with <a href="struct.Sender.html#method.reserve"><code>reserve</code></a>. The c
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#604">source</a></span><a href="#method.try_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#tymethod.try_from" class="fnname">try_from</a>(value: U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, &lt;T as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;U&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="impl has-srclink"><span class="rightside"><a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#583">source</a></span><a href="#impl-TryInto%3CU%3E-for-Sender%3CT%3E" class="anchor"></a><h3 class="code-header in-band">impl&lt;T, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html" title="trait core::convert::TryInto">TryInto</a>&lt;U&gt; for T <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;,&nbsp;</span></h3></section></summary><div class="impl-items"><details class="rustdoc-toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl has-srclink"><a href="#associatedtype.Error-1" class="anchor"></a><h4 class="code-header">type <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#associatedtype.Error" class="associatedtype">Error</a> = &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a></h4></section></summary><div class='docblock'><p>The type returned in the event of a conversion error.</p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl has-srclink"><span class="rightside"><span class="since" title="const unstable">const: <a href="https://github.com/rust-lang/rust/issues/88674" title="Tracking issue for const_convert">unstable</a></span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#589">source</a></span><a href="#method.try_into" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/convert/trait.TryInto.html#tymethod.try_into" class="fnname">try_into</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;U, &lt;U as <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html" title="trait core::convert::TryFrom">TryFrom</a>&lt;T&gt;&gt;::<a class="associatedtype" href="https://doc.rust-lang.org/nightly/core/convert/trait.TryFrom.html#associatedtype.Error" title="type core::convert::TryFrom::Error">Error</a>&gt;</h4></section></summary><div class='docblock'><p>Performs the conversion.</p>
-</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></div></details></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

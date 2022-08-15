@@ -75,82 +75,82 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">path::Path</span>, <span class="ident">sync::Arc</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{path::Path, sync::Arc};
 
-<span class="kw">use</span> <span class="ident">anyhow::Result</span>;
-<span class="kw">use</span> <span class="ident">bytes::Bytes</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">queue::SourcesQueueOutput</span>, <span class="ident">Decoder</span>, <span class="ident">Device</span>, <span class="ident">Sample</span>, <span class="ident">Sink</span>, <span class="ident">Source</span>, <span class="ident">SpatialSink</span>};
+<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>bytes::Bytes;
+<span class="kw">pub use </span>rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::cache::download</span>;
+<span class="kw">use </span><span class="kw">crate</span>::cache::download;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BoxSource</span> = <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">i16</span>&gt; + <span class="ident">Send</span>&gt;;
+<span class="kw">pub type </span>BoxSource = Box&lt;<span class="kw">dyn </span>Source&lt;Item = i16&gt; + Send&gt;;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Chatsound</span> {
-    <span class="comment">// Metastruct/garrysmod-chatsounds</span>
-    <span class="kw">pub</span> <span class="ident">repo</span>: <span class="ident">String</span>,
-    <span class="comment">// sound/chatsounds/autoadd</span>
-    <span class="kw">pub</span> <span class="ident">repo_path</span>: <span class="ident">String</span>,
-    <span class="comment">// 26e/nestetrismusic/1.ogg</span>
-    <span class="kw">pub</span> <span class="ident">sound_path</span>: <span class="ident">String</span>,
+<span class="attribute">#[derive(Clone)]</span>
+<span class="kw">pub struct </span>Chatsound {
+    <span class="comment">// Metastruct/garrysmod-chatsounds
+    </span><span class="kw">pub </span>repo: String,
+    <span class="comment">// sound/chatsounds/autoadd
+    </span><span class="kw">pub </span>repo_path: String,
+    <span class="comment">// 26e/nestetrismusic/1.ogg
+    </span><span class="kw">pub </span>sound_path: String,
 }
 
-<span class="kw">impl</span> <span class="ident">Chatsound</span> {
-    <span class="kw">fn</span> <span class="ident">get_url</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
+<span class="kw">impl </span>Chatsound {
+    <span class="kw">fn </span>get_url(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="macro">format!</span>(
             <span class="string">&quot;https://raw.githubusercontent.com/{}/HEAD/{}/{}&quot;</span>,
-            <span class="self">self</span>.<span class="ident">repo</span>, <span class="self">self</span>.<span class="ident">repo_path</span>, <span class="self">self</span>.<span class="ident">sound_path</span>
+            <span class="self">self</span>.repo, <span class="self">self</span>.repo_path, <span class="self">self</span>.sound_path
         )
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt; {
-        <span class="kw">let</span> <span class="ident">url</span> = <span class="self">self</span>.<span class="ident">get_url</span>();
-        <span class="ident">download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">cache_path</span>, <span class="bool-val">false</span>, |<span class="ident">bytes</span>| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))).<span class="kw">await</span>
-    }
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+    <span class="kw">pub async fn </span>load(<span class="kw-2">&amp;</span><span class="self">self</span>, cache_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Bytes&gt; {
+        <span class="kw">let </span>url = <span class="self">self</span>.get_url();
+        download(<span class="kw-2">&amp;</span>url, cache_path, <span class="bool-val">false</span>, |bytes| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(bytes))).<span class="kw">await
+    </span>}
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>))]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
+    <span class="kw">pub async fn </span>load(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">fs_memory</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::collections::HashMap</span>&lt;<span class="ident">String</span>, <span class="ident">Bytes</span>&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt; {
-        <span class="kw">let</span> <span class="ident">url</span> = <span class="self">self</span>.<span class="ident">get_url</span>();
-        <span class="prelude-val">Ok</span>(<span class="ident">download</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>, <span class="ident">fs_memory</span>, <span class="bool-val">false</span>, |<span class="ident">bytes</span>| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))).<span class="kw">await</span><span class="question-mark">?</span>)
+        fs_memory: <span class="kw-2">&amp;mut </span>std::collections::HashMap&lt;String, Bytes&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Bytes&gt; {
+        <span class="kw">let </span>url = <span class="self">self</span>.get_url();
+        <span class="prelude-val">Ok</span>(download(<span class="kw-2">&amp;</span>url, fs_memory, <span class="bool-val">false</span>, |bytes| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(bytes))).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ChatsoundsSink</span> {
-    <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
-    <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">f32</span>);
+<span class="kw">pub trait </span>ChatsoundsSink {
+    <span class="kw">fn </span>sleep_until_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    <span class="kw">fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    <span class="kw">fn </span>set_volume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, volume: f32);
 }
 
-<span class="kw">impl</span> <span class="ident">ChatsoundsSink</span> <span class="kw">for</span> <span class="ident">Arc</span>&lt;<span class="ident">Sink</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="ident">Sink::sleep_until_end</span>(<span class="self">self</span>)
+<span class="kw">impl </span>ChatsoundsSink <span class="kw">for </span>Arc&lt;Sink&gt; {
+    <span class="kw">fn </span>sleep_until_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        Sink::sleep_until_end(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="ident">Sink::stop</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        Sink::stop(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">f32</span>) {
-        <span class="ident">Sink::set_volume</span>(<span class="self">self</span>, <span class="ident">volume</span>)
+    <span class="kw">fn </span>set_volume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, volume: f32) {
+        Sink::set_volume(<span class="self">self</span>, volume)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ChatsoundsSink</span> <span class="kw">for</span> <span class="ident">Arc</span>&lt;<span class="ident">SpatialSink</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="ident">SpatialSink::sleep_until_end</span>(<span class="self">self</span>)
+<span class="kw">impl </span>ChatsoundsSink <span class="kw">for </span>Arc&lt;SpatialSink&gt; {
+    <span class="kw">fn </span>sleep_until_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        SpatialSink::sleep_until_end(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="ident">SpatialSink::stop</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        SpatialSink::stop(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">f32</span>) {
-        <span class="ident">SpatialSink::set_volume</span>(<span class="self">self</span>, <span class="ident">volume</span>)
+    <span class="kw">fn </span>set_volume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, volume: f32) {
+        SpatialSink::set_volume(<span class="self">self</span>, volume)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

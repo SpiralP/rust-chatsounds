@@ -29,36 +29,36 @@
 <span id="29">29</span>
 <span id="30">30</span>
 <span id="31">31</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="self">self</span>, <span class="ident">MutexGuard</span>, <span class="ident">TryLockError</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::sync::{<span class="self">self</span>, MutexGuard, TryLockError};
 
-<span class="doccomment">/// Adapter for `std::Mutex` that removes the poisoning aspects</span>
-<span class="doccomment">/// from its api.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Mutex</span>&lt;<span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>&gt;(<span class="ident">sync::Mutex</span>&lt;<span class="ident">T</span>&gt;);
+<span class="doccomment">/// Adapter for `std::Mutex` that removes the poisoning aspects
+/// from its api.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Mutex&lt;T: <span class="question-mark">?</span>Sized&gt;(sync::Mutex&lt;T&gt;);
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="kw">impl</span>&lt;<span class="ident">T</span>&gt; <span class="ident">Mutex</span>&lt;<span class="ident">T</span>&gt; {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">T</span>) -&gt; <span class="ident">Mutex</span>&lt;<span class="ident">T</span>&gt; {
-        <span class="ident">Mutex</span>(<span class="ident">sync::Mutex::new</span>(<span class="ident">t</span>))
+<span class="attribute">#[allow(dead_code)]</span>
+<span class="kw">impl</span>&lt;T&gt; Mutex&lt;T&gt; {
+    <span class="attribute">#[inline]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(t: T) -&gt; Mutex&lt;T&gt; {
+        Mutex(sync::Mutex::new(t))
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">MutexGuard</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">T</span>&gt; {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">lock</span>() {
-            <span class="prelude-val">Ok</span>(<span class="ident">guard</span>) =&gt; <span class="ident">guard</span>,
-            <span class="prelude-val">Err</span>(<span class="ident">p_err</span>) =&gt; <span class="ident">p_err</span>.<span class="ident">into_inner</span>(),
+    <span class="attribute">#[inline]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>lock(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MutexGuard&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.lock() {
+            <span class="prelude-val">Ok</span>(guard) =&gt; guard,
+            <span class="prelude-val">Err</span>(p_err) =&gt; p_err.into_inner(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">try_lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">MutexGuard</span>&lt;<span class="lifetime">&#39;_</span>, <span class="ident">T</span>&gt;&gt; {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">try_lock</span>() {
-            <span class="prelude-val">Ok</span>(<span class="ident">guard</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">guard</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">TryLockError::Poisoned</span>(<span class="ident">p_err</span>)) =&gt; <span class="prelude-val">Some</span>(<span class="ident">p_err</span>.<span class="ident">into_inner</span>()),
-            <span class="prelude-val">Err</span>(<span class="ident">TryLockError::WouldBlock</span>) =&gt; <span class="prelude-val">None</span>,
+    <span class="attribute">#[inline]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_lock(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;MutexGuard&lt;<span class="lifetime">&#39;_</span>, T&gt;&gt; {
+        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.try_lock() {
+            <span class="prelude-val">Ok</span>(guard) =&gt; <span class="prelude-val">Some</span>(guard),
+            <span class="prelude-val">Err</span>(TryLockError::Poisoned(p_err)) =&gt; <span class="prelude-val">Some</span>(p_err.into_inner()),
+            <span class="prelude-val">Err</span>(TryLockError::WouldBlock) =&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

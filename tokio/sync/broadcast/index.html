@@ -41,49 +41,49 @@ with <a href="error/enum.RecvError.html#variant.Closed"><code>RecvError::Closed<
 <h2 id="examples"><a href="#examples">Examples</a></h2>
 <p>Basic usage</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::broadcast</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::broadcast;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx1</span>) = <span class="ident">broadcast::channel</span>(<span class="number">16</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rx2</span> = <span class="ident">tx</span>.<span class="ident">subscribe</span>();
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx1) = broadcast::channel(<span class="number">16</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>rx2 = tx.subscribe();
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="macro">assert_eq!</span>(<span class="ident">rx1</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">10</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx1</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">20</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="macro">assert_eq!</span>(rx1.recv().<span class="kw">await</span>.unwrap(), <span class="number">10</span>);
+        <span class="macro">assert_eq!</span>(rx1.recv().<span class="kw">await</span>.unwrap(), <span class="number">20</span>);
     });
 
-    <span class="ident">tokio::spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-        <span class="macro">assert_eq!</span>(<span class="ident">rx2</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">10</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx2</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>(), <span class="number">20</span>);
+    tokio::spawn(<span class="kw">async move </span>{
+        <span class="macro">assert_eq!</span>(rx2.recv().<span class="kw">await</span>.unwrap(), <span class="number">10</span>);
+        <span class="macro">assert_eq!</span>(rx2.recv().<span class="kw">await</span>.unwrap(), <span class="number">20</span>);
     });
 
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">10</span>).<span class="ident">unwrap</span>();
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">20</span>).<span class="ident">unwrap</span>();
+    tx.send(<span class="number">10</span>).unwrap();
+    tx.send(<span class="number">20</span>).unwrap();
 }</code></pre></div>
 <p>Handling lag</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::sync::broadcast</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::broadcast;
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">broadcast::channel</span>(<span class="number">2</span>);
+<span class="attribute">#[tokio::main]</span>
+<span class="kw">async fn </span>main() {
+    <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = broadcast::channel(<span class="number">2</span>);
 
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">10</span>).<span class="ident">unwrap</span>();
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">20</span>).<span class="ident">unwrap</span>();
-    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="number">30</span>).<span class="ident">unwrap</span>();
+    tx.send(<span class="number">10</span>).unwrap();
+    tx.send(<span class="number">20</span>).unwrap();
+    tx.send(<span class="number">30</span>).unwrap();
 
-    <span class="comment">// The receiver lagged behind</span>
-    <span class="macro">assert!</span>(<span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">is_err</span>());
+    <span class="comment">// The receiver lagged behind
+    </span><span class="macro">assert!</span>(rx.recv().<span class="kw">await</span>.is_err());
 
-    <span class="comment">// At this point, we can abort or continue with lost messages</span>
+    <span class="comment">// At this point, we can abort or continue with lost messages
 
-    <span class="macro">assert_eq!</span>(<span class="number">20</span>, <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>());
-    <span class="macro">assert_eq!</span>(<span class="number">30</span>, <span class="ident">rx</span>.<span class="ident">recv</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>());
+    </span><span class="macro">assert_eq!</span>(<span class="number">20</span>, rx.recv().<span class="kw">await</span>.unwrap());
+    <span class="macro">assert_eq!</span>(<span class="number">30</span>, rx.recv().<span class="kw">await</span>.unwrap());
 }</code></pre></div>
 </div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="error/index.html" title="tokio::sync::broadcast::error mod">error</a></div><div class="item-right docblock-short"><p>Broadcast error types</p>
 </div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Receiver.html" title="tokio::sync::broadcast::Receiver struct">Receiver</a></div><div class="item-right docblock-short"><p>Receiving-half of the <a href="index.html"><code>broadcast</code></a> channel.</p>
 </div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Sender.html" title="tokio::sync::broadcast::Sender struct">Sender</a></div><div class="item-right docblock-short"><p>Sending-half of the <a href="index.html"><code>broadcast</code></a> channel.</p>
 </div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.channel.html" title="tokio::sync::broadcast::channel fn">channel</a></div><div class="item-right docblock-short"><p>Create a bounded, multi-producer, multi-consumer channel where each sent
 value is broadcasted to all active receivers.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="tokio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

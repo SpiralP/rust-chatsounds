@@ -845,852 +845,852 @@
 <span id="845">845</span>
 <span id="846">846</span>
 <span id="847">847</span>
-</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Licensed under MIT license, or Apache 2 license,</span>
-<span class="comment">// at your option. Please see the LICENSE file</span>
-<span class="comment">// attached to this source distribution for details.</span>
+</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust
+//
+// Copyright (c) 2016 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Licensed under MIT license, or Apache 2 license,
+// at your option. Please see the LICENSE file
+// attached to this source distribution for details.
 
-<span class="comment">// This file is a very close translation of the</span>
-<span class="comment">// implementation of the algorithm from stb_vorbis.</span>
+// This file is a very close translation of the
+// implementation of the algorithm from stb_vorbis.
 
-<span class="kw">use</span> <span class="ident">::header_cached::CachedBlocksizeDerived</span>;
+</span><span class="kw">use </span>::header_cached::CachedBlocksizeDerived;
 
-<span class="kw">fn</span> <span class="ident">imdct_step3_iter0_loop</span>(<span class="ident">n</span> :<span class="ident">usize</span>, <span class="ident">e</span> :<span class="kw-2">&amp;mut</span>[<span class="ident">f32</span>], <span class="ident">i_off</span> :<span class="ident">usize</span>, <span class="ident">k_off</span> :<span class="ident">isize</span>, <span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>]) {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_offs</span> = <span class="number">0</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i_offs</span> = <span class="ident">i_off</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k_offs</span> = <span class="ident">i_off</span> <span class="kw">as</span> <span class="ident">isize</span> + <span class="ident">k_off</span>;
+<span class="kw">fn </span>imdct_step3_iter0_loop(n :usize, e :<span class="kw-2">&amp;mut</span>[f32], i_off :usize, k_off :isize, a :<span class="kw-2">&amp;</span>[f32]) {
+	<span class="kw">let </span><span class="kw-2">mut </span>a_offs = <span class="number">0</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>i_offs = i_off;
+	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = i_off <span class="kw">as </span>isize + k_off;
 
-	<span class="macro">macro_rules!</span> <span class="ident">ee0</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">i_offs</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">i_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> ee0 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules!</span> <span class="ident">ee2</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[(<span class="ident">k_offs</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) <span class="kw">as</span> <span class="ident">usize</span>]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[(<span class="ident">k_offs</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) <span class="kw">as</span> <span class="ident">usize</span>]}
+	<span class="macro">macro_rules!</span> ee2 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs - <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs + <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]}
 	}
 
-	<span class="macro">macro_rules!</span> <span class="ident">aa</span> {
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">a</span>[<span class="ident">a_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> aa {
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">assert_eq!</span>((<span class="ident">n</span> &amp; <span class="number">3</span>), <span class="number">0</span>);
+	<span class="macro">assert_eq!</span>((n &amp; <span class="number">3</span>), <span class="number">0</span>);
 
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n</span> &gt;&gt; <span class="number">2</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k00_20</span> = <span class="macro">ee0!</span>[ <span class="number">0</span>] - <span class="macro">ee2!</span>[ <span class="number">0</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k01_21</span> = <span class="macro">ee0!</span>[-<span class="number">1</span>] - <span class="macro">ee2!</span>[-<span class="number">1</span>];
+	<span class="kw">for _ in </span><span class="number">0 </span>.. n &gt;&gt; <span class="number">2 </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>k00_20 = <span class="macro">ee0!</span>[ <span class="number">0</span>] - <span class="macro">ee2!</span>[ <span class="number">0</span>];
+		<span class="kw">let </span><span class="kw-2">mut </span>k01_21 = <span class="macro">ee0!</span>[-<span class="number">1</span>] - <span class="macro">ee2!</span>[-<span class="number">1</span>];
 		<span class="macro">ee0!</span>[ <span class="number">0</span>] += <span class="macro">ee2!</span>[ <span class="number">0</span>];
 		<span class="macro">ee0!</span>[-<span class="number">1</span>] += <span class="macro">ee2!</span>[-<span class="number">1</span>];
-		<span class="macro">ee2!</span>[ <span class="number">0</span>] = <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">0</span>] - <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">ee2!</span>[-<span class="number">1</span>] = <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">0</span>] + <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="ident">a_offs</span> += <span class="number">8</span>;
+		<span class="macro">ee2!</span>[ <span class="number">0</span>] = k00_20 * <span class="macro">aa!</span>[<span class="number">0</span>] - k01_21 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">ee2!</span>[-<span class="number">1</span>] = k01_21 * <span class="macro">aa!</span>[<span class="number">0</span>] + k00_20 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		a_offs += <span class="number">8</span>;
 
-		<span class="ident">k00_20</span>  = <span class="macro">ee0!</span>[-<span class="number">2</span>] - <span class="macro">ee2!</span>[-<span class="number">2</span>];
-		<span class="ident">k01_21</span>  = <span class="macro">ee0!</span>[-<span class="number">3</span>] - <span class="macro">ee2!</span>[-<span class="number">3</span>];
+		k00_20  = <span class="macro">ee0!</span>[-<span class="number">2</span>] - <span class="macro">ee2!</span>[-<span class="number">2</span>];
+		k01_21  = <span class="macro">ee0!</span>[-<span class="number">3</span>] - <span class="macro">ee2!</span>[-<span class="number">3</span>];
 		<span class="macro">ee0!</span>[-<span class="number">2</span>] += <span class="macro">ee2!</span>[-<span class="number">2</span>];
 		<span class="macro">ee0!</span>[-<span class="number">3</span>] += <span class="macro">ee2!</span>[-<span class="number">3</span>];
-		<span class="macro">ee2!</span>[-<span class="number">2</span>] = <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">0</span>] - <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">ee2!</span>[-<span class="number">3</span>] = <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">0</span>] + <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="ident">a_offs</span> += <span class="number">8</span>;
+		<span class="macro">ee2!</span>[-<span class="number">2</span>] = k00_20 * <span class="macro">aa!</span>[<span class="number">0</span>] - k01_21 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">ee2!</span>[-<span class="number">3</span>] = k01_21 * <span class="macro">aa!</span>[<span class="number">0</span>] + k00_20 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		a_offs += <span class="number">8</span>;
 
-		<span class="ident">k00_20</span>  = <span class="macro">ee0!</span>[-<span class="number">4</span>] - <span class="macro">ee2!</span>[-<span class="number">4</span>];
-		<span class="ident">k01_21</span>  = <span class="macro">ee0!</span>[-<span class="number">5</span>] - <span class="macro">ee2!</span>[-<span class="number">5</span>];
+		k00_20  = <span class="macro">ee0!</span>[-<span class="number">4</span>] - <span class="macro">ee2!</span>[-<span class="number">4</span>];
+		k01_21  = <span class="macro">ee0!</span>[-<span class="number">5</span>] - <span class="macro">ee2!</span>[-<span class="number">5</span>];
 		<span class="macro">ee0!</span>[-<span class="number">4</span>] += <span class="macro">ee2!</span>[-<span class="number">4</span>];
 		<span class="macro">ee0!</span>[-<span class="number">5</span>] += <span class="macro">ee2!</span>[-<span class="number">5</span>];
-		<span class="macro">ee2!</span>[-<span class="number">4</span>] = <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">0</span>] - <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">ee2!</span>[-<span class="number">5</span>] = <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">0</span>] + <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="ident">a_offs</span> += <span class="number">8</span>;
+		<span class="macro">ee2!</span>[-<span class="number">4</span>] = k00_20 * <span class="macro">aa!</span>[<span class="number">0</span>] - k01_21 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">ee2!</span>[-<span class="number">5</span>] = k01_21 * <span class="macro">aa!</span>[<span class="number">0</span>] + k00_20 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		a_offs += <span class="number">8</span>;
 
-		<span class="ident">k00_20</span>  = <span class="macro">ee0!</span>[-<span class="number">6</span>] - <span class="macro">ee2!</span>[-<span class="number">6</span>];
-		<span class="ident">k01_21</span>  = <span class="macro">ee0!</span>[-<span class="number">7</span>] - <span class="macro">ee2!</span>[-<span class="number">7</span>];
+		k00_20  = <span class="macro">ee0!</span>[-<span class="number">6</span>] - <span class="macro">ee2!</span>[-<span class="number">6</span>];
+		k01_21  = <span class="macro">ee0!</span>[-<span class="number">7</span>] - <span class="macro">ee2!</span>[-<span class="number">7</span>];
 		<span class="macro">ee0!</span>[-<span class="number">6</span>] += <span class="macro">ee2!</span>[-<span class="number">6</span>];
 		<span class="macro">ee0!</span>[-<span class="number">7</span>] += <span class="macro">ee2!</span>[-<span class="number">7</span>];
-		<span class="macro">ee2!</span>[-<span class="number">6</span>] = <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">0</span>] - <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">ee2!</span>[-<span class="number">7</span>] = <span class="ident">k01_21</span> * <span class="macro">aa!</span>[<span class="number">0</span>] + <span class="ident">k00_20</span> * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">ee2!</span>[-<span class="number">6</span>] = k00_20 * <span class="macro">aa!</span>[<span class="number">0</span>] - k01_21 * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">ee2!</span>[-<span class="number">7</span>] = k01_21 * <span class="macro">aa!</span>[<span class="number">0</span>] + k00_20 * <span class="macro">aa!</span>[<span class="number">1</span>];
 
-		<span class="ident">a_offs</span> += <span class="number">8</span>;
-		<span class="ident">i_offs</span> -= <span class="number">8</span>;
-		<span class="ident">k_offs</span> -= <span class="number">8</span>;
+		a_offs += <span class="number">8</span>;
+		i_offs -= <span class="number">8</span>;
+		k_offs -= <span class="number">8</span>;
 	}
 }
 
-<span class="kw">fn</span> <span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">lim</span> :<span class="ident">usize</span>, <span class="ident">e</span> :<span class="kw-2">&amp;mut</span> [<span class="ident">f32</span>],
-		<span class="ident">d0</span> :<span class="ident">usize</span>, <span class="ident">k_off</span> :<span class="ident">isize</span>, <span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>], <span class="ident">k1</span> :<span class="ident">usize</span>) {
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_offs</span> = <span class="number">0</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d0_offs</span> = <span class="ident">d0</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k_offs</span> = <span class="ident">d0</span> <span class="kw">as</span> <span class="ident">isize</span> + <span class="ident">k_off</span>;
+<span class="kw">fn </span>imdct_step3_inner_r_loop(lim :usize, e :<span class="kw-2">&amp;mut </span>[f32],
+		d0 :usize, k_off :isize, a :<span class="kw-2">&amp;</span>[f32], k1 :usize) {
+	<span class="kw">let </span><span class="kw-2">mut </span>a_offs = <span class="number">0</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>d0_offs = d0;
+	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = d0 <span class="kw">as </span>isize + k_off;
 
-	<span class="macro">macro_rules!</span> <span class="ident">e0</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">d0_offs</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">d0_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> e0 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[d0_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules!</span> <span class="ident">e2</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[(<span class="ident">k_offs</span> - <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) <span class="kw">as</span> <span class="ident">usize</span>]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[(<span class="ident">k_offs</span> + <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) <span class="kw">as</span> <span class="ident">usize</span>]}
+	<span class="macro">macro_rules!</span> e2 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs - <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs + <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]}
 	}
 
-	<span class="macro">macro_rules!</span> <span class="ident">aa</span> {
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">a</span>[<span class="ident">a_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> aa {
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">lim</span> &gt;&gt; <span class="number">2</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k00_20</span> = <span class="macro">e0!</span>[-<span class="number">0</span>] - <span class="macro">e2!</span>[-<span class="number">0</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k01_21</span> = <span class="macro">e0!</span>[-<span class="number">1</span>] - <span class="macro">e2!</span>[-<span class="number">1</span>];
+	<span class="kw">for _ in </span><span class="number">0 </span>.. lim &gt;&gt; <span class="number">2 </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>k00_20 = <span class="macro">e0!</span>[-<span class="number">0</span>] - <span class="macro">e2!</span>[-<span class="number">0</span>];
+		<span class="kw">let </span><span class="kw-2">mut </span>k01_21 = <span class="macro">e0!</span>[-<span class="number">1</span>] - <span class="macro">e2!</span>[-<span class="number">1</span>];
 		<span class="macro">e0!</span>[-<span class="number">0</span>] += <span class="macro">e2!</span>[-<span class="number">0</span>];
 		<span class="macro">e0!</span>[-<span class="number">1</span>] += <span class="macro">e2!</span>[-<span class="number">1</span>];
-		<span class="macro">e2!</span>[-<span class="number">0</span>] = (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] - (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">e2!</span>[-<span class="number">1</span>] = (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] + (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">0</span>] = (k00_20) * <span class="macro">aa!</span>[<span class="number">0</span>] - (k01_21) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">1</span>] = (k01_21) * <span class="macro">aa!</span>[<span class="number">0</span>] + (k00_20) * <span class="macro">aa!</span>[<span class="number">1</span>];
 
-		<span class="ident">a_offs</span> += <span class="ident">k1</span>;
+		a_offs += k1;
 
-		<span class="ident">k00_20</span> = <span class="macro">e0!</span>[-<span class="number">2</span>] - <span class="macro">e2!</span>[-<span class="number">2</span>];
-		<span class="ident">k01_21</span> = <span class="macro">e0!</span>[-<span class="number">3</span>] - <span class="macro">e2!</span>[-<span class="number">3</span>];
+		k00_20 = <span class="macro">e0!</span>[-<span class="number">2</span>] - <span class="macro">e2!</span>[-<span class="number">2</span>];
+		k01_21 = <span class="macro">e0!</span>[-<span class="number">3</span>] - <span class="macro">e2!</span>[-<span class="number">3</span>];
 		<span class="macro">e0!</span>[-<span class="number">2</span>] += <span class="macro">e2!</span>[-<span class="number">2</span>];
 		<span class="macro">e0!</span>[-<span class="number">3</span>] += <span class="macro">e2!</span>[-<span class="number">3</span>];
-		<span class="macro">e2!</span>[-<span class="number">2</span>] = (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] - (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">e2!</span>[-<span class="number">3</span>] = (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] + (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">2</span>] = (k00_20) * <span class="macro">aa!</span>[<span class="number">0</span>] - (k01_21) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">3</span>] = (k01_21) * <span class="macro">aa!</span>[<span class="number">0</span>] + (k00_20) * <span class="macro">aa!</span>[<span class="number">1</span>];
 
-		<span class="ident">a_offs</span> += <span class="ident">k1</span>;
+		a_offs += k1;
 
-		<span class="ident">k00_20</span> = <span class="macro">e0!</span>[-<span class="number">4</span>] - <span class="macro">e2!</span>[-<span class="number">4</span>];
-		<span class="ident">k01_21</span> = <span class="macro">e0!</span>[-<span class="number">5</span>] - <span class="macro">e2!</span>[-<span class="number">5</span>];
+		k00_20 = <span class="macro">e0!</span>[-<span class="number">4</span>] - <span class="macro">e2!</span>[-<span class="number">4</span>];
+		k01_21 = <span class="macro">e0!</span>[-<span class="number">5</span>] - <span class="macro">e2!</span>[-<span class="number">5</span>];
 		<span class="macro">e0!</span>[-<span class="number">4</span>] += <span class="macro">e2!</span>[-<span class="number">4</span>];
 		<span class="macro">e0!</span>[-<span class="number">5</span>] += <span class="macro">e2!</span>[-<span class="number">5</span>];
-		<span class="macro">e2!</span>[-<span class="number">4</span>] = (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] - (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">e2!</span>[-<span class="number">5</span>] = (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] + (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">4</span>] = (k00_20) * <span class="macro">aa!</span>[<span class="number">0</span>] - (k01_21) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">5</span>] = (k01_21) * <span class="macro">aa!</span>[<span class="number">0</span>] + (k00_20) * <span class="macro">aa!</span>[<span class="number">1</span>];
 
-		<span class="ident">a_offs</span> += <span class="ident">k1</span>;
+		a_offs += k1;
 
-		<span class="ident">k00_20</span> = <span class="macro">e0!</span>[-<span class="number">6</span>] - <span class="macro">e2!</span>[-<span class="number">6</span>];
-		<span class="ident">k01_21</span> = <span class="macro">e0!</span>[-<span class="number">7</span>] - <span class="macro">e2!</span>[-<span class="number">7</span>];
+		k00_20 = <span class="macro">e0!</span>[-<span class="number">6</span>] - <span class="macro">e2!</span>[-<span class="number">6</span>];
+		k01_21 = <span class="macro">e0!</span>[-<span class="number">7</span>] - <span class="macro">e2!</span>[-<span class="number">7</span>];
 		<span class="macro">e0!</span>[-<span class="number">6</span>] += <span class="macro">e2!</span>[-<span class="number">6</span>];
 		<span class="macro">e0!</span>[-<span class="number">7</span>] += <span class="macro">e2!</span>[-<span class="number">7</span>];
-		<span class="macro">e2!</span>[-<span class="number">6</span>] = (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] - (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
-		<span class="macro">e2!</span>[-<span class="number">7</span>] = (<span class="ident">k01_21</span>) * <span class="macro">aa!</span>[<span class="number">0</span>] + (<span class="ident">k00_20</span>) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">6</span>] = (k00_20) * <span class="macro">aa!</span>[<span class="number">0</span>] - (k01_21) * <span class="macro">aa!</span>[<span class="number">1</span>];
+		<span class="macro">e2!</span>[-<span class="number">7</span>] = (k01_21) * <span class="macro">aa!</span>[<span class="number">0</span>] + (k00_20) * <span class="macro">aa!</span>[<span class="number">1</span>];
 
-		<span class="ident">d0_offs</span> -= <span class="number">8</span>;
-		<span class="ident">k_offs</span> -= <span class="number">8</span>;
+		d0_offs -= <span class="number">8</span>;
+		k_offs -= <span class="number">8</span>;
 
-		<span class="ident">a_offs</span> += <span class="ident">k1</span>;
+		a_offs += k1;
 	}
 }
 
-<span class="kw">fn</span> <span class="ident">imdct_step3_inner_s_loop</span>(<span class="ident">n</span> :<span class="ident">usize</span>, <span class="ident">e</span> :<span class="kw-2">&amp;mut</span> [<span class="ident">f32</span>], <span class="ident">i_off</span> :<span class="ident">usize</span>, <span class="ident">k_off</span> :<span class="ident">isize</span>,
-		<span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>], <span class="ident">a_off</span> :<span class="ident">usize</span>, <span class="ident">k0</span> :<span class="ident">usize</span>) {
-	<span class="kw">let</span> <span class="ident">a0</span> = <span class="ident">a</span>[<span class="number">0</span>];
-	<span class="kw">let</span> <span class="ident">a1</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="number">1</span>];
-	<span class="kw">let</span> <span class="ident">a2</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span>];
-	<span class="kw">let</span> <span class="ident">a3</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span>+<span class="number">1</span>];
-	<span class="kw">let</span> <span class="ident">a4</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span><span class="kw-2">*</span><span class="number">2</span>+<span class="number">0</span>];
-	<span class="kw">let</span> <span class="ident">a5</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span><span class="kw-2">*</span><span class="number">2</span>+<span class="number">1</span>];
-	<span class="kw">let</span> <span class="ident">a6</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span><span class="kw-2">*</span><span class="number">3</span>+<span class="number">0</span>];
-	<span class="kw">let</span> <span class="ident">a7</span> = <span class="ident">a</span>[<span class="number">0</span>+<span class="ident">a_off</span><span class="kw-2">*</span><span class="number">3</span>+<span class="number">1</span>];
+<span class="kw">fn </span>imdct_step3_inner_s_loop(n :usize, e :<span class="kw-2">&amp;mut </span>[f32], i_off :usize, k_off :isize,
+		a :<span class="kw-2">&amp;</span>[f32], a_off :usize, k0 :usize) {
+	<span class="kw">let </span>a0 = a[<span class="number">0</span>];
+	<span class="kw">let </span>a1 = a[<span class="number">0</span>+<span class="number">1</span>];
+	<span class="kw">let </span>a2 = a[<span class="number">0</span>+a_off];
+	<span class="kw">let </span>a3 = a[<span class="number">0</span>+a_off+<span class="number">1</span>];
+	<span class="kw">let </span>a4 = a[<span class="number">0</span>+a_off<span class="kw-2">*</span><span class="number">2</span>+<span class="number">0</span>];
+	<span class="kw">let </span>a5 = a[<span class="number">0</span>+a_off<span class="kw-2">*</span><span class="number">2</span>+<span class="number">1</span>];
+	<span class="kw">let </span>a6 = a[<span class="number">0</span>+a_off<span class="kw-2">*</span><span class="number">3</span>+<span class="number">0</span>];
+	<span class="kw">let </span>a7 = a[<span class="number">0</span>+a_off<span class="kw-2">*</span><span class="number">3</span>+<span class="number">1</span>];
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i_offs</span> = <span class="ident">i_off</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k_offs</span> = (<span class="ident">i_off</span> <span class="kw">as</span> <span class="ident">isize</span> + <span class="ident">k_off</span>) <span class="kw">as</span> <span class="ident">usize</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>i_offs = i_off;
+	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = (i_off <span class="kw">as </span>isize + k_off) <span class="kw">as </span>usize;
 
-	<span class="macro">macro_rules!</span> <span class="ident">ee0</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">i_offs</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">i_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> ee0 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules!</span> <span class="ident">ee2</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">k_offs</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]};
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">k_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> ee2 {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[k_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
+		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[k_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span> = <span class="number">0</span>;
-	<span class="kw">loop</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k00</span> = <span class="macro">ee0!</span>[ <span class="number">0</span>] - <span class="macro">ee2!</span>[ <span class="number">0</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k11</span> = <span class="macro">ee0!</span>[-<span class="number">1</span>] - <span class="macro">ee2!</span>[-<span class="number">1</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+	<span class="kw">loop </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>k00 = <span class="macro">ee0!</span>[ <span class="number">0</span>] - <span class="macro">ee2!</span>[ <span class="number">0</span>];
+		<span class="kw">let </span><span class="kw-2">mut </span>k11 = <span class="macro">ee0!</span>[-<span class="number">1</span>] - <span class="macro">ee2!</span>[-<span class="number">1</span>];
 		<span class="macro">ee0!</span>[ <span class="number">0</span>] =  <span class="macro">ee0!</span>[ <span class="number">0</span>] + <span class="macro">ee2!</span>[ <span class="number">0</span>];
 		<span class="macro">ee0!</span>[-<span class="number">1</span>] =  <span class="macro">ee0!</span>[-<span class="number">1</span>] + <span class="macro">ee2!</span>[-<span class="number">1</span>];
-		<span class="macro">ee2!</span>[ <span class="number">0</span>] = (<span class="ident">k00</span>) * <span class="ident">a0</span> - (<span class="ident">k11</span>) * <span class="ident">a1</span>;
-		<span class="macro">ee2!</span>[-<span class="number">1</span>] = (<span class="ident">k11</span>) * <span class="ident">a0</span> + (<span class="ident">k00</span>) * <span class="ident">a1</span>;
+		<span class="macro">ee2!</span>[ <span class="number">0</span>] = (k00) * a0 - (k11) * a1;
+		<span class="macro">ee2!</span>[-<span class="number">1</span>] = (k11) * a0 + (k00) * a1;
 
-		<span class="ident">k00</span>      = <span class="macro">ee0!</span>[-<span class="number">2</span>] - <span class="macro">ee2!</span>[-<span class="number">2</span>];
-		<span class="ident">k11</span>      = <span class="macro">ee0!</span>[-<span class="number">3</span>] - <span class="macro">ee2!</span>[-<span class="number">3</span>];
+		k00      = <span class="macro">ee0!</span>[-<span class="number">2</span>] - <span class="macro">ee2!</span>[-<span class="number">2</span>];
+		k11      = <span class="macro">ee0!</span>[-<span class="number">3</span>] - <span class="macro">ee2!</span>[-<span class="number">3</span>];
 		<span class="macro">ee0!</span>[-<span class="number">2</span>] =  <span class="macro">ee0!</span>[-<span class="number">2</span>] + <span class="macro">ee2!</span>[-<span class="number">2</span>];
 		<span class="macro">ee0!</span>[-<span class="number">3</span>] =  <span class="macro">ee0!</span>[-<span class="number">3</span>] + <span class="macro">ee2!</span>[-<span class="number">3</span>];
-		<span class="macro">ee2!</span>[-<span class="number">2</span>] = (<span class="ident">k00</span>) * <span class="ident">a2</span> - (<span class="ident">k11</span>) * <span class="ident">a3</span>;
-		<span class="macro">ee2!</span>[-<span class="number">3</span>] = (<span class="ident">k11</span>) * <span class="ident">a2</span> + (<span class="ident">k00</span>) * <span class="ident">a3</span>;
+		<span class="macro">ee2!</span>[-<span class="number">2</span>] = (k00) * a2 - (k11) * a3;
+		<span class="macro">ee2!</span>[-<span class="number">3</span>] = (k11) * a2 + (k00) * a3;
 
-		<span class="ident">k00</span>      = <span class="macro">ee0!</span>[-<span class="number">4</span>] - <span class="macro">ee2!</span>[-<span class="number">4</span>];
-		<span class="ident">k11</span>      = <span class="macro">ee0!</span>[-<span class="number">5</span>] - <span class="macro">ee2!</span>[-<span class="number">5</span>];
+		k00      = <span class="macro">ee0!</span>[-<span class="number">4</span>] - <span class="macro">ee2!</span>[-<span class="number">4</span>];
+		k11      = <span class="macro">ee0!</span>[-<span class="number">5</span>] - <span class="macro">ee2!</span>[-<span class="number">5</span>];
 		<span class="macro">ee0!</span>[-<span class="number">4</span>] =  <span class="macro">ee0!</span>[-<span class="number">4</span>] + <span class="macro">ee2!</span>[-<span class="number">4</span>];
 		<span class="macro">ee0!</span>[-<span class="number">5</span>] =  <span class="macro">ee0!</span>[-<span class="number">5</span>] + <span class="macro">ee2!</span>[-<span class="number">5</span>];
-		<span class="macro">ee2!</span>[-<span class="number">4</span>] = (<span class="ident">k00</span>) * <span class="ident">a4</span> - (<span class="ident">k11</span>) * <span class="ident">a5</span>;
-		<span class="macro">ee2!</span>[-<span class="number">5</span>] = (<span class="ident">k11</span>) * <span class="ident">a4</span> + (<span class="ident">k00</span>) * <span class="ident">a5</span>;
+		<span class="macro">ee2!</span>[-<span class="number">4</span>] = (k00) * a4 - (k11) * a5;
+		<span class="macro">ee2!</span>[-<span class="number">5</span>] = (k11) * a4 + (k00) * a5;
 
-		<span class="ident">k00</span>      = <span class="macro">ee0!</span>[-<span class="number">6</span>] - <span class="macro">ee2!</span>[-<span class="number">6</span>];
-		<span class="ident">k11</span>      = <span class="macro">ee0!</span>[-<span class="number">7</span>] - <span class="macro">ee2!</span>[-<span class="number">7</span>];
+		k00      = <span class="macro">ee0!</span>[-<span class="number">6</span>] - <span class="macro">ee2!</span>[-<span class="number">6</span>];
+		k11      = <span class="macro">ee0!</span>[-<span class="number">7</span>] - <span class="macro">ee2!</span>[-<span class="number">7</span>];
 		<span class="macro">ee0!</span>[-<span class="number">6</span>] =  <span class="macro">ee0!</span>[-<span class="number">6</span>] + <span class="macro">ee2!</span>[-<span class="number">6</span>];
 		<span class="macro">ee0!</span>[-<span class="number">7</span>] =  <span class="macro">ee0!</span>[-<span class="number">7</span>] + <span class="macro">ee2!</span>[-<span class="number">7</span>];
-		<span class="macro">ee2!</span>[-<span class="number">6</span>] = (<span class="ident">k00</span>) * <span class="ident">a6</span> - (<span class="ident">k11</span>) * <span class="ident">a7</span>;
-		<span class="macro">ee2!</span>[-<span class="number">7</span>] = (<span class="ident">k11</span>) * <span class="ident">a6</span> + (<span class="ident">k00</span>) * <span class="ident">a7</span>;
+		<span class="macro">ee2!</span>[-<span class="number">6</span>] = (k00) * a6 - (k11) * a7;
+		<span class="macro">ee2!</span>[-<span class="number">7</span>] = (k11) * a6 + (k00) * a7;
 
-		<span class="ident">i</span> += <span class="number">1</span>;
-		<span class="comment">// we have this check instead of a for loop</span>
-		<span class="comment">// over an iterator because otherwise we</span>
-		<span class="comment">// overflow.</span>
-		<span class="kw">if</span> <span class="ident">i</span> &gt;= <span class="ident">n</span> {
+		i += <span class="number">1</span>;
+		<span class="comment">// we have this check instead of a for loop
+		// over an iterator because otherwise we
+		// overflow.
+		</span><span class="kw">if </span>i &gt;= n {
 			<span class="kw">break</span>;
 		}
-		<span class="ident">i_offs</span> -= <span class="ident">k0</span>;
-		<span class="ident">k_offs</span> -= <span class="ident">k0</span>;
+		i_offs -= k0;
+		k_offs -= k0;
 	}
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">iter_54</span>(<span class="ident">zm7</span> :<span class="kw-2">&amp;mut</span> [<span class="ident">f32</span>]) {
-	<span class="comment">// difference from stb_vorbis implementation:</span>
-	<span class="comment">// zm7 points to z minus 7</span>
-	<span class="comment">// (Rust disallows negative indices)</span>
+<span class="attribute">#[inline]</span>
+<span class="kw">fn </span>iter_54(zm7 :<span class="kw-2">&amp;mut </span>[f32]) {
+	<span class="comment">// difference from stb_vorbis implementation:
+	// zm7 points to z minus 7
+	// (Rust disallows negative indices)
 
-	<span class="kw">let</span> <span class="ident">k00</span>  = <span class="ident">zm7</span>[<span class="number">7</span>] - <span class="ident">zm7</span>[<span class="number">3</span>];
-	<span class="kw">let</span> <span class="ident">y0</span>   = <span class="ident">zm7</span>[<span class="number">7</span>] + <span class="ident">zm7</span>[<span class="number">3</span>];
-	<span class="kw">let</span> <span class="ident">y2</span>   = <span class="ident">zm7</span>[<span class="number">5</span>] + <span class="ident">zm7</span>[<span class="number">1</span>];
-	<span class="kw">let</span> <span class="ident">k22</span>  = <span class="ident">zm7</span>[<span class="number">5</span>] - <span class="ident">zm7</span>[<span class="number">1</span>];
+	</span><span class="kw">let </span>k00  = zm7[<span class="number">7</span>] - zm7[<span class="number">3</span>];
+	<span class="kw">let </span>y0   = zm7[<span class="number">7</span>] + zm7[<span class="number">3</span>];
+	<span class="kw">let </span>y2   = zm7[<span class="number">5</span>] + zm7[<span class="number">1</span>];
+	<span class="kw">let </span>k22  = zm7[<span class="number">5</span>] - zm7[<span class="number">1</span>];
 
-	<span class="ident">zm7</span>[<span class="number">7</span>] = <span class="ident">y0</span> + <span class="ident">y2</span>;      <span class="comment">// z0 + z4 + z2 + z6</span>
-	<span class="ident">zm7</span>[<span class="number">5</span>] = <span class="ident">y0</span> - <span class="ident">y2</span>;      <span class="comment">// z0 + z4 - z2 - z6</span>
+	zm7[<span class="number">7</span>] = y0 + y2;      <span class="comment">// z0 + z4 + z2 + z6
+	</span>zm7[<span class="number">5</span>] = y0 - y2;      <span class="comment">// z0 + z4 - z2 - z6
 
-	<span class="comment">// done with y0,y2</span>
+	// done with y0,y2
 
-	<span class="kw">let</span> <span class="ident">k33</span>  = <span class="ident">zm7</span>[<span class="number">4</span>] - <span class="ident">zm7</span>[<span class="number">0</span>];
+	</span><span class="kw">let </span>k33  = zm7[<span class="number">4</span>] - zm7[<span class="number">0</span>];
 
-	<span class="ident">zm7</span>[<span class="number">3</span>] = <span class="ident">k00</span> + <span class="ident">k33</span>;    <span class="comment">// z0 - z4 + z3 - z7</span>
-	<span class="ident">zm7</span>[<span class="number">1</span>] = <span class="ident">k00</span> - <span class="ident">k33</span>;    <span class="comment">// z0 - z4 - z3 + z7</span>
+	zm7[<span class="number">3</span>] = k00 + k33;    <span class="comment">// z0 - z4 + z3 - z7
+	</span>zm7[<span class="number">1</span>] = k00 - k33;    <span class="comment">// z0 - z4 - z3 + z7
 
-	<span class="comment">// done with k33</span>
+	// done with k33
 
-	<span class="kw">let</span> <span class="ident">k11</span>  = <span class="ident">zm7</span>[<span class="number">6</span>] - <span class="ident">zm7</span>[<span class="number">2</span>];
-	<span class="kw">let</span> <span class="ident">y1</span>   = <span class="ident">zm7</span>[<span class="number">6</span>] + <span class="ident">zm7</span>[<span class="number">2</span>];
-	<span class="kw">let</span> <span class="ident">y3</span>   = <span class="ident">zm7</span>[<span class="number">4</span>] + <span class="ident">zm7</span>[<span class="number">0</span>];
+	</span><span class="kw">let </span>k11  = zm7[<span class="number">6</span>] - zm7[<span class="number">2</span>];
+	<span class="kw">let </span>y1   = zm7[<span class="number">6</span>] + zm7[<span class="number">2</span>];
+	<span class="kw">let </span>y3   = zm7[<span class="number">4</span>] + zm7[<span class="number">0</span>];
 
-	<span class="ident">zm7</span>[<span class="number">6</span>] = <span class="ident">y1</span> + <span class="ident">y3</span>;      <span class="comment">// z1 + z5 + z3 + z7</span>
-	<span class="ident">zm7</span>[<span class="number">4</span>] = <span class="ident">y1</span> - <span class="ident">y3</span>;      <span class="comment">// z1 + z5 - z3 - z7</span>
-	<span class="ident">zm7</span>[<span class="number">2</span>] = <span class="ident">k11</span> - <span class="ident">k22</span>;    <span class="comment">// z1 - z5 + z2 - z6</span>
-	<span class="ident">zm7</span>[<span class="number">0</span>] = <span class="ident">k11</span> + <span class="ident">k22</span>;    <span class="comment">// z1 - z5 - z2 + z6</span>
-}
+	zm7[<span class="number">6</span>] = y1 + y3;      <span class="comment">// z1 + z5 + z3 + z7
+	</span>zm7[<span class="number">4</span>] = y1 - y3;      <span class="comment">// z1 + z5 - z3 - z7
+	</span>zm7[<span class="number">2</span>] = k11 - k22;    <span class="comment">// z1 - z5 + z2 - z6
+	</span>zm7[<span class="number">0</span>] = k11 + k22;    <span class="comment">// z1 - z5 - z2 + z6
+</span>}
 
-<span class="kw">fn</span> <span class="ident">imdct_step3_inner_s_loop_ld654</span>(<span class="ident">n</span> :<span class="ident">usize</span>, <span class="ident">e</span> :<span class="kw-2">&amp;mut</span> [<span class="ident">f32</span>], <span class="ident">i_off</span> :<span class="ident">usize</span>,
-	<span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>], <span class="ident">base_n</span> :<span class="ident">usize</span>)
+<span class="kw">fn </span>imdct_step3_inner_s_loop_ld654(n :usize, e :<span class="kw-2">&amp;mut </span>[f32], i_off :usize,
+	a :<span class="kw-2">&amp;</span>[f32], base_n :usize)
 {
-	<span class="kw">let</span> <span class="ident">a_off</span> = <span class="ident">base_n</span> &gt;&gt; <span class="number">3</span>;
-	<span class="kw">let</span> <span class="ident">a2</span> = <span class="ident">a</span>[<span class="ident">a_off</span>];
+	<span class="kw">let </span>a_off = base_n &gt;&gt; <span class="number">3</span>;
+	<span class="kw">let </span>a2 = a[a_off];
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">z_offs</span> = <span class="ident">i_off</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>z_offs = i_off;
 
-	<span class="kw">let</span> <span class="ident">basep16</span> = <span class="ident">i_off</span> - <span class="number">16</span> * (<span class="ident">n</span> - <span class="number">1</span> <span class="kw">as</span> <span class="ident">usize</span>);
+	<span class="kw">let </span>basep16 = i_off - <span class="number">16 </span>* (n - <span class="number">1 </span><span class="kw">as </span>usize);
 
-	<span class="macro">macro_rules!</span> <span class="ident">z</span> {
-		(-<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">e</span>[<span class="ident">z_offs</span> - (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+	<span class="macro">macro_rules!</span> z {
+		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[z_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="kw">loop</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k00</span> = <span class="macro">z!</span>[-<span class="number">0</span>] - <span class="macro">z!</span>[-<span class="number">8</span>];
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k11</span> = <span class="macro">z!</span>[-<span class="number">1</span>] - <span class="macro">z!</span>[-<span class="number">9</span>];
+	<span class="kw">loop </span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>k00 = <span class="macro">z!</span>[-<span class="number">0</span>] - <span class="macro">z!</span>[-<span class="number">8</span>];
+		<span class="kw">let </span><span class="kw-2">mut </span>k11 = <span class="macro">z!</span>[-<span class="number">1</span>] - <span class="macro">z!</span>[-<span class="number">9</span>];
 		<span class="macro">z!</span>[-<span class="number">0</span>] = <span class="macro">z!</span>[-<span class="number">0</span>] + <span class="macro">z!</span>[-<span class="number">8</span>];
 		<span class="macro">z!</span>[-<span class="number">1</span>] = <span class="macro">z!</span>[-<span class="number">1</span>] + <span class="macro">z!</span>[-<span class="number">9</span>];
-		<span class="macro">z!</span>[-<span class="number">8</span>] =  <span class="ident">k00</span>;
-		<span class="macro">z!</span>[-<span class="number">9</span>] =  <span class="ident">k11</span>;
+		<span class="macro">z!</span>[-<span class="number">8</span>] =  k00;
+		<span class="macro">z!</span>[-<span class="number">9</span>] =  k11;
 
-		<span class="ident">k00</span>     = <span class="macro">z!</span>[ -<span class="number">2</span>] - <span class="macro">z!</span>[-<span class="number">10</span>];
-		<span class="ident">k11</span>     = <span class="macro">z!</span>[ -<span class="number">3</span>] - <span class="macro">z!</span>[-<span class="number">11</span>];
+		k00     = <span class="macro">z!</span>[ -<span class="number">2</span>] - <span class="macro">z!</span>[-<span class="number">10</span>];
+		k11     = <span class="macro">z!</span>[ -<span class="number">3</span>] - <span class="macro">z!</span>[-<span class="number">11</span>];
 		<span class="macro">z!</span>[ -<span class="number">2</span>] = <span class="macro">z!</span>[ -<span class="number">2</span>] + <span class="macro">z!</span>[-<span class="number">10</span>];
 		<span class="macro">z!</span>[ -<span class="number">3</span>] = <span class="macro">z!</span>[ -<span class="number">3</span>] + <span class="macro">z!</span>[-<span class="number">11</span>];
-		<span class="macro">z!</span>[-<span class="number">10</span>] = (<span class="ident">k00</span>+<span class="ident">k11</span>) * <span class="ident">a2</span>;
-		<span class="macro">z!</span>[-<span class="number">11</span>] = (<span class="ident">k11</span>-<span class="ident">k00</span>) * <span class="ident">a2</span>;
+		<span class="macro">z!</span>[-<span class="number">10</span>] = (k00+k11) * a2;
+		<span class="macro">z!</span>[-<span class="number">11</span>] = (k11-k00) * a2;
 
-		<span class="ident">k00</span>     = <span class="macro">z!</span>[-<span class="number">12</span>] - <span class="macro">z!</span>[ -<span class="number">4</span>];  <span class="comment">// reverse to avoid a unary negation</span>
-		<span class="ident">k11</span>     = <span class="macro">z!</span>[ -<span class="number">5</span>] - <span class="macro">z!</span>[-<span class="number">13</span>];
+		k00     = <span class="macro">z!</span>[-<span class="number">12</span>] - <span class="macro">z!</span>[ -<span class="number">4</span>];  <span class="comment">// reverse to avoid a unary negation
+		</span>k11     = <span class="macro">z!</span>[ -<span class="number">5</span>] - <span class="macro">z!</span>[-<span class="number">13</span>];
 		<span class="macro">z!</span>[ -<span class="number">4</span>] = <span class="macro">z!</span>[ -<span class="number">4</span>] + <span class="macro">z!</span>[-<span class="number">12</span>];
 		<span class="macro">z!</span>[ -<span class="number">5</span>] = <span class="macro">z!</span>[ -<span class="number">5</span>] + <span class="macro">z!</span>[-<span class="number">13</span>];
-		<span class="macro">z!</span>[-<span class="number">12</span>] = <span class="ident">k11</span>;
-		<span class="macro">z!</span>[-<span class="number">13</span>] = <span class="ident">k00</span>;
+		<span class="macro">z!</span>[-<span class="number">12</span>] = k11;
+		<span class="macro">z!</span>[-<span class="number">13</span>] = k00;
 
-		<span class="ident">k00</span>     = <span class="macro">z!</span>[-<span class="number">14</span>] - <span class="macro">z!</span>[ -<span class="number">6</span>];  <span class="comment">// reverse to avoid a unary negation</span>
-		<span class="ident">k11</span>     = <span class="macro">z!</span>[ -<span class="number">7</span>] - <span class="macro">z!</span>[-<span class="number">15</span>];
+		k00     = <span class="macro">z!</span>[-<span class="number">14</span>] - <span class="macro">z!</span>[ -<span class="number">6</span>];  <span class="comment">// reverse to avoid a unary negation
+		</span>k11     = <span class="macro">z!</span>[ -<span class="number">7</span>] - <span class="macro">z!</span>[-<span class="number">15</span>];
 		<span class="macro">z!</span>[ -<span class="number">6</span>] = <span class="macro">z!</span>[ -<span class="number">6</span>] + <span class="macro">z!</span>[-<span class="number">14</span>];
 		<span class="macro">z!</span>[ -<span class="number">7</span>] = <span class="macro">z!</span>[ -<span class="number">7</span>] + <span class="macro">z!</span>[-<span class="number">15</span>];
-		<span class="macro">z!</span>[-<span class="number">14</span>] = (<span class="ident">k00</span>+<span class="ident">k11</span>) * <span class="ident">a2</span>;
-		<span class="macro">z!</span>[-<span class="number">15</span>] = (<span class="ident">k00</span>-<span class="ident">k11</span>) * <span class="ident">a2</span>;
+		<span class="macro">z!</span>[-<span class="number">14</span>] = (k00+k11) * a2;
+		<span class="macro">z!</span>[-<span class="number">15</span>] = (k00-k11) * a2;
 
-		<span class="ident">iter_54</span>(<span class="ident">e</span>.<span class="ident">split_at_mut</span>(<span class="ident">z_offs</span> - <span class="number">7</span>).<span class="number">1</span>);
-		<span class="ident">iter_54</span>(<span class="ident">e</span>.<span class="ident">split_at_mut</span>(<span class="ident">z_offs</span> - <span class="number">7</span> - <span class="number">8</span>).<span class="number">1</span>);
-		<span class="comment">// We need to compare with basep16 here</span>
-		<span class="comment">// in order to prevent a possible overflow</span>
-		<span class="comment">// in calculation of base, and in calculation</span>
-		<span class="comment">// of z_offs.</span>
-		<span class="kw">if</span> <span class="ident">z_offs</span> &lt;= <span class="ident">basep16</span> {
+		iter_54(e.split_at_mut(z_offs - <span class="number">7</span>).<span class="number">1</span>);
+		iter_54(e.split_at_mut(z_offs - <span class="number">7 </span>- <span class="number">8</span>).<span class="number">1</span>);
+		<span class="comment">// We need to compare with basep16 here
+		// in order to prevent a possible overflow
+		// in calculation of base, and in calculation
+		// of z_offs.
+		</span><span class="kw">if </span>z_offs &lt;= basep16 {
 			<span class="kw">break</span>;
 		}
-		<span class="ident">z_offs</span> -= <span class="number">16</span>;
+		z_offs -= <span class="number">16</span>;
 	}
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_mdct</span>(<span class="ident">cached_bd</span> :<span class="kw-2">&amp;</span><span class="ident">CachedBlocksizeDerived</span>, <span class="ident">buffer</span> :<span class="kw-2">&amp;mut</span> [<span class="ident">f32</span>], <span class="ident">bs</span> :<span class="ident">u8</span>) {
-	<span class="kw">let</span> <span class="ident">n</span> = <span class="ident">buffer</span>.<span class="ident">len</span>();
-	<span class="comment">// Pre-condition.</span>
-	<span class="macro">assert_eq!</span>(<span class="ident">n</span>, <span class="number">1</span> &lt;&lt; <span class="ident">bs</span>);
+<span class="attribute">#[allow(dead_code)]</span>
+<span class="kw">pub fn </span>inverse_mdct(cached_bd :<span class="kw-2">&amp;</span>CachedBlocksizeDerived, buffer :<span class="kw-2">&amp;mut </span>[f32], bs :u8) {
+	<span class="kw">let </span>n = buffer.len();
+	<span class="comment">// Pre-condition.
+	</span><span class="macro">assert_eq!</span>(n, <span class="number">1 </span>&lt;&lt; bs);
 
-	<span class="kw">let</span> <span class="ident">n2</span> = <span class="ident">n</span> &gt;&gt; <span class="number">1</span>;
-	<span class="kw">let</span> <span class="ident">n4</span> = <span class="ident">n</span> &gt;&gt; <span class="number">2</span>;
-	<span class="kw">let</span> <span class="ident">n8</span> = <span class="ident">n</span> &gt;&gt; <span class="number">3</span>;
+	<span class="kw">let </span>n2 = n &gt;&gt; <span class="number">1</span>;
+	<span class="kw">let </span>n4 = n &gt;&gt; <span class="number">2</span>;
+	<span class="kw">let </span>n8 = n &gt;&gt; <span class="number">3</span>;
 
-	<span class="comment">// TODO later on we might want to do Vec::with_capacity here,</span>
-	<span class="comment">// and use buf2.push everywhere...</span>
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf2</span> :<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; <span class="ident">n2</span>];
+	<span class="comment">// TODO later on we might want to do Vec::with_capacity here,
+	// and use buf2.push everywhere...
+	</span><span class="kw">let </span><span class="kw-2">mut </span>buf2 :Vec&lt;f32&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; n2];
 
-	<span class="kw">let</span> <span class="ident">ctf</span> = <span class="kw-2">&amp;</span><span class="ident">cached_bd</span>.<span class="ident">twiddle_factors</span>;
-	<span class="kw">let</span> <span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">a</span>;
-	<span class="kw">let</span> <span class="ident">b</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">b</span>;
-	<span class="kw">let</span> <span class="ident">c</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">c</span>;
+	<span class="kw">let </span>ctf = <span class="kw-2">&amp;</span>cached_bd.twiddle_factors;
+	<span class="kw">let </span>a :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.a;
+	<span class="kw">let </span>b :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.b;
+	<span class="kw">let </span>c :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.c;
 
-	<span class="macro">macro_rules!</span> <span class="ident">break_if_sub_overflows</span> {
-		(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {
-			<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span> = <span class="kw">match</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>.<span class="ident">checked_sub</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) {
-				<span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; <span class="ident">v</span>,
-				<span class="prelude-val">None</span> =&gt; <span class="kw">break</span>,
+	<span class="macro">macro_rules!</span> break_if_sub_overflows {
+		(<span class="macro-nonterminal">$i</span>:ident, <span class="macro-nonterminal">$x</span>:expr) =&gt; {
+			<span class="macro-nonterminal">$i </span>= <span class="kw">match </span><span class="macro-nonterminal">$i</span>.checked_sub(<span class="macro-nonterminal">$x</span>) {
+				<span class="prelude-val">Some</span>(v) =&gt; v,
+				<span class="prelude-val">None </span>=&gt; <span class="kw">break</span>,
 			};
 		}
 	}
 
-	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;</span>
-	<span class="comment">// See notes about bugs in that paper in less-optimal implementation &#39;inverse_mdct_old&#39; in stb_vorbis original.</span>
+	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;
+	// See notes about bugs in that paper in less-optimal implementation &#39;inverse_mdct_old&#39; in stb_vorbis original.
 
-	<span class="comment">// kernel from paper</span>
+	// kernel from paper
 
 
-	<span class="comment">// merged:</span>
-	<span class="comment">//   copy and reflect spectral data</span>
-	<span class="comment">//   step 0</span>
+	// merged:
+	//   copy and reflect spectral data
+	//   step 0
 
-	<span class="comment">// note that it turns out that the items added together during</span>
-	<span class="comment">// this step are, in fact, being added to themselves (as reflected</span>
-	<span class="comment">// by step 0). inexplicable inefficiency! this became obvious</span>
-	<span class="comment">// once I combined the passes.</span>
+	// note that it turns out that the items added together during
+	// this step are, in fact, being added to themselves (as reflected
+	// by step 0). inexplicable inefficiency! this became obvious
+	// once I combined the passes.
 
-	<span class="comment">// so there&#39;s a missing &#39;times 2&#39; here (for adding X to itself).</span>
-	<span class="comment">// this propogates through linearly to the end, where the numbers</span>
-	<span class="comment">// are 1/2 too small, and need to be compensated for.</span>
+	// so there&#39;s a missing &#39;times 2&#39; here (for adding X to itself).
+	// this propogates through linearly to the end, where the numbers
+	// are 1/2 too small, and need to be compensated for.
 
-	{
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_offs</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d_offs</span> = <span class="ident">n2</span> - <span class="number">2</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">e_offs</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="ident">e_stop</span> = <span class="ident">n2</span>;
+	</span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>a_offs = <span class="number">0</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>d_offs = n2 - <span class="number">2</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>e_offs = <span class="number">0</span>;
+		<span class="kw">let </span>e_stop = n2;
 
-		<span class="macro">macro_rules!</span> <span class="ident">d</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buf2</span>[<span class="ident">d_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> d {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buf2[d_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">aa</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">a</span>[<span class="ident">a_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> aa {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">e</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buffer</span>[<span class="ident">e_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> e {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
 
-		<span class="comment">// TODO replace the while with a for once step_by on iterators</span>
-		<span class="comment">// is stabilized</span>
-		<span class="kw">while</span> <span class="ident">e_offs</span> != <span class="ident">e_stop</span> {
+		<span class="comment">// TODO replace the while with a for once step_by on iterators
+		// is stabilized
+		</span><span class="kw">while </span>e_offs != e_stop {
 			<span class="macro">d!</span>[<span class="number">1</span>] = <span class="macro">e!</span>[<span class="number">0</span>] * <span class="macro">aa!</span>[<span class="number">0</span>] - <span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
 			<span class="macro">d!</span>[<span class="number">0</span>] = <span class="macro">e!</span>[<span class="number">0</span>] * <span class="macro">aa!</span>[<span class="number">1</span>] + <span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>];
-			<span class="ident">d_offs</span> -= <span class="number">2</span>;
-			<span class="ident">a_offs</span> += <span class="number">2</span>;
-			<span class="ident">e_offs</span> += <span class="number">4</span>;
+			d_offs -= <span class="number">2</span>;
+			a_offs += <span class="number">2</span>;
+			e_offs += <span class="number">4</span>;
 		}
 
-		<span class="ident">e_offs</span> = <span class="ident">n2</span> - <span class="number">3</span>;
-		<span class="kw">loop</span> {
+		e_offs = n2 - <span class="number">3</span>;
+		<span class="kw">loop </span>{
 			<span class="macro">d!</span>[<span class="number">1</span>] = -<span class="macro">e!</span>[<span class="number">2</span>] * <span class="macro">aa!</span>[<span class="number">0</span>] - -<span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
 			<span class="macro">d!</span>[<span class="number">0</span>] = -<span class="macro">e!</span>[<span class="number">2</span>] * <span class="macro">aa!</span>[<span class="number">1</span>] + -<span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>];
-			<span class="macro">break_if_sub_overflows!</span>(<span class="ident">d_offs</span>, <span class="number">2</span>);
-			<span class="ident">a_offs</span> += <span class="number">2</span>;
-			<span class="ident">e_offs</span> -= <span class="number">4</span>;
+			<span class="macro">break_if_sub_overflows!</span>(d_offs, <span class="number">2</span>);
+			a_offs += <span class="number">2</span>;
+			e_offs -= <span class="number">4</span>;
 		}
 	}
 
 
 	{
-		<span class="comment">// now we use symbolic names for these, so that we can</span>
-		<span class="comment">// possibly swap their meaning as we change which operations</span>
-		<span class="comment">// are in place</span>
+		<span class="comment">// now we use symbolic names for these, so that we can
+		// possibly swap their meaning as we change which operations
+		// are in place
 
-		<span class="kw">let</span> <span class="ident">u</span> = <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">buffer</span>;
-		<span class="kw">let</span> <span class="ident">v</span> = <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">buf2</span>;
+		</span><span class="kw">let </span>u = <span class="kw-2">&amp;mut *</span>buffer;
+		<span class="kw">let </span>v = <span class="kw-2">&amp;mut *</span>buf2;
 
-		<span class="comment">// step 2    (paper output is w, now u)</span>
-		<span class="comment">// this could be in place, but the data ends up in the wrong</span>
-		<span class="comment">// place... _somebody_&#39;s got to swap it, so this is nominated</span>
-		{
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_offs</span> = <span class="ident">n2</span> - <span class="number">8</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d0_offs</span> = <span class="ident">n4</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d1_offs</span> = <span class="number">0</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">e0_offs</span> = <span class="ident">n4</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">e1_offs</span> = <span class="number">0</span>;
+		<span class="comment">// step 2    (paper output is w, now u)
+		// this could be in place, but the data ends up in the wrong
+		// place... _somebody_&#39;s got to swap it, so this is nominated
+		</span>{
+			<span class="kw">let </span><span class="kw-2">mut </span>a_offs = n2 - <span class="number">8</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>d0_offs = n4;
+			<span class="kw">let </span><span class="kw-2">mut </span>d1_offs = <span class="number">0</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>e0_offs = n4;
+			<span class="kw">let </span><span class="kw-2">mut </span>e1_offs = <span class="number">0</span>;
 
-			<span class="macro">macro_rules!</span> <span class="ident">aa</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">a</span>[<span class="ident">a_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> aa {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">d0</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">u</span>[<span class="ident">d0_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> d0 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {u[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">d1</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">u</span>[<span class="ident">d1_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> d1 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {u[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">e0</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">e0_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> e0 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">e1</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">e1_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> e1 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
 
-			<span class="kw">loop</span> {
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v41_21</span> = <span class="macro">e0!</span>[<span class="number">1</span>] - <span class="macro">e1!</span>[<span class="number">1</span>];
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v40_20</span> = <span class="macro">e0!</span>[<span class="number">0</span>] - <span class="macro">e1!</span>[<span class="number">0</span>];
+			<span class="kw">loop </span>{
+				<span class="kw">let </span><span class="kw-2">mut </span>v41_21 = <span class="macro">e0!</span>[<span class="number">1</span>] - <span class="macro">e1!</span>[<span class="number">1</span>];
+				<span class="kw">let </span><span class="kw-2">mut </span>v40_20 = <span class="macro">e0!</span>[<span class="number">0</span>] - <span class="macro">e1!</span>[<span class="number">0</span>];
 				<span class="macro">d0!</span>[<span class="number">1</span>]  = <span class="macro">e0!</span>[<span class="number">1</span>] + <span class="macro">e1!</span>[<span class="number">1</span>];
 				<span class="macro">d0!</span>[<span class="number">0</span>]  = <span class="macro">e0!</span>[<span class="number">0</span>] + <span class="macro">e1!</span>[<span class="number">0</span>];
-				<span class="macro">d1!</span>[<span class="number">1</span>]  = <span class="ident">v41_21</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">4</span>] - <span class="ident">v40_20</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">5</span>];
-				<span class="macro">d1!</span>[<span class="number">0</span>]  = <span class="ident">v40_20</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">4</span>] + <span class="ident">v41_21</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">5</span>];
+				<span class="macro">d1!</span>[<span class="number">1</span>]  = v41_21<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">4</span>] - v40_20<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">5</span>];
+				<span class="macro">d1!</span>[<span class="number">0</span>]  = v40_20<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">4</span>] + v41_21<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">5</span>];
 
-				<span class="ident">v41_21</span> = <span class="macro">e0!</span>[<span class="number">3</span>] - <span class="macro">e1!</span>[<span class="number">3</span>];
-				<span class="ident">v40_20</span> = <span class="macro">e0!</span>[<span class="number">2</span>] - <span class="macro">e1!</span>[<span class="number">2</span>];
+				v41_21 = <span class="macro">e0!</span>[<span class="number">3</span>] - <span class="macro">e1!</span>[<span class="number">3</span>];
+				v40_20 = <span class="macro">e0!</span>[<span class="number">2</span>] - <span class="macro">e1!</span>[<span class="number">2</span>];
 				<span class="macro">d0!</span>[<span class="number">3</span>]  = <span class="macro">e0!</span>[<span class="number">3</span>] + <span class="macro">e1!</span>[<span class="number">3</span>];
 				<span class="macro">d0!</span>[<span class="number">2</span>]  = <span class="macro">e0!</span>[<span class="number">2</span>] + <span class="macro">e1!</span>[<span class="number">2</span>];
-				<span class="macro">d1!</span>[<span class="number">3</span>]  = <span class="ident">v41_21</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>] - <span class="ident">v40_20</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
-				<span class="macro">d1!</span>[<span class="number">2</span>]  = <span class="ident">v40_20</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>] + <span class="ident">v41_21</span><span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
+				<span class="macro">d1!</span>[<span class="number">3</span>]  = v41_21<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>] - v40_20<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
+				<span class="macro">d1!</span>[<span class="number">2</span>]  = v40_20<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">0</span>] + v41_21<span class="kw-2">*</span><span class="macro">aa!</span>[<span class="number">1</span>];
 
-				<span class="macro">break_if_sub_overflows!</span>(<span class="ident">a_offs</span>, <span class="number">8</span>);
+				<span class="macro">break_if_sub_overflows!</span>(a_offs, <span class="number">8</span>);
 
-				<span class="ident">d0_offs</span> += <span class="number">4</span>;
-				<span class="ident">d1_offs</span> += <span class="number">4</span>;
-				<span class="ident">e0_offs</span> += <span class="number">4</span>;
-				<span class="ident">e1_offs</span> += <span class="number">4</span>;
+				d0_offs += <span class="number">4</span>;
+				d1_offs += <span class="number">4</span>;
+				e0_offs += <span class="number">4</span>;
+				e1_offs += <span class="number">4</span>;
 			}
 		}
 
 
-		<span class="comment">// step 3</span>
+		<span class="comment">// step 3
 
-		<span class="kw">let</span> <span class="ident">ld</span> = <span class="ident">bs</span> <span class="kw">as</span> <span class="ident">usize</span>;
+		</span><span class="kw">let </span>ld = bs <span class="kw">as </span>usize;
 
-		<span class="comment">// optimized step 3:</span>
+		<span class="comment">// optimized step 3:
 
-		<span class="comment">// the original step3 loop can be nested r inside s or s inside r;</span>
-		<span class="comment">// it&#39;s written originally as s inside r, but this is dumb when r</span>
-		<span class="comment">// iterates many times, and s few. So I have two copies of it and</span>
-		<span class="comment">// switch between them halfway.</span>
+		// the original step3 loop can be nested r inside s or s inside r;
+		// it&#39;s written originally as s inside r, but this is dumb when r
+		// iterates many times, and s few. So I have two copies of it and
+		// switch between them halfway.
 
-		<span class="comment">// this is iteration 0 of step 3</span>
-		<span class="ident">imdct_step3_iter0_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">4</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span>-<span class="ident">n4</span><span class="kw-2">*</span><span class="number">0</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">3</span>), <span class="ident">a</span>);
-		<span class="ident">imdct_step3_iter0_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">4</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span>-<span class="ident">n4</span><span class="kw-2">*</span><span class="number">1</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">3</span>), <span class="ident">a</span>);
+		// this is iteration 0 of step 3
+		</span>imdct_step3_iter0_loop(n &gt;&gt; <span class="number">4</span>, u, n2-<span class="number">1</span>-n4<span class="kw-2">*</span><span class="number">0</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">3</span>), a);
+		imdct_step3_iter0_loop(n &gt;&gt; <span class="number">4</span>, u, n2-<span class="number">1</span>-n4<span class="kw-2">*</span><span class="number">1</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">3</span>), a);
 
-		<span class="comment">// this is iteration 1 of step 3</span>
-		<span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">5</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span> - <span class="ident">n8</span><span class="kw-2">*</span><span class="number">0</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">4</span>), <span class="ident">a</span>, <span class="number">16</span>);
-		<span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">5</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span> - <span class="ident">n8</span><span class="kw-2">*</span><span class="number">1</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">4</span>), <span class="ident">a</span>, <span class="number">16</span>);
-		<span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">5</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span> - <span class="ident">n8</span><span class="kw-2">*</span><span class="number">2</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">4</span>), <span class="ident">a</span>, <span class="number">16</span>);
-		<span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">n</span> &gt;&gt; <span class="number">5</span>, <span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span> - <span class="ident">n8</span><span class="kw-2">*</span><span class="number">3</span>, -(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">4</span>), <span class="ident">a</span>, <span class="number">16</span>);
+		<span class="comment">// this is iteration 1 of step 3
+		</span>imdct_step3_inner_r_loop(n &gt;&gt; <span class="number">5</span>, u, n2-<span class="number">1 </span>- n8<span class="kw-2">*</span><span class="number">0</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">4</span>), a, <span class="number">16</span>);
+		imdct_step3_inner_r_loop(n &gt;&gt; <span class="number">5</span>, u, n2-<span class="number">1 </span>- n8<span class="kw-2">*</span><span class="number">1</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">4</span>), a, <span class="number">16</span>);
+		imdct_step3_inner_r_loop(n &gt;&gt; <span class="number">5</span>, u, n2-<span class="number">1 </span>- n8<span class="kw-2">*</span><span class="number">2</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">4</span>), a, <span class="number">16</span>);
+		imdct_step3_inner_r_loop(n &gt;&gt; <span class="number">5</span>, u, n2-<span class="number">1 </span>- n8<span class="kw-2">*</span><span class="number">3</span>, -(n <span class="kw">as </span>isize &gt;&gt; <span class="number">4</span>), a, <span class="number">16</span>);
 
-		<span class="kw">for</span> <span class="ident">l</span> <span class="kw">in</span> <span class="number">2</span> .. (<span class="ident">ld</span> - <span class="number">3</span>) &gt;&gt; <span class="number">1</span> {
-			<span class="kw">let</span> <span class="ident">k0</span> = <span class="ident">n</span> &gt;&gt; (<span class="ident">l</span> + <span class="number">2</span>);
-			<span class="kw">let</span> <span class="ident">k0_2</span> = <span class="ident">k0</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">1</span>;
-			<span class="kw">let</span> <span class="ident">lim</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">l</span>+<span class="number">1</span>);
-			<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">lim</span> {
-				<span class="ident">imdct_step3_inner_r_loop</span>(<span class="ident">n</span> &gt;&gt; (<span class="ident">l</span> + <span class="number">4</span>),
-					<span class="ident">u</span>, <span class="ident">n2</span>-<span class="number">1</span> - <span class="ident">k0</span><span class="kw-2">*</span><span class="ident">i</span>, -<span class="ident">k0_2</span>, <span class="ident">a</span>, <span class="number">1</span> &lt;&lt; (<span class="ident">l</span>+<span class="number">3</span>));
+		<span class="kw">for </span>l <span class="kw">in </span><span class="number">2 </span>.. (ld - <span class="number">3</span>) &gt;&gt; <span class="number">1 </span>{
+			<span class="kw">let </span>k0 = n &gt;&gt; (l + <span class="number">2</span>);
+			<span class="kw">let </span>k0_2 = k0 <span class="kw">as </span>isize &gt;&gt; <span class="number">1</span>;
+			<span class="kw">let </span>lim = <span class="number">1 </span>&lt;&lt; (l+<span class="number">1</span>);
+			<span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. lim {
+				imdct_step3_inner_r_loop(n &gt;&gt; (l + <span class="number">4</span>),
+					u, n2-<span class="number">1 </span>- k0<span class="kw-2">*</span>i, -k0_2, a, <span class="number">1 </span>&lt;&lt; (l+<span class="number">3</span>));
 			}
 		}
-		<span class="kw">for</span> <span class="ident">l</span> <span class="kw">in</span> (<span class="ident">ld</span> - <span class="number">3</span>) &gt;&gt; <span class="number">1</span> .. <span class="ident">ld</span> - <span class="number">6</span> {
-			<span class="kw">let</span> <span class="ident">k0</span> = <span class="ident">n</span> &gt;&gt; (<span class="ident">l</span> + <span class="number">2</span>);
-			<span class="kw">let</span> <span class="ident">k1</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">l</span> + <span class="number">3</span>);
-			<span class="kw">let</span> <span class="ident">k0_2</span> = <span class="ident">k0</span> <span class="kw">as</span> <span class="ident">isize</span> &gt;&gt; <span class="number">1</span>;
-			<span class="kw">let</span> <span class="ident">rlim</span> = <span class="ident">n</span> &gt;&gt; (<span class="ident">l</span> + <span class="number">6</span>);
-			<span class="kw">let</span> <span class="ident">lim</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">l</span> + <span class="number">1</span>);
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i_off</span> = <span class="ident">n2</span> - <span class="number">1</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a_off</span> = <span class="number">0</span>;
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">rlim</span> {
-				<span class="kw">let</span> <span class="ident">a0</span> = <span class="ident">a</span>.<span class="ident">split_at</span>(<span class="ident">a_off</span>).<span class="number">1</span>;
-				<span class="ident">imdct_step3_inner_s_loop</span>(<span class="ident">lim</span>, <span class="ident">u</span>, <span class="ident">i_off</span>, -<span class="ident">k0_2</span>, <span class="ident">a0</span>, <span class="ident">k1</span>, <span class="ident">k0</span>);
-				<span class="ident">a_off</span> += <span class="ident">k1</span> * <span class="number">4</span>;
-				<span class="ident">i_off</span> -= <span class="number">8</span>;
+		<span class="kw">for </span>l <span class="kw">in </span>(ld - <span class="number">3</span>) &gt;&gt; <span class="number">1 </span>.. ld - <span class="number">6 </span>{
+			<span class="kw">let </span>k0 = n &gt;&gt; (l + <span class="number">2</span>);
+			<span class="kw">let </span>k1 = <span class="number">1 </span>&lt;&lt; (l + <span class="number">3</span>);
+			<span class="kw">let </span>k0_2 = k0 <span class="kw">as </span>isize &gt;&gt; <span class="number">1</span>;
+			<span class="kw">let </span>rlim = n &gt;&gt; (l + <span class="number">6</span>);
+			<span class="kw">let </span>lim = <span class="number">1 </span>&lt;&lt; (l + <span class="number">1</span>);
+			<span class="kw">let </span><span class="kw-2">mut </span>i_off = n2 - <span class="number">1</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>a_off = <span class="number">0</span>;
+			<span class="kw">for _ in </span><span class="number">0 </span>.. rlim {
+				<span class="kw">let </span>a0 = a.split_at(a_off).<span class="number">1</span>;
+				imdct_step3_inner_s_loop(lim, u, i_off, -k0_2, a0, k1, k0);
+				a_off += k1 * <span class="number">4</span>;
+				i_off -= <span class="number">8</span>;
 			}
 		}
 
-		<span class="comment">// iterations with count:</span>
-		<span class="comment">//   ld-6,-5,-4 all interleaved together</span>
-		<span class="comment">//       the big win comes from getting rid of needless flops</span>
-		<span class="comment">//         due to the constants on pass 5 &amp; 4 being all 1 and 0;</span>
-		<span class="comment">//       combining them to be simultaneous to improve cache made little difference</span>
-		<span class="ident">imdct_step3_inner_s_loop_ld654</span>(<span class="ident">n</span> &gt;&gt; <span class="number">5</span>, <span class="ident">u</span>, <span class="ident">n2</span> - <span class="number">1</span>, <span class="ident">a</span>, <span class="ident">n</span>);
+		<span class="comment">// iterations with count:
+		//   ld-6,-5,-4 all interleaved together
+		//       the big win comes from getting rid of needless flops
+		//         due to the constants on pass 5 &amp; 4 being all 1 and 0;
+		//       combining them to be simultaneous to improve cache made little difference
+		</span>imdct_step3_inner_s_loop_ld654(n &gt;&gt; <span class="number">5</span>, u, n2 - <span class="number">1</span>, a, n);
 
-		<span class="comment">// output is u</span>
+		<span class="comment">// output is u
 
-		<span class="comment">// step 4, 5, and 6</span>
-		<span class="comment">// cannot be in-place because of step 5</span>
-		{
-			<span class="kw">let</span> <span class="ident">bitrev_vec</span> = <span class="kw-2">&amp;</span><span class="ident">cached_bd</span>.<span class="ident">bitrev</span>;
-			<span class="comment">// weirdly, I&#39;d have thought reading sequentially and writing</span>
-			<span class="comment">// erratically would have been better than vice-versa, but in</span>
-			<span class="comment">// fact that&#39;s not what my testing showed. (That is, with</span>
-			<span class="comment">// j = bitreverse(i), do you read i and write j, or read j and write i.)</span>
+		// step 4, 5, and 6
+		// cannot be in-place because of step 5
+		</span>{
+			<span class="kw">let </span>bitrev_vec = <span class="kw-2">&amp;</span>cached_bd.bitrev;
+			<span class="comment">// weirdly, I&#39;d have thought reading sequentially and writing
+			// erratically would have been better than vice-versa, but in
+			// fact that&#39;s not what my testing showed. (That is, with
+			// j = bitreverse(i), do you read i and write j, or read j and write i.)
 
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d0_offs</span> = <span class="ident">n4</span> - <span class="number">4</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d1_offs</span> = <span class="ident">n2</span> - <span class="number">4</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bitrev_offs</span> = <span class="number">0</span>;
+			</span><span class="kw">let </span><span class="kw-2">mut </span>d0_offs = n4 - <span class="number">4</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>d1_offs = n2 - <span class="number">4</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>bitrev_offs = <span class="number">0</span>;
 
-			<span class="macro">macro_rules!</span> <span class="ident">d0</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">d0_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> d0 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">d1</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">d1_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> d1 {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">bitrev</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">bitrev_vec</span>[<span class="ident">bitrev_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> bitrev {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {bitrev_vec[bitrev_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
 
-			<span class="kw">loop</span> {
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k4</span> = <span class="macro">bitrev!</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="ident">usize</span>;
-				<span class="macro">d1!</span>[<span class="number">3</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">0</span>];
-				<span class="macro">d1!</span>[<span class="number">2</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">1</span>];
-				<span class="macro">d0!</span>[<span class="number">3</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">2</span>];
-				<span class="macro">d0!</span>[<span class="number">2</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">3</span>];
+			<span class="kw">loop </span>{
+				<span class="kw">let </span><span class="kw-2">mut </span>k4 = <span class="macro">bitrev!</span>[<span class="number">0</span>] <span class="kw">as </span>usize;
+				<span class="macro">d1!</span>[<span class="number">3</span>] = u[k4 + <span class="number">0</span>];
+				<span class="macro">d1!</span>[<span class="number">2</span>] = u[k4 + <span class="number">1</span>];
+				<span class="macro">d0!</span>[<span class="number">3</span>] = u[k4 + <span class="number">2</span>];
+				<span class="macro">d0!</span>[<span class="number">2</span>] = u[k4 + <span class="number">3</span>];
 
-				<span class="ident">k4</span> = <span class="macro">bitrev!</span>[<span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span>;
-				<span class="macro">d1!</span>[<span class="number">1</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">0</span>];
-				<span class="macro">d1!</span>[<span class="number">0</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">1</span>];
-				<span class="macro">d0!</span>[<span class="number">1</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">2</span>];
-				<span class="macro">d0!</span>[<span class="number">0</span>] = <span class="ident">u</span>[<span class="ident">k4</span> + <span class="number">3</span>];
+				k4 = <span class="macro">bitrev!</span>[<span class="number">1</span>] <span class="kw">as </span>usize;
+				<span class="macro">d1!</span>[<span class="number">1</span>] = u[k4 + <span class="number">0</span>];
+				<span class="macro">d1!</span>[<span class="number">0</span>] = u[k4 + <span class="number">1</span>];
+				<span class="macro">d0!</span>[<span class="number">1</span>] = u[k4 + <span class="number">2</span>];
+				<span class="macro">d0!</span>[<span class="number">0</span>] = u[k4 + <span class="number">3</span>];
 
-				<span class="macro">break_if_sub_overflows!</span>(<span class="ident">d0_offs</span>, <span class="number">4</span>);
-				<span class="ident">d1_offs</span> -= <span class="number">4</span>;
-				<span class="ident">bitrev_offs</span> += <span class="number">2</span>;
+				<span class="macro">break_if_sub_overflows!</span>(d0_offs, <span class="number">4</span>);
+				d1_offs -= <span class="number">4</span>;
+				bitrev_offs += <span class="number">2</span>;
 			}
 		}
-		<span class="comment">// (paper output is u, now v)</span>
+		<span class="comment">// (paper output is u, now v)
 
-		<span class="comment">// step 7   (paper output is v, now v)</span>
-		<span class="comment">// this is now in place</span>
-		{
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">c_offs</span> = <span class="number">0</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d_offs</span> = <span class="number">0</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">e_offs</span> = <span class="ident">n2</span> - <span class="number">4</span>;
+		// step 7   (paper output is v, now v)
+		// this is now in place
+		</span>{
+			<span class="kw">let </span><span class="kw-2">mut </span>c_offs = <span class="number">0</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>d_offs = <span class="number">0</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>e_offs = n2 - <span class="number">4</span>;
 
-			<span class="macro">macro_rules!</span> <span class="ident">cc</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">c</span>[<span class="ident">c_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> cc {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {c[c_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">d</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">d_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> d {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules!</span> <span class="ident">e</span> {
-				(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">v</span>[<span class="ident">e_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+			<span class="macro">macro_rules!</span> e {
+				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="kw">while</span> <span class="ident">d_offs</span> &lt; <span class="ident">e_offs</span> {
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a02</span> = <span class="macro">d!</span>[<span class="number">0</span>] - <span class="macro">e!</span>[<span class="number">2</span>];
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a11</span> = <span class="macro">d!</span>[<span class="number">1</span>] + <span class="macro">e!</span>[<span class="number">3</span>];
+			<span class="kw">while </span>d_offs &lt; e_offs {
+				<span class="kw">let </span><span class="kw-2">mut </span>a02 = <span class="macro">d!</span>[<span class="number">0</span>] - <span class="macro">e!</span>[<span class="number">2</span>];
+				<span class="kw">let </span><span class="kw-2">mut </span>a11 = <span class="macro">d!</span>[<span class="number">1</span>] + <span class="macro">e!</span>[<span class="number">3</span>];
 
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b0</span> = <span class="macro">cc!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="ident">a02</span> + <span class="macro">cc!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="ident">a11</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b1</span> = <span class="macro">cc!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="ident">a11</span> - <span class="macro">cc!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="ident">a02</span>;
+				<span class="kw">let </span><span class="kw-2">mut </span>b0 = <span class="macro">cc!</span>[<span class="number">1</span>]<span class="kw-2">*</span>a02 + <span class="macro">cc!</span>[<span class="number">0</span>]<span class="kw-2">*</span>a11;
+				<span class="kw">let </span><span class="kw-2">mut </span>b1 = <span class="macro">cc!</span>[<span class="number">1</span>]<span class="kw-2">*</span>a11 - <span class="macro">cc!</span>[<span class="number">0</span>]<span class="kw-2">*</span>a02;
 
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b2</span> = <span class="macro">d!</span>[<span class="number">0</span>] + <span class="macro">e!</span>[ <span class="number">2</span>];
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b3</span> = <span class="macro">d!</span>[<span class="number">1</span>] - <span class="macro">e!</span>[ <span class="number">3</span>];
+				<span class="kw">let </span><span class="kw-2">mut </span>b2 = <span class="macro">d!</span>[<span class="number">0</span>] + <span class="macro">e!</span>[ <span class="number">2</span>];
+				<span class="kw">let </span><span class="kw-2">mut </span>b3 = <span class="macro">d!</span>[<span class="number">1</span>] - <span class="macro">e!</span>[ <span class="number">3</span>];
 
-				<span class="macro">d!</span>[<span class="number">0</span>] = <span class="ident">b2</span> + <span class="ident">b0</span>;
-				<span class="macro">d!</span>[<span class="number">1</span>] = <span class="ident">b3</span> + <span class="ident">b1</span>;
-				<span class="macro">e!</span>[<span class="number">2</span>] = <span class="ident">b2</span> - <span class="ident">b0</span>;
-				<span class="macro">e!</span>[<span class="number">3</span>] = <span class="ident">b1</span> - <span class="ident">b3</span>;
+				<span class="macro">d!</span>[<span class="number">0</span>] = b2 + b0;
+				<span class="macro">d!</span>[<span class="number">1</span>] = b3 + b1;
+				<span class="macro">e!</span>[<span class="number">2</span>] = b2 - b0;
+				<span class="macro">e!</span>[<span class="number">3</span>] = b1 - b3;
 
-				<span class="ident">a02</span> = <span class="macro">d!</span>[<span class="number">2</span>] - <span class="macro">e!</span>[<span class="number">0</span>];
-				<span class="ident">a11</span> = <span class="macro">d!</span>[<span class="number">3</span>] + <span class="macro">e!</span>[<span class="number">1</span>];
+				a02 = <span class="macro">d!</span>[<span class="number">2</span>] - <span class="macro">e!</span>[<span class="number">0</span>];
+				a11 = <span class="macro">d!</span>[<span class="number">3</span>] + <span class="macro">e!</span>[<span class="number">1</span>];
 
-				<span class="ident">b0</span> = <span class="macro">cc!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="ident">a02</span> + <span class="macro">cc!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="ident">a11</span>;
-				<span class="ident">b1</span> = <span class="macro">cc!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="ident">a11</span> - <span class="macro">cc!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="ident">a02</span>;
+				b0 = <span class="macro">cc!</span>[<span class="number">3</span>]<span class="kw-2">*</span>a02 + <span class="macro">cc!</span>[<span class="number">2</span>]<span class="kw-2">*</span>a11;
+				b1 = <span class="macro">cc!</span>[<span class="number">3</span>]<span class="kw-2">*</span>a11 - <span class="macro">cc!</span>[<span class="number">2</span>]<span class="kw-2">*</span>a02;
 
-				<span class="ident">b2</span> = <span class="macro">d!</span>[<span class="number">2</span>] + <span class="macro">e!</span>[ <span class="number">0</span>];
-				<span class="ident">b3</span> = <span class="macro">d!</span>[<span class="number">3</span>] - <span class="macro">e!</span>[ <span class="number">1</span>];
+				b2 = <span class="macro">d!</span>[<span class="number">2</span>] + <span class="macro">e!</span>[ <span class="number">0</span>];
+				b3 = <span class="macro">d!</span>[<span class="number">3</span>] - <span class="macro">e!</span>[ <span class="number">1</span>];
 
-				<span class="macro">d!</span>[<span class="number">2</span>] = <span class="ident">b2</span> + <span class="ident">b0</span>;
-				<span class="macro">d!</span>[<span class="number">3</span>] = <span class="ident">b3</span> + <span class="ident">b1</span>;
-				<span class="macro">e!</span>[<span class="number">0</span>] = <span class="ident">b2</span> - <span class="ident">b0</span>;
-				<span class="macro">e!</span>[<span class="number">1</span>] = <span class="ident">b1</span> - <span class="ident">b3</span>;
+				<span class="macro">d!</span>[<span class="number">2</span>] = b2 + b0;
+				<span class="macro">d!</span>[<span class="number">3</span>] = b3 + b1;
+				<span class="macro">e!</span>[<span class="number">0</span>] = b2 - b0;
+				<span class="macro">e!</span>[<span class="number">1</span>] = b1 - b3;
 
-				<span class="ident">c_offs</span> += <span class="number">4</span>;
-				<span class="ident">d_offs</span> += <span class="number">4</span>;
-				<span class="ident">e_offs</span> -= <span class="number">4</span>;
+				c_offs += <span class="number">4</span>;
+				d_offs += <span class="number">4</span>;
+				e_offs -= <span class="number">4</span>;
 			}
 		}
 	}
 
-	<span class="comment">// step 8+decode   (paper output is X, now buffer)</span>
-	<span class="comment">// this generates pairs of data a la 8 and pushes them directly through</span>
-	<span class="comment">// the decode kernel (pushing rather than pulling) to avoid having</span>
-	<span class="comment">// to make another pass later</span>
+	<span class="comment">// step 8+decode   (paper output is X, now buffer)
+	// this generates pairs of data a la 8 and pushes them directly through
+	// the decode kernel (pushing rather than pulling) to avoid having
+	// to make another pass later
 
-	<span class="comment">// this cannot POSSIBLY be in place, so we refer to the buffers directly</span>
-	{
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d0_offs</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d1_offs</span> = <span class="ident">n2</span> - <span class="number">4</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d2_offs</span> = <span class="ident">n2</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">d3_offs</span> = <span class="ident">n</span> - <span class="number">4</span>;
+	// this cannot POSSIBLY be in place, so we refer to the buffers directly
+	</span>{
+		<span class="kw">let </span><span class="kw-2">mut </span>d0_offs = <span class="number">0</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>d1_offs = n2 - <span class="number">4</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>d2_offs = n2;
+		<span class="kw">let </span><span class="kw-2">mut </span>d3_offs = n - <span class="number">4</span>;
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b_offs</span> = <span class="ident">n2</span> - <span class="number">8</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">e_offs</span> = <span class="ident">n2</span> - <span class="number">8</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>b_offs = n2 - <span class="number">8</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>e_offs = n2 - <span class="number">8</span>;
 
-		<span class="macro">macro_rules!</span> <span class="ident">d0</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buffer</span>[<span class="ident">d0_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> d0 {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">d1</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buffer</span>[<span class="ident">d1_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> d1 {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">d2</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buffer</span>[<span class="ident">d2_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> d2 {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d2_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">d3</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buffer</span>[<span class="ident">d3_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
-		}
-
-		<span class="macro">macro_rules!</span> <span class="ident">b</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">b</span>[<span class="ident">b_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
-		}
-		<span class="macro">macro_rules!</span> <span class="ident">e</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {<span class="ident">buf2</span>[<span class="ident">e_offs</span> + (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> <span class="kw">as</span> <span class="ident">usize</span>)]}
+		<span class="macro">macro_rules!</span> d3 {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d3_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
 
-		<span class="kw">loop</span> {
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p3</span> =  <span class="macro">e!</span>[<span class="number">6</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">7</span>] - <span class="macro">e!</span>[<span class="number">7</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">6</span>];
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p2</span> = -<span class="macro">e!</span>[<span class="number">6</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">6</span>] - <span class="macro">e!</span>[<span class="number">7</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">7</span>];
+		<span class="macro">macro_rules!</span> b {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {b[b_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
+		}
+		<span class="macro">macro_rules!</span> e {
+			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buf2[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
+		}
 
-			<span class="macro">d0!</span>[<span class="number">0</span>] =   <span class="ident">p3</span>;
-			<span class="macro">d1!</span>[<span class="number">3</span>] = - <span class="ident">p3</span>;
-			<span class="macro">d2!</span>[<span class="number">0</span>] =   <span class="ident">p2</span>;
-			<span class="macro">d3!</span>[<span class="number">3</span>] =   <span class="ident">p2</span>;
+		<span class="kw">loop </span>{
+			<span class="kw">let </span><span class="kw-2">mut </span>p3 =  <span class="macro">e!</span>[<span class="number">6</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">7</span>] - <span class="macro">e!</span>[<span class="number">7</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">6</span>];
+			<span class="kw">let </span><span class="kw-2">mut </span>p2 = -<span class="macro">e!</span>[<span class="number">6</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">6</span>] - <span class="macro">e!</span>[<span class="number">7</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">7</span>];
 
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p1</span> =  <span class="macro">e!</span>[<span class="number">4</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">5</span>] - <span class="macro">e!</span>[<span class="number">5</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">4</span>];
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p0</span> = -<span class="macro">e!</span>[<span class="number">4</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">4</span>] - <span class="macro">e!</span>[<span class="number">5</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">5</span>];
+			<span class="macro">d0!</span>[<span class="number">0</span>] =   p3;
+			<span class="macro">d1!</span>[<span class="number">3</span>] = - p3;
+			<span class="macro">d2!</span>[<span class="number">0</span>] =   p2;
+			<span class="macro">d3!</span>[<span class="number">3</span>] =   p2;
 
-			<span class="macro">d0!</span>[<span class="number">1</span>] =   <span class="ident">p1</span>;
-			<span class="macro">d1!</span>[<span class="number">2</span>] = - <span class="ident">p1</span>;
-			<span class="macro">d2!</span>[<span class="number">1</span>] =   <span class="ident">p0</span>;
-			<span class="macro">d3!</span>[<span class="number">2</span>] =   <span class="ident">p0</span>;
+			<span class="kw">let </span><span class="kw-2">mut </span>p1 =  <span class="macro">e!</span>[<span class="number">4</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">5</span>] - <span class="macro">e!</span>[<span class="number">5</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">4</span>];
+			<span class="kw">let </span><span class="kw-2">mut </span>p0 = -<span class="macro">e!</span>[<span class="number">4</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">4</span>] - <span class="macro">e!</span>[<span class="number">5</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">5</span>];
 
-			<span class="ident">p3</span> =  <span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">3</span>] - <span class="macro">e!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">2</span>];
-			<span class="ident">p2</span> = -<span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">2</span>] - <span class="macro">e!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">3</span>];
+			<span class="macro">d0!</span>[<span class="number">1</span>] =   p1;
+			<span class="macro">d1!</span>[<span class="number">2</span>] = - p1;
+			<span class="macro">d2!</span>[<span class="number">1</span>] =   p0;
+			<span class="macro">d3!</span>[<span class="number">2</span>] =   p0;
 
-			<span class="macro">d0!</span>[<span class="number">2</span>] =   <span class="ident">p3</span>;
-			<span class="macro">d1!</span>[<span class="number">1</span>] = - <span class="ident">p3</span>;
-			<span class="macro">d2!</span>[<span class="number">2</span>] =   <span class="ident">p2</span>;
-			<span class="macro">d3!</span>[<span class="number">1</span>] =   <span class="ident">p2</span>;
+			p3 =  <span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">3</span>] - <span class="macro">e!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">2</span>];
+			p2 = -<span class="macro">e!</span>[<span class="number">2</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">2</span>] - <span class="macro">e!</span>[<span class="number">3</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">3</span>];
 
-			<span class="ident">p1</span> =  <span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">1</span>] - <span class="macro">e!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">0</span>];
-			<span class="ident">p0</span> = -<span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">0</span>] - <span class="macro">e!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">1</span>];
+			<span class="macro">d0!</span>[<span class="number">2</span>] =   p3;
+			<span class="macro">d1!</span>[<span class="number">1</span>] = - p3;
+			<span class="macro">d2!</span>[<span class="number">2</span>] =   p2;
+			<span class="macro">d3!</span>[<span class="number">1</span>] =   p2;
 
-			<span class="macro">d0!</span>[<span class="number">3</span>] =   <span class="ident">p1</span>;
-			<span class="macro">d1!</span>[<span class="number">0</span>] = - <span class="ident">p1</span>;
-			<span class="macro">d2!</span>[<span class="number">3</span>] =   <span class="ident">p0</span>;
-			<span class="macro">d3!</span>[<span class="number">0</span>] =   <span class="ident">p0</span>;
+			p1 =  <span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">1</span>] - <span class="macro">e!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">0</span>];
+			p0 = -<span class="macro">e!</span>[<span class="number">0</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">0</span>] - <span class="macro">e!</span>[<span class="number">1</span>]<span class="kw-2">*</span><span class="macro">b!</span>[<span class="number">1</span>];
 
-			<span class="macro">break_if_sub_overflows!</span>(<span class="ident">e_offs</span>, <span class="number">8</span>);
-			<span class="ident">b_offs</span> -= <span class="number">8</span>;
-			<span class="ident">d0_offs</span> += <span class="number">4</span>;
-			<span class="ident">d2_offs</span> += <span class="number">4</span>;
-			<span class="ident">d1_offs</span> -= <span class="number">4</span>;
-			<span class="ident">d3_offs</span> -= <span class="number">4</span>;
+			<span class="macro">d0!</span>[<span class="number">3</span>] =   p1;
+			<span class="macro">d1!</span>[<span class="number">0</span>] = - p1;
+			<span class="macro">d2!</span>[<span class="number">3</span>] =   p0;
+			<span class="macro">d3!</span>[<span class="number">0</span>] =   p0;
+
+			<span class="macro">break_if_sub_overflows!</span>(e_offs, <span class="number">8</span>);
+			b_offs -= <span class="number">8</span>;
+			d0_offs += <span class="number">4</span>;
+			d2_offs += <span class="number">4</span>;
+			d1_offs -= <span class="number">4</span>;
+			d3_offs -= <span class="number">4</span>;
 		}
 	}
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">inverse_mdct_naive</span>(<span class="ident">cached_bd</span> :<span class="kw-2">&amp;</span><span class="ident">CachedBlocksizeDerived</span>, <span class="ident">buffer</span> :<span class="kw-2">&amp;mut</span>[<span class="ident">f32</span>]) {
-	<span class="kw">let</span> <span class="ident">n</span> = <span class="ident">buffer</span>.<span class="ident">len</span>();
-	<span class="kw">let</span> <span class="ident">n2</span> = <span class="ident">n</span> &gt;&gt; <span class="number">1</span>;
-	<span class="kw">let</span> <span class="ident">n4</span> = <span class="ident">n</span> &gt;&gt; <span class="number">2</span>;
-	<span class="kw">let</span> <span class="ident">n8</span> = <span class="ident">n</span> &gt;&gt; <span class="number">3</span>;
-	<span class="kw">let</span> <span class="ident">n3_4</span> = <span class="ident">n</span> - <span class="ident">n4</span>;
+<span class="attribute">#[allow(dead_code)]</span>
+<span class="kw">pub fn </span>inverse_mdct_naive(cached_bd :<span class="kw-2">&amp;</span>CachedBlocksizeDerived, buffer :<span class="kw-2">&amp;mut</span>[f32]) {
+	<span class="kw">let </span>n = buffer.len();
+	<span class="kw">let </span>n2 = n &gt;&gt; <span class="number">1</span>;
+	<span class="kw">let </span>n4 = n &gt;&gt; <span class="number">2</span>;
+	<span class="kw">let </span>n8 = n &gt;&gt; <span class="number">3</span>;
+	<span class="kw">let </span>n3_4 = n - n4;
 
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">u</span> = [<span class="number">0.0</span>; <span class="number">1</span> &lt;&lt; <span class="number">13</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">xa</span> = [<span class="number">0.0</span>; <span class="number">1</span> &lt;&lt; <span class="number">13</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">v</span> = [<span class="number">0.0</span>; <span class="number">1</span> &lt;&lt; <span class="number">13</span>];
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">w</span> = [<span class="number">0.0</span>; <span class="number">1</span> &lt;&lt; <span class="number">13</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>u = [<span class="number">0.0</span>; <span class="number">1 </span>&lt;&lt; <span class="number">13</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>xa = [<span class="number">0.0</span>; <span class="number">1 </span>&lt;&lt; <span class="number">13</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>v = [<span class="number">0.0</span>; <span class="number">1 </span>&lt;&lt; <span class="number">13</span>];
+	<span class="kw">let </span><span class="kw-2">mut </span>w = [<span class="number">0.0</span>; <span class="number">1 </span>&lt;&lt; <span class="number">13</span>];
 
-	<span class="comment">// retrieve the cached twiddle factors</span>
-	<span class="kw">let</span> <span class="ident">ctf</span> = <span class="kw-2">&amp;</span><span class="ident">cached_bd</span>.<span class="ident">twiddle_factors</span>;
-	<span class="kw">let</span> <span class="ident">a</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">a</span>;
-	<span class="kw">let</span> <span class="ident">b</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">b</span>;
-	<span class="kw">let</span> <span class="ident">c</span> :<span class="kw-2">&amp;</span>[<span class="ident">f32</span>] = <span class="kw-2">&amp;</span><span class="ident">ctf</span>.<span class="ident">c</span>;
+	<span class="comment">// retrieve the cached twiddle factors
+	</span><span class="kw">let </span>ctf = <span class="kw-2">&amp;</span>cached_bd.twiddle_factors;
+	<span class="kw">let </span>a :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.a;
+	<span class="kw">let </span>b :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.b;
+	<span class="kw">let </span>c :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.c;
 
-	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;</span>
-	<span class="comment">// Note there are bugs in that pseudocode, presumably due to them attempting</span>
-	<span class="comment">// to rename the arrays nicely rather than representing the way their actual</span>
-	<span class="comment">// implementation bounces buffers back and forth. As a result, even in the</span>
-	<span class="comment">// &quot;some formulars corrected&quot; version, a direct implementation fails. These</span>
-	<span class="comment">// are noted below as &quot;paper bug&quot;.</span>
+	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;
+	// Note there are bugs in that pseudocode, presumably due to them attempting
+	// to rename the arrays nicely rather than representing the way their actual
+	// implementation bounces buffers back and forth. As a result, even in the
+	// &quot;some formulars corrected&quot; version, a direct implementation fails. These
+	// are noted below as &quot;paper bug&quot;.
 
-	<span class="comment">// copy and reflect spectral data</span>
-	<span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n2</span> {
-		<span class="ident">u</span>[<span class="ident">k</span>] = <span class="ident">buffer</span>[<span class="ident">k</span>];
+	// copy and reflect spectral data
+	</span><span class="kw">for </span>k <span class="kw">in </span><span class="number">0 </span>.. n2 {
+		u[k] = buffer[k];
 	}
-	<span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="ident">n2</span> .. <span class="ident">n</span> {
-		<span class="ident">u</span>[<span class="ident">k</span>] = -<span class="ident">buffer</span>[<span class="ident">n</span> - <span class="ident">k</span> - <span class="number">1</span>];
-	}
-
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k2</span> = <span class="number">0</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k4</span> = <span class="number">0</span>;
-
-	<span class="comment">// kernel from paper</span>
-	<span class="comment">// step 1</span>
-	<span class="kw">while</span> <span class="ident">k2</span> &lt; <span class="ident">n2</span> { <span class="comment">// n4 iterations</span>
-		<span class="ident">v</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">1</span>] = (<span class="ident">u</span>[<span class="ident">k4</span>] - <span class="ident">u</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">1</span>]) * <span class="ident">a</span>[<span class="ident">k2</span>]   - (<span class="ident">u</span>[<span class="ident">k4</span>+<span class="number">2</span>] - <span class="ident">u</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">3</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">k2</span>+<span class="number">1</span>];
-		<span class="ident">v</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">3</span>] = (<span class="ident">u</span>[<span class="ident">k4</span>] - <span class="ident">u</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">1</span>]) * <span class="ident">a</span>[<span class="ident">k2</span>+<span class="number">1</span>] + (<span class="ident">u</span>[<span class="ident">k4</span>+<span class="number">2</span>] - <span class="ident">u</span>[<span class="ident">n</span>-<span class="ident">k4</span>-<span class="number">3</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">k2</span>];
-		<span class="ident">k2</span> += <span class="number">2</span>;
-		<span class="ident">k4</span> += <span class="number">4</span>;
-	}
-	<span class="comment">// step 2</span>
-	<span class="ident">k4</span> = <span class="number">0</span>;
-	<span class="kw">while</span> <span class="ident">k4</span> &lt; <span class="ident">n2</span> { <span class="comment">// n8 iterations</span>
-		<span class="ident">w</span>[<span class="ident">n2</span>+<span class="number">3</span>+<span class="ident">k4</span>] = <span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">3</span>+<span class="ident">k4</span>] + <span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">3</span>];
-		<span class="ident">w</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k4</span>] = <span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k4</span>] + <span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">1</span>];
-		<span class="ident">w</span>[<span class="ident">k4</span>+<span class="number">3</span>]    = (<span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">3</span>+<span class="ident">k4</span>] - <span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">3</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">n2</span>-<span class="number">4</span>-<span class="ident">k4</span>] - (<span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k4</span>]-<span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">1</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">n2</span>-<span class="number">3</span>-<span class="ident">k4</span>];
-		<span class="ident">w</span>[<span class="ident">k4</span>+<span class="number">1</span>]    = (<span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k4</span>] - <span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">1</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">n2</span>-<span class="number">4</span>-<span class="ident">k4</span>] + (<span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">3</span>+<span class="ident">k4</span>]-<span class="ident">v</span>[<span class="ident">k4</span>+<span class="number">3</span>])<span class="kw-2">*</span><span class="ident">a</span>[<span class="ident">n2</span>-<span class="number">3</span>-<span class="ident">k4</span>];
-		<span class="ident">k4</span> += <span class="number">4</span>;
+	<span class="kw">for </span>k <span class="kw">in </span>n2 .. n {
+		u[k] = -buffer[n - k - <span class="number">1</span>];
 	}
 
-	<span class="comment">// step 3</span>
-	<span class="kw">let</span> <span class="ident">ld</span> :<span class="ident">usize</span> = (<span class="ident">::ilog</span>(<span class="ident">n</span> <span class="kw">as</span> <span class="ident">u64</span>) - <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-	<span class="kw">for</span> <span class="ident">l</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">ld</span> - <span class="number">3</span> {
-		<span class="kw">let</span> <span class="ident">k0</span> = <span class="ident">n</span> &gt;&gt; (<span class="ident">l</span>+<span class="number">2</span>);
-		<span class="kw">let</span> <span class="ident">k1</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">l</span>+<span class="number">3</span>);
-		<span class="kw">let</span> <span class="ident">rlim</span> = <span class="ident">n</span> &gt;&gt; (<span class="ident">l</span>+<span class="number">4</span>);
-		<span class="kw">let</span> <span class="ident">slim</span> = <span class="number">1</span> &lt;&lt; (<span class="ident">l</span>+<span class="number">1</span>);
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r4</span> = <span class="number">0</span>;
-		<span class="kw">for</span> <span class="ident">r</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">rlim</span> {
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s2</span> = <span class="number">0</span>;
-			<span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">slim</span> {
-				<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] = <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] + <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>];
-				<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] = <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] + <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>];
-				<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>] = (<span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] - <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>]) * <span class="ident">a</span>[<span class="ident">r</span><span class="kw-2">*</span><span class="ident">k1</span>]
-					- (<span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] - <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>]) * <span class="ident">a</span>[<span class="ident">r</span><span class="kw-2">*</span><span class="ident">k1</span>+<span class="number">1</span>];
-				<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>] = (<span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] - <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">3</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>]) * <span class="ident">a</span>[<span class="ident">r</span><span class="kw-2">*</span><span class="ident">k1</span>]
-					+ (<span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span><span class="ident">s2</span>-<span class="ident">r4</span>] - <span class="ident">w</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k0</span><span class="kw-2">*</span>(<span class="ident">s2</span>+<span class="number">1</span>)-<span class="ident">r4</span>]) * <span class="ident">a</span>[<span class="ident">r</span><span class="kw-2">*</span><span class="ident">k1</span>+<span class="number">1</span>];
-				<span class="ident">s2</span> += <span class="number">2</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>k2 = <span class="number">0</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>k4 = <span class="number">0</span>;
+
+	<span class="comment">// kernel from paper
+	// step 1
+	</span><span class="kw">while </span>k2 &lt; n2 { <span class="comment">// n4 iterations
+		</span>v[n-k4-<span class="number">1</span>] = (u[k4] - u[n-k4-<span class="number">1</span>]) * a[k2]   - (u[k4+<span class="number">2</span>] - u[n-k4-<span class="number">3</span>])<span class="kw-2">*</span>a[k2+<span class="number">1</span>];
+		v[n-k4-<span class="number">3</span>] = (u[k4] - u[n-k4-<span class="number">1</span>]) * a[k2+<span class="number">1</span>] + (u[k4+<span class="number">2</span>] - u[n-k4-<span class="number">3</span>])<span class="kw-2">*</span>a[k2];
+		k2 += <span class="number">2</span>;
+		k4 += <span class="number">4</span>;
+	}
+	<span class="comment">// step 2
+	</span>k4 = <span class="number">0</span>;
+	<span class="kw">while </span>k4 &lt; n2 { <span class="comment">// n8 iterations
+		</span>w[n2+<span class="number">3</span>+k4] = v[n2+<span class="number">3</span>+k4] + v[k4+<span class="number">3</span>];
+		w[n2+<span class="number">1</span>+k4] = v[n2+<span class="number">1</span>+k4] + v[k4+<span class="number">1</span>];
+		w[k4+<span class="number">3</span>]    = (v[n2+<span class="number">3</span>+k4] - v[k4+<span class="number">3</span>])<span class="kw-2">*</span>a[n2-<span class="number">4</span>-k4] - (v[n2+<span class="number">1</span>+k4]-v[k4+<span class="number">1</span>])<span class="kw-2">*</span>a[n2-<span class="number">3</span>-k4];
+		w[k4+<span class="number">1</span>]    = (v[n2+<span class="number">1</span>+k4] - v[k4+<span class="number">1</span>])<span class="kw-2">*</span>a[n2-<span class="number">4</span>-k4] + (v[n2+<span class="number">3</span>+k4]-v[k4+<span class="number">3</span>])<span class="kw-2">*</span>a[n2-<span class="number">3</span>-k4];
+		k4 += <span class="number">4</span>;
+	}
+
+	<span class="comment">// step 3
+	</span><span class="kw">let </span>ld :usize = (::ilog(n <span class="kw">as </span>u64) - <span class="number">1</span>) <span class="kw">as </span>usize;
+	<span class="kw">for </span>l <span class="kw">in </span><span class="number">0 </span>.. ld - <span class="number">3 </span>{
+		<span class="kw">let </span>k0 = n &gt;&gt; (l+<span class="number">2</span>);
+		<span class="kw">let </span>k1 = <span class="number">1 </span>&lt;&lt; (l+<span class="number">3</span>);
+		<span class="kw">let </span>rlim = n &gt;&gt; (l+<span class="number">4</span>);
+		<span class="kw">let </span>slim = <span class="number">1 </span>&lt;&lt; (l+<span class="number">1</span>);
+		<span class="kw">let </span><span class="kw-2">mut </span>r4 = <span class="number">0</span>;
+		<span class="kw">for </span>r <span class="kw">in </span><span class="number">0 </span>.. rlim {
+			<span class="kw">let </span><span class="kw-2">mut </span>s2 = <span class="number">0</span>;
+			<span class="kw">for _ in </span><span class="number">0 </span>.. slim {
+				u[n-<span class="number">1</span>-k0<span class="kw-2">*</span>s2-r4] = w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>s2-r4] + w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4];
+				u[n-<span class="number">3</span>-k0<span class="kw-2">*</span>s2-r4] = w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>s2-r4] + w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4];
+				u[n-<span class="number">1</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4] = (w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>s2-r4] - w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4]) * a[r<span class="kw-2">*</span>k1]
+					- (w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>s2-r4] - w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4]) * a[r<span class="kw-2">*</span>k1+<span class="number">1</span>];
+				u[n-<span class="number">3</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4] = (w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>s2-r4] - w[n-<span class="number">3</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4]) * a[r<span class="kw-2">*</span>k1]
+					+ (w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>s2-r4] - w[n-<span class="number">1</span>-k0<span class="kw-2">*</span>(s2+<span class="number">1</span>)-r4]) * a[r<span class="kw-2">*</span>k1+<span class="number">1</span>];
+				s2 += <span class="number">2</span>;
 			}
-			<span class="ident">r4</span> += <span class="number">4</span>;
+			r4 += <span class="number">4</span>;
 		}
-		<span class="kw">if</span> <span class="ident">l</span>+<span class="number">1</span> &lt; <span class="ident">ld</span>-<span class="number">3</span> {
-			<span class="comment">// paper bug: ping-ponging of u&amp;w here is omitted</span>
-			<span class="ident">w</span>.<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">u</span>);
-		}
-	}
-
-	<span class="comment">// step 4</span>
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n8</span> {
-		<span class="kw">let</span> <span class="ident">j</span> = (<span class="ident">::bit_reverse</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">u32</span>) &gt;&gt; (<span class="number">32</span>-<span class="ident">ld</span>+<span class="number">3</span>)) <span class="kw">as</span> <span class="ident">usize</span>;
-		<span class="macro">assert!</span>(<span class="ident">j</span> &lt; <span class="ident">n8</span>);
-		<span class="kw">if</span> <span class="ident">i</span> == <span class="ident">j</span> {
-			<span class="comment">// paper bug: original code probably swapped in place; if copying,</span>
-			<span class="comment">//            need to directly copy in this case</span>
-			<span class="kw">let</span> <span class="ident">ii</span> = <span class="ident">i</span> &lt;&lt; <span class="number">3</span>;
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">1</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">1</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">3</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">3</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">5</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">5</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">7</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">7</span>];
-		} <span class="kw">else</span> <span class="kw">if</span> <span class="ident">i</span> &lt; <span class="ident">j</span> {
-			<span class="kw">let</span> <span class="ident">ii</span> = <span class="ident">i</span> &lt;&lt; <span class="number">3</span>;
-			<span class="kw">let</span> <span class="ident">j8</span> = <span class="ident">j</span> &lt;&lt; <span class="number">3</span>;
-			<span class="ident">v</span>[<span class="ident">j8</span>+<span class="number">1</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">1</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">1</span>] = <span class="ident">u</span>[<span class="ident">j8</span> + <span class="number">1</span>];
-			<span class="ident">v</span>[<span class="ident">j8</span>+<span class="number">3</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">3</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">3</span>] = <span class="ident">u</span>[<span class="ident">j8</span> + <span class="number">3</span>];
-			<span class="ident">v</span>[<span class="ident">j8</span>+<span class="number">5</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">5</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">5</span>] = <span class="ident">u</span>[<span class="ident">j8</span> + <span class="number">5</span>];
-			<span class="ident">v</span>[<span class="ident">j8</span>+<span class="number">7</span>] = <span class="ident">u</span>[<span class="ident">ii</span>+<span class="number">7</span>];
-			<span class="ident">v</span>[<span class="ident">ii</span>+<span class="number">7</span>] = <span class="ident">u</span>[<span class="ident">j8</span> + <span class="number">7</span>];
+		<span class="kw">if </span>l+<span class="number">1 </span>&lt; ld-<span class="number">3 </span>{
+			<span class="comment">// paper bug: ping-ponging of u&amp;w here is omitted
+			</span>w.copy_from_slice(<span class="kw-2">&amp;</span>u);
 		}
 	}
 
-	<span class="comment">// step 5</span>
-	<span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n2</span> {
-		<span class="ident">w</span>[<span class="ident">k</span>] = <span class="ident">v</span>[<span class="ident">k</span><span class="kw-2">*</span><span class="number">2</span>+<span class="number">1</span>];
-	}
-	<span class="comment">// step 6</span>
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k2</span> = <span class="number">0</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k4</span> = <span class="number">0</span>;
-	<span class="kw">while</span> <span class="ident">k2</span> &lt; <span class="ident">n4</span> { <span class="comment">// n8 iterations</span>
-		<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k2</span>] = <span class="ident">w</span>[<span class="ident">k4</span>];
-		<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>] = <span class="ident">w</span>[<span class="ident">k4</span>+<span class="number">1</span>];
-		<span class="ident">u</span>[<span class="ident">n3_4</span> - <span class="number">1</span> - <span class="ident">k2</span>] = <span class="ident">w</span>[<span class="ident">k4</span>+<span class="number">2</span>];
-		<span class="ident">u</span>[<span class="ident">n3_4</span> - <span class="number">2</span> - <span class="ident">k2</span>] = <span class="ident">w</span>[<span class="ident">k4</span>+<span class="number">3</span>];
-		<span class="ident">k2</span> += <span class="number">2</span>;
-		<span class="ident">k4</span> += <span class="number">4</span>;
-	}
-	<span class="comment">// step 7</span>
-	<span class="ident">k2</span> = <span class="number">0</span>;
-	<span class="kw">while</span> <span class="ident">k2</span> &lt; <span class="ident">n4</span> { <span class="comment">// n8 iterations</span>
-		<span class="ident">v</span>[<span class="ident">n2</span> + <span class="ident">k2</span> ] = ( <span class="ident">u</span>[<span class="ident">n2</span> + <span class="ident">k2</span>] + <span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>] + <span class="ident">c</span>[<span class="ident">k2</span>+<span class="number">1</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>]-<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>]) + <span class="ident">c</span>[<span class="ident">k2</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>+<span class="number">1</span>]+<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>+<span class="number">1</span>]))/<span class="number">2.0</span>;
-		<span class="ident">v</span>[<span class="ident">n</span>-<span class="number">2</span> - <span class="ident">k2</span>] = ( <span class="ident">u</span>[<span class="ident">n2</span> + <span class="ident">k2</span>] + <span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>] - <span class="ident">c</span>[<span class="ident">k2</span>+<span class="number">1</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>]-<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>]) - <span class="ident">c</span>[<span class="ident">k2</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>+<span class="number">1</span>]+<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>+<span class="number">1</span>]))/<span class="number">2.0</span>;
-		<span class="ident">v</span>[<span class="ident">n2</span>+<span class="number">1</span>+ <span class="ident">k2</span>] = ( <span class="ident">u</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k2</span>] - <span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k2</span>] + <span class="ident">c</span>[<span class="ident">k2</span>+<span class="number">1</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k2</span>]+<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k2</span>]) - <span class="ident">c</span>[<span class="ident">k2</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>]-<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>]))/<span class="number">2.0</span>;
-		<span class="ident">v</span>[<span class="ident">n</span>-<span class="number">1</span> - <span class="ident">k2</span>] = (-<span class="ident">u</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k2</span>] + <span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k2</span>] + <span class="ident">c</span>[<span class="ident">k2</span>+<span class="number">1</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="number">1</span>+<span class="ident">k2</span>]+<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">1</span>-<span class="ident">k2</span>]) - <span class="ident">c</span>[<span class="ident">k2</span>]<span class="kw-2">*</span>(<span class="ident">u</span>[<span class="ident">n2</span>+<span class="ident">k2</span>]-<span class="ident">u</span>[<span class="ident">n</span>-<span class="number">2</span>-<span class="ident">k2</span>]))/<span class="number">2.0</span>;
-		<span class="ident">k2</span> += <span class="number">2</span>;
-	}
-	<span class="comment">// step 8</span>
-	<span class="ident">k2</span> = <span class="number">0</span>;
-	<span class="kw">for</span> <span class="ident">k</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n4</span> {
-		<span class="ident">xa</span>[<span class="ident">k</span>]      = <span class="ident">v</span>[<span class="ident">k2</span>+<span class="ident">n2</span>]<span class="kw-2">*</span><span class="ident">b</span>[<span class="ident">k2</span>  ] + <span class="ident">v</span>[<span class="ident">k2</span>+<span class="number">1</span>+<span class="ident">n2</span>]<span class="kw-2">*</span><span class="ident">b</span>[<span class="ident">k2</span>+<span class="number">1</span>];
-		<span class="ident">xa</span>[<span class="ident">n2</span>-<span class="number">1</span>-<span class="ident">k</span>] = <span class="ident">v</span>[<span class="ident">k2</span>+<span class="ident">n2</span>]<span class="kw-2">*</span><span class="ident">b</span>[<span class="ident">k2</span>+<span class="number">1</span>] - <span class="ident">v</span>[<span class="ident">k2</span>+<span class="number">1</span>+<span class="ident">n2</span>]<span class="kw-2">*</span><span class="ident">b</span>[<span class="ident">k2</span>  ];
-		<span class="ident">k2</span> += <span class="number">2</span>;
+	<span class="comment">// step 4
+	</span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. n8 {
+		<span class="kw">let </span>j = (::bit_reverse(i <span class="kw">as </span>u32) &gt;&gt; (<span class="number">32</span>-ld+<span class="number">3</span>)) <span class="kw">as </span>usize;
+		<span class="macro">assert!</span>(j &lt; n8);
+		<span class="kw">if </span>i == j {
+			<span class="comment">// paper bug: original code probably swapped in place; if copying,
+			//            need to directly copy in this case
+			</span><span class="kw">let </span>ii = i &lt;&lt; <span class="number">3</span>;
+			v[ii+<span class="number">1</span>] = u[ii+<span class="number">1</span>];
+			v[ii+<span class="number">3</span>] = u[ii+<span class="number">3</span>];
+			v[ii+<span class="number">5</span>] = u[ii+<span class="number">5</span>];
+			v[ii+<span class="number">7</span>] = u[ii+<span class="number">7</span>];
+		} <span class="kw">else if </span>i &lt; j {
+			<span class="kw">let </span>ii = i &lt;&lt; <span class="number">3</span>;
+			<span class="kw">let </span>j8 = j &lt;&lt; <span class="number">3</span>;
+			v[j8+<span class="number">1</span>] = u[ii+<span class="number">1</span>];
+			v[ii+<span class="number">1</span>] = u[j8 + <span class="number">1</span>];
+			v[j8+<span class="number">3</span>] = u[ii+<span class="number">3</span>];
+			v[ii+<span class="number">3</span>] = u[j8 + <span class="number">3</span>];
+			v[j8+<span class="number">5</span>] = u[ii+<span class="number">5</span>];
+			v[ii+<span class="number">5</span>] = u[j8 + <span class="number">5</span>];
+			v[j8+<span class="number">7</span>] = u[ii+<span class="number">7</span>];
+			v[ii+<span class="number">7</span>] = u[j8 + <span class="number">7</span>];
+		}
 	}
 
-	<span class="comment">// decode kernel to output</span>
+	<span class="comment">// step 5
+	</span><span class="kw">for </span>k <span class="kw">in </span><span class="number">0 </span>.. n2 {
+		w[k] = v[k<span class="kw-2">*</span><span class="number">2</span>+<span class="number">1</span>];
+	}
+	<span class="comment">// step 6
+	</span><span class="kw">let </span><span class="kw-2">mut </span>k2 = <span class="number">0</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>k4 = <span class="number">0</span>;
+	<span class="kw">while </span>k2 &lt; n4 { <span class="comment">// n8 iterations
+		</span>u[n-<span class="number">1</span>-k2] = w[k4];
+		u[n-<span class="number">2</span>-k2] = w[k4+<span class="number">1</span>];
+		u[n3_4 - <span class="number">1 </span>- k2] = w[k4+<span class="number">2</span>];
+		u[n3_4 - <span class="number">2 </span>- k2] = w[k4+<span class="number">3</span>];
+		k2 += <span class="number">2</span>;
+		k4 += <span class="number">4</span>;
+	}
+	<span class="comment">// step 7
+	</span>k2 = <span class="number">0</span>;
+	<span class="kw">while </span>k2 &lt; n4 { <span class="comment">// n8 iterations
+		</span>v[n2 + k2 ] = ( u[n2 + k2] + u[n-<span class="number">2</span>-k2] + c[k2+<span class="number">1</span>]<span class="kw-2">*</span>(u[n2+k2]-u[n-<span class="number">2</span>-k2]) + c[k2]<span class="kw-2">*</span>(u[n2+k2+<span class="number">1</span>]+u[n-<span class="number">2</span>-k2+<span class="number">1</span>]))/<span class="number">2.0</span>;
+		v[n-<span class="number">2 </span>- k2] = ( u[n2 + k2] + u[n-<span class="number">2</span>-k2] - c[k2+<span class="number">1</span>]<span class="kw-2">*</span>(u[n2+k2]-u[n-<span class="number">2</span>-k2]) - c[k2]<span class="kw-2">*</span>(u[n2+k2+<span class="number">1</span>]+u[n-<span class="number">2</span>-k2+<span class="number">1</span>]))/<span class="number">2.0</span>;
+		v[n2+<span class="number">1</span>+ k2] = ( u[n2+<span class="number">1</span>+k2] - u[n-<span class="number">1</span>-k2] + c[k2+<span class="number">1</span>]<span class="kw-2">*</span>(u[n2+<span class="number">1</span>+k2]+u[n-<span class="number">1</span>-k2]) - c[k2]<span class="kw-2">*</span>(u[n2+k2]-u[n-<span class="number">2</span>-k2]))/<span class="number">2.0</span>;
+		v[n-<span class="number">1 </span>- k2] = (-u[n2+<span class="number">1</span>+k2] + u[n-<span class="number">1</span>-k2] + c[k2+<span class="number">1</span>]<span class="kw-2">*</span>(u[n2+<span class="number">1</span>+k2]+u[n-<span class="number">1</span>-k2]) - c[k2]<span class="kw-2">*</span>(u[n2+k2]-u[n-<span class="number">2</span>-k2]))/<span class="number">2.0</span>;
+		k2 += <span class="number">2</span>;
+	}
+	<span class="comment">// step 8
+	</span>k2 = <span class="number">0</span>;
+	<span class="kw">for </span>k <span class="kw">in </span><span class="number">0 </span>.. n4 {
+		xa[k]      = v[k2+n2]<span class="kw-2">*</span>b[k2  ] + v[k2+<span class="number">1</span>+n2]<span class="kw-2">*</span>b[k2+<span class="number">1</span>];
+		xa[n2-<span class="number">1</span>-k] = v[k2+n2]<span class="kw-2">*</span>b[k2+<span class="number">1</span>] - v[k2+<span class="number">1</span>+n2]<span class="kw-2">*</span>b[k2  ];
+		k2 += <span class="number">2</span>;
+	}
 
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">n4</span> {
-		<span class="ident">buffer</span>[<span class="ident">i</span>] = <span class="ident">xa</span>[<span class="ident">i</span> + <span class="ident">n4</span>];
+	<span class="comment">// decode kernel to output
+
+	</span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. n4 {
+		buffer[i] = xa[i + n4];
 	}
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="ident">n4</span> .. <span class="ident">n3_4</span> {
-		<span class="ident">buffer</span>[<span class="ident">i</span>] = -<span class="ident">xa</span>[<span class="ident">n3_4</span> - <span class="ident">i</span> - <span class="number">1</span>];
+	<span class="kw">for </span>i <span class="kw">in </span>n4 .. n3_4 {
+		buffer[i] = -xa[n3_4 - i - <span class="number">1</span>];
 	}
-	<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="ident">n3_4</span> .. <span class="ident">n</span> {
-		<span class="ident">buffer</span>[<span class="ident">i</span>] = -<span class="ident">xa</span>[<span class="ident">i</span> - <span class="ident">n3_4</span>];
+	<span class="kw">for </span>i <span class="kw">in </span>n3_4 .. n {
+		buffer[i] = -xa[i - n3_4];
 	}
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_imdct_naive</span>() {
-	<span class="kw">use</span> <span class="ident">imdct_test</span>::<span class="kw-2">*</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">arr_1</span> = <span class="ident">imdct_prepare</span>(<span class="kw-2">&amp;</span><span class="ident">IMDCT_INPUT_TEST_ARR_1</span>);
-	<span class="kw">let</span> <span class="ident">cbd</span> = <span class="ident">CachedBlocksizeDerived::from_blocksize</span>(<span class="number">8</span>);
-	<span class="ident">inverse_mdct_naive</span>(<span class="kw-2">&amp;</span><span class="ident">cbd</span>, <span class="kw-2">&amp;mut</span> <span class="ident">arr_1</span>);
-	<span class="kw">let</span> <span class="ident">mismatches</span> = <span class="ident">fuzzy_compare_array</span>(
-		<span class="kw-2">&amp;</span><span class="ident">arr_1</span>, <span class="kw-2">&amp;</span><span class="ident">IMDCT_OUTPUT_TEST_ARR_1</span>,
+<span class="attribute">#[cfg(test)]</span>
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_imdct_naive() {
+	<span class="kw">use </span>imdct_test::<span class="kw-2">*</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>arr_1 = imdct_prepare(<span class="kw-2">&amp;</span>IMDCT_INPUT_TEST_ARR_1);
+	<span class="kw">let </span>cbd = CachedBlocksizeDerived::from_blocksize(<span class="number">8</span>);
+	inverse_mdct_naive(<span class="kw-2">&amp;</span>cbd, <span class="kw-2">&amp;mut </span>arr_1);
+	<span class="kw">let </span>mismatches = fuzzy_compare_array(
+		<span class="kw-2">&amp;</span>arr_1, <span class="kw-2">&amp;</span>IMDCT_OUTPUT_TEST_ARR_1,
 		<span class="number">0.00005</span>, <span class="bool-val">true</span>);
-	<span class="kw">let</span> <span class="ident">mismatches_limit</span> = <span class="number">0</span>;
-	<span class="kw">if</span> <span class="ident">mismatches</span> &gt; <span class="ident">mismatches_limit</span> {
+	<span class="kw">let </span>mismatches_limit = <span class="number">0</span>;
+	<span class="kw">if </span>mismatches &gt; mismatches_limit {
 		<span class="macro">panic!</span>(<span class="string">&quot;Numer of mismatches {} was larger than limit of {}&quot;</span>,
-			<span class="ident">mismatches</span>, <span class="ident">mismatches_limit</span>);
+			mismatches, mismatches_limit);
 	}
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">test_imdct</span>() {
-	<span class="kw">use</span> <span class="ident">imdct_test</span>::<span class="kw-2">*</span>;
-	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">arr_1</span> = <span class="ident">imdct_prepare</span>(<span class="kw-2">&amp;</span><span class="ident">IMDCT_INPUT_TEST_ARR_1</span>);
-	<span class="kw">let</span> <span class="ident">blocksize</span> = <span class="number">8</span>;
-	<span class="kw">let</span> <span class="ident">cbd</span> = <span class="ident">CachedBlocksizeDerived::from_blocksize</span>(<span class="ident">blocksize</span>);
-	<span class="ident">inverse_mdct</span>(<span class="kw-2">&amp;</span><span class="ident">cbd</span>, <span class="kw-2">&amp;mut</span> <span class="ident">arr_1</span>, <span class="ident">blocksize</span>);
-	<span class="kw">let</span> <span class="ident">mismatches</span> = <span class="ident">fuzzy_compare_array</span>(
-		<span class="kw-2">&amp;</span><span class="ident">arr_1</span>, <span class="kw-2">&amp;</span><span class="ident">IMDCT_OUTPUT_TEST_ARR_1</span>,
+<span class="attribute">#[cfg(test)]</span>
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>test_imdct() {
+	<span class="kw">use </span>imdct_test::<span class="kw-2">*</span>;
+	<span class="kw">let </span><span class="kw-2">mut </span>arr_1 = imdct_prepare(<span class="kw-2">&amp;</span>IMDCT_INPUT_TEST_ARR_1);
+	<span class="kw">let </span>blocksize = <span class="number">8</span>;
+	<span class="kw">let </span>cbd = CachedBlocksizeDerived::from_blocksize(blocksize);
+	inverse_mdct(<span class="kw-2">&amp;</span>cbd, <span class="kw-2">&amp;mut </span>arr_1, blocksize);
+	<span class="kw">let </span>mismatches = fuzzy_compare_array(
+		<span class="kw-2">&amp;</span>arr_1, <span class="kw-2">&amp;</span>IMDCT_OUTPUT_TEST_ARR_1,
 		<span class="number">0.00005</span>, <span class="bool-val">true</span>);
-	<span class="kw">let</span> <span class="ident">mismatches_limit</span> = <span class="number">0</span>;
-	<span class="kw">if</span> <span class="ident">mismatches</span> &gt; <span class="ident">mismatches_limit</span> {
+	<span class="kw">let </span>mismatches_limit = <span class="number">0</span>;
+	<span class="kw">if </span>mismatches &gt; mismatches_limit {
 		<span class="macro">panic!</span>(<span class="string">&quot;Numer of mismatches {} was larger than limit of {}&quot;</span>,
-			<span class="ident">mismatches</span>, <span class="ident">mismatches_limit</span>);
+			mismatches, mismatches_limit);
 	}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

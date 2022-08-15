@@ -4,21 +4,21 @@
 <a href="https://doc.rust-lang.org/std/error/trait.Error.html"><code>std::error::Error</code></a> trait.</p>
 <br>
 <h2 id="example"><a href="#example">Example</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>thiserror::Error;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DataStoreError</span> {
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;data store disconnected&quot;</span>)]</span>
-    <span class="ident">Disconnect</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">io::Error</span>),
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;the data for key `{0}` is not available&quot;</span>)]</span>
-    <span class="ident">Redaction</span>(<span class="ident">String</span>),
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;invalid header (expected {expected:?}, found {found:?})&quot;</span>)]</span>
-    <span class="ident">InvalidHeader</span> {
-        <span class="ident">expected</span>: <span class="ident">String</span>,
-        <span class="ident">found</span>: <span class="ident">String</span>,
+<span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>DataStoreError {
+    <span class="attribute">#[error(<span class="string">&quot;data store disconnected&quot;</span>)]</span>
+    Disconnect(<span class="attribute">#[from]</span> io::Error),
+    <span class="attribute">#[error(<span class="string">&quot;the data for key `{0}` is not available&quot;</span>)]</span>
+    Redaction(String),
+    <span class="attribute">#[error(<span class="string">&quot;invalid header (expected {expected:?}, found {found:?})&quot;</span>)]</span>
+    InvalidHeader {
+        expected: String,
+        found: String,
     },
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;unknown data store error&quot;</span>)]</span>
-    <span class="ident">Unknown</span>,
+    <span class="attribute">#[error(<span class="string">&quot;unknown data store error&quot;</span>)]</span>
+    Unknown,
 }</code></pre></div>
 <br>
 <h2 id="details"><a href="#details">Details</a></h2>
@@ -47,21 +47,21 @@ shown above in the example.</p>
 <p>These shorthands can be used together with any additional format args,
 which may be arbitrary expressions. For example:</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Error</span> {
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;invalid rdo_lookahead_frames {0} (expected &lt; {})&quot;</span>, <span class="ident">i32::MAX</span>)]</span>
-    <span class="ident">InvalidLookahead</span>(<span class="ident">u32</span>),
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>Error {
+    <span class="attribute">#[error(<span class="string">&quot;invalid rdo_lookahead_frames {0} (expected &lt; {})&quot;</span>, i32::MAX)]</span>
+    InvalidLookahead(u32),
 }</code></pre></div>
 <p>If one of the additional expression arguments needs to refer to a field of
 the struct or enum, then refer to named fields as <code>.var</code> and tuple fields
 as <code>.0</code>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Error</span> {
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;first letter must be lowercase but was {:?}&quot;</span>, <span class="ident">first_char</span>(.<span class="number">0</span>))]</span>
-    <span class="ident">WrongCase</span>(<span class="ident">String</span>),
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;invalid index {idx}, expected at least {} and at most {}&quot;</span>, .<span class="ident">limits</span>.<span class="ident">lo</span>, .<span class="ident">limits</span>.<span class="ident">hi</span>)]</span>
-    <span class="ident">OutOfBounds</span> { <span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">limits</span>: <span class="ident">Limits</span> },
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>Error {
+    <span class="attribute">#[error(<span class="string">&quot;first letter must be lowercase but was {:?}&quot;</span>, first_char(.<span class="number">0</span>))]</span>
+    WrongCase(String),
+    <span class="attribute">#[error(<span class="string">&quot;invalid index {idx}, expected at least {} and at most {}&quot;</span>, .limits.lo, .limits.hi)]</span>
+    OutOfBounds { idx: usize, limits: Limits },
 }</code></pre></div>
 </li>
 <li>
@@ -71,12 +71,12 @@ attribute.</p>
 error and possibly a backtrace. A backtrace is captured from within the
 <code>From</code> impl if there is a field for it.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MyError</span> {
-    <span class="ident">Io</span> {
-        <span class="attribute">#[<span class="ident">from</span>]</span>
-        <span class="ident">source</span>: <span class="ident">io::Error</span>,
-        <span class="ident">backtrace</span>: <span class="ident">Backtrace</span>,
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>MyError {
+    Io {
+        <span class="attribute">#[from]</span>
+        source: io::Error,
+        backtrace: Backtrace,
     },
 }</code></pre></div>
 </li>
@@ -88,35 +88,35 @@ for identifying the underlying lower level error that caused your error.</p>
 so you don’t ever need to specify both attributes.</p>
 <p>Any error type that implements <code>std::error::Error</code> or dereferences to <code>dyn std::error::Error</code> will work as a source.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MyError</span> {
-    <span class="ident">msg</span>: <span class="ident">String</span>,
-    <span class="attribute">#[<span class="ident">source</span>]</span>  <span class="comment">// optional if field name is `source`</span>
-    <span class="ident">source</span>: <span class="ident">anyhow::Error</span>,
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub struct </span>MyError {
+    msg: String,
+    <span class="attribute">#[source]</span>  <span class="comment">// optional if field name is `source`
+    </span>source: anyhow::Error,
 }</code></pre></div>
 </li>
 <li>
 <p>The Error trait’s <code>backtrace()</code> method is implemented to return whichever
 field has a type named <code>Backtrace</code>, if any.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">std::backtrace::Backtrace</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::backtrace::Backtrace;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MyError</span> {
-    <span class="ident">msg</span>: <span class="ident">String</span>,
-    <span class="ident">backtrace</span>: <span class="ident">Backtrace</span>,  <span class="comment">// automatically detected</span>
-}</code></pre></div>
+<span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub struct </span>MyError {
+    msg: String,
+    backtrace: Backtrace,  <span class="comment">// automatically detected
+</span>}</code></pre></div>
 </li>
 <li>
 <p>If a field is both a source (named <code>source</code>, or has <code>#[source]</code> or
 <code>#[from]</code> attribute) <em>and</em> is marked <code>#[backtrace]</code>, then the Error
 trait’s <code>backtrace()</code> method is forwarded to the source’s backtrace.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MyError</span> {
-    <span class="ident">Io</span> {
-        <span class="attribute">#[<span class="ident">backtrace</span>]</span>
-        <span class="ident">source</span>: <span class="ident">io::Error</span>,
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>MyError {
+    Io {
+        <span class="attribute">#[backtrace]</span>
+        source: io::Error,
     },
 }</code></pre></div>
 </li>
@@ -126,17 +126,17 @@ methods straight through to an underlying error without adding an
 additional message. This would be appropriate for enums that need an
 “anything else” variant.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MyError</span> {
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="attribute">#[derive(Error, Debug)]</span>
+<span class="kw">pub enum </span>MyError {
     ...
 
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">Other</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">anyhow::Error</span>),  <span class="comment">// source and Display delegate to anyhow::Error</span>
-}</code></pre></div>
+    <span class="attribute">#[error(transparent)]</span>
+    Other(<span class="attribute">#[from]</span> anyhow::Error),  <span class="comment">// source and Display delegate to anyhow::Error
+</span>}</code></pre></div>
 </li>
 <li>
 <p>See also the <a href="https://github.com/dtolnay/anyhow"><code>anyhow</code></a> library for a convenient single error type to use
 in application code.</p>
 </li>
 </ul>
-</div></details><h2 id="derives" class="small-section-header"><a href="#derives">Derive Macros</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="derive" href="derive.Error.html" title="thiserror::Error derive">Error</a></div><div class="item-right docblock-short"></div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="thiserror" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details><h2 id="derives" class="small-section-header"><a href="#derives">Derive Macros</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="derive" href="derive.Error.html" title="thiserror::Error derive">Error</a></div><div class="item-right docblock-short"></div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="thiserror" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

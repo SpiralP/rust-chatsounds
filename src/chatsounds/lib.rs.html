@@ -439,446 +439,446 @@
 <span id="439">439</span>
 <span id="440">440</span>
 <span id="441">441</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">cache</span>;
-<span class="kw">mod</span> <span class="ident">fetching</span>;
-<span class="kw">mod</span> <span class="ident">parsing</span>;
-<span class="kw">mod</span> <span class="ident">types</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>cache;
+<span class="kw">mod </span>fetching;
+<span class="kw">mod </span>parsing;
+<span class="kw">mod </span>types;
 
-<span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">VecDeque</span>},
-    <span class="ident">io</span>::{<span class="ident">BufReader</span>, <span class="ident">Cursor</span>},
-    <span class="ident">path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>},
-    <span class="ident">sync::Arc</span>,
+<span class="kw">use </span>std::{
+    collections::{HashMap, VecDeque},
+    io::{BufReader, Cursor},
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">ensure</span>, <span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">rand::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">queue::SourcesQueueOutput</span>, <span class="ident">Decoder</span>, <span class="ident">Device</span>, <span class="ident">Sample</span>, <span class="ident">Sink</span>, <span class="ident">Source</span>, <span class="ident">SpatialSink</span>};
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">rodio</span>::{<span class="ident">OutputStream</span>, <span class="ident">OutputStreamHandle</span>};
+<span class="kw">use </span>anyhow::{ensure, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>rand::prelude::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
+<span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+<span class="kw">use </span>rodio::{OutputStream, OutputStreamHandle};
 
-<span class="kw">use</span> <span class="self">self</span>::{
-    <span class="ident">parsing</span>::{<span class="ident">parse</span>, <span class="ident">ModifierTrait</span>},
-    <span class="ident">types</span>::{<span class="ident">BoxSource</span>, <span class="ident">Chatsound</span>, <span class="ident">ChatsoundsSink</span>},
+<span class="kw">use </span><span class="self">self</span>::{
+    parsing::{parse, ModifierTrait},
+    types::{BoxSource, Chatsound, ChatsoundsSink},
 };
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Chatsounds</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-    <span class="ident">cache_path</span>: <span class="ident">PathBuf</span>,
-    <span class="comment">// [sentence]: Chatsound[]</span>
-    <span class="ident">map_store</span>: <span class="ident">HashMap</span>&lt;<span class="ident">String</span>, <span class="ident">Vec</span>&lt;<span class="ident">Chatsound</span>&gt;&gt;,
+<span class="kw">pub struct </span>Chatsounds {
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+    cache_path: PathBuf,
+    <span class="comment">// [sentence]: Chatsound[]
+    </span>map_store: HashMap&lt;String, Vec&lt;Chatsound&gt;&gt;,
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="ident">max_sinks</span>: <span class="ident">usize</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="ident">volume</span>: <span class="ident">f32</span>,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    max_sinks: usize,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    volume: f32,
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="ident">_output_stream</span>: <span class="ident">OutputStream</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="ident">output_stream_handle</span>: <span class="ident">OutputStreamHandle</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="ident">sinks</span>: <span class="ident">VecDeque</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">ChatsoundsSink</span>&gt;&gt;,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    _output_stream: OutputStream,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    output_stream_handle: OutputStreamHandle,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    sinks: VecDeque&lt;Box&lt;<span class="kw">dyn </span>ChatsoundsSink&gt;&gt;,
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>))]</span>
-    <span class="ident">fs_memory</span>: <span class="ident">HashMap</span>&lt;<span class="ident">String</span>, <span class="ident">bytes::Bytes</span>&gt;,
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
+    fs_memory: HashMap&lt;String, bytes::Bytes&gt;,
 }
 
-<span class="comment">// TODO ???</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Chatsounds</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Chatsounds</span> {}
+<span class="comment">// TODO ???
+</span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Chatsounds {}
+<span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Chatsounds {}
 
-<span class="kw">impl</span> <span class="ident">Chatsounds</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span> <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">cache_path</span> = <span class="ident">cache_path</span>.<span class="ident">canonicalize</span>()<span class="question-mark">?</span>;
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-        <span class="macro">ensure!</span>(<span class="ident">cache_path</span>.<span class="ident">is_dir</span>(), <span class="string">&quot;cache_path doesn&#39;t exist!&quot;</span>);
+<span class="kw">impl </span>Chatsounds {
+    <span class="kw">pub fn </span>new(<span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span> cache_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+        <span class="kw">let </span>cache_path = cache_path.canonicalize()<span class="question-mark">?</span>;
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+        <span class="macro">ensure!</span>(cache_path.is_dir(), <span class="string">&quot;cache_path doesn&#39;t exist!&quot;</span>);
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-        <span class="kw">let</span> (<span class="ident">output_stream</span>, <span class="ident">output_stream_handle</span>) =
-            <span class="ident">OutputStream::try_default</span>().<span class="ident">context</span>(<span class="string">&quot;OutputStream::try_default&quot;</span>)<span class="question-mark">?</span>;
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+        <span class="kw">let </span>(output_stream, output_stream_handle) =
+            OutputStream::try_default().context(<span class="string">&quot;OutputStream::try_default&quot;</span>)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-            <span class="ident">cache_path</span>,
-            <span class="ident">map_store</span>: <span class="ident">HashMap::new</span>(),
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+            cache_path,
+            map_store: HashMap::new(),
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-            <span class="ident">max_sinks</span>: <span class="number">16</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-            <span class="ident">volume</span>: <span class="number">0.1</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+            max_sinks: <span class="number">16</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+            volume: <span class="number">0.1</span>,
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-            <span class="ident">_output_stream</span>: <span class="ident">output_stream</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-            <span class="ident">output_stream_handle</span>,
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-            <span class="ident">sinks</span>: <span class="ident">VecDeque::new</span>(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+            _output_stream: output_stream,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+            output_stream_handle,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+            sinks: VecDeque::new(),
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>))]</span>
-            <span class="ident">fs_memory</span>: <span class="ident">HashMap::new</span>(),
+            <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
+            fs_memory: HashMap::new(),
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">sentence</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="ident">Vec</span>&lt;<span class="ident">Chatsound</span>&gt;&gt; {
-        <span class="self">self</span>.<span class="ident">map_store</span>.<span class="ident">get</span>(<span class="ident">sentence</span>)
+    <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, sentence: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Vec&lt;Chatsound&gt;&gt; {
+        <span class="self">self</span>.map_store.get(sentence)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">search</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">search</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">Vec</span>&lt;(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>)&gt; {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;rayon&quot;</span>)]</span>
-        <span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+    <span class="kw">pub fn </span>search(<span class="kw-2">&amp;</span><span class="self">self</span>, search: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;(usize, <span class="kw-2">&amp;</span>String)&gt; {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;rayon&quot;</span>)]</span>
+        <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;rayon&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">iter</span> = <span class="ident">HashMap::par_iter</span>;
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;rayon&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">iter</span> = <span class="ident">HashMap::iter</span>;
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;rayon&quot;</span>)]</span>
+        <span class="kw">let </span>iter = HashMap::par_iter;
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;rayon&quot;</span>))]</span>
+        <span class="kw">let </span>iter = HashMap::iter;
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;rayon&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">sort_by</span> = &lt;[(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>)]&gt;<span class="ident">::par_sort_unstable_by</span>;
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;rayon&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">sort_by</span> = &lt;[(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>)]&gt;<span class="ident">::sort_unstable_by</span>;
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;rayon&quot;</span>)]</span>
+        <span class="kw">let </span>sort_by = &lt;[(usize, <span class="kw-2">&amp;</span>String)]&gt;::par_sort_unstable_by;
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;rayon&quot;</span>))]</span>
+        <span class="kw">let </span>sort_by = &lt;[(usize, <span class="kw-2">&amp;</span>String)]&gt;::sort_unstable_by;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">positions</span>: <span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt; = <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">map_store</span>)
-            .<span class="ident">map</span>(|(<span class="ident">key</span>, <span class="ident">_value</span>)| <span class="ident">key</span>)
-            .<span class="ident">filter_map</span>(|<span class="ident">sentence</span>| <span class="ident">twoway::find_str</span>(<span class="ident">sentence</span>, <span class="ident">search</span>).<span class="ident">map</span>(|<span class="ident">pos</span>| (<span class="ident">pos</span>, <span class="ident">sentence</span>)))
-            .<span class="ident">collect</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>positions: Vec&lt;<span class="kw">_</span>&gt; = iter(<span class="kw-2">&amp;</span><span class="self">self</span>.map_store)
+            .map(|(key, _value)| key)
+            .filter_map(|sentence| twoway::find_str(sentence, search).map(|pos| (pos, sentence)))
+            .collect();
 
-        <span class="ident">sort_by</span>(
-            <span class="ident">positions</span>.<span class="ident">as_mut_slice</span>(),
-            |(<span class="ident">pos1</span>, <span class="ident">str1</span>): <span class="kw-2">&amp;</span>(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>), (<span class="ident">pos2</span>, <span class="ident">str2</span>): <span class="kw-2">&amp;</span>(<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="ident">String</span>)| {
-                <span class="ident">pos1</span>.<span class="ident">partial_cmp</span>(<span class="ident">pos2</span>)
-                    .<span class="ident">unwrap</span>()
-                    .<span class="ident">then_with</span>(|| <span class="ident">str1</span>.<span class="ident">len</span>().<span class="ident">partial_cmp</span>(<span class="kw-2">&amp;</span><span class="ident">str2</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>())
+        sort_by(
+            positions.as_mut_slice(),
+            |(pos1, str1): <span class="kw-2">&amp;</span>(usize, <span class="kw-2">&amp;</span>String), (pos2, str2): <span class="kw-2">&amp;</span>(usize, <span class="kw-2">&amp;</span>String)| {
+                pos1.partial_cmp(pos2)
+                    .unwrap()
+                    .then_with(|| str1.len().partial_cmp(<span class="kw-2">&amp;</span>str2.len()).unwrap())
             },
         );
 
-        <span class="ident">positions</span>
+        positions
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stop_all</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
-            <span class="ident">sink</span>.<span class="ident">stop</span>();
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub fn </span>stop_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span><span class="kw-2">mut </span>sink <span class="kw">in </span><span class="self">self</span>.sinks.drain(..) {
+            sink.stop();
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_volume</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">volume</span>: <span class="ident">f32</span>) {
-        <span class="kw">let</span> <span class="ident">volume</span> = <span class="ident">volume</span>.<span class="ident">max</span>(<span class="number">0.0</span>);
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub fn </span>set_volume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, volume: f32) {
+        <span class="kw">let </span>volume = volume.max(<span class="number">0.0</span>);
 
-        <span class="self">self</span>.<span class="ident">volume</span> = <span class="ident">volume</span>;
+        <span class="self">self</span>.volume = volume;
 
-        <span class="kw">for</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">sinks</span> {
-            <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="ident">volume</span>);
+        <span class="kw">for </span>sink <span class="kw">in </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.sinks {
+            sink.set_volume(volume);
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">volume</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">f32</span> {
-        <span class="self">self</span>.<span class="ident">volume</span>
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub fn </span>volume(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f32 {
+        <span class="self">self</span>.volume
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play</span>&lt;<span class="ident">R</span>: <span class="ident">RngCore</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">rng</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Arc</span>&lt;<span class="ident">Sink</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> = <span class="ident">Arc::new</span>(<span class="ident">Sink::try_new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output_stream_handle</span>)<span class="question-mark">?</span>);
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub async fn </span>play&lt;R: RngCore&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span>str, rng: R) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Sink&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>sink = Arc::new(Sink::try_new(<span class="kw-2">&amp;</span><span class="self">self</span>.output_stream_handle)<span class="question-mark">?</span>);
 
-        <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="self">self</span>.<span class="ident">volume</span>);
+        sink.set_volume(<span class="self">self</span>.volume);
 
-        <span class="kw">for</span> <span class="ident">source</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">get_sources</span>(<span class="ident">text</span>, <span class="ident">rng</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+        <span class="kw">for </span>source <span class="kw">in </span><span class="self">self</span>.get_sources(text, rng).<span class="kw">await</span><span class="question-mark">? </span>{
+            sink.append(source);
         }
 
-        <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">push_back</span>(<span class="ident">Box::new</span>(<span class="ident">sink</span>.<span class="ident">clone</span>()));
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">len</span>() == <span class="self">self</span>.<span class="ident">max_sinks</span> {
-            <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">pop_front</span>();
+        <span class="self">self</span>.sinks.push_back(Box::new(sink.clone()));
+        <span class="kw">if </span><span class="self">self</span>.sinks.len() == <span class="self">self</span>.max_sinks {
+            <span class="self">self</span>.sinks.pop_front();
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">sink</span>)
+        <span class="prelude-val">Ok</span>(sink)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">play_spatial</span>&lt;<span class="ident">R</span>: <span class="ident">RngCore</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-        <span class="ident">rng</span>: <span class="ident">R</span>,
-        <span class="ident">emitter_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-        <span class="ident">left_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-        <span class="ident">right_ear_pos</span>: [<span class="ident">f32</span>; <span class="number">3</span>],
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Arc</span>&lt;<span class="ident">SpatialSink</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> = <span class="ident">Arc::new</span>(<span class="ident">SpatialSink::try_new</span>(
-            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output_stream_handle</span>,
-            <span class="ident">emitter_pos</span>,
-            <span class="ident">left_ear_pos</span>,
-            <span class="ident">right_ear_pos</span>,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub async fn </span>play_spatial&lt;R: RngCore&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        text: <span class="kw-2">&amp;</span>str,
+        rng: R,
+        emitter_pos: [f32; <span class="number">3</span>],
+        left_ear_pos: [f32; <span class="number">3</span>],
+        right_ear_pos: [f32; <span class="number">3</span>],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;SpatialSink&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>sink = Arc::new(SpatialSink::try_new(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.output_stream_handle,
+            emitter_pos,
+            left_ear_pos,
+            right_ear_pos,
         )<span class="question-mark">?</span>);
 
-        <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="self">self</span>.<span class="ident">volume</span>);
+        sink.set_volume(<span class="self">self</span>.volume);
 
-        <span class="kw">for</span> <span class="ident">source</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">get_sources</span>(<span class="ident">text</span>, <span class="ident">rng</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+        <span class="kw">for </span>source <span class="kw">in </span><span class="self">self</span>.get_sources(text, rng).<span class="kw">await</span><span class="question-mark">? </span>{
+            sink.append(source);
         }
 
-        <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">push_back</span>(<span class="ident">Box::new</span>(<span class="ident">sink</span>.<span class="ident">clone</span>()));
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">len</span>() == <span class="self">self</span>.<span class="ident">max_sinks</span> {
-            <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">pop_front</span>();
+        <span class="self">self</span>.sinks.push_back(Box::new(sink.clone()));
+        <span class="kw">if </span><span class="self">self</span>.sinks.len() == <span class="self">self</span>.max_sinks {
+            <span class="self">self</span>.sinks.pop_front();
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">sink</span>)
+        <span class="prelude-val">Ok</span>(sink)
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_sources</span>&lt;<span class="ident">R</span>: <span class="ident">RngCore</span>&gt;(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-        <span class="kw-2">mut</span> <span class="ident">rng</span>: <span class="ident">R</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">BoxSource</span>&gt;&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sources</span> = <span class="ident">Vec::new</span>();
+    <span class="kw">pub async fn </span>get_sources&lt;R: RngCore&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        text: <span class="kw-2">&amp;</span>str,
+        <span class="kw-2">mut </span>rng: R,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;BoxSource&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>sources = Vec::new();
 
-        <span class="kw">let</span> <span class="ident">parsed_chatsounds</span> = <span class="ident">parse</span>(<span class="ident">text</span>)<span class="question-mark">?</span>;
-        <span class="kw">for</span> <span class="ident">parsed_chatsound</span> <span class="kw">in</span> <span class="ident">parsed_chatsounds</span> {
-            <span class="kw">let</span> <span class="ident">chatsound</span> = <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsounds</span>) = <span class="self">self</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">parsed_chatsound</span>.<span class="ident">sentence</span>) {
-                <span class="comment">// TODO random hashed number passed in?</span>
-                <span class="ident">chatsounds</span>
-                    .<span class="ident">choose</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)
-                    .<span class="ident">context</span>(<span class="string">&quot;choose(rng)&quot;</span>)<span class="question-mark">?</span>
-                    .<span class="ident">to_owned</span>()
-            } <span class="kw">else</span> {
+        <span class="kw">let </span>parsed_chatsounds = parse(text)<span class="question-mark">?</span>;
+        <span class="kw">for </span>parsed_chatsound <span class="kw">in </span>parsed_chatsounds {
+            <span class="kw">let </span>chatsound = <span class="kw">if let </span><span class="prelude-val">Some</span>(chatsounds) = <span class="self">self</span>.get(<span class="kw-2">&amp;</span>parsed_chatsound.sentence) {
+                <span class="comment">// TODO random hashed number passed in?
+                </span>chatsounds
+                    .choose(<span class="kw-2">&amp;mut </span>rng)
+                    .context(<span class="string">&quot;choose(rng)&quot;</span>)<span class="question-mark">?
+                    </span>.to_owned()
+            } <span class="kw">else </span>{
                 <span class="kw">continue</span>;
             };
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span>: <span class="ident">BoxSource</span> = {
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-                <span class="kw">let</span> <span class="ident">cache</span> = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>;
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>))]</span>
-                <span class="kw">let</span> <span class="ident">cache</span> = <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">fs_memory</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>source: BoxSource = {
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+                <span class="kw">let </span>cache = <span class="kw-2">&amp;</span><span class="self">self</span>.cache_path;
+                <span class="attribute">#[cfg(not(feature = <span class="string">&quot;fs&quot;</span>))]</span>
+                <span class="kw">let </span>cache = <span class="kw-2">&amp;mut </span><span class="self">self</span>.fs_memory;
 
-                <span class="kw">let</span> <span class="ident">bytes</span> = <span class="ident">chatsound</span>.<span class="ident">load</span>(<span class="ident">cache</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>bytes = chatsound.load(cache).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">BufReader::new</span>(<span class="ident">Cursor::new</span>(<span class="ident">bytes</span>));
-                <span class="ident">Box::new</span>(<span class="ident">Decoder::new</span>(<span class="ident">reader</span>)<span class="question-mark">?</span>)
+                <span class="kw">let </span>reader = BufReader::new(Cursor::new(bytes));
+                Box::new(Decoder::new(reader)<span class="question-mark">?</span>)
             };
-            <span class="kw">for</span> <span class="ident">modifier</span> <span class="kw">in</span> <span class="ident">parsed_chatsound</span>.<span class="ident">modifiers</span> {
-                <span class="ident">source</span> = <span class="ident">modifier</span>.<span class="ident">modify</span>(<span class="ident">source</span>);
+            <span class="kw">for </span>modifier <span class="kw">in </span>parsed_chatsound.modifiers {
+                source = modifier.modify(source);
             }
 
-            <span class="ident">sources</span>.<span class="ident">push</span>(<span class="ident">source</span>);
+            sources.push(source);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">sources</span>)
+        <span class="prelude-val">Ok</span>(sources)
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;playback&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sleep_until_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">sink</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">sinks</span>.<span class="ident">drain</span>(..) {
-            <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;playback&quot;</span>)]</span>
+    <span class="kw">pub fn </span>sleep_until_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span><span class="kw-2">mut </span>sink <span class="kw">in </span><span class="self">self</span>.sinks.drain(..) {
+            sink.sleep_until_end();
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">not</span>(<span class="ident">feature</span> = <span class="string">&quot;wasm&quot;</span>)))]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">futures::stream</span>::{<span class="ident">StreamExt</span>, <span class="ident">TryStreamExt</span>};
-    <span class="kw">use</span> <span class="ident">tokio::fs</span>;
+<span class="attribute">#[cfg(all(test, not(feature = <span class="string">&quot;wasm&quot;</span>), feature = <span class="string">&quot;fs&quot;</span>))]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span>futures::stream::{StreamExt, TryStreamExt};
+    <span class="kw">use </span>tokio::fs;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-    <span class="kw">enum</span> <span class="ident">Source</span> {
-        <span class="ident">Api</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>),
-        <span class="ident">Msgpack</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>),
+    <span class="attribute">#[derive(Debug, Clone)]</span>
+    <span class="kw">enum </span>Source {
+        Api(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
+        Msgpack(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
     }
 
-    <span class="kw">const</span> <span class="ident">SOURCES</span>: <span class="kw-2">&amp;</span>[<span class="ident">Source</span>] = <span class="kw-2">&amp;</span>[
-        <span class="ident">Source::Api</span>(<span class="string">&quot;NotAwesome2/chatsounds&quot;</span>, <span class="string">&quot;sounds&quot;</span>),
-        <span class="ident">Source::Api</span>(
+    <span class="kw">const </span>SOURCES: <span class="kw-2">&amp;</span>[Source] = <span class="kw-2">&amp;</span>[
+        Source::Api(<span class="string">&quot;NotAwesome2/chatsounds&quot;</span>, <span class="string">&quot;sounds&quot;</span>),
+        Source::Api(
             <span class="string">&quot;Metastruct/garrysmod-chatsounds&quot;</span>,
             <span class="string">&quot;sound/chatsounds/autoadd&quot;</span>,
         ),
-        <span class="ident">Source::Api</span>(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;csgo&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;css&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;ep1&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;ep2&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;hl1&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;hl2&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;l4d&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;l4d2&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;portal&quot;</span>),
-        <span class="ident">Source::Msgpack</span>(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;tf2&quot;</span>),
+        Source::Api(<span class="string">&quot;PAC3-Server/chatsounds&quot;</span>, <span class="string">&quot;sounds/chatsounds&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;csgo&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;css&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;ep1&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;ep2&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;hl1&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;hl2&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;l4d&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;l4d2&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;portal&quot;</span>),
+        Source::Msgpack(<span class="string">&quot;PAC3-Server/chatsounds-valve-games&quot;</span>, <span class="string">&quot;tf2&quot;</span>),
     ];
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">setup</span>() -&gt; <span class="ident">Chatsounds</span> {
-        <span class="ident">fs::create_dir_all</span>(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+    <span class="kw">async fn </span>setup() -&gt; Chatsounds {
+        fs::create_dir_all(<span class="string">&quot;cache&quot;</span>).<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let</span> <span class="ident">chatsounds</span> = <span class="ident">Arc::new</span>(<span class="ident">futures::lock::Mutex::new</span>(
-            <span class="ident">Chatsounds::new</span>(<span class="kw-2">&amp;</span><span class="ident">PathBuf::from</span>(<span class="string">&quot;cache&quot;</span>)).<span class="ident">unwrap</span>(),
+        <span class="kw">let </span>chatsounds = Arc::new(futures::lock::Mutex::new(
+            Chatsounds::new(<span class="kw-2">&amp;</span>PathBuf::from(<span class="string">&quot;cache&quot;</span>)).unwrap(),
         ));
 
         {
             <span class="macro">println!</span>(<span class="string">&quot;fetching sources&quot;</span>);
-            <span class="kw">let</span> <span class="ident">chatsounds</span> = <span class="ident">chatsounds</span>.<span class="ident">clone</span>();
-            <span class="ident">futures::stream::iter</span>(<span class="ident">SOURCES</span>)
-                .<span class="ident">map</span>(<span class="prelude-val">Ok</span>)
-                .<span class="ident">try_for_each_concurrent</span>(<span class="number">4</span>, <span class="kw">move</span> |<span class="ident">source</span>| {
-                    <span class="kw">let</span> <span class="ident">source</span> = <span class="ident">source</span>.<span class="ident">to_owned</span>();
-                    <span class="kw">let</span> <span class="ident">chatsounds</span> = <span class="ident">chatsounds</span>.<span class="ident">clone</span>();
-                    <span class="kw">async</span> <span class="kw">move</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">chatsounds</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
-                        <span class="kw">match</span> <span class="ident">source</span> {
-                            <span class="ident">Source::Api</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>) =&gt; {
-                                <span class="kw">let</span> <span class="ident">data</span> =
-                                    <span class="ident">chatsounds</span>.<span class="ident">fetch_github_api</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>, <span class="bool-val">true</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-                                <span class="ident">chatsounds</span>.<span class="ident">load_github_api</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>, <span class="ident">data</span>).<span class="ident">unwrap</span>();
+            <span class="kw">let </span>chatsounds = chatsounds.clone();
+            futures::stream::iter(SOURCES)
+                .map(<span class="prelude-val">Ok</span>)
+                .try_for_each_concurrent(<span class="number">4</span>, <span class="kw">move </span>|source| {
+                    <span class="kw">let </span>source = source.to_owned();
+                    <span class="kw">let </span>chatsounds = chatsounds.clone();
+                    <span class="kw">async move </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = chatsounds.lock().<span class="kw">await</span>;
+                        <span class="kw">match </span>source {
+                            Source::Api(repo, repo_path) =&gt; {
+                                <span class="kw">let </span>data =
+                                    chatsounds.fetch_github_api(repo, repo_path, <span class="bool-val">true</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                                chatsounds.load_github_api(repo, repo_path, data).unwrap();
                             }
 
-                            <span class="ident">Source::Msgpack</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>) =&gt; {
-                                <span class="kw">let</span> <span class="ident">data</span> = <span class="ident">chatsounds</span>
-                                    .<span class="ident">fetch_github_msgpack</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>, <span class="bool-val">true</span>)
+                            Source::Msgpack(repo, repo_path) =&gt; {
+                                <span class="kw">let </span>data = chatsounds
+                                    .fetch_github_msgpack(repo, repo_path, <span class="bool-val">true</span>)
                                     .<span class="kw">await</span><span class="question-mark">?</span>;
-                                <span class="ident">chatsounds</span>
-                                    .<span class="ident">load_github_msgpack</span>(<span class="ident">repo</span>, <span class="ident">repo_path</span>, <span class="ident">data</span>)
-                                    .<span class="ident">unwrap</span>();
+                                chatsounds
+                                    .load_github_msgpack(repo, repo_path, data)
+                                    .unwrap();
                             }
                         }
-                        <span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, <span class="ident">anyhow::Error</span>&gt;(())
+                        <span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, anyhow::Error&gt;(())
                     }
                 })
-                .<span class="kw">await</span>
-                .<span class="ident">unwrap</span>();
+                .<span class="kw">await
+                </span>.unwrap();
 
             <span class="macro">println!</span>(<span class="string">&quot;done&quot;</span>);
         }
-        <span class="ident">Arc::try_unwrap</span>(<span class="ident">chatsounds</span>).<span class="ident">unwrap</span>().<span class="ident">into_inner</span>()
+        Arc::try_unwrap(chatsounds).unwrap().into_inner()
     }
 
-    <span class="attribute">#[<span class="ident">ignore</span>]</span>
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">negative_pitch</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[ignore]</span>
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>negative_pitch() {
+        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="ident">chatsounds</span>
-            .<span class="ident">play</span>(<span class="string">&quot;helloh:speed(1) musicbox:pitch(-1)&quot;</span>, <span class="ident">thread_rng</span>())
-            .<span class="kw">await</span>
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">sleep_until_end</span>();
+        chatsounds
+            .play(<span class="string">&quot;helloh:speed(1) musicbox:pitch(-1)&quot;</span>, thread_rng())
+            .<span class="kw">await
+            </span>.unwrap()
+            .sleep_until_end();
     }
 
-    <span class="attribute">#[<span class="ident">ignore</span>]</span>
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">it_works</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[ignore]</span>
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>it_works() {
+        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="ident">chatsounds</span>
-            .<span class="ident">play</span>(
+        chatsounds
+            .play(
                 <span class="string">&quot;helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)&quot;</span>,
-                <span class="ident">thread_rng</span>(),
+                thread_rng(),
             )
-            .<span class="kw">await</span>
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">sleep_until_end</span>();
+            .<span class="kw">await
+            </span>.unwrap()
+            .sleep_until_end();
     }
 
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_autocomplete</span>() {
-        <span class="kw">let</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>test_autocomplete() {
+        <span class="kw">let </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="macro">println!</span>(<span class="string">&quot;searching {} keys&quot;</span>, <span class="ident">chatsounds</span>.<span class="ident">map_store</span>.<span class="ident">keys</span>().<span class="ident">count</span>());
-        <span class="kw">let</span> <span class="ident">search</span> = <span class="string">&quot;and thats what&quot;</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;searching {} keys&quot;</span>, chatsounds.map_store.keys().count());
+        <span class="kw">let </span>search = <span class="string">&quot;and thats what&quot;</span>;
 
-        <span class="kw">let</span> <span class="ident">t0</span> = <span class="ident">std::time::Instant::now</span>();
-        <span class="kw">let</span> <span class="ident">positions</span> = <span class="ident">chatsounds</span>.<span class="ident">search</span>(<span class="ident">search</span>);
-        <span class="kw">let</span> <span class="ident">t1</span> = <span class="ident">std::time::Instant::now</span>();
-        <span class="macro">println!</span>(<span class="string">&quot;took {:?}&quot;</span>, <span class="ident">t1</span> - <span class="ident">t0</span>);
+        <span class="kw">let </span>t0 = std::time::Instant::now();
+        <span class="kw">let </span>positions = chatsounds.search(search);
+        <span class="kw">let </span>t1 = std::time::Instant::now();
+        <span class="macro">println!</span>(<span class="string">&quot;took {:?}&quot;</span>, t1 - t0);
 
         <span class="macro">println!</span>(
             <span class="string">&quot;{:#?}&quot;</span>,
-            <span class="ident">positions</span>.<span class="ident">iter</span>().<span class="ident">rev</span>().<span class="ident">take</span>(<span class="number">10</span>).<span class="ident">rev</span>().<span class="ident">collect</span>::&lt;<span class="ident">Vec</span>&lt;<span class="kw">_</span>&gt;&gt;()
+            positions.iter().rev().take(<span class="number">10</span>).rev().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
         );
     }
 
-    <span class="attribute">#[<span class="ident">ignore</span>]</span>
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_spatial</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[ignore]</span>
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>test_spatial() {
+        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">emitter_pos</span> = [<span class="number">2.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
-        <span class="kw">let</span> <span class="ident">left_ear_pos</span> = [-<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
-        <span class="kw">let</span> <span class="ident">right_ear_pos</span> = [<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>emitter_pos = [<span class="number">2.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
+        <span class="kw">let </span>left_ear_pos = [-<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
+        <span class="kw">let </span>right_ear_pos = [<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>];
 
         <span class="macro">println!</span>(<span class="string">&quot;play&quot;</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sink</span> = <span class="ident">chatsounds</span>
-            .<span class="ident">play_spatial</span>(
+        <span class="kw">let </span><span class="kw-2">mut </span>sink = chatsounds
+            .play_spatial(
                 <span class="string">&quot;fuckbeesremastered&quot;</span>,
-                <span class="ident">thread_rng</span>(),
-                <span class="ident">emitter_pos</span>,
-                <span class="ident">left_ear_pos</span>,
-                <span class="ident">right_ear_pos</span>,
+                thread_rng(),
+                emitter_pos,
+                left_ear_pos,
+                right_ear_pos,
             )
-            .<span class="kw">await</span>
-            .<span class="ident">unwrap</span>();
+            .<span class="kw">await
+            </span>.unwrap();
 
-        <span class="comment">// start in right headphone, move left</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">i</span>: <span class="ident">f32</span> = <span class="number">0.0</span>;
-        <span class="kw">while</span> !<span class="ident">sink</span>.<span class="ident">empty</span>() {
-            <span class="ident">emitter_pos</span>[<span class="number">0</span>] = <span class="ident">i</span>.<span class="ident">cos</span>() * <span class="number">2.0</span>;
+        <span class="comment">// start in right headphone, move left
+        </span><span class="kw">let </span><span class="kw-2">mut </span>i: f32 = <span class="number">0.0</span>;
+        <span class="kw">while </span>!sink.empty() {
+            emitter_pos[<span class="number">0</span>] = i.cos() * <span class="number">2.0</span>;
 
-            <span class="ident">sink</span>.<span class="ident">set_left_ear_position</span>(<span class="ident">left_ear_pos</span>);
-            <span class="ident">sink</span>.<span class="ident">set_right_ear_position</span>(<span class="ident">right_ear_pos</span>);
-            <span class="ident">sink</span>.<span class="ident">set_emitter_position</span>(<span class="ident">emitter_pos</span>);
+            sink.set_left_ear_position(left_ear_pos);
+            sink.set_right_ear_position(right_ear_pos);
+            sink.set_emitter_position(emitter_pos);
 
-            <span class="ident">std::thread::sleep</span>(<span class="ident">std::time::Duration::from_millis</span>(<span class="number">10</span>));
-            <span class="ident">i</span> += <span class="number">0.01</span>;
+            std::thread::sleep(std::time::Duration::from_millis(<span class="number">10</span>));
+            i += <span class="number">0.01</span>;
         }
 
-        <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+        sink.sleep_until_end();
 
-        <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
+        chatsounds.sleep_until_end();
     }
 
-    <span class="attribute">#[<span class="ident">ignore</span>]</span>
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_mono_bug</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[ignore]</span>
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>test_mono_bug() {
+        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="kw">let</span> <span class="ident">sounds</span> = <span class="ident">chatsounds</span>.<span class="ident">get</span>(<span class="string">&quot;mktheme&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chatsound</span>) = <span class="ident">sounds</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">cloned</span>() {
+        <span class="kw">let </span>sounds = chatsounds.get(<span class="string">&quot;mktheme&quot;</span>).unwrap();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(chatsound) = sounds.get(<span class="number">0</span>).cloned() {
             <span class="macro">println!</span>(<span class="string">&quot;play&quot;</span>);
 
-            <span class="kw">let</span> <span class="ident">data</span> = <span class="ident">chatsound</span>.<span class="ident">load</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">cache_path</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+            <span class="kw">let </span>data = chatsound.load(<span class="kw-2">&amp;</span>chatsounds.cache_path).<span class="kw">await</span>.unwrap();
 
-            <span class="kw">let</span> <span class="ident">reader</span> = <span class="ident">BufReader::new</span>(<span class="ident">Cursor::new</span>(<span class="ident">data</span>));
-            <span class="kw">let</span> <span class="ident">source</span> = <span class="ident">Decoder::new</span>(<span class="ident">reader</span>).<span class="ident">unwrap</span>();
+            <span class="kw">let </span>reader = BufReader::new(Cursor::new(data));
+            <span class="kw">let </span>source = Decoder::new(reader).unwrap();
 
-            <span class="kw">let</span> <span class="ident">source</span> = <span class="ident">rodio::source::ChannelVolume::new</span>(<span class="ident">source</span>, <span class="macro">vec!</span>[<span class="number">0.2</span>, <span class="number">1.0</span>]);
-            <span class="kw">let</span> <span class="ident">sink</span> = <span class="ident">Sink::try_new</span>(<span class="kw-2">&amp;</span><span class="ident">chatsounds</span>.<span class="ident">output_stream_handle</span>).<span class="ident">unwrap</span>();
-            <span class="ident">sink</span>.<span class="ident">set_volume</span>(<span class="number">0.1</span>);
-            <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+            <span class="kw">let </span>source = rodio::source::ChannelVolume::new(source, <span class="macro">vec!</span>[<span class="number">0.2</span>, <span class="number">1.0</span>]);
+            <span class="kw">let </span>sink = Sink::try_new(<span class="kw-2">&amp;</span>chatsounds.output_stream_handle).unwrap();
+            sink.set_volume(<span class="number">0.1</span>);
+            sink.append(source);
 
-            <span class="ident">sink</span>.<span class="ident">sleep_until_end</span>();
+            sink.sleep_until_end();
         }
 
-        <span class="ident">chatsounds</span>.<span class="ident">sleep_until_end</span>();
+        chatsounds.sleep_until_end();
     }
 
-    <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_get_samples</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chatsounds</span> = <span class="ident">setup</span>().<span class="kw">await</span>;
+    <span class="attribute">#[tokio::test]</span>
+    <span class="kw">async fn </span>test_get_samples() {
+        <span class="kw">let </span><span class="kw-2">mut </span>chatsounds = setup().<span class="kw">await</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sources</span> = <span class="ident">chatsounds</span>
-            .<span class="ident">get_sources</span>(<span class="string">&quot;mktheme&quot;</span>, <span class="ident">thread_rng</span>())
-            .<span class="kw">await</span>
-            .<span class="ident">unwrap</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>sources = chatsounds
+            .get_sources(<span class="string">&quot;mktheme&quot;</span>, thread_rng())
+            .<span class="kw">await
+            </span>.unwrap();
 
-        <span class="kw">let</span> (<span class="ident">sink</span>, <span class="ident">queue</span>) = <span class="ident">rodio::queue::queue</span>(<span class="bool-val">false</span>);
-        <span class="kw">for</span> <span class="ident">source</span> <span class="kw">in</span> <span class="ident">sources</span>.<span class="ident">drain</span>(..) {
-            <span class="ident">sink</span>.<span class="ident">append</span>(<span class="ident">source</span>);
+        <span class="kw">let </span>(sink, queue) = rodio::queue::queue(<span class="bool-val">false</span>);
+        <span class="kw">for </span>source <span class="kw">in </span>sources.drain(..) {
+            sink.append(source);
         }
 
-        <span class="kw">let</span> <span class="ident">queue</span>: <span class="ident">rodio::source::UniformSourceIterator</span>&lt;<span class="ident">SourcesQueueOutput</span>&lt;<span class="ident">i16</span>&gt;, <span class="ident">i16</span>&gt; =
-            <span class="ident">rodio::source::UniformSourceIterator::new</span>(<span class="ident">queue</span>, <span class="number">2</span>, <span class="number">44100</span>);
+        <span class="kw">let </span>queue: rodio::source::UniformSourceIterator&lt;SourcesQueueOutput&lt;i16&gt;, i16&gt; =
+            rodio::source::UniformSourceIterator::new(queue, <span class="number">2</span>, <span class="number">44100</span>);
 
-        <span class="macro">println!</span>(<span class="string">&quot;{} samples&quot;</span>, <span class="ident">queue</span>.<span class="ident">count</span>());
+        <span class="macro">println!</span>(<span class="string">&quot;{} samples&quot;</span>, queue.count());
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

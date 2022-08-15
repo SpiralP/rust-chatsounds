@@ -1152,161 +1152,161 @@
 <span id="1152">1152</span>
 <span id="1153">1153</span>
 <span id="1154">1154</span>
-</pre><pre class="rust"><code><span class="comment">// Ogg decoder and encoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2016-2017 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Redistribution or use only under the terms</span>
-<span class="comment">// specified in the LICENSE file attached to this</span>
-<span class="comment">// source distribution.</span>
+</pre><pre class="rust"><code><span class="comment">// Ogg decoder and encoder written in Rust
+//
+// Copyright (c) 2016-2017 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Redistribution or use only under the terms
+// specified in the LICENSE file attached to this
+// source distribution.
 
-<span class="doccomment">/*!
+</span><span class="doccomment">/*!
 Reading logic
-*/</span>
+*/
 
-<span class="kw">use</span> <span class="ident">std::error</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Cursor</span>, <span class="ident">Read</span>, <span class="ident">Write</span>, <span class="ident">SeekFrom</span>, <span class="ident">Error</span>, <span class="ident">ErrorKind</span>};
-<span class="kw">use</span> <span class="ident">byteorder</span>::{<span class="ident">ReadBytesExt</span>, <span class="ident">LittleEndian</span>};
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">std::collections::hash_map::Entry</span>;
-<span class="kw">use</span> <span class="ident">std::fmt</span>::{<span class="ident">Display</span>, <span class="ident">Formatter</span>, <span class="ident">Error</span> <span class="kw">as</span> <span class="ident">FmtError</span>};
-<span class="kw">use</span> <span class="ident">std::mem::replace</span>;
-<span class="kw">use</span> <span class="ident">crc::vorbis_crc32_update</span>;
-<span class="kw">use</span> <span class="ident">Packet</span>;
-<span class="kw">use</span> <span class="ident">std::io::Seek</span>;
+</span><span class="kw">use </span>std::error;
+<span class="kw">use </span>std::io;
+<span class="kw">use </span>std::io::{Cursor, Read, Write, SeekFrom, Error, ErrorKind};
+<span class="kw">use </span>byteorder::{ReadBytesExt, LittleEndian};
+<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::collections::hash_map::Entry;
+<span class="kw">use </span>std::fmt::{Display, Formatter, Error <span class="kw">as </span>FmtError};
+<span class="kw">use </span>std::mem::replace;
+<span class="kw">use </span>crc::vorbis_crc32_update;
+<span class="kw">use </span>Packet;
+<span class="kw">use </span>std::io::Seek;
 
-<span class="doccomment">/// Error that can be raised when decoding an Ogg transport.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">OggReadError</span> {
-	<span class="doccomment">/// The capture pattern for a new page was not found</span>
-	<span class="doccomment">/// where one was expected.</span>
-	<span class="ident">NoCapturePatternFound</span>,
-	<span class="doccomment">/// Invalid stream structure version, with the given one</span>
-	<span class="doccomment">/// attached.</span>
-	<span class="ident">InvalidStreamStructVer</span>(<span class="ident">u8</span>),
-	<span class="doccomment">/// Mismatch of the hash value with (expected, calculated) value.</span>
-	<span class="ident">HashMismatch</span>(<span class="ident">u32</span>, <span class="ident">u32</span>),
-	<span class="doccomment">/// I/O error occured.</span>
-	<span class="ident">ReadError</span>(<span class="ident">io::Error</span>),
-	<span class="doccomment">/// Some constraint required by the spec was not met.</span>
-	<span class="ident">InvalidData</span>,
+<span class="doccomment">/// Error that can be raised when decoding an Ogg transport.
+</span><span class="attribute">#[derive(Debug)]</span>
+<span class="kw">pub enum </span>OggReadError {
+	<span class="doccomment">/// The capture pattern for a new page was not found
+	/// where one was expected.
+	</span>NoCapturePatternFound,
+	<span class="doccomment">/// Invalid stream structure version, with the given one
+	/// attached.
+	</span>InvalidStreamStructVer(u8),
+	<span class="doccomment">/// Mismatch of the hash value with (expected, calculated) value.
+	</span>HashMismatch(u32, u32),
+	<span class="doccomment">/// I/O error occured.
+	</span>ReadError(io::Error),
+	<span class="doccomment">/// Some constraint required by the spec was not met.
+	</span>InvalidData,
 }
 
-<span class="kw">impl</span> <span class="ident">OggReadError</span> {
-	<span class="kw">fn</span> <span class="ident">description_str</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
-		<span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-			<span class="ident">OggReadError::NoCapturePatternFound</span> =&gt; <span class="string">&quot;No Ogg capture pattern found&quot;</span>,
-			<span class="ident">OggReadError::InvalidStreamStructVer</span>(<span class="kw">_</span>) =&gt;
+<span class="kw">impl </span>OggReadError {
+	<span class="kw">fn </span>description_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+		<span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+			OggReadError::NoCapturePatternFound =&gt; <span class="string">&quot;No Ogg capture pattern found&quot;</span>,
+			OggReadError::InvalidStreamStructVer(<span class="kw">_</span>) =&gt;
 				<span class="string">&quot;A non zero stream structure version was passed&quot;</span>,
-			<span class="ident">OggReadError::HashMismatch</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="string">&quot;CRC32 hash mismatch&quot;</span>,
-			<span class="ident">OggReadError::ReadError</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;I/O error&quot;</span>,
-			<span class="ident">OggReadError::InvalidData</span> =&gt; <span class="string">&quot;Constraint violated&quot;</span>,
+			OggReadError::HashMismatch(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="string">&quot;CRC32 hash mismatch&quot;</span>,
+			OggReadError::ReadError(<span class="kw">_</span>) =&gt; <span class="string">&quot;I/O error&quot;</span>,
+			OggReadError::InvalidData =&gt; <span class="string">&quot;Constraint violated&quot;</span>,
 		}
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">OggReadError</span> {
-	<span class="kw">fn</span> <span class="ident">description</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
-		<span class="self">self</span>.<span class="ident">description_str</span>()
+<span class="kw">impl </span>error::Error <span class="kw">for </span>OggReadError {
+	<span class="kw">fn </span>description(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+		<span class="self">self</span>.description_str()
 	}
 
-	<span class="kw">fn</span> <span class="ident">cause</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">error::Error</span>&gt; {
-		<span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-			<span class="ident">OggReadError::ReadError</span>(<span class="kw-2">ref</span> <span class="ident">err</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">err</span> <span class="kw">as</span> <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">error::Error</span>),
-			<span class="kw">_</span> =&gt; <span class="prelude-val">None</span>
-		}
-	}
-}
-
-<span class="kw">impl</span> <span class="ident">Display</span> <span class="kw">for</span> <span class="ident">OggReadError</span> {
-	<span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span> :<span class="kw-2">&amp;mut</span> <span class="ident">Formatter</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">FmtError</span>&gt; {
-		<span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident"><span class="self">Self</span>::description_str</span>(<span class="self">self</span>))
+	<span class="kw">fn </span>cause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>error::Error&gt; {
+		<span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+			OggReadError::ReadError(<span class="kw-2">ref </span>err) =&gt; <span class="prelude-val">Some</span>(err <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>error::Error),
+			<span class="kw">_ </span>=&gt; <span class="prelude-val">None
+		</span>}
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">From</span>&lt;<span class="ident">io::Error</span>&gt; <span class="kw">for</span> <span class="ident">OggReadError</span> {
-	<span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span> :<span class="ident">io::Error</span>) -&gt; <span class="ident">OggReadError</span> {
-		<span class="kw">return</span> <span class="ident">OggReadError::ReadError</span>(<span class="ident">err</span>);
+<span class="kw">impl </span>Display <span class="kw">for </span>OggReadError {
+	<span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt :<span class="kw-2">&amp;mut </span>Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), FmtError&gt; {
+		<span class="macro">write!</span>(fmt, <span class="string">&quot;{}&quot;</span>, <span class="self">Self</span>::description_str(<span class="self">self</span>))
 	}
 }
 
-<span class="doccomment">/// Containing information about an OGG page that is shared between multiple places</span>
-<span class="kw">struct</span> <span class="ident">PageBaseInfo</span> {
-	<span class="doccomment">/// `true`: the first packet is continued from the page before. `false`: if it&#39;s a &quot;fresh&quot; one</span>
-	<span class="ident">starts_with_continued</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// `true` if this page is the first one in the logical bitstream</span>
-	<span class="ident">first_page</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// `true` if this page is the last one in the logical bitstream</span>
-	<span class="ident">last_page</span> :<span class="ident">bool</span>,
-	<span class="doccomment">/// Absolute granule position. The codec defines further meaning.</span>
-	<span class="ident">absgp</span> :<span class="ident">u64</span>,
-	<span class="doccomment">/// Page counter</span>
-	<span class="ident">sequence_num</span> :<span class="ident">u32</span>,
-	<span class="doccomment">/// Packet information:</span>
-	<span class="doccomment">/// index is number of packet,</span>
-	<span class="doccomment">/// tuple is (offset, length) of packet</span>
-	<span class="doccomment">/// if ends_with_continued is true, the last element will contain information</span>
-	<span class="doccomment">/// about the continued packet</span>
-	<span class="ident">packet_positions</span> :<span class="ident">Vec</span>&lt;(<span class="ident">u16</span>,<span class="ident">u16</span>)&gt;,
-	<span class="doccomment">/// `true` if the packet is continued in subsequent page(s)</span>
-	<span class="doccomment">/// `false` if the packet has a segment of length &lt; 255 inside this page</span>
-	<span class="ident">ends_with_continued</span> :<span class="ident">bool</span>,
-}
-
-<span class="doccomment">/// Internal helper struct for PacketReader state</span>
-<span class="kw">struct</span> <span class="ident">PageInfo</span> {
-	<span class="doccomment">/// Basic information about the last read page</span>
-	<span class="ident">bi</span> :<span class="ident">PageBaseInfo</span>,
-	<span class="doccomment">/// The index of the first &quot;unread&quot; packet</span>
-	<span class="ident">packet_idx</span> :<span class="ident">u8</span>,
-	<span class="doccomment">/// Contains the package data</span>
-	<span class="ident">page_body</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
-
-	<span class="doccomment">/// If there is a residue from previous pages in terms of a package spanning multiple</span>
-	<span class="doccomment">/// pages, this field contains it. Having this Vec&lt;Vec&lt;u8&gt;&gt; and</span>
-	<span class="doccomment">/// not Vec&lt;u8&gt; ensures to give us O(n) complexity, not O(n^2)</span>
-	<span class="doccomment">/// for `n` as number of pages that the packet is contained in.</span>
-	<span class="ident">last_overlap_pck</span> :<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;&gt;,
-}
-
-<span class="kw">impl</span> <span class="ident">PageInfo</span> {
-	<span class="doccomment">/// Returns `true` if the first &quot;unread&quot; packet is the first one</span>
-	<span class="doccomment">/// in the page, `false` otherwise.</span>
-	<span class="kw">fn</span> <span class="ident">is_first_pck_in_pg</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="kw">return</span> <span class="self">self</span>.<span class="ident">packet_idx</span> == <span class="number">0</span>;
-	}
-	<span class="doccomment">/// Returns `true` if the first &quot;unread&quot; packet is the last one</span>
-	<span class="doccomment">/// in the page, `false` otherwise.</span>
-	<span class="doccomment">/// If the first &quot;unread&quot; packet isn&#39;t completed in this page</span>
-	<span class="doccomment">/// (spans page borders), this returns `false`.</span>
-	<span class="kw">fn</span> <span class="ident">is_last_pck_in_pg</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="kw">return</span> (<span class="self">self</span>.<span class="ident">packet_idx</span> + <span class="number">1</span> + (<span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> <span class="kw">as</span> <span class="ident">u8</span>)) <span class="kw">as</span> <span class="ident">usize</span>
-			== <span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">len</span>();
+<span class="kw">impl </span>From&lt;io::Error&gt; <span class="kw">for </span>OggReadError {
+	<span class="kw">fn </span>from(err :io::Error) -&gt; OggReadError {
+		<span class="kw">return </span>OggReadError::ReadError(err);
 	}
 }
 
-<span class="doccomment">/// Contains a fully parsed OGG page.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OggPage</span>(<span class="ident">PageParser</span>);
+<span class="doccomment">/// Containing information about an OGG page that is shared between multiple places
+</span><span class="kw">struct </span>PageBaseInfo {
+	<span class="doccomment">/// `true`: the first packet is continued from the page before. `false`: if it&#39;s a &quot;fresh&quot; one
+	</span>starts_with_continued :bool,
+	<span class="doccomment">/// `true` if this page is the first one in the logical bitstream
+	</span>first_page :bool,
+	<span class="doccomment">/// `true` if this page is the last one in the logical bitstream
+	</span>last_page :bool,
+	<span class="doccomment">/// Absolute granule position. The codec defines further meaning.
+	</span>absgp :u64,
+	<span class="doccomment">/// Page counter
+	</span>sequence_num :u32,
+	<span class="doccomment">/// Packet information:
+	/// index is number of packet,
+	/// tuple is (offset, length) of packet
+	/// if ends_with_continued is true, the last element will contain information
+	/// about the continued packet
+	</span>packet_positions :Vec&lt;(u16,u16)&gt;,
+	<span class="doccomment">/// `true` if the packet is continued in subsequent page(s)
+	/// `false` if the packet has a segment of length &lt; 255 inside this page
+	</span>ends_with_continued :bool,
+}
 
-<span class="kw">impl</span> <span class="ident">OggPage</span> {
-	<span class="doccomment">/// Returns whether there is an ending packet in the page</span>
-	<span class="kw">fn</span> <span class="ident">has_packet_end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">len</span>() -
-			<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> <span class="kw">as</span> <span class="ident">usize</span>) &gt; <span class="number">0</span>
+<span class="doccomment">/// Internal helper struct for PacketReader state
+</span><span class="kw">struct </span>PageInfo {
+	<span class="doccomment">/// Basic information about the last read page
+	</span>bi :PageBaseInfo,
+	<span class="doccomment">/// The index of the first &quot;unread&quot; packet
+	</span>packet_idx :u8,
+	<span class="doccomment">/// Contains the package data
+	</span>page_body :Vec&lt;u8&gt;,
+
+	<span class="doccomment">/// If there is a residue from previous pages in terms of a package spanning multiple
+	/// pages, this field contains it. Having this Vec&lt;Vec&lt;u8&gt;&gt; and
+	/// not Vec&lt;u8&gt; ensures to give us O(n) complexity, not O(n^2)
+	/// for `n` as number of pages that the packet is contained in.
+	</span>last_overlap_pck :Vec&lt;Vec&lt;u8&gt;&gt;,
+}
+
+<span class="kw">impl </span>PageInfo {
+	<span class="doccomment">/// Returns `true` if the first &quot;unread&quot; packet is the first one
+	/// in the page, `false` otherwise.
+	</span><span class="kw">fn </span>is_first_pck_in_pg(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="kw">return </span><span class="self">self</span>.packet_idx == <span class="number">0</span>;
 	}
-	<span class="doccomment">/// Returns whether there is a packet that both</span>
-	<span class="doccomment">/// starts and ends inside the page</span>
-	<span class="kw">fn</span> <span class="ident">has_whole_packet</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">len</span>().<span class="ident">saturating_sub</span>(
-			<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> <span class="kw">as</span> <span class="ident">usize</span> +
-			<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> <span class="kw">as</span> <span class="ident">usize</span>) &gt; <span class="number">0</span>
+	<span class="doccomment">/// Returns `true` if the first &quot;unread&quot; packet is the last one
+	/// in the page, `false` otherwise.
+	/// If the first &quot;unread&quot; packet isn&#39;t completed in this page
+	/// (spans page borders), this returns `false`.
+	</span><span class="kw">fn </span>is_last_pck_in_pg(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="kw">return </span>(<span class="self">self</span>.packet_idx + <span class="number">1 </span>+ (<span class="self">self</span>.bi.ends_with_continued <span class="kw">as </span>u8)) <span class="kw">as </span>usize
+			== <span class="self">self</span>.bi.packet_positions.len();
 	}
-	<span class="doccomment">/// Returns whether there is a starting packet in the page</span>
-	<span class="kw">fn</span> <span class="ident">has_packet_start</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-		(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">len</span>() -
-			<span class="self">self</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> <span class="kw">as</span> <span class="ident">usize</span>) &gt; <span class="number">0</span>
-	}
+}
+
+<span class="doccomment">/// Contains a fully parsed OGG page.
+</span><span class="kw">pub struct </span>OggPage(PageParser);
+
+<span class="kw">impl </span>OggPage {
+	<span class="doccomment">/// Returns whether there is an ending packet in the page
+	</span><span class="kw">fn </span>has_packet_end(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		(<span class="self">self</span>.<span class="number">0</span>.bi.packet_positions.len() -
+			<span class="self">self</span>.<span class="number">0</span>.bi.ends_with_continued <span class="kw">as </span>usize) &gt; <span class="number">0
+	</span>}
+	<span class="doccomment">/// Returns whether there is a packet that both
+	/// starts and ends inside the page
+	</span><span class="kw">fn </span>has_whole_packet(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		<span class="self">self</span>.<span class="number">0</span>.bi.packet_positions.len().saturating_sub(
+			<span class="self">self</span>.<span class="number">0</span>.bi.ends_with_continued <span class="kw">as </span>usize +
+			<span class="self">self</span>.<span class="number">0</span>.bi.starts_with_continued <span class="kw">as </span>usize) &gt; <span class="number">0
+	</span>}
+	<span class="doccomment">/// Returns whether there is a starting packet in the page
+	</span><span class="kw">fn </span>has_packet_start(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+		(<span class="self">self</span>.<span class="number">0</span>.bi.packet_positions.len() -
+			<span class="self">self</span>.<span class="number">0</span>.bi.starts_with_continued <span class="kw">as </span>usize) &gt; <span class="number">0
+	</span>}
 }
 
 <span class="doccomment">/**
@@ -1316,142 +1316,142 @@ It&#39;s created using the `new` function and then it&#39;s fed more data via th
 and `parse_packet_data` functions, each called exactly once and in that precise order.
 
 Then later code uses the `OggPage` returned by the `parse_packet_data` function.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PageParser</span> {
-	<span class="comment">// Members packet_positions, ends_with_continued and packet_count</span>
-	<span class="comment">// get populated after segments have been parsed</span>
-	<span class="ident">bi</span> :<span class="ident">PageBaseInfo</span>,
+*/
+</span><span class="kw">pub struct </span>PageParser {
+	<span class="comment">// Members packet_positions, ends_with_continued and packet_count
+	// get populated after segments have been parsed
+	</span>bi :PageBaseInfo,
 
-	<span class="ident">stream_serial</span> :<span class="ident">u32</span>,
-	<span class="ident">checksum</span> :<span class="ident">u32</span>,
-	<span class="ident">header_buf</span>: [<span class="ident">u8</span>; <span class="number">27</span>],
-	<span class="doccomment">/// Number of packet ending segments</span>
-	<span class="ident">packet_count</span> :<span class="ident">u16</span>, <span class="comment">// Gets populated gafter segments have been parsed</span>
-	<span class="doccomment">/// after segments have been parsed, this contains the segments buffer,</span>
-	<span class="doccomment">/// after the packet data have been read, this contains the packets buffer.</span>
-	<span class="ident">segments_or_packets_buf</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;,
+	stream_serial :u32,
+	checksum :u32,
+	header_buf: [u8; <span class="number">27</span>],
+	<span class="doccomment">/// Number of packet ending segments
+	</span>packet_count :u16, <span class="comment">// Gets populated gafter segments have been parsed
+	</span><span class="doccomment">/// after segments have been parsed, this contains the segments buffer,
+	/// after the packet data have been read, this contains the packets buffer.
+	</span>segments_or_packets_buf :Vec&lt;u8&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">PageParser</span> {
-	<span class="doccomment">/// Creates a new Page parser</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The `header_buf` param contains the first 27 bytes of a new OGG page.</span>
-	<span class="doccomment">/// Determining when one begins is your responsibility. Usually they</span>
-	<span class="doccomment">/// begin directly after the end of a previous OGG page, but</span>
-	<span class="doccomment">/// after you&#39;ve performed a seek you might end up within the middle of a page</span>
-	<span class="doccomment">/// and need to recapture.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Returns a page parser, and the requested size of the segments array.</span>
-	<span class="doccomment">/// You should allocate and fill such an array, in order to pass it to the `parse_segments`</span>
-	<span class="doccomment">/// function.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">header_buf</span> :[<span class="ident">u8</span>; <span class="number">27</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">PageParser</span>, <span class="ident">usize</span>), <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">header_rdr</span> = <span class="ident">Cursor::new</span>(<span class="ident">header_buf</span>);
-		<span class="ident">header_rdr</span>.<span class="ident">set_position</span>(<span class="number">4</span>);
-		<span class="kw">let</span> <span class="ident">stream_structure_version</span> = <span class="macro">tri!</span>(<span class="ident">header_rdr</span>.<span class="ident">read_u8</span>());
-		<span class="kw">if</span> <span class="ident">stream_structure_version</span> != <span class="number">0</span> {
-			<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::InvalidStreamStructVer</span>(<span class="ident">stream_structure_version</span>)));
+<span class="kw">impl </span>PageParser {
+	<span class="doccomment">/// Creates a new Page parser
+	///
+	/// The `header_buf` param contains the first 27 bytes of a new OGG page.
+	/// Determining when one begins is your responsibility. Usually they
+	/// begin directly after the end of a previous OGG page, but
+	/// after you&#39;ve performed a seek you might end up within the middle of a page
+	/// and need to recapture.
+	///
+	/// Returns a page parser, and the requested size of the segments array.
+	/// You should allocate and fill such an array, in order to pass it to the `parse_segments`
+	/// function.
+	</span><span class="kw">pub fn </span>new(header_buf :[u8; <span class="number">27</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;(PageParser, usize), OggReadError&gt; {
+		<span class="kw">let </span><span class="kw-2">mut </span>header_rdr = Cursor::new(header_buf);
+		header_rdr.set_position(<span class="number">4</span>);
+		<span class="kw">let </span>stream_structure_version = <span class="macro">tri!</span>(header_rdr.read_u8());
+		<span class="kw">if </span>stream_structure_version != <span class="number">0 </span>{
+			<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::InvalidStreamStructVer(stream_structure_version)));
 		}
-		<span class="kw">let</span> <span class="ident">header_type_flag</span> = <span class="ident">header_rdr</span>.<span class="ident">read_u8</span>().<span class="ident">unwrap</span>();
-		<span class="kw">let</span> <span class="ident">stream_serial</span>;
+		<span class="kw">let </span>header_type_flag = header_rdr.read_u8().unwrap();
+		<span class="kw">let </span>stream_serial;
 
-		<span class="prelude-val">Ok</span>((<span class="ident">PageParser</span> {
-			<span class="ident">bi</span> : <span class="ident">PageBaseInfo</span> {
-				<span class="ident">starts_with_continued</span> : <span class="ident">header_type_flag</span> &amp; <span class="number">0x01u8</span> != <span class="number">0</span>,
-				<span class="ident">first_page</span> : <span class="ident">header_type_flag</span> &amp; <span class="number">0x02u8</span> != <span class="number">0</span>,
-				<span class="ident">last_page</span> : <span class="ident">header_type_flag</span> &amp; <span class="number">0x04u8</span> != <span class="number">0</span>,
-				<span class="ident">absgp</span> : <span class="ident">header_rdr</span>.<span class="ident">read_u64</span>::&lt;<span class="ident">LittleEndian</span>&gt;().<span class="ident">unwrap</span>(),
-				<span class="ident">sequence_num</span> : {
-					<span class="ident">stream_serial</span> = <span class="ident">header_rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;().<span class="ident">unwrap</span>();
-					<span class="ident">header_rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;().<span class="ident">unwrap</span>()
+		<span class="prelude-val">Ok</span>((PageParser {
+			bi : PageBaseInfo {
+				starts_with_continued : header_type_flag &amp; <span class="number">0x01u8 </span>!= <span class="number">0</span>,
+				first_page : header_type_flag &amp; <span class="number">0x02u8 </span>!= <span class="number">0</span>,
+				last_page : header_type_flag &amp; <span class="number">0x04u8 </span>!= <span class="number">0</span>,
+				absgp : header_rdr.read_u64::&lt;LittleEndian&gt;().unwrap(),
+				sequence_num : {
+					stream_serial = header_rdr.read_u32::&lt;LittleEndian&gt;().unwrap();
+					header_rdr.read_u32::&lt;LittleEndian&gt;().unwrap()
 				},
-				<span class="ident">packet_positions</span> : <span class="ident">Vec::new</span>(),
-				<span class="ident">ends_with_continued</span> : <span class="bool-val">false</span>,
+				packet_positions : Vec::new(),
+				ends_with_continued : <span class="bool-val">false</span>,
 			},
-			<span class="ident">stream_serial</span>,
-			<span class="ident">checksum</span> : <span class="ident">header_rdr</span>.<span class="ident">read_u32</span>::&lt;<span class="ident">LittleEndian</span>&gt;().<span class="ident">unwrap</span>(),
-			<span class="ident">header_buf</span>,
-			<span class="ident">packet_count</span> : <span class="number">0</span>,
-			<span class="ident">segments_or_packets_buf</span> :<span class="ident">Vec::new</span>(),
+			stream_serial,
+			checksum : header_rdr.read_u32::&lt;LittleEndian&gt;().unwrap(),
+			header_buf,
+			packet_count : <span class="number">0</span>,
+			segments_or_packets_buf :Vec::new(),
 		},
-			<span class="comment">// Number of page segments</span>
-			<span class="ident">header_rdr</span>.<span class="ident">read_u8</span>().<span class="ident">unwrap</span>() <span class="kw">as</span> <span class="ident">usize</span>
+			<span class="comment">// Number of page segments
+			</span>header_rdr.read_u8().unwrap() <span class="kw">as </span>usize
 		))
 	}
 
-	<span class="doccomment">/// Parses the segments buffer, and returns the requested size</span>
-	<span class="doccomment">/// of the packets content array.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// You should allocate and fill such an array, in order to pass it to the `parse_packet_data`</span>
-	<span class="doccomment">/// function.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_segments</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">segments_buf</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;) -&gt; <span class="ident">usize</span> {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">page_siz</span> :<span class="ident">u16</span> = <span class="number">0</span>; <span class="comment">// Size of the page&#39;s body</span>
-		<span class="comment">// Whether our page ends with a continued packet</span>
-		<span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> = <span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span>;
+	<span class="doccomment">/// Parses the segments buffer, and returns the requested size
+	/// of the packets content array.
+	///
+	/// You should allocate and fill such an array, in order to pass it to the `parse_packet_data`
+	/// function.
+	</span><span class="kw">pub fn </span>parse_segments(<span class="kw-2">&amp;mut </span><span class="self">self</span>, segments_buf :Vec&lt;u8&gt;) -&gt; usize {
+		<span class="kw">let </span><span class="kw-2">mut </span>page_siz :u16 = <span class="number">0</span>; <span class="comment">// Size of the page&#39;s body
+		// Whether our page ends with a continued packet
+		</span><span class="self">self</span>.bi.ends_with_continued = <span class="self">self</span>.bi.starts_with_continued;
 
-		<span class="comment">// First run: get the number of packets,</span>
-		<span class="comment">// whether the page ends with a continued packet,</span>
-		<span class="comment">// and the size of the page&#39;s body</span>
-		<span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">segments_buf</span> {
-			<span class="ident">page_siz</span> += <span class="kw-2">*</span><span class="ident">val</span> <span class="kw">as</span> <span class="ident">u16</span>;
-			<span class="comment">// Increment by 1 if val &lt; 255, otherwise by 0</span>
-			<span class="self">self</span>.<span class="ident">packet_count</span> += (<span class="kw-2">*</span><span class="ident">val</span> &lt; <span class="number">255</span>) <span class="kw">as</span> <span class="ident">u16</span>;
-			<span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> = !(<span class="kw-2">*</span><span class="ident">val</span> &lt; <span class="number">255</span>);
+		<span class="comment">// First run: get the number of packets,
+		// whether the page ends with a continued packet,
+		// and the size of the page&#39;s body
+		</span><span class="kw">for </span>val <span class="kw">in </span><span class="kw-2">&amp;</span>segments_buf {
+			page_siz += <span class="kw-2">*</span>val <span class="kw">as </span>u16;
+			<span class="comment">// Increment by 1 if val &lt; 255, otherwise by 0
+			</span><span class="self">self</span>.packet_count += (<span class="kw-2">*</span>val &lt; <span class="number">255</span>) <span class="kw">as </span>u16;
+			<span class="self">self</span>.bi.ends_with_continued = !(<span class="kw-2">*</span>val &lt; <span class="number">255</span>);
 		}
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">packets</span> = <span class="ident">Vec::with_capacity</span>(<span class="self">self</span>.<span class="ident">packet_count</span> <span class="kw">as</span> <span class="ident">usize</span>
-			+ <span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> <span class="kw">as</span> <span class="ident">usize</span>);
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_packet_siz</span> :<span class="ident">u16</span> = <span class="number">0</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur_packet_offs</span> :<span class="ident">u16</span> = <span class="number">0</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>packets = Vec::with_capacity(<span class="self">self</span>.packet_count <span class="kw">as </span>usize
+			+ <span class="self">self</span>.bi.ends_with_continued <span class="kw">as </span>usize);
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_packet_siz :u16 = <span class="number">0</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>cur_packet_offs :u16 = <span class="number">0</span>;
 
-		<span class="comment">// Second run: get the offsets of the packets</span>
-		<span class="comment">// Not that we need it right now, but it&#39;s much more fun this way, am I right</span>
-		<span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">segments_buf</span> {
-			<span class="ident">cur_packet_siz</span> += <span class="kw-2">*</span><span class="ident">val</span> <span class="kw">as</span> <span class="ident">u16</span>;
-			<span class="kw">if</span> <span class="kw-2">*</span><span class="ident">val</span> &lt; <span class="number">255</span> {
-				<span class="ident">packets</span>.<span class="ident">push</span>((<span class="ident">cur_packet_offs</span>, <span class="ident">cur_packet_siz</span>));
-				<span class="ident">cur_packet_offs</span> += <span class="ident">cur_packet_siz</span>;
-				<span class="ident">cur_packet_siz</span> = <span class="number">0</span>;
+		<span class="comment">// Second run: get the offsets of the packets
+		// Not that we need it right now, but it&#39;s much more fun this way, am I right
+		</span><span class="kw">for </span>val <span class="kw">in </span><span class="kw-2">&amp;</span>segments_buf {
+			cur_packet_siz += <span class="kw-2">*</span>val <span class="kw">as </span>u16;
+			<span class="kw">if </span><span class="kw-2">*</span>val &lt; <span class="number">255 </span>{
+				packets.push((cur_packet_offs, cur_packet_siz));
+				cur_packet_offs += cur_packet_siz;
+				cur_packet_siz = <span class="number">0</span>;
 			}
 		}
-		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> {
-			<span class="ident">packets</span>.<span class="ident">push</span>((<span class="ident">cur_packet_offs</span>, <span class="ident">cur_packet_siz</span>));
+		<span class="kw">if </span><span class="self">self</span>.bi.ends_with_continued {
+			packets.push((cur_packet_offs, cur_packet_siz));
 		}
 
-		<span class="self">self</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span> = <span class="ident">packets</span>;
-		<span class="self">self</span>.<span class="ident">segments_or_packets_buf</span> = <span class="ident">segments_buf</span>;
-		<span class="ident">page_siz</span> <span class="kw">as</span> <span class="ident">usize</span>
+		<span class="self">self</span>.bi.packet_positions = packets;
+		<span class="self">self</span>.segments_or_packets_buf = segments_buf;
+		page_siz <span class="kw">as </span>usize
 	}
 
-	<span class="doccomment">/// Parses the packets data and verifies the checksum.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Returns an `OggPage` to be used by later code.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parse_packet_data</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">packet_data</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt;) -&gt;
-			<span class="prelude-ty">Result</span>&lt;<span class="ident">OggPage</span>, <span class="ident">OggReadError</span>&gt; {
-		<span class="comment">// Now to hash calculation.</span>
-		<span class="comment">// 1. Clear the header buffer</span>
-		<span class="self">self</span>.<span class="ident">header_buf</span>[<span class="number">22</span>] = <span class="number">0</span>;
-		<span class="self">self</span>.<span class="ident">header_buf</span>[<span class="number">23</span>] = <span class="number">0</span>;
-		<span class="self">self</span>.<span class="ident">header_buf</span>[<span class="number">24</span>] = <span class="number">0</span>;
-		<span class="self">self</span>.<span class="ident">header_buf</span>[<span class="number">25</span>] = <span class="number">0</span>;
+	<span class="doccomment">/// Parses the packets data and verifies the checksum.
+	///
+	/// Returns an `OggPage` to be used by later code.
+	</span><span class="kw">pub fn </span>parse_packet_data(<span class="kw-2">mut </span><span class="self">self</span>, packet_data :Vec&lt;u8&gt;) -&gt;
+			<span class="prelude-ty">Result</span>&lt;OggPage, OggReadError&gt; {
+		<span class="comment">// Now to hash calculation.
+		// 1. Clear the header buffer
+		</span><span class="self">self</span>.header_buf[<span class="number">22</span>] = <span class="number">0</span>;
+		<span class="self">self</span>.header_buf[<span class="number">23</span>] = <span class="number">0</span>;
+		<span class="self">self</span>.header_buf[<span class="number">24</span>] = <span class="number">0</span>;
+		<span class="self">self</span>.header_buf[<span class="number">25</span>] = <span class="number">0</span>;
 
-		<span class="comment">// 2. Calculate the hash</span>
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_calculated</span> :<span class="ident">u32</span>;
-		<span class="ident">hash_calculated</span> = <span class="ident">vorbis_crc32_update</span>(<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">header_buf</span>);
-		<span class="ident">hash_calculated</span> = <span class="ident">vorbis_crc32_update</span>(<span class="ident">hash_calculated</span>,
-			<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">segments_or_packets_buf</span>);
-		<span class="ident">hash_calculated</span> = <span class="ident">vorbis_crc32_update</span>(<span class="ident">hash_calculated</span>, <span class="kw-2">&amp;</span><span class="ident">packet_data</span>);
+		<span class="comment">// 2. Calculate the hash
+		</span><span class="kw">let </span><span class="kw-2">mut </span>hash_calculated :u32;
+		hash_calculated = vorbis_crc32_update(<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.header_buf);
+		hash_calculated = vorbis_crc32_update(hash_calculated,
+			<span class="kw-2">&amp;</span><span class="self">self</span>.segments_or_packets_buf);
+		hash_calculated = vorbis_crc32_update(hash_calculated, <span class="kw-2">&amp;</span>packet_data);
 
-		<span class="comment">// 3. Compare to the extracted one</span>
-		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">checksum</span> != <span class="ident">hash_calculated</span> {
-			<span class="comment">// Do not verify checksum when the decoder is being fuzzed.</span>
-			<span class="comment">// This allows random input from fuzzers reach decoding code that&#39;s actually interesting,</span>
-			<span class="comment">// instead of being rejected early due to checksum mismatch.</span>
-			<span class="kw">if</span> !<span class="macro">cfg!</span>(<span class="ident">fuzzing</span>) {
-				<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::HashMismatch</span>(<span class="self">self</span>.<span class="ident">checksum</span>, <span class="ident">hash_calculated</span>)));
+		<span class="comment">// 3. Compare to the extracted one
+		</span><span class="kw">if </span><span class="self">self</span>.checksum != hash_calculated {
+			<span class="comment">// Do not verify checksum when the decoder is being fuzzed.
+			// This allows random input from fuzzers reach decoding code that&#39;s actually interesting,
+			// instead of being rejected early due to checksum mismatch.
+			</span><span class="kw">if </span>!<span class="macro">cfg!</span>(fuzzing) {
+				<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::HashMismatch(<span class="self">self</span>.checksum, hash_calculated)));
 			}
 		}
-		<span class="self">self</span>.<span class="ident">segments_or_packets_buf</span> = <span class="ident">packet_data</span>;
-		<span class="prelude-val">Ok</span>(<span class="ident">OggPage</span>(<span class="self">self</span>))
+		<span class="self">self</span>.segments_or_packets_buf = packet_data;
+		<span class="prelude-val">Ok</span>(OggPage(<span class="self">self</span>))
 	}
 }
 
@@ -1471,387 +1471,387 @@ one via the `push_page` function.
 All functions on this struct are async ready.
 They get their data fed, instead of calling and blocking
 in order to get it.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BasePacketReader</span> {
-	<span class="comment">// TODO the hashmap plus the set is perhaps smart ass perfect design but could be made more performant I guess...</span>
-	<span class="comment">// I mean: in &gt; 99% of all cases we&#39;ll just have one or two streams.</span>
-	<span class="comment">// AND: their setup changes only very rarely.</span>
+*/
+</span><span class="kw">pub struct </span>BasePacketReader {
+	<span class="comment">// TODO the hashmap plus the set is perhaps smart ass perfect design but could be made more performant I guess...
+	// I mean: in &gt; 99% of all cases we&#39;ll just have one or two streams.
+	// AND: their setup changes only very rarely.
 
-	<span class="doccomment">/// Contains info about all logical streams that</span>
-	<span class="ident">page_infos</span> :<span class="ident">HashMap</span>&lt;<span class="ident">u32</span>, <span class="ident">PageInfo</span>&gt;,
+	</span><span class="doccomment">/// Contains info about all logical streams that
+	</span>page_infos :HashMap&lt;u32, PageInfo&gt;,
 
-	<span class="doccomment">/// Contains the stream_serial of the stream that contains some unprocessed packet data.</span>
-	<span class="doccomment">/// There is always &lt;= 1, bc if there is one, no new pages will be read, so there is no chance for a second to be added</span>
-	<span class="doccomment">/// None if there is no such stream and one has to read a new page.</span>
-	<span class="ident">stream_with_stuff</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt;,
+	<span class="doccomment">/// Contains the stream_serial of the stream that contains some unprocessed packet data.
+	/// There is always &lt;= 1, bc if there is one, no new pages will be read, so there is no chance for a second to be added
+	/// None if there is no such stream and one has to read a new page.
+	</span>stream_with_stuff :<span class="prelude-ty">Option</span>&lt;u32&gt;,
 
-	<span class="comment">// Bool that is set to true when a seek of the stream has occured.</span>
-	<span class="comment">// This helps validator code to decide whether to accept certain strange data.</span>
-	<span class="ident">has_seeked</span> :<span class="ident">bool</span>,
+	<span class="comment">// Bool that is set to true when a seek of the stream has occured.
+	// This helps validator code to decide whether to accept certain strange data.
+	</span>has_seeked :bool,
 }
 
-<span class="kw">impl</span> <span class="ident">BasePacketReader</span> {
-	<span class="doccomment">/// Constructs a new blank `BasePacketReader`.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// You can feed it data using the `push_page` function, and</span>
-	<span class="doccomment">/// obtain data using the `read_packet` function.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-		<span class="ident">BasePacketReader</span> { <span class="ident">page_infos</span>: <span class="ident">HashMap::new</span>(),
-			<span class="ident">stream_with_stuff</span>: <span class="prelude-val">None</span>, <span class="ident">has_seeked</span>: <span class="bool-val">false</span> }
+<span class="kw">impl </span>BasePacketReader {
+	<span class="doccomment">/// Constructs a new blank `BasePacketReader`.
+	///
+	/// You can feed it data using the `push_page` function, and
+	/// obtain data using the `read_packet` function.
+	</span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+		BasePacketReader { page_infos: HashMap::new(),
+			stream_with_stuff: <span class="prelude-val">None</span>, has_seeked: <span class="bool-val">false </span>}
 	}
-	<span class="doccomment">/// Extracts a packet from the cache, if the cache contains valid packet data,</span>
-	<span class="doccomment">/// otherwise it returns `None`.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// If this function returns `None`, you&#39;ll need to add a page to the cache</span>
-	<span class="doccomment">/// by using the `push_page` function.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_packet</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Packet</span>&gt; {
-		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">stream_with_stuff</span> == <span class="prelude-val">None</span> {
-			<span class="kw">return</span> <span class="prelude-val">None</span>;
+	<span class="doccomment">/// Extracts a packet from the cache, if the cache contains valid packet data,
+	/// otherwise it returns `None`.
+	///
+	/// If this function returns `None`, you&#39;ll need to add a page to the cache
+	/// by using the `push_page` function.
+	</span><span class="kw">pub fn </span>read_packet(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Packet&gt; {
+		<span class="kw">if </span><span class="self">self</span>.stream_with_stuff == <span class="prelude-val">None </span>{
+			<span class="kw">return </span><span class="prelude-val">None</span>;
 		}
-		<span class="kw">let</span> <span class="ident">str_serial</span> :<span class="ident">u32</span> = <span class="self">self</span>.<span class="ident">stream_with_stuff</span>.<span class="ident">unwrap</span>();
-		<span class="kw">let</span> <span class="ident">pg_info</span> = <span class="self">self</span>.<span class="ident">page_infos</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">str_serial</span>).<span class="ident">unwrap</span>();
-		<span class="kw">let</span> (<span class="ident">offs</span>, <span class="ident">len</span>) = <span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>[<span class="ident">pg_info</span>.<span class="ident">packet_idx</span> <span class="kw">as</span> <span class="ident">usize</span>];
-		<span class="comment">// If there is a continued packet, and we are at the start right now,</span>
-		<span class="comment">// and we actually have its end in the current page, glue it together.</span>
-		<span class="kw">let</span> <span class="ident">need_to_glue</span> = <span class="ident">pg_info</span>.<span class="ident">packet_idx</span> == <span class="number">0</span> &amp;&amp;
-				<span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> &amp;&amp;
-				!(<span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> &amp;&amp; <span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">len</span>() == <span class="number">1</span>);
-		<span class="kw">let</span> <span class="ident">packet_content</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt; = <span class="kw">if</span> <span class="ident">need_to_glue</span> {
-			<span class="comment">// First find out the size of our spanning packet</span>
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">siz</span> :<span class="ident">usize</span> = <span class="number">0</span>;
-			<span class="kw">for</span> <span class="ident">pck</span> <span class="kw">in</span> <span class="ident">pg_info</span>.<span class="ident">last_overlap_pck</span>.<span class="ident">iter</span>() {
-				<span class="ident">siz</span> += <span class="ident">pck</span>.<span class="ident">len</span>();
+		<span class="kw">let </span>str_serial :u32 = <span class="self">self</span>.stream_with_stuff.unwrap();
+		<span class="kw">let </span>pg_info = <span class="self">self</span>.page_infos.get_mut(<span class="kw-2">&amp;</span>str_serial).unwrap();
+		<span class="kw">let </span>(offs, len) = pg_info.bi.packet_positions[pg_info.packet_idx <span class="kw">as </span>usize];
+		<span class="comment">// If there is a continued packet, and we are at the start right now,
+		// and we actually have its end in the current page, glue it together.
+		</span><span class="kw">let </span>need_to_glue = pg_info.packet_idx == <span class="number">0 </span>&amp;&amp;
+				pg_info.bi.starts_with_continued &amp;&amp;
+				!(pg_info.bi.ends_with_continued &amp;&amp; pg_info.bi.packet_positions.len() == <span class="number">1</span>);
+		<span class="kw">let </span>packet_content :Vec&lt;u8&gt; = <span class="kw">if </span>need_to_glue {
+			<span class="comment">// First find out the size of our spanning packet
+			</span><span class="kw">let </span><span class="kw-2">mut </span>siz :usize = <span class="number">0</span>;
+			<span class="kw">for </span>pck <span class="kw">in </span>pg_info.last_overlap_pck.iter() {
+				siz += pck.len();
 			}
-			<span class="ident">siz</span> += <span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>;
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cont</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt; = <span class="ident">Vec::with_capacity</span>(<span class="ident">siz</span>);
+			siz += len <span class="kw">as </span>usize;
+			<span class="kw">let </span><span class="kw-2">mut </span>cont :Vec&lt;u8&gt; = Vec::with_capacity(siz);
 
-			<span class="comment">// Then do the copying</span>
-			<span class="kw">for</span> <span class="ident">pck</span> <span class="kw">in</span> <span class="ident">pg_info</span>.<span class="ident">last_overlap_pck</span>.<span class="ident">iter</span>() {
-				<span class="ident">cont</span>.<span class="ident">write_all</span>(<span class="ident">pck</span>).<span class="ident">unwrap</span>();
+			<span class="comment">// Then do the copying
+			</span><span class="kw">for </span>pck <span class="kw">in </span>pg_info.last_overlap_pck.iter() {
+				cont.write_all(pck).unwrap();
 			}
-			<span class="comment">// Now reset the overlap container again</span>
-			<span class="ident">pg_info</span>.<span class="ident">last_overlap_pck</span> = <span class="ident">Vec::new</span>();
-			<span class="ident">cont</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="ident">pg_info</span>.<span class="ident">page_body</span>[<span class="ident">offs</span> <span class="kw">as</span> <span class="ident">usize</span> .. (<span class="ident">offs</span> + <span class="ident">len</span>) <span class="kw">as</span> <span class="ident">usize</span>]).<span class="ident">unwrap</span>();
+			<span class="comment">// Now reset the overlap container again
+			</span>pg_info.last_overlap_pck = Vec::new();
+			cont.write_all(<span class="kw-2">&amp;</span>pg_info.page_body[offs <span class="kw">as </span>usize .. (offs + len) <span class="kw">as </span>usize]).unwrap();
 
-			<span class="ident">cont</span>
-		} <span class="kw">else</span> {
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cont</span> :<span class="ident">Vec</span>&lt;<span class="ident">u8</span>&gt; = <span class="ident">Vec::with_capacity</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
-			<span class="comment">// TODO The copy below is totally unneccessary. It is only needed so that we don&#39;t have to carry around the old Vec&#39;s.</span>
-			<span class="comment">// TODO get something like the shared_slice crate for RefCells, so that we can also have mutable data, shared through</span>
-			<span class="comment">// slices.</span>
-			<span class="kw">let</span> <span class="ident">cont_slice</span> :<span class="kw-2">&amp;</span>[<span class="ident">u8</span>] = <span class="kw-2">&amp;</span><span class="ident">pg_info</span>.<span class="ident">page_body</span>[<span class="ident">offs</span> <span class="kw">as</span> <span class="ident">usize</span> .. (<span class="ident">offs</span> + <span class="ident">len</span>) <span class="kw">as</span> <span class="ident">usize</span>];
-			<span class="ident">cont</span>.<span class="ident">write_all</span>(<span class="ident">cont_slice</span>).<span class="ident">unwrap</span>();
-			<span class="ident">cont</span>
+			cont
+		} <span class="kw">else </span>{
+			<span class="kw">let </span><span class="kw-2">mut </span>cont :Vec&lt;u8&gt; = Vec::with_capacity(len <span class="kw">as </span>usize);
+			<span class="comment">// TODO The copy below is totally unneccessary. It is only needed so that we don&#39;t have to carry around the old Vec&#39;s.
+			// TODO get something like the shared_slice crate for RefCells, so that we can also have mutable data, shared through
+			// slices.
+			</span><span class="kw">let </span>cont_slice :<span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>pg_info.page_body[offs <span class="kw">as </span>usize .. (offs + len) <span class="kw">as </span>usize];
+			cont.write_all(cont_slice).unwrap();
+			cont
 		};
 
-		<span class="kw">let</span> <span class="ident">first_pck_in_pg</span> = <span class="ident">pg_info</span>.<span class="ident">is_first_pck_in_pg</span>();
-		<span class="kw">let</span> <span class="ident">first_pck_overall</span> = <span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">first_page</span> &amp;&amp; <span class="ident">first_pck_in_pg</span>;
+		<span class="kw">let </span>first_pck_in_pg = pg_info.is_first_pck_in_pg();
+		<span class="kw">let </span>first_pck_overall = pg_info.bi.first_page &amp;&amp; first_pck_in_pg;
 
-		<span class="kw">let</span> <span class="ident">last_pck_in_pg</span> = <span class="ident">pg_info</span>.<span class="ident">is_last_pck_in_pg</span>();
-		<span class="kw">let</span> <span class="ident">last_pck_overall</span> = <span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">last_page</span> &amp;&amp; <span class="ident">last_pck_in_pg</span>;
+		<span class="kw">let </span>last_pck_in_pg = pg_info.is_last_pck_in_pg();
+		<span class="kw">let </span>last_pck_overall = pg_info.bi.last_page &amp;&amp; last_pck_in_pg;
 
-		<span class="comment">// Update the last read index.</span>
-		<span class="ident">pg_info</span>.<span class="ident">packet_idx</span> += <span class="number">1</span>;
-		<span class="comment">// Set stream_with_stuff to None so that future packet reads</span>
-		<span class="comment">// yield a page read first</span>
-		<span class="kw">if</span> <span class="ident">last_pck_in_pg</span> {
-			<span class="self">self</span>.<span class="ident">stream_with_stuff</span> = <span class="prelude-val">None</span>;
+		<span class="comment">// Update the last read index.
+		</span>pg_info.packet_idx += <span class="number">1</span>;
+		<span class="comment">// Set stream_with_stuff to None so that future packet reads
+		// yield a page read first
+		</span><span class="kw">if </span>last_pck_in_pg {
+			<span class="self">self</span>.stream_with_stuff = <span class="prelude-val">None</span>;
 		}
 
-		<span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">Packet</span> {
-			<span class="ident">data</span>: <span class="ident">packet_content</span>,
-			<span class="ident">first_packet_pg</span>: <span class="ident">first_pck_in_pg</span>,
-			<span class="ident">first_packet_stream</span>: <span class="ident">first_pck_overall</span>,
-			<span class="ident">last_packet_pg</span>: <span class="ident">last_pck_in_pg</span>,
-			<span class="ident">last_packet_stream</span>: <span class="ident">last_pck_overall</span>,
-			<span class="ident">absgp_page</span>: <span class="ident">pg_info</span>.<span class="ident">bi</span>.<span class="ident">absgp</span>,
-			<span class="ident">stream_serial</span>: <span class="ident">str_serial</span>,
+		<span class="kw">return </span><span class="prelude-val">Some</span>(Packet {
+			data: packet_content,
+			first_packet_pg: first_pck_in_pg,
+			first_packet_stream: first_pck_overall,
+			last_packet_pg: last_pck_in_pg,
+			last_packet_stream: last_pck_overall,
+			absgp_page: pg_info.bi.absgp,
+			stream_serial: str_serial,
 		});
 	}
 
-	<span class="doccomment">/// Pushes a given Ogg page, updating the internal structures</span>
-	<span class="doccomment">/// with its contents.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// If you want the code to function properly, you should first call</span>
-	<span class="doccomment">/// `parse_segments`, then `parse_packet_data` on a `PageParser`</span>
-	<span class="doccomment">/// before passing the resulting `OggPage` to this function.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">push_page</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">page</span> :<span class="ident">OggPage</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pg_prs</span> = <span class="ident">page</span>.<span class="number">0</span>;
-		<span class="kw">match</span> <span class="self">self</span>.<span class="ident">page_infos</span>.<span class="ident">entry</span>(<span class="ident">pg_prs</span>.<span class="ident">stream_serial</span>) {
-			<span class="ident">Entry::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">o</span>) =&gt; {
-				<span class="kw">let</span> <span class="ident">inf</span> = <span class="ident">o</span>.<span class="ident">get_mut</span>();
-				<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">first_page</span> {
-					<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::InvalidData</span>));
+	<span class="doccomment">/// Pushes a given Ogg page, updating the internal structures
+	/// with its contents.
+	///
+	/// If you want the code to function properly, you should first call
+	/// `parse_segments`, then `parse_packet_data` on a `PageParser`
+	/// before passing the resulting `OggPage` to this function.
+	</span><span class="kw">pub fn </span>push_page(<span class="kw-2">&amp;mut </span><span class="self">self</span>, page :OggPage) -&gt; <span class="prelude-ty">Result</span>&lt;(), OggReadError&gt; {
+		<span class="kw">let </span><span class="kw-2">mut </span>pg_prs = page.<span class="number">0</span>;
+		<span class="kw">match </span><span class="self">self</span>.page_infos.entry(pg_prs.stream_serial) {
+			Entry::Occupied(<span class="kw-2">mut </span>o) =&gt; {
+				<span class="kw">let </span>inf = o.get_mut();
+				<span class="kw">if </span>pg_prs.bi.first_page {
+					<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::InvalidData));
 				}
-				<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> != <span class="ident">inf</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> {
-					<span class="kw">if</span> !<span class="self">self</span>.<span class="ident">has_seeked</span> {
-						<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::InvalidData</span>));
-					} <span class="kw">else</span> {
-						<span class="comment">// If we have seeked, we are more tolerant here,</span>
-						<span class="comment">// and just drop the continued packet&#39;s content.</span>
+				<span class="kw">if </span>pg_prs.bi.starts_with_continued != inf.bi.ends_with_continued {
+					<span class="kw">if </span>!<span class="self">self</span>.has_seeked {
+						<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::InvalidData));
+					} <span class="kw">else </span>{
+						<span class="comment">// If we have seeked, we are more tolerant here,
+						// and just drop the continued packet&#39;s content.
 
-						<span class="ident">inf</span>.<span class="ident">last_overlap_pck</span>.<span class="ident">clear</span>();
-						<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> {
-							<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">remove</span>(<span class="number">0</span>);
-							<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">packet_count</span> != <span class="number">0</span> {
-								<span class="comment">// Decrease packet count by one. Normal case.</span>
-								<span class="ident">pg_prs</span>.<span class="ident">packet_count</span> -= <span class="number">1</span>;
-							} <span class="kw">else</span> {
-								<span class="comment">// If the packet count is 0, this means</span>
-								<span class="comment">// that we start and end with the same continued packet.</span>
-								<span class="comment">// So now as we ignore that packet, we must clear the</span>
-								<span class="comment">// ends_with_continued state as well.</span>
-								<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> = <span class="bool-val">false</span>;
+						</span>inf.last_overlap_pck.clear();
+						<span class="kw">if </span>pg_prs.bi.starts_with_continued {
+							pg_prs.bi.packet_positions.remove(<span class="number">0</span>);
+							<span class="kw">if </span>pg_prs.packet_count != <span class="number">0 </span>{
+								<span class="comment">// Decrease packet count by one. Normal case.
+								</span>pg_prs.packet_count -= <span class="number">1</span>;
+							} <span class="kw">else </span>{
+								<span class="comment">// If the packet count is 0, this means
+								// that we start and end with the same continued packet.
+								// So now as we ignore that packet, we must clear the
+								// ends_with_continued state as well.
+								</span>pg_prs.bi.ends_with_continued = <span class="bool-val">false</span>;
 							}
 						}
 					}
-				} <span class="kw">else</span> <span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> {
-					<span class="comment">// Remember the packet at the end so that it can be glued together once</span>
-					<span class="comment">// we encounter the next segment with length &lt; 255 (doesnt have to be in this page)</span>
-					<span class="kw">let</span> (<span class="ident">offs</span>, <span class="ident">len</span>) = <span class="ident">inf</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>[<span class="ident">inf</span>.<span class="ident">packet_idx</span> <span class="kw">as</span> <span class="ident">usize</span>];
-					<span class="kw">if</span> <span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span> != <span class="ident">inf</span>.<span class="ident">page_body</span>.<span class="ident">len</span>() {
-						<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tmp</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
-						<span class="ident">tmp</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="ident">inf</span>.<span class="ident">page_body</span>[<span class="ident">offs</span> <span class="kw">as</span> <span class="ident">usize</span> .. (<span class="ident">offs</span> + <span class="ident">len</span>) <span class="kw">as</span> <span class="ident">usize</span>]).<span class="ident">unwrap</span>();
-						<span class="ident">inf</span>.<span class="ident">last_overlap_pck</span>.<span class="ident">push</span>(<span class="ident">tmp</span>);
-					} <span class="kw">else</span> {
-						<span class="comment">// Little optimisation: don&#39;t copy if not neccessary</span>
-						<span class="ident">inf</span>.<span class="ident">last_overlap_pck</span>.<span class="ident">push</span>(<span class="ident">replace</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inf</span>.<span class="ident">page_body</span>, <span class="macro">vec!</span>[<span class="number">0</span>;<span class="number">0</span>]));
+				} <span class="kw">else if </span>pg_prs.bi.starts_with_continued {
+					<span class="comment">// Remember the packet at the end so that it can be glued together once
+					// we encounter the next segment with length &lt; 255 (doesnt have to be in this page)
+					</span><span class="kw">let </span>(offs, len) = inf.bi.packet_positions[inf.packet_idx <span class="kw">as </span>usize];
+					<span class="kw">if </span>len <span class="kw">as </span>usize != inf.page_body.len() {
+						<span class="kw">let </span><span class="kw-2">mut </span>tmp = Vec::with_capacity(len <span class="kw">as </span>usize);
+						tmp.write_all(<span class="kw-2">&amp;</span>inf.page_body[offs <span class="kw">as </span>usize .. (offs + len) <span class="kw">as </span>usize]).unwrap();
+						inf.last_overlap_pck.push(tmp);
+					} <span class="kw">else </span>{
+						<span class="comment">// Little optimisation: don&#39;t copy if not neccessary
+						</span>inf.last_overlap_pck.push(replace(<span class="kw-2">&amp;mut </span>inf.page_body, <span class="macro">vec!</span>[<span class="number">0</span>;<span class="number">0</span>]));
 					}
 
 				}
-				<span class="ident">inf</span>.<span class="ident">bi</span> = <span class="ident">pg_prs</span>.<span class="ident">bi</span>;
-				<span class="ident">inf</span>.<span class="ident">packet_idx</span> = <span class="number">0</span>;
-				<span class="ident">inf</span>.<span class="ident">page_body</span> = <span class="ident">pg_prs</span>.<span class="ident">segments_or_packets_buf</span>;
+				inf.bi = pg_prs.bi;
+				inf.packet_idx = <span class="number">0</span>;
+				inf.page_body = pg_prs.segments_or_packets_buf;
 			},
-			<span class="ident">Entry::Vacant</span>(<span class="ident">v</span>) =&gt; {
-				<span class="kw">if</span> !<span class="self">self</span>.<span class="ident">has_seeked</span> {
-					<span class="kw">if</span> !<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">first_page</span> || <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> {
-						<span class="comment">// If we haven&#39;t seeked, this is an error.</span>
-						<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::InvalidData</span>));
+			Entry::Vacant(v) =&gt; {
+				<span class="kw">if </span>!<span class="self">self</span>.has_seeked {
+					<span class="kw">if </span>!pg_prs.bi.first_page || pg_prs.bi.starts_with_continued {
+						<span class="comment">// If we haven&#39;t seeked, this is an error.
+						</span><span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::InvalidData));
 					}
-				} <span class="kw">else</span> {
-					<span class="kw">if</span> !<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">first_page</span> {
-						<span class="comment">// we can just ignore this.</span>
-					}
-					<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> {
-						<span class="comment">// Ignore the continued packet&#39;s content.</span>
-						<span class="comment">// This is a normal occurence if we have just seeked.</span>
-						<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">packet_positions</span>.<span class="ident">remove</span>(<span class="number">0</span>);
-						<span class="kw">if</span> <span class="ident">pg_prs</span>.<span class="ident">packet_count</span> != <span class="number">0</span> {
-							<span class="comment">// Decrease packet count by one. Normal case.</span>
-							<span class="ident">pg_prs</span>.<span class="ident">packet_count</span> -= <span class="number">1</span>;
-						} <span class="kw">else</span> {
-							<span class="comment">// If the packet count is 0, this means</span>
-							<span class="comment">// that we start and end with the same continued packet.</span>
-							<span class="comment">// So now as we ignore that packet, we must clear the</span>
-							<span class="comment">// ends_with_continued state as well.</span>
-							<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">ends_with_continued</span> = <span class="bool-val">false</span>;
+				} <span class="kw">else </span>{
+					<span class="kw">if </span>!pg_prs.bi.first_page {
+						<span class="comment">// we can just ignore this.
+					</span>}
+					<span class="kw">if </span>pg_prs.bi.starts_with_continued {
+						<span class="comment">// Ignore the continued packet&#39;s content.
+						// This is a normal occurence if we have just seeked.
+						</span>pg_prs.bi.packet_positions.remove(<span class="number">0</span>);
+						<span class="kw">if </span>pg_prs.packet_count != <span class="number">0 </span>{
+							<span class="comment">// Decrease packet count by one. Normal case.
+							</span>pg_prs.packet_count -= <span class="number">1</span>;
+						} <span class="kw">else </span>{
+							<span class="comment">// If the packet count is 0, this means
+							// that we start and end with the same continued packet.
+							// So now as we ignore that packet, we must clear the
+							// ends_with_continued state as well.
+							</span>pg_prs.bi.ends_with_continued = <span class="bool-val">false</span>;
 						}
-						<span class="comment">// Not actually needed, but good for consistency</span>
-						<span class="ident">pg_prs</span>.<span class="ident">bi</span>.<span class="ident">starts_with_continued</span> = <span class="bool-val">false</span>;
+						<span class="comment">// Not actually needed, but good for consistency
+						</span>pg_prs.bi.starts_with_continued = <span class="bool-val">false</span>;
 					}
 				}
-				<span class="ident">v</span>.<span class="ident">insert</span>(<span class="ident">PageInfo</span> {
-					<span class="ident">bi</span> : <span class="ident">pg_prs</span>.<span class="ident">bi</span>,
-					<span class="ident">packet_idx</span>: <span class="number">0</span>,
-					<span class="ident">page_body</span>: <span class="ident">pg_prs</span>.<span class="ident">segments_or_packets_buf</span>,
-					<span class="ident">last_overlap_pck</span>: <span class="ident">Vec::new</span>(),
+				v.insert(PageInfo {
+					bi : pg_prs.bi,
+					packet_idx: <span class="number">0</span>,
+					page_body: pg_prs.segments_or_packets_buf,
+					last_overlap_pck: Vec::new(),
 				});
 			},
 		}
-		<span class="kw">let</span> <span class="ident">pg_has_stuff</span> :<span class="ident">bool</span> = <span class="ident">pg_prs</span>.<span class="ident">packet_count</span> &gt; <span class="number">0</span>;
+		<span class="kw">let </span>pg_has_stuff :bool = pg_prs.packet_count &gt; <span class="number">0</span>;
 
-		<span class="kw">if</span> <span class="ident">pg_has_stuff</span> {
-			<span class="self">self</span>.<span class="ident">stream_with_stuff</span> = <span class="prelude-val">Some</span>(<span class="ident">pg_prs</span>.<span class="ident">stream_serial</span>);
-		} <span class="kw">else</span> {
-			<span class="self">self</span>.<span class="ident">stream_with_stuff</span> = <span class="prelude-val">None</span>;
+		<span class="kw">if </span>pg_has_stuff {
+			<span class="self">self</span>.stream_with_stuff = <span class="prelude-val">Some</span>(pg_prs.stream_serial);
+		} <span class="kw">else </span>{
+			<span class="self">self</span>.stream_with_stuff = <span class="prelude-val">None</span>;
 		}
 
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(());
 	}
 
-	<span class="doccomment">/// Reset the internal state after a seek</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// It flushes the cache so that no partial data is left inside.</span>
-	<span class="doccomment">/// It also tells the parsing logic to expect little inconsistencies</span>
-	<span class="doccomment">/// due to the read position not being at the start.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">update_after_seek</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-		<span class="self">self</span>.<span class="ident">stream_with_stuff</span> = <span class="prelude-val">None</span>;
-		<span class="self">self</span>.<span class="ident">page_infos</span> = <span class="ident">HashMap::new</span>();
-		<span class="self">self</span>.<span class="ident">has_seeked</span> = <span class="bool-val">true</span>;
+	<span class="doccomment">/// Reset the internal state after a seek
+	///
+	/// It flushes the cache so that no partial data is left inside.
+	/// It also tells the parsing logic to expect little inconsistencies
+	/// due to the read position not being at the start.
+	</span><span class="kw">pub fn </span>update_after_seek(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+		<span class="self">self</span>.stream_with_stuff = <span class="prelude-val">None</span>;
+		<span class="self">self</span>.page_infos = HashMap::new();
+		<span class="self">self</span>.has_seeked = <span class="bool-val">true</span>;
 	}
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">enum</span> <span class="ident">UntilPageHeaderReaderMode</span> {
-	<span class="ident">Searching</span>,
-	<span class="ident">FoundWithNeeded</span>(<span class="ident">u8</span>),
-	<span class="ident">SeekNeeded</span>(<span class="ident">i32</span>),
-	<span class="ident">Found</span>,
+<span class="attribute">#[derive(Clone, Copy)]</span>
+<span class="kw">enum </span>UntilPageHeaderReaderMode {
+	Searching,
+	FoundWithNeeded(u8),
+	SeekNeeded(i32),
+	Found,
 }
 
-<span class="kw">enum</span> <span class="ident">UntilPageHeaderResult</span> {
-	<span class="ident">Eof</span>,
-	<span class="ident">Found</span>,
-	<span class="ident">ReadNeeded</span>,
-	<span class="ident">SeekNeeded</span>,
+<span class="kw">enum </span>UntilPageHeaderResult {
+	Eof,
+	Found,
+	ReadNeeded,
+	SeekNeeded,
 }
 
-<span class="kw">struct</span> <span class="ident">UntilPageHeaderReader</span> {
-	<span class="ident">mode</span> :<span class="ident">UntilPageHeaderReaderMode</span>,
-	<span class="doccomment">/// Capture pattern offset. Needed so that if we only partially</span>
-	<span class="doccomment">/// recognized the capture pattern, we later on only check the</span>
-	<span class="doccomment">/// remaining part.</span>
-	<span class="ident">cpt_of</span> :<span class="ident">u8</span>,
-	<span class="doccomment">/// The return buffer.</span>
-	<span class="ident">ret_buf</span> :[<span class="ident">u8</span>; <span class="number">27</span>],
-	<span class="ident">read_amount</span> :<span class="ident">usize</span>,
+<span class="kw">struct </span>UntilPageHeaderReader {
+	mode :UntilPageHeaderReaderMode,
+	<span class="doccomment">/// Capture pattern offset. Needed so that if we only partially
+	/// recognized the capture pattern, we later on only check the
+	/// remaining part.
+	</span>cpt_of :u8,
+	<span class="doccomment">/// The return buffer.
+	</span>ret_buf :[u8; <span class="number">27</span>],
+	read_amount :usize,
 }
 
-<span class="kw">impl</span> <span class="ident">UntilPageHeaderReader</span> {
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-		<span class="ident">UntilPageHeaderReader</span> {
-			<span class="ident">mode</span> : <span class="ident">UntilPageHeaderReaderMode::Searching</span>,
-			<span class="ident">cpt_of</span> : <span class="number">0</span>,
-			<span class="ident">ret_buf</span> : [<span class="number">0</span>; <span class="number">27</span>],
-			<span class="ident">read_amount</span> : <span class="number">0</span>,
+<span class="kw">impl </span>UntilPageHeaderReader {
+	<span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+		UntilPageHeaderReader {
+			mode : UntilPageHeaderReaderMode::Searching,
+			cpt_of : <span class="number">0</span>,
+			ret_buf : [<span class="number">0</span>; <span class="number">27</span>],
+			read_amount : <span class="number">0</span>,
 		}
 	}
-	<span class="doccomment">/// Returns Some(off), where off is the offset of the last byte</span>
-	<span class="doccomment">/// of the capture pattern if it&#39;s found, None if the capture pattern</span>
-	<span class="doccomment">/// is not inside the passed slice.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Changes the capture pattern offset accordingly</span>
-	<span class="kw">fn</span> <span class="ident">check_arr</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">arr</span> :<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-		<span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">ch</span>) <span class="kw">in</span> <span class="ident">arr</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-			<span class="kw">match</span> <span class="kw-2">*</span><span class="ident">ch</span> {
-				<span class="string">b&#39;O&#39;</span> =&gt; <span class="self">self</span>.<span class="ident">cpt_of</span> = <span class="number">1</span>,
-				<span class="string">b&#39;g&#39;</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">cpt_of</span> == <span class="number">1</span> || <span class="self">self</span>.<span class="ident">cpt_of</span> == <span class="number">2</span> =&gt; <span class="self">self</span>.<span class="ident">cpt_of</span> += <span class="number">1</span>,
-				<span class="string">b&#39;S&#39;</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">cpt_of</span> == <span class="number">3</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">i</span>),
-				<span class="kw">_</span> =&gt; <span class="self">self</span>.<span class="ident">cpt_of</span> = <span class="number">0</span>,
+	<span class="doccomment">/// Returns Some(off), where off is the offset of the last byte
+	/// of the capture pattern if it&#39;s found, None if the capture pattern
+	/// is not inside the passed slice.
+	///
+	/// Changes the capture pattern offset accordingly
+	</span><span class="kw">fn </span>check_arr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, arr :<span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+		<span class="kw">for </span>(i, ch) <span class="kw">in </span>arr.iter().enumerate() {
+			<span class="kw">match </span><span class="kw-2">*</span>ch {
+				<span class="string">b&#39;O&#39; </span>=&gt; <span class="self">self</span>.cpt_of = <span class="number">1</span>,
+				<span class="string">b&#39;g&#39; </span><span class="kw">if </span><span class="self">self</span>.cpt_of == <span class="number">1 </span>|| <span class="self">self</span>.cpt_of == <span class="number">2 </span>=&gt; <span class="self">self</span>.cpt_of += <span class="number">1</span>,
+				<span class="string">b&#39;S&#39; </span><span class="kw">if </span><span class="self">self</span>.cpt_of == <span class="number">3 </span>=&gt; <span class="kw">return </span><span class="prelude-val">Some</span>(i),
+				<span class="kw">_ </span>=&gt; <span class="self">self</span>.cpt_of = <span class="number">0</span>,
 			}
 		}
-		<span class="kw">return</span> <span class="prelude-val">None</span>;
+		<span class="kw">return </span><span class="prelude-val">None</span>;
 	}
-	<span class="doccomment">/// Do one read exactly, and if it was successful,</span>
-	<span class="doccomment">/// return Ok(true) if the full header has been read and can be extracted with</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// or return Ok(false) if the</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_read</span>&lt;<span class="ident">R</span> :<span class="ident">Read</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">rdr</span> :<span class="ident">R</span>)
-			-&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">UntilPageHeaderResult</span>, <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderReaderMode</span>::<span class="kw-2">*</span>;
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderResult</span> <span class="kw">as</span> <span class="ident">Res</span>;
-		<span class="comment">// The array&#39;s size is freely choseable, but must be &gt; 27,</span>
-		<span class="comment">// and must well fit into an i32 (needs to be stored in SeekNeeded)</span>
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> :[<span class="ident">u8</span>; <span class="number">1024</span>] = [<span class="number">0</span>; <span class="number">1024</span>];
+	<span class="doccomment">/// Do one read exactly, and if it was successful,
+	/// return Ok(true) if the full header has been read and can be extracted with
+	///
+	/// or return Ok(false) if the
+	</span><span class="kw">pub fn </span>do_read&lt;R :Read&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>rdr :R)
+			-&gt; <span class="prelude-ty">Result</span>&lt;UntilPageHeaderResult, OggReadError&gt; {
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderReaderMode::<span class="kw-2">*</span>;
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderResult <span class="kw">as </span>Res;
+		<span class="comment">// The array&#39;s size is freely choseable, but must be &gt; 27,
+		// and must well fit into an i32 (needs to be stored in SeekNeeded)
+		</span><span class="kw">let </span><span class="kw-2">mut </span>buf :[u8; <span class="number">1024</span>] = [<span class="number">0</span>; <span class="number">1024</span>];
 
-		<span class="kw">let</span> <span class="ident">rd_len</span> = <span class="macro">tri!</span>(<span class="ident">rdr</span>.<span class="ident">read</span>(<span class="kw">if</span> <span class="self">self</span>.<span class="ident">read_amount</span> &lt; <span class="number">27</span> {
-			<span class="comment">// This is an optimisation for the most likely case:</span>
-			<span class="comment">// the next page directly follows the current read position.</span>
-			<span class="comment">// Then it would be a waste to read more than the needed amount.</span>
-			<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>[<span class="number">0</span> .. <span class="number">27</span> - <span class="self">self</span>.<span class="ident">read_amount</span>]
-		} <span class="kw">else</span> {
-			<span class="kw">match</span> <span class="self">self</span>.<span class="ident">mode</span> {
-				<span class="ident">Searching</span> =&gt; <span class="kw-2">&amp;mut</span> <span class="ident">buf</span>,
-				<span class="ident">FoundWithNeeded</span>(<span class="ident">amount</span>) =&gt; <span class="kw-2">&amp;mut</span> <span class="ident">buf</span>[<span class="number">0</span> .. <span class="ident">amount</span> <span class="kw">as</span> <span class="ident">usize</span>],
-				<span class="ident">SeekNeeded</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::SeekNeeded</span>),
-				<span class="ident">Found</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::Found</span>),
+		<span class="kw">let </span>rd_len = <span class="macro">tri!</span>(rdr.read(<span class="kw">if </span><span class="self">self</span>.read_amount &lt; <span class="number">27 </span>{
+			<span class="comment">// This is an optimisation for the most likely case:
+			// the next page directly follows the current read position.
+			// Then it would be a waste to read more than the needed amount.
+			</span><span class="kw-2">&amp;mut </span>buf[<span class="number">0 </span>.. <span class="number">27 </span>- <span class="self">self</span>.read_amount]
+		} <span class="kw">else </span>{
+			<span class="kw">match </span><span class="self">self</span>.mode {
+				Searching =&gt; <span class="kw-2">&amp;mut </span>buf,
+				FoundWithNeeded(amount) =&gt; <span class="kw-2">&amp;mut </span>buf[<span class="number">0 </span>.. amount <span class="kw">as </span>usize],
+				SeekNeeded(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(Res::SeekNeeded),
+				Found =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(Res::Found),
 			}
 		}));
 
-		<span class="kw">if</span> <span class="ident">rd_len</span> == <span class="number">0</span> {
-			<span class="comment">// Reached EOF.</span>
-			<span class="kw">if</span> <span class="self">self</span>.<span class="ident">read_amount</span> == <span class="number">0</span> {
-				<span class="comment">// If we have read nothing yet, there is no data</span>
-				<span class="comment">// but ogg data, meaning the stream ends legally</span>
-				<span class="comment">// and without corruption.</span>
-				<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::Eof</span>);
-			} <span class="kw">else</span> {
-				<span class="comment">// There is most likely a corruption here.</span>
-				<span class="comment">// I&#39;m not sure, but the ogg spec doesn&#39;t say that</span>
-				<span class="comment">// random data past the last ogg page is allowed,</span>
-				<span class="comment">// so we just assume it&#39;s not allowed.</span>
-				<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::NoCapturePatternFound</span>));
+		<span class="kw">if </span>rd_len == <span class="number">0 </span>{
+			<span class="comment">// Reached EOF.
+			</span><span class="kw">if </span><span class="self">self</span>.read_amount == <span class="number">0 </span>{
+				<span class="comment">// If we have read nothing yet, there is no data
+				// but ogg data, meaning the stream ends legally
+				// and without corruption.
+				</span><span class="kw">return </span><span class="prelude-val">Ok</span>(Res::Eof);
+			} <span class="kw">else </span>{
+				<span class="comment">// There is most likely a corruption here.
+				// I&#39;m not sure, but the ogg spec doesn&#39;t say that
+				// random data past the last ogg page is allowed,
+				// so we just assume it&#39;s not allowed.
+				</span><span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::NoCapturePatternFound));
 			}
 		}
-		<span class="self">self</span>.<span class="ident">read_amount</span> += <span class="ident">rd_len</span>;
+		<span class="self">self</span>.read_amount += rd_len;
 
-		<span class="comment">// 150 kb gives us a bit of safety: we can survive</span>
-		<span class="comment">// up to one page with a corrupted capture pattern</span>
-		<span class="comment">// after having seeked right after a capture pattern</span>
-		<span class="comment">// of an earlier page.</span>
-		<span class="kw">let</span> <span class="ident">read_amount_max</span> = <span class="number">150</span> * <span class="number">1024</span>;
-		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">read_amount</span> &gt; <span class="ident">read_amount_max</span> {
-			<span class="comment">// Exhaustive searching for the capture pattern</span>
-			<span class="comment">// has returned no ogg capture pattern.</span>
-			<span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">OggReadError::NoCapturePatternFound</span>));
+		<span class="comment">// 150 kb gives us a bit of safety: we can survive
+		// up to one page with a corrupted capture pattern
+		// after having seeked right after a capture pattern
+		// of an earlier page.
+		</span><span class="kw">let </span>read_amount_max = <span class="number">150 </span>* <span class="number">1024</span>;
+		<span class="kw">if </span><span class="self">self</span>.read_amount &gt; read_amount_max {
+			<span class="comment">// Exhaustive searching for the capture pattern
+			// has returned no ogg capture pattern.
+			</span><span class="macro">tri!</span>(<span class="prelude-val">Err</span>(OggReadError::NoCapturePatternFound));
 		}
 
-		<span class="kw">let</span> <span class="ident">rd_buf</span> = <span class="kw-2">&amp;</span><span class="ident">buf</span>[<span class="number">0</span> .. <span class="ident">rd_len</span>];
+		<span class="kw">let </span>rd_buf = <span class="kw-2">&amp;</span>buf[<span class="number">0 </span>.. rd_len];
 
-		<span class="kw">use</span> <span class="ident">std::cmp::min</span>;
-		<span class="kw">let</span> (<span class="ident">off</span>, <span class="ident">needed</span>) = <span class="kw">match</span> <span class="self">self</span>.<span class="ident">mode</span> {
-			<span class="ident">Searching</span> =&gt; <span class="kw">match</span> <span class="self">self</span>.<span class="ident">check_arr</span>(<span class="ident">rd_buf</span>) {
-				<span class="comment">// Capture pattern found</span>
-				<span class="prelude-val">Some</span>(<span class="ident">off</span>) =&gt; {
-					<span class="self">self</span>.<span class="ident">ret_buf</span>[<span class="number">0</span>] = <span class="string">b&#39;O&#39;</span>;
-					<span class="self">self</span>.<span class="ident">ret_buf</span>[<span class="number">1</span>] = <span class="string">b&#39;g&#39;</span>;
-					<span class="self">self</span>.<span class="ident">ret_buf</span>[<span class="number">2</span>] = <span class="string">b&#39;g&#39;</span>;
-					<span class="self">self</span>.<span class="ident">ret_buf</span>[<span class="number">3</span>] = <span class="string">b&#39;S&#39;</span>; <span class="comment">// (Not actually needed)</span>
-					(<span class="ident">off</span>, <span class="number">24</span>)
+		<span class="kw">use </span>std::cmp::min;
+		<span class="kw">let </span>(off, needed) = <span class="kw">match </span><span class="self">self</span>.mode {
+			Searching =&gt; <span class="kw">match </span><span class="self">self</span>.check_arr(rd_buf) {
+				<span class="comment">// Capture pattern found
+				</span><span class="prelude-val">Some</span>(off) =&gt; {
+					<span class="self">self</span>.ret_buf[<span class="number">0</span>] = <span class="string">b&#39;O&#39;</span>;
+					<span class="self">self</span>.ret_buf[<span class="number">1</span>] = <span class="string">b&#39;g&#39;</span>;
+					<span class="self">self</span>.ret_buf[<span class="number">2</span>] = <span class="string">b&#39;g&#39;</span>;
+					<span class="self">self</span>.ret_buf[<span class="number">3</span>] = <span class="string">b&#39;S&#39;</span>; <span class="comment">// (Not actually needed)
+					</span>(off, <span class="number">24</span>)
 				},
-				<span class="comment">// Nothing found</span>
-				<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::ReadNeeded</span>),
+				<span class="comment">// Nothing found
+				</span><span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(Res::ReadNeeded),
 			},
-			<span class="ident">FoundWithNeeded</span>(<span class="ident">needed</span>) =&gt; {
-				(<span class="number">0</span>, <span class="ident">needed</span> <span class="kw">as</span> <span class="ident">usize</span>)
+			FoundWithNeeded(needed) =&gt; {
+				(<span class="number">0</span>, needed <span class="kw">as </span>usize)
 			},
-			<span class="kw">_</span> =&gt; <span class="macro">unimplemented!</span>(),
+			<span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(),
 		};
 
-		<span class="kw">let</span> <span class="ident">fnd_buf</span> = <span class="kw-2">&amp;</span><span class="ident">rd_buf</span>[<span class="ident">off</span>..];
+		<span class="kw">let </span>fnd_buf = <span class="kw-2">&amp;</span>rd_buf[off..];
 
-		<span class="kw">let</span> <span class="ident">copy_amount</span> = <span class="ident">min</span>(<span class="ident">needed</span>, <span class="ident">fnd_buf</span>.<span class="ident">len</span>());
-		<span class="kw">let</span> <span class="ident">start_fill</span> = <span class="number">27</span> - <span class="ident">needed</span>;
-		(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">ret_buf</span>[<span class="ident">start_fill</span> .. <span class="ident">copy_amount</span> + <span class="ident">start_fill</span>])
-				.<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">fnd_buf</span>[<span class="number">0</span> .. <span class="ident">copy_amount</span>]);
-		<span class="kw">if</span> <span class="ident">fnd_buf</span>.<span class="ident">len</span>() == <span class="ident">needed</span> {
-			<span class="comment">// Capture pattern found!</span>
-			<span class="self">self</span>.<span class="ident">mode</span> = <span class="ident">Found</span>;
-			<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::Found</span>);
-		} <span class="kw">else</span> <span class="kw">if</span> <span class="ident">fnd_buf</span>.<span class="ident">len</span>() &lt; <span class="ident">needed</span> {
-			<span class="comment">// We still have to read some content.</span>
-			<span class="kw">let</span> <span class="ident">needed_new</span> = <span class="ident">needed</span> - <span class="ident">copy_amount</span>;
-			<span class="self">self</span>.<span class="ident">mode</span> = <span class="ident">FoundWithNeeded</span>(<span class="ident">needed_new</span> <span class="kw">as</span> <span class="ident">u8</span>);
-			<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::ReadNeeded</span>);
-		} <span class="kw">else</span> {
-			<span class="comment">// We have read too much content (exceeding the header).</span>
-			<span class="comment">// Seek back so that we are at the position</span>
-			<span class="comment">// right after the header.</span>
+		<span class="kw">let </span>copy_amount = min(needed, fnd_buf.len());
+		<span class="kw">let </span>start_fill = <span class="number">27 </span>- needed;
+		(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ret_buf[start_fill .. copy_amount + start_fill])
+				.copy_from_slice(<span class="kw-2">&amp;</span>fnd_buf[<span class="number">0 </span>.. copy_amount]);
+		<span class="kw">if </span>fnd_buf.len() == needed {
+			<span class="comment">// Capture pattern found!
+			</span><span class="self">self</span>.mode = Found;
+			<span class="kw">return </span><span class="prelude-val">Ok</span>(Res::Found);
+		} <span class="kw">else if </span>fnd_buf.len() &lt; needed {
+			<span class="comment">// We still have to read some content.
+			</span><span class="kw">let </span>needed_new = needed - copy_amount;
+			<span class="self">self</span>.mode = FoundWithNeeded(needed_new <span class="kw">as </span>u8);
+			<span class="kw">return </span><span class="prelude-val">Ok</span>(Res::ReadNeeded);
+		} <span class="kw">else </span>{
+			<span class="comment">// We have read too much content (exceeding the header).
+			// Seek back so that we are at the position
+			// right after the header.
 
-			<span class="self">self</span>.<span class="ident">mode</span> = <span class="ident">SeekNeeded</span>(<span class="ident">needed</span> <span class="kw">as</span> <span class="ident">i32</span> - <span class="ident">fnd_buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i32</span>);
-			<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Res::SeekNeeded</span>);
+			</span><span class="self">self</span>.mode = SeekNeeded(needed <span class="kw">as </span>i32 - fnd_buf.len() <span class="kw">as </span>i32);
+			<span class="kw">return </span><span class="prelude-val">Ok</span>(Res::SeekNeeded);
 		}
 	}
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_seek</span>&lt;<span class="ident">S</span> :<span class="ident">Seek</span>&gt;(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">skr</span> :<span class="ident">S</span>)
-			-&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">UntilPageHeaderResult</span>, <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderReaderMode</span>::<span class="kw-2">*</span>;
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderResult</span> <span class="kw">as</span> <span class="ident">Res</span>;
-		<span class="kw">match</span> <span class="self">self</span>.<span class="ident">mode</span> {
-			<span class="ident">Searching</span> | <span class="ident">FoundWithNeeded</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Res::ReadNeeded</span>),
-			<span class="ident">SeekNeeded</span>(<span class="ident">offs</span>) =&gt; {
-				<span class="macro">tri!</span>(<span class="ident">skr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Current</span>(<span class="ident">offs</span> <span class="kw">as</span> <span class="ident">i64</span>)));
-				<span class="self">self</span>.<span class="ident">mode</span> = <span class="ident">Found</span>;
-				<span class="prelude-val">Ok</span>(<span class="ident">Res::Found</span>)
+	<span class="kw">pub fn </span>do_seek&lt;S :Seek&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>skr :S)
+			-&gt; <span class="prelude-ty">Result</span>&lt;UntilPageHeaderResult, OggReadError&gt; {
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderReaderMode::<span class="kw-2">*</span>;
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderResult <span class="kw">as </span>Res;
+		<span class="kw">match </span><span class="self">self</span>.mode {
+			Searching | FoundWithNeeded(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(Res::ReadNeeded),
+			SeekNeeded(offs) =&gt; {
+				<span class="macro">tri!</span>(skr.seek(SeekFrom::Current(offs <span class="kw">as </span>i64)));
+				<span class="self">self</span>.mode = Found;
+				<span class="prelude-val">Ok</span>(Res::Found)
 			},
-			<span class="ident">Found</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Res::Found</span>),
+			Found =&gt; <span class="prelude-val">Ok</span>(Res::Found),
 		}
 	}
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_header</span>(<span class="self">self</span>) -&gt; [<span class="ident">u8</span>; <span class="number">27</span>] {
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderReaderMode</span>::<span class="kw-2">*</span>;
-		<span class="kw">match</span> <span class="self">self</span>.<span class="ident">mode</span> {
-			<span class="ident">Found</span> =&gt; <span class="self">self</span>.<span class="ident">ret_buf</span>,
-			<span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;wrong mode&quot;</span>),
+	<span class="kw">pub fn </span>into_header(<span class="self">self</span>) -&gt; [u8; <span class="number">27</span>] {
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderReaderMode::<span class="kw-2">*</span>;
+		<span class="kw">match </span><span class="self">self</span>.mode {
+			Found =&gt; <span class="self">self</span>.ret_buf,
+			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;wrong mode&quot;</span>),
 		}
 	}
 }
@@ -1865,441 +1865,441 @@ This reader is not async ready. It does not keep its internal state
 consistent when it encounters the `WouldBlock` error kind.
 If you desire async functionality, consider enabling the `async` feature
 and look into the async module.
-*/</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PacketReader</span>&lt;<span class="ident">T</span> :<span class="ident">io::Read</span> + <span class="ident">io::Seek</span>&gt; {
-	<span class="ident">rdr</span> :<span class="ident">T</span>,
+*/
+</span><span class="kw">pub struct </span>PacketReader&lt;T :io::Read + io::Seek&gt; {
+	rdr :T,
 
-	<span class="ident">base_pck_rdr</span> :<span class="ident">BasePacketReader</span>,
+	base_pck_rdr :BasePacketReader,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">T</span> :<span class="ident">io::Read</span> + <span class="ident">io::Seek</span>&gt; <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; {
-	<span class="doccomment">/// Constructs a new `PacketReader` with a given `Read`.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rdr</span> :<span class="ident">T</span>) -&gt; <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="ident">PacketReader</span> { <span class="ident">rdr</span>, <span class="ident">base_pck_rdr</span> : <span class="ident">BasePacketReader::new</span>() }
+<span class="kw">impl</span>&lt;T :io::Read + io::Seek&gt; PacketReader&lt;T&gt; {
+	<span class="doccomment">/// Constructs a new `PacketReader` with a given `Read`.
+	</span><span class="kw">pub fn </span>new(rdr :T) -&gt; PacketReader&lt;T&gt; {
+		PacketReader { rdr, base_pck_rdr : BasePacketReader::new() }
 	}
-	<span class="doccomment">/// Returns the wrapped reader, consuming the `PacketReader`.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">T</span> {
-		<span class="self">self</span>.<span class="ident">rdr</span>
+	<span class="doccomment">/// Returns the wrapped reader, consuming the `PacketReader`.
+	</span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
+		<span class="self">self</span>.rdr
 	}
-	<span class="doccomment">/// Reads a packet, and returns it on success.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Ok(None) is returned if the physical stream has ended.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_packet</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Packet</span>&gt;, <span class="ident">OggReadError</span>&gt; {
-		<span class="comment">// Read pages until we got a valid entire packet</span>
-		<span class="comment">// (packets may span multiple pages, so reading one page</span>
-		<span class="comment">// doesn&#39;t always suffice to give us a valid packet)</span>
-		<span class="kw">loop</span> {
-			<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pck</span>) = <span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">read_packet</span>() {
-				<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">pck</span>));
+	<span class="doccomment">/// Reads a packet, and returns it on success.
+	///
+	/// Ok(None) is returned if the physical stream has ended.
+	</span><span class="kw">pub fn </span>read_packet(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Packet&gt;, OggReadError&gt; {
+		<span class="comment">// Read pages until we got a valid entire packet
+		// (packets may span multiple pages, so reading one page
+		// doesn&#39;t always suffice to give us a valid packet)
+		</span><span class="kw">loop </span>{
+			<span class="kw">if let </span><span class="prelude-val">Some</span>(pck) = <span class="self">self</span>.base_pck_rdr.read_packet() {
+				<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(pck));
 			}
-			<span class="kw">let</span> <span class="ident">page</span> = <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">read_ogg_page</span>());
-			<span class="kw">match</span> <span class="ident">page</span> {
-				<span class="prelude-val">Some</span>(<span class="ident">page</span>) =&gt; <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">push_page</span>(<span class="ident">page</span>)),
-				<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+			<span class="kw">let </span>page = <span class="macro">tri!</span>(<span class="self">self</span>.read_ogg_page());
+			<span class="kw">match </span>page {
+				<span class="prelude-val">Some</span>(page) =&gt; <span class="macro">tri!</span>(<span class="self">self</span>.base_pck_rdr.push_page(page)),
+				<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 			}
 		}
 	}
-	<span class="doccomment">/// Reads a packet, and returns it on success.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The difference to the `read_packet` function is that this function</span>
-	<span class="doccomment">/// returns an Err(_) if the physical stream has ended.</span>
-	<span class="doccomment">/// This function is useful if you expect a new packet to come.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_packet_expected</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Packet</span>, <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">match</span> <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">read_packet</span>()) {
-			<span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">p</span>),
-			<span class="prelude-val">None</span> =&gt; <span class="macro">tri!</span>(<span class="prelude-val">Err</span>(<span class="ident">Error::new</span>(<span class="ident">ErrorKind::UnexpectedEof</span>,
+	<span class="doccomment">/// Reads a packet, and returns it on success.
+	///
+	/// The difference to the `read_packet` function is that this function
+	/// returns an Err(_) if the physical stream has ended.
+	/// This function is useful if you expect a new packet to come.
+	</span><span class="kw">pub fn </span>read_packet_expected(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Packet, OggReadError&gt; {
+		<span class="kw">match </span><span class="macro">tri!</span>(<span class="self">self</span>.read_packet()) {
+			<span class="prelude-val">Some</span>(p) =&gt; <span class="prelude-val">Ok</span>(p),
+			<span class="prelude-val">None </span>=&gt; <span class="macro">tri!</span>(<span class="prelude-val">Err</span>(Error::new(ErrorKind::UnexpectedEof,
 				<span class="string">&quot;Expected ogg packet but found end of physical stream&quot;</span>))),
 		}
 	}
 
-	<span class="doccomment">/// Reads until the new page header, and then returns the page header array.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// If no new page header is immediately found, it performs a &quot;recapture&quot;,</span>
-	<span class="doccomment">/// meaning it searches for the capture pattern, and if it finds it, it</span>
-	<span class="doccomment">/// reads the complete first 27 bytes of the header, and returns them.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Ok(None) is returned if the stream has ended without an uncompleted page</span>
-	<span class="doccomment">/// or non page data after the last page (if any) present.</span>
-	<span class="kw">fn</span> <span class="ident">read_until_pg_header</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;[<span class="ident">u8</span>; <span class="number">27</span>]&gt;, <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="ident">UntilPageHeaderReader::new</span>();
-		<span class="kw">use</span> <span class="ident"><span class="self">self</span>::UntilPageHeaderResult</span>::<span class="kw-2">*</span>;
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> = <span class="macro">tri!</span>(<span class="ident">r</span>.<span class="ident">do_read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rdr</span>));
-		<span class="kw">loop</span> {
-			<span class="ident">res</span> = <span class="kw">match</span> <span class="ident">res</span> {
-				<span class="ident">Eof</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-				<span class="ident">Found</span> =&gt; <span class="kw">break</span>,
-				<span class="ident">ReadNeeded</span> =&gt; <span class="macro">tri!</span>(<span class="ident">r</span>.<span class="ident">do_read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rdr</span>)),
-				<span class="ident">SeekNeeded</span> =&gt; <span class="macro">tri!</span>(<span class="ident">r</span>.<span class="ident">do_seek</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rdr</span>))
+	<span class="doccomment">/// Reads until the new page header, and then returns the page header array.
+	///
+	/// If no new page header is immediately found, it performs a &quot;recapture&quot;,
+	/// meaning it searches for the capture pattern, and if it finds it, it
+	/// reads the complete first 27 bytes of the header, and returns them.
+	///
+	/// Ok(None) is returned if the stream has ended without an uncompleted page
+	/// or non page data after the last page (if any) present.
+	</span><span class="kw">fn </span>read_until_pg_header(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;[u8; <span class="number">27</span>]&gt;, OggReadError&gt; {
+		<span class="kw">let </span><span class="kw-2">mut </span>r = UntilPageHeaderReader::new();
+		<span class="kw">use </span><span class="self">self</span>::UntilPageHeaderResult::<span class="kw-2">*</span>;
+		<span class="kw">let </span><span class="kw-2">mut </span>res = <span class="macro">tri!</span>(r.do_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rdr));
+		<span class="kw">loop </span>{
+			res = <span class="kw">match </span>res {
+				Eof =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+				Found =&gt; <span class="kw">break</span>,
+				ReadNeeded =&gt; <span class="macro">tri!</span>(r.do_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rdr)),
+				SeekNeeded =&gt; <span class="macro">tri!</span>(r.do_seek(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rdr))
 			}
 		}
-		<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">r</span>.<span class="ident">into_header</span>()))
+		<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(r.into_header()))
 	}
 
-	<span class="doccomment">/// Parses and reads a new OGG page</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// To support seeking this does not assume that the capture pattern</span>
-	<span class="doccomment">/// is at the current reader position.</span>
-	<span class="doccomment">/// Instead it searches until it finds the capture pattern.</span>
-	<span class="kw">fn</span> <span class="ident">read_ogg_page</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">OggPage</span>&gt;, <span class="ident">OggReadError</span>&gt; {
-		<span class="kw">let</span> <span class="ident">header_buf</span> :[<span class="ident">u8</span>; <span class="number">27</span>] = <span class="kw">match</span> <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">read_until_pg_header</span>()) {
-			<span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="ident">s</span>,
-			<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+	<span class="doccomment">/// Parses and reads a new OGG page
+	///
+	/// To support seeking this does not assume that the capture pattern
+	/// is at the current reader position.
+	/// Instead it searches until it finds the capture pattern.
+	</span><span class="kw">fn </span>read_ogg_page(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;OggPage&gt;, OggReadError&gt; {
+		<span class="kw">let </span>header_buf :[u8; <span class="number">27</span>] = <span class="kw">match </span><span class="macro">tri!</span>(<span class="self">self</span>.read_until_pg_header()) {
+			<span class="prelude-val">Some</span>(s) =&gt; s,
+			<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
 		};
-		<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">pg_prs</span>, <span class="ident">page_segments</span>) = <span class="macro">tri!</span>(<span class="ident">PageParser::new</span>(<span class="ident">header_buf</span>));
+		<span class="kw">let </span>(<span class="kw-2">mut </span>pg_prs, page_segments) = <span class="macro">tri!</span>(PageParser::new(header_buf));
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">segments_buf</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">page_segments</span>]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.</span>
-		<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="ident">segments_buf</span>));
+		<span class="kw">let </span><span class="kw-2">mut </span>segments_buf = <span class="macro">vec!</span>[<span class="number">0</span>; page_segments]; <span class="comment">// TODO fix this, we initialize memory for NOTHING!!! Out of some reason, this is seen as &quot;unsafe&quot; by rustc.
+		</span><span class="macro">tri!</span>(<span class="self">self</span>.rdr.read_exact(<span class="kw-2">&amp;mut </span>segments_buf));
 
-		<span class="kw">let</span> <span class="ident">page_siz</span> = <span class="ident">pg_prs</span>.<span class="ident">parse_segments</span>(<span class="ident">segments_buf</span>);
+		<span class="kw">let </span>page_siz = pg_prs.parse_segments(segments_buf);
 
-		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">packet_data</span> = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="ident">page_siz</span> <span class="kw">as</span> <span class="ident">usize</span>];
-		<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">read_exact</span>(<span class="kw-2">&amp;mut</span> <span class="ident">packet_data</span>));
+		<span class="kw">let </span><span class="kw-2">mut </span>packet_data = <span class="macro">vec!</span>[<span class="number">0</span>; page_siz <span class="kw">as </span>usize];
+		<span class="macro">tri!</span>(<span class="self">self</span>.rdr.read_exact(<span class="kw-2">&amp;mut </span>packet_data));
 
-		<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="macro">tri!</span>(<span class="ident">pg_prs</span>.<span class="ident">parse_packet_data</span>(<span class="ident">packet_data</span>))))
+		<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="macro">tri!</span>(pg_prs.parse_packet_data(packet_data))))
 	}
 
-	<span class="doccomment">/// Seeks the underlying reader</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Seeks the reader that this PacketReader bases on by the specified</span>
-	<span class="doccomment">/// number of bytes. All new pages will be read from the new position.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// This also flushes all the unread packets in the queue.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">seek_bytes</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">pos</span> :<span class="ident">SeekFrom</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u64</span>, <span class="ident">Error</span>&gt; {
-		<span class="kw">let</span> <span class="ident">r</span> = <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">pos</span>));
-		<span class="comment">// Reset the internal state</span>
-		<span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">update_after_seek</span>();
-		<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">r</span>);
+	<span class="doccomment">/// Seeks the underlying reader
+	///
+	/// Seeks the reader that this PacketReader bases on by the specified
+	/// number of bytes. All new pages will be read from the new position.
+	///
+	/// This also flushes all the unread packets in the queue.
+	</span><span class="kw">pub fn </span>seek_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, pos :SeekFrom) -&gt; <span class="prelude-ty">Result</span>&lt;u64, Error&gt; {
+		<span class="kw">let </span>r = <span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(pos));
+		<span class="comment">// Reset the internal state
+		</span><span class="self">self</span>.base_pck_rdr.update_after_seek();
+		<span class="kw">return </span><span class="prelude-val">Ok</span>(r);
 	}
 
-	<span class="doccomment">/// Seeks to absolute granule pos</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// More specifically, it seeks to the first Ogg page</span>
-	<span class="doccomment">/// that has an `absgp` greater or equal to the specified one.</span>
-	<span class="doccomment">/// In the case of continued packets, the seek operation may also end up</span>
-	<span class="doccomment">/// at the last page that comes before such a page and has a packet start.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The passed `stream_serial` parameter controls the stream</span>
-	<span class="doccomment">/// serial number to filter our search for. If it&#39;s `None`, no</span>
-	<span class="doccomment">/// filtering is applied, but if it is `Some(n)`, we filter for</span>
-	<span class="doccomment">/// streams with the serial number `n`.</span>
-	<span class="doccomment">/// Note that the `None` case is only intended for streams</span>
-	<span class="doccomment">/// where only one logical stream exists, the seek may misbehave</span>
-	<span class="doccomment">/// if `Ǹone` gets passed when multiple streams exist.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// The returned bool indicates whether the seek was successful.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">seek_absgp</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">stream_serial</span> :<span class="prelude-ty">Option</span>&lt;<span class="ident">u32</span>&gt;,
-			<span class="ident">pos_goal</span> :<span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">bool</span>, <span class="ident">OggReadError</span>&gt; {
-		<span class="macro">macro_rules!</span> <span class="ident">found</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">pos</span>:<span class="ident">expr</span>) =&gt; {{
-				<span class="comment">// println!(&quot;found: {}&quot;, $pos);</span>
-				<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">pos</span>)));
-				<span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">update_after_seek</span>();
-				<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
+	<span class="doccomment">/// Seeks to absolute granule pos
+	///
+	/// More specifically, it seeks to the first Ogg page
+	/// that has an `absgp` greater or equal to the specified one.
+	/// In the case of continued packets, the seek operation may also end up
+	/// at the last page that comes before such a page and has a packet start.
+	///
+	/// The passed `stream_serial` parameter controls the stream
+	/// serial number to filter our search for. If it&#39;s `None`, no
+	/// filtering is applied, but if it is `Some(n)`, we filter for
+	/// streams with the serial number `n`.
+	/// Note that the `None` case is only intended for streams
+	/// where only one logical stream exists, the seek may misbehave
+	/// if `Ǹone` gets passed when multiple streams exist.
+	///
+	/// The returned bool indicates whether the seek was successful.
+	</span><span class="kw">pub fn </span>seek_absgp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream_serial :<span class="prelude-ty">Option</span>&lt;u32&gt;,
+			pos_goal :u64) -&gt; <span class="prelude-ty">Result</span>&lt;bool, OggReadError&gt; {
+		<span class="macro">macro_rules!</span> found {
+			(<span class="macro-nonterminal">$pos</span>:expr) =&gt; {{
+				<span class="comment">// println!(&quot;found: {}&quot;, $pos);
+				</span><span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Start(<span class="macro-nonterminal">$pos</span>)));
+				<span class="self">self</span>.base_pck_rdr.update_after_seek();
+				<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
 			}};
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">bt</span> {
-			(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>:<span class="ident">expr</span>) =&gt; {{
-				<span class="kw">match</span> <span class="macro">tri!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>) {
-					<span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="ident">s</span>,
-					<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>),
+		<span class="macro">macro_rules!</span> bt {
+			(<span class="macro-nonterminal">$e</span>:expr) =&gt; {{
+				<span class="kw">match </span><span class="macro">tri!</span>(<span class="macro-nonterminal">$e</span>) {
+					<span class="prelude-val">Some</span>(s) =&gt; s,
+					<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>),
 				}
 			}};
 		}
-		<span class="comment">// The task of this macro is to read to the</span>
-		<span class="comment">// end of the logical stream. For optimisation reasons,</span>
-		<span class="comment">// it returns early if we found our goal</span>
-		<span class="comment">// or any page past it.</span>
-		<span class="macro">macro_rules!</span> <span class="ident">pg_read_until_end_or_goal</span> {
-			{<span class="macro-nonterminal">$</span><span class="macro-nonterminal">goal</span>:<span class="ident">expr</span>} =&gt; {{
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pos</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pg</span>;
-				<span class="kw">loop</span> {
-					<span class="kw">let</span> (<span class="ident">n_pos</span>, <span class="ident">n_pg</span>) = <span class="macro">pg_read_match_serial!</span>();
-					<span class="ident">pos</span> = <span class="ident">n_pos</span>;
-					<span class="ident">pg</span> = <span class="ident">n_pg</span>;
-					<span class="comment">// If the absgp matches our goal, the seek process is done.</span>
-					<span class="comment">// This is a nice shortcut as we don&#39;t need to perform</span>
-					<span class="comment">// the remainder of the seek process any more.</span>
-					<span class="comment">// Of course, an exact match only happens in the fewest</span>
-					<span class="comment">// of cases</span>
-					<span class="kw">if</span> <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">absgp</span> == <span class="macro-nonterminal">$</span><span class="macro-nonterminal">goal</span> {
-						<span class="macro">found!</span>(<span class="ident">pos</span>);
+		<span class="comment">// The task of this macro is to read to the
+		// end of the logical stream. For optimisation reasons,
+		// it returns early if we found our goal
+		// or any page past it.
+		</span><span class="macro">macro_rules!</span> pg_read_until_end_or_goal {
+			{<span class="macro-nonterminal">$goal</span>:expr} =&gt; {{
+				<span class="kw">let </span><span class="kw-2">mut </span>pos;
+				<span class="kw">let </span><span class="kw-2">mut </span>pg;
+				<span class="kw">loop </span>{
+					<span class="kw">let </span>(n_pos, n_pg) = <span class="macro">pg_read_match_serial!</span>();
+					pos = n_pos;
+					pg = n_pg;
+					<span class="comment">// If the absgp matches our goal, the seek process is done.
+					// This is a nice shortcut as we don&#39;t need to perform
+					// the remainder of the seek process any more.
+					// Of course, an exact match only happens in the fewest
+					// of cases
+					</span><span class="kw">if </span>pg.<span class="number">0</span>.bi.absgp == <span class="macro-nonterminal">$goal </span>{
+						<span class="macro">found!</span>(pos);
 					}
-					<span class="comment">// If we found a page past our goal, we already</span>
-					<span class="comment">// found a position that can serve as end post of the search.</span>
-					<span class="kw">if</span> <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">absgp</span> &gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">goal</span> {
+					<span class="comment">// If we found a page past our goal, we already
+					// found a position that can serve as end post of the search.
+					</span><span class="kw">if </span>pg.<span class="number">0</span>.bi.absgp &gt; <span class="macro-nonterminal">$goal </span>{
 						<span class="kw">break</span>;
 					}
-					<span class="comment">// Stop the search if the stream has ended.</span>
-					<span class="kw">if</span> <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">last_page</span> {
-						<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+					<span class="comment">// Stop the search if the stream has ended.
+					</span><span class="kw">if </span>pg.<span class="number">0</span>.bi.last_page {
+						<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
 					}
-					<span class="comment">// If the page is not interesting, seek over it.</span>
-				}
-				(<span class="ident">pos</span>, <span class="ident">pg</span>)
+					<span class="comment">// If the page is not interesting, seek over it.
+				</span>}
+				(pos, pg)
 			}};
 		}
-		<span class="macro">macro_rules!</span> <span class="ident">pg_read_match_serial</span> {
+		<span class="macro">macro_rules!</span> pg_read_match_serial {
 			{} =&gt; {{
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pos</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pg</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">continued_pck_start</span> = <span class="prelude-val">None</span>;
-				<span class="kw">loop</span> {
-					<span class="ident">pos</span> = <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Current</span>(<span class="number">0</span>)));
-					<span class="ident">pg</span> = <span class="macro">bt!</span>(<span class="self">self</span>.<span class="ident">read_ogg_page</span>());
+				<span class="kw">let </span><span class="kw-2">mut </span>pos;
+				<span class="kw">let </span><span class="kw-2">mut </span>pg;
+				<span class="kw">let </span><span class="kw-2">mut </span>continued_pck_start = <span class="prelude-val">None</span>;
+				<span class="kw">loop </span>{
+					pos = <span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Current(<span class="number">0</span>)));
+					pg = <span class="macro">bt!</span>(<span class="self">self</span>.read_ogg_page());
 					<span class="comment">/*println!(&quot;absgp {} serial {} wh {} pe {} @ {}&quot;,
 						pg.0.bi.absgp, pg.0.bi.sequence_num,
-						pg.has_whole_packet(), pg.has_packet_end(), pos);// */</span>
+						pg.has_whole_packet(), pg.has_packet_end(), pos);// */
 
-					<span class="kw">match</span> <span class="ident">stream_serial</span> {
-						<span class="comment">// Continue the search if we encounter a</span>
-						<span class="comment">// page with a different stream serial</span>
-						<span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="kw">if</span> <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">stream_serial</span> != <span class="ident">s</span> =&gt; (),
-						<span class="kw">_</span> =&gt; <span class="kw">match</span> <span class="ident">continued_pck_start</span> {
-								<span class="prelude-val">None</span> <span class="kw">if</span> <span class="ident">pg</span>.<span class="ident">has_whole_packet</span>() =&gt; <span class="kw">break</span>,
-								<span class="prelude-val">None</span> <span class="kw">if</span> <span class="ident">pg</span>.<span class="ident">has_packet_start</span>() =&gt; {
-									<span class="ident">continued_pck_start</span> = <span class="prelude-val">Some</span>(<span class="ident">pos</span>);
+					</span><span class="kw">match </span>stream_serial {
+						<span class="comment">// Continue the search if we encounter a
+						// page with a different stream serial
+						</span><span class="prelude-val">Some</span>(s) <span class="kw">if </span>pg.<span class="number">0</span>.stream_serial != s =&gt; (),
+						<span class="kw">_ </span>=&gt; <span class="kw">match </span>continued_pck_start {
+								<span class="prelude-val">None </span><span class="kw">if </span>pg.has_whole_packet() =&gt; <span class="kw">break</span>,
+								<span class="prelude-val">None </span><span class="kw">if </span>pg.has_packet_start() =&gt; {
+									continued_pck_start = <span class="prelude-val">Some</span>(pos);
 								},
-								<span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="kw">if</span> <span class="ident">pg</span>.<span class="ident">has_packet_end</span>() =&gt; {
-									<span class="comment">// We have remembered a packet start,</span>
-									<span class="comment">// and have just encountered a packet end.</span>
-									<span class="comment">// Return the position of the start with the</span>
-									<span class="comment">// info from the end (for the absgp).</span>
-									<span class="ident">pos</span> = <span class="ident">s</span>;
+								<span class="prelude-val">Some</span>(s) <span class="kw">if </span>pg.has_packet_end() =&gt; {
+									<span class="comment">// We have remembered a packet start,
+									// and have just encountered a packet end.
+									// Return the position of the start with the
+									// info from the end (for the absgp).
+									</span>pos = s;
 									<span class="kw">break</span>;
 								},
-								<span class="kw">_</span> =&gt; (),
+								<span class="kw">_ </span>=&gt; (),
 						},
 					}
 				}
-				(<span class="ident">pos</span>, <span class="ident">pg</span>)
+				(pos, pg)
 			}};
 		}
 
-		<span class="comment">// Bisect seeking algo.</span>
-		<span class="comment">// Start by finding boundaries, e.g. at the start and</span>
-		<span class="comment">// end of the file, then bisect those boundaries successively</span>
-		<span class="comment">// until a page is found.</span>
+		<span class="comment">// Bisect seeking algo.
+		// Start by finding boundaries, e.g. at the start and
+		// end of the file, then bisect those boundaries successively
+		// until a page is found.
 
-		<span class="comment">//println!(&quot;seek start. goal = {}&quot;, pos_goal);</span>
-		<span class="kw">let</span> <span class="ident">ab_of</span> = |<span class="ident">pg</span> :<span class="kw-2">&amp;</span><span class="ident">OggPage</span>| { <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">absgp</span> };
-		<span class="kw">let</span> <span class="ident">seq_of</span> = |<span class="ident">pg</span> :<span class="kw-2">&amp;</span><span class="ident">OggPage</span>| { <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">bi</span>.<span class="ident">sequence_num</span> };
+		//println!(&quot;seek start. goal = {}&quot;, pos_goal);
+		</span><span class="kw">let </span>ab_of = |pg :<span class="kw-2">&amp;</span>OggPage| { pg.<span class="number">0</span>.bi.absgp };
+		<span class="kw">let </span>seq_of = |pg :<span class="kw-2">&amp;</span>OggPage| { pg.<span class="number">0</span>.bi.sequence_num };
 
-		<span class="comment">// First, find initial &quot;boundaries&quot;</span>
-		<span class="comment">// Seek to the start of the file to get the starting boundary</span>
-		<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="number">0</span>)));
-		<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">begin_pos</span>, <span class="kw-2">mut</span> <span class="ident">begin_pg</span>) = <span class="macro">pg_read_match_serial!</span>();
+		<span class="comment">// First, find initial &quot;boundaries&quot;
+		// Seek to the start of the file to get the starting boundary
+		</span><span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Start(<span class="number">0</span>)));
+		<span class="kw">let </span>(<span class="kw-2">mut </span>begin_pos, <span class="kw-2">mut </span>begin_pg) = <span class="macro">pg_read_match_serial!</span>();
 
-		<span class="comment">// If the goal is the beginning, we are done.</span>
-		<span class="kw">if</span> <span class="ident">pos_goal</span> == <span class="number">0</span> {
-			<span class="comment">//println!(&quot;Seeking to the beginning of the stream - skipping bisect.&quot;);</span>
-			<span class="macro">found!</span>(<span class="ident">begin_pos</span>);
+		<span class="comment">// If the goal is the beginning, we are done.
+		</span><span class="kw">if </span>pos_goal == <span class="number">0 </span>{
+			<span class="comment">//println!(&quot;Seeking to the beginning of the stream - skipping bisect.&quot;);
+			</span><span class="macro">found!</span>(begin_pos);
 		}
 
-		<span class="comment">// Seek to the end of the file to get the ending boundary</span>
-		<span class="comment">// TODO the 200 KB is just a guessed number, any ideas</span>
-		<span class="comment">// to improve it?</span>
-		<span class="macro">tri!</span>(<span class="ident">seek_before_end</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">rdr</span>, <span class="number">200</span> * <span class="number">1024</span>));
-		<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">end_pos</span>, <span class="kw-2">mut</span> <span class="ident">end_pg</span>) = <span class="macro">pg_read_until_end_or_goal!</span>(<span class="ident">pos_goal</span>);
+		<span class="comment">// Seek to the end of the file to get the ending boundary
+		// TODO the 200 KB is just a guessed number, any ideas
+		// to improve it?
+		</span><span class="macro">tri!</span>(seek_before_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rdr, <span class="number">200 </span>* <span class="number">1024</span>));
+		<span class="kw">let </span>(<span class="kw-2">mut </span>end_pos, <span class="kw-2">mut </span>end_pg) = <span class="macro">pg_read_until_end_or_goal!</span>(pos_goal);
 
-		<span class="comment">// Then perform the bisection</span>
-		<span class="kw">loop</span> {
-			<span class="comment">// Search is done if the two limits are the same page,</span>
-			<span class="comment">// or consecutive pages.</span>
-			<span class="kw">if</span> <span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">end_pg</span>) - <span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">begin_pg</span>) &lt;= <span class="number">1</span> {
-				<span class="macro">found!</span>(<span class="ident">end_pos</span>);
+		<span class="comment">// Then perform the bisection
+		</span><span class="kw">loop </span>{
+			<span class="comment">// Search is done if the two limits are the same page,
+			// or consecutive pages.
+			</span><span class="kw">if </span>seq_of(<span class="kw-2">&amp;</span>end_pg) - seq_of(<span class="kw-2">&amp;</span>begin_pg) &lt;= <span class="number">1 </span>{
+				<span class="macro">found!</span>(end_pos);
 			}
-			<span class="comment">// Perform the bisection step</span>
-			<span class="kw">let</span> <span class="ident">pos_to_seek</span> = <span class="ident">begin_pos</span> + (<span class="ident">end_pos</span> - <span class="ident">begin_pos</span>) / <span class="number">2</span>;
-			<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="ident">pos_to_seek</span>)));
-			<span class="kw">let</span> (<span class="ident">pos</span>, <span class="ident">pg</span>) = <span class="macro">pg_read_match_serial!</span>();
+			<span class="comment">// Perform the bisection step
+			</span><span class="kw">let </span>pos_to_seek = begin_pos + (end_pos - begin_pos) / <span class="number">2</span>;
+			<span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Start(pos_to_seek)));
+			<span class="kw">let </span>(pos, pg) = <span class="macro">pg_read_match_serial!</span>();
 			<span class="comment">/*println!(&quot;seek {} {} . {} @ {} {} . {}&quot;,
 				ab_of(&amp;begin_pg), ab_of(&amp;end_pg), ab_of(&amp;pg),
-				begin_pos, end_pos, pos);// */</span>
+				begin_pos, end_pos, pos);// */
 
-			<span class="kw">if</span> <span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">end_pg</span>) == <span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">pg</span>) ||
-					<span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">begin_pg</span>) == <span class="ident">seq_of</span>(<span class="kw-2">&amp;</span><span class="ident">pg</span>) {
-				<span class="comment">//println!(&quot;switching to linear.&quot;);</span>
-				<span class="comment">// The bisection seek doesn&#39;t bring us any further.</span>
-				<span class="comment">// Switch to a linear seek to get the last details.</span>
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pos</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pg</span>;
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_packet_end_pos</span> = <span class="ident">begin_pos</span>;
-				<span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Start</span>(<span class="ident">begin_pos</span>)));
-				<span class="kw">loop</span> {
-					<span class="ident">pos</span> = <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::Current</span>(<span class="number">0</span>)));
-					<span class="ident">pg</span> = <span class="macro">bt!</span>(<span class="self">self</span>.<span class="ident">read_ogg_page</span>());
+			</span><span class="kw">if </span>seq_of(<span class="kw-2">&amp;</span>end_pg) == seq_of(<span class="kw-2">&amp;</span>pg) ||
+					seq_of(<span class="kw-2">&amp;</span>begin_pg) == seq_of(<span class="kw-2">&amp;</span>pg) {
+				<span class="comment">//println!(&quot;switching to linear.&quot;);
+				// The bisection seek doesn&#39;t bring us any further.
+				// Switch to a linear seek to get the last details.
+				</span><span class="kw">let </span><span class="kw-2">mut </span>pos;
+				<span class="kw">let </span><span class="kw-2">mut </span>pg;
+				<span class="kw">let </span><span class="kw-2">mut </span>last_packet_end_pos = begin_pos;
+				<span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Start(begin_pos)));
+				<span class="kw">loop </span>{
+					pos = <span class="macro">tri!</span>(<span class="self">self</span>.rdr.seek(SeekFrom::Current(<span class="number">0</span>)));
+					pg = <span class="macro">bt!</span>(<span class="self">self</span>.read_ogg_page());
 					<span class="comment">/*println!(&quot;absgp {} pck_start {} whole_pck {} pck_end {} @ {} {}&quot;,
 						ab_of(&amp;pg), pg.has_packet_start(), pg.has_whole_packet(),
 						pg.has_packet_end(),
-						pos, last_packet_end_pos);// */</span>
-					<span class="kw">match</span> <span class="ident">stream_serial</span> {
-						<span class="comment">// Continue the search if we encounter a</span>
-						<span class="comment">// page with a different stream serial,</span>
-						<span class="comment">// or one with an absgp of -1.</span>
-						<span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="kw">if</span> <span class="ident">pg</span>.<span class="number">0</span>.<span class="ident">stream_serial</span> != <span class="ident">s</span> =&gt; (),
-						<span class="kw">_</span> <span class="kw">if</span> <span class="ident">ab_of</span>(<span class="kw-2">&amp;</span><span class="ident">pg</span>) == -<span class="number">1i64</span> <span class="kw">as</span> <span class="ident">u64</span> =&gt; (),
-						<span class="comment">// The page is found if the absgp is &gt;= our goal</span>
-						<span class="kw">_</span> <span class="kw">if</span> <span class="ident">ab_of</span>(<span class="kw-2">&amp;</span><span class="ident">pg</span>) &gt;= <span class="ident">pos_goal</span> =&gt; <span class="macro">found!</span>(<span class="ident">last_packet_end_pos</span>),
-						<span class="comment">// If we encounter a page with a packet start,</span>
-						<span class="comment">// update accordingly.</span>
-						<span class="kw">_</span> =&gt; <span class="kw">if</span> <span class="ident">pg</span>.<span class="ident">has_packet_end</span>() {
-							<span class="ident">last_packet_end_pos</span> = <span class="ident">pos</span>;
+						pos, last_packet_end_pos);// */
+					</span><span class="kw">match </span>stream_serial {
+						<span class="comment">// Continue the search if we encounter a
+						// page with a different stream serial,
+						// or one with an absgp of -1.
+						</span><span class="prelude-val">Some</span>(s) <span class="kw">if </span>pg.<span class="number">0</span>.stream_serial != s =&gt; (),
+						<span class="kw">_ if </span>ab_of(<span class="kw-2">&amp;</span>pg) == -<span class="number">1i64 </span><span class="kw">as </span>u64 =&gt; (),
+						<span class="comment">// The page is found if the absgp is &gt;= our goal
+						</span><span class="kw">_ if </span>ab_of(<span class="kw-2">&amp;</span>pg) &gt;= pos_goal =&gt; <span class="macro">found!</span>(last_packet_end_pos),
+						<span class="comment">// If we encounter a page with a packet start,
+						// update accordingly.
+						</span><span class="kw">_ </span>=&gt; <span class="kw">if </span>pg.has_packet_end() {
+							last_packet_end_pos = pos;
 						},
 					}
 				}
 			}
-			<span class="kw">if</span> <span class="ident">ab_of</span>(<span class="kw-2">&amp;</span><span class="ident">pg</span>) &gt;= <span class="ident">pos_goal</span> {
-				<span class="ident">end_pos</span> = <span class="ident">pos</span>;
-				<span class="ident">end_pg</span> = <span class="ident">pg</span>;
-			} <span class="kw">else</span> {
-				<span class="ident">begin_pos</span> = <span class="ident">pos</span>;
-				<span class="ident">begin_pg</span> = <span class="ident">pg</span>;
+			<span class="kw">if </span>ab_of(<span class="kw-2">&amp;</span>pg) &gt;= pos_goal {
+				end_pos = pos;
+				end_pg = pg;
+			} <span class="kw">else </span>{
+				begin_pos = pos;
+				begin_pg = pg;
 			}
 		}
 	}
-	<span class="doccomment">/// Resets the internal state by deleting all</span>
-	<span class="doccomment">/// unread packets.</span>
-	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">delete_unread_packets</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-		<span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">update_after_seek</span>();
+	<span class="doccomment">/// Resets the internal state by deleting all
+	/// unread packets.
+	</span><span class="kw">pub fn </span>delete_unread_packets(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+		<span class="self">self</span>.base_pck_rdr.update_after_seek();
 	}
 }
 
-<span class="comment">// util function</span>
-<span class="kw">fn</span> <span class="ident">seek_before_end</span>&lt;<span class="ident">T</span> :<span class="ident">io::Read</span> + <span class="ident">io::Seek</span>&gt;(<span class="kw-2">mut</span> <span class="ident">rdr</span> :<span class="ident">T</span>,
-		<span class="ident">offs</span> :<span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">u64</span>, <span class="ident">OggReadError</span>&gt; {
-	<span class="kw">let</span> <span class="ident">end_pos</span> = <span class="macro">tri!</span>(<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::End</span>(<span class="number">0</span>)));
-	<span class="kw">let</span> <span class="ident">end_pos_to_seek</span> = <span class="ident">::std::cmp::min</span>(<span class="ident">end_pos</span>, <span class="ident">offs</span>);
-	<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="macro">tri!</span>(<span class="ident">rdr</span>.<span class="ident">seek</span>(<span class="ident">SeekFrom::End</span>(-(<span class="ident">end_pos_to_seek</span> <span class="kw">as</span> <span class="ident">i64</span>)))));
+<span class="comment">// util function
+</span><span class="kw">fn </span>seek_before_end&lt;T :io::Read + io::Seek&gt;(<span class="kw-2">mut </span>rdr :T,
+		offs :u64) -&gt; <span class="prelude-ty">Result</span>&lt;u64, OggReadError&gt; {
+	<span class="kw">let </span>end_pos = <span class="macro">tri!</span>(rdr.seek(SeekFrom::End(<span class="number">0</span>)));
+	<span class="kw">let </span>end_pos_to_seek = ::std::cmp::min(end_pos, offs);
+	<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">tri!</span>(rdr.seek(SeekFrom::End(-(end_pos_to_seek <span class="kw">as </span>i64)))));
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;async&quot;</span>)]</span>
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]</span>
 <span class="doccomment">/**
 Asyncronous ogg decoding
-*/</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">async_api</span> {
-	<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
+*/
+</span><span class="kw">pub mod </span>async_api {
+	<span class="attribute">#![allow(deprecated)]</span>
 
-	<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-	<span class="kw">use</span> <span class="ident">tokio_io::AsyncRead</span>;
-	<span class="kw">use</span> <span class="ident">tokio_io::codec</span>::{<span class="ident">Decoder</span>, <span class="ident">FramedRead</span>};
-	<span class="kw">use</span> <span class="ident">futures::stream::Stream</span>;
-	<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">Async</span>, <span class="ident">Poll</span>};
-	<span class="kw">use</span> <span class="ident">bytes::BytesMut</span>;
+	<span class="kw">use super</span>::<span class="kw-2">*</span>;
+	<span class="kw">use </span>tokio_io::AsyncRead;
+	<span class="kw">use </span>tokio_io::codec::{Decoder, FramedRead};
+	<span class="kw">use </span>futures::stream::Stream;
+	<span class="kw">use </span>futures::{Async, Poll};
+	<span class="kw">use </span>bytes::BytesMut;
 
-	<span class="kw">enum</span> <span class="ident">PageDecodeState</span> {
-		<span class="ident">Head</span>,
-		<span class="ident">Segments</span>(<span class="ident">PageParser</span>, <span class="ident">usize</span>),
-		<span class="ident">PacketData</span>(<span class="ident">PageParser</span>, <span class="ident">usize</span>),
-		<span class="ident">InUpdate</span>,
+	<span class="kw">enum </span>PageDecodeState {
+		Head,
+		Segments(PageParser, usize),
+		PacketData(PageParser, usize),
+		InUpdate,
 	}
 
-	<span class="kw">impl</span> <span class="ident">PageDecodeState</span> {
-		<span class="kw">fn</span> <span class="ident">needed_size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-			<span class="kw">match</span> <span class="self">self</span> {
-				<span class="kw-2">&amp;</span><span class="ident">PageDecodeState::Head</span> =&gt; <span class="number">27</span>,
-				<span class="kw-2">&amp;</span><span class="ident">PageDecodeState::Segments</span>(<span class="kw">_</span>, <span class="ident">s</span>) =&gt; <span class="ident">s</span>,
-				<span class="kw-2">&amp;</span><span class="ident">PageDecodeState::PacketData</span>(<span class="kw">_</span>, <span class="ident">s</span>) =&gt; <span class="ident">s</span>,
-				<span class="kw-2">&amp;</span><span class="ident">PageDecodeState::InUpdate</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid state&quot;</span>),
+	<span class="kw">impl </span>PageDecodeState {
+		<span class="kw">fn </span>needed_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+			<span class="kw">match </span><span class="self">self </span>{
+				<span class="kw-2">&amp;</span>PageDecodeState::Head =&gt; <span class="number">27</span>,
+				<span class="kw-2">&amp;</span>PageDecodeState::Segments(<span class="kw">_</span>, s) =&gt; s,
+				<span class="kw-2">&amp;</span>PageDecodeState::PacketData(<span class="kw">_</span>, s) =&gt; s,
+				<span class="kw-2">&amp;</span>PageDecodeState::InUpdate =&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid state&quot;</span>),
 			}
 		}
 	}
 
 	<span class="doccomment">/**
 	Async page reading functionality.
-	*/</span>
-	<span class="kw">struct</span> <span class="ident">PageDecoder</span> {
-		<span class="ident">state</span> : <span class="ident">PageDecodeState</span>,
+	*/
+	</span><span class="kw">struct </span>PageDecoder {
+		state : PageDecodeState,
 	}
 
-	<span class="kw">impl</span> <span class="ident">PageDecoder</span> {
-		<span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-			<span class="ident">PageDecoder</span> {
-				<span class="ident">state</span> : <span class="ident">PageDecodeState::Head</span>,
+	<span class="kw">impl </span>PageDecoder {
+		<span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+			PageDecoder {
+				state : PageDecodeState::Head,
 			}
 		}
 	}
 
-	<span class="kw">impl</span> <span class="ident">Decoder</span> <span class="kw">for</span> <span class="ident">PageDecoder</span> {
-		<span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">OggPage</span>;
-		<span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">OggReadError</span>;
+	<span class="kw">impl </span>Decoder <span class="kw">for </span>PageDecoder {
+		<span class="kw">type </span>Item = OggPage;
+		<span class="kw">type </span>Error = OggReadError;
 
-		<span class="kw">fn</span> <span class="ident">decode</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BytesMut</span>) -&gt;
-				<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">OggPage</span>&gt;, <span class="ident">OggReadError</span>&gt; {
-			<span class="kw">use</span> <span class="ident"><span class="self">self</span>::PageDecodeState</span>::<span class="kw-2">*</span>;
-			<span class="kw">loop</span> {
-				<span class="kw">let</span> <span class="ident">needed_size</span> = <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">needed_size</span>();
-				<span class="kw">if</span> <span class="ident">buf</span>.<span class="ident">len</span>() &lt; <span class="ident">needed_size</span> {
-					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+		<span class="kw">fn </span>decode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf :<span class="kw-2">&amp;mut </span>BytesMut) -&gt;
+				<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;OggPage&gt;, OggReadError&gt; {
+			<span class="kw">use </span><span class="self">self</span>::PageDecodeState::<span class="kw-2">*</span>;
+			<span class="kw">loop </span>{
+				<span class="kw">let </span>needed_size = <span class="self">self</span>.state.needed_size();
+				<span class="kw">if </span>buf.len() &lt; needed_size {
+					<span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
 				}
-				<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ret</span> = <span class="prelude-val">None</span>;
-				<span class="kw">let</span> <span class="ident">consumed_buf</span> = <span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">needed_size</span>).<span class="ident">to_vec</span>();
+				<span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="prelude-val">None</span>;
+				<span class="kw">let </span>consumed_buf = buf.split_to(needed_size).to_vec();
 
-				<span class="self">self</span>.<span class="ident">state</span> = <span class="kw">match</span> <span class="ident">::std::mem::replace</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">state</span>, <span class="ident">InUpdate</span>) {
-					<span class="ident">Head</span> =&gt; {
-						<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hdr_buf</span> = [<span class="number">0</span>; <span class="number">27</span>];
-						<span class="comment">// TODO once we have const generics, the copy below can be done</span>
-						<span class="comment">// much nicer, maybe with a new into_array fn on Vec&#39;s</span>
-						<span class="ident">hdr_buf</span>.<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">consumed_buf</span>);
-						<span class="kw">let</span> <span class="ident">tup</span> = <span class="macro">tri!</span>(<span class="ident">PageParser::new</span>(<span class="ident">hdr_buf</span>));
-						<span class="ident">Segments</span>(<span class="ident">tup</span>.<span class="number">0</span>, <span class="ident">tup</span>.<span class="number">1</span>)
+				<span class="self">self</span>.state = <span class="kw">match </span>::std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.state, InUpdate) {
+					Head =&gt; {
+						<span class="kw">let </span><span class="kw-2">mut </span>hdr_buf = [<span class="number">0</span>; <span class="number">27</span>];
+						<span class="comment">// TODO once we have const generics, the copy below can be done
+						// much nicer, maybe with a new into_array fn on Vec&#39;s
+						</span>hdr_buf.copy_from_slice(<span class="kw-2">&amp;</span>consumed_buf);
+						<span class="kw">let </span>tup = <span class="macro">tri!</span>(PageParser::new(hdr_buf));
+						Segments(tup.<span class="number">0</span>, tup.<span class="number">1</span>)
 					},
-					<span class="ident">Segments</span>(<span class="kw-2">mut</span> <span class="ident">pg_prs</span>, <span class="kw">_</span>) =&gt; {
-						<span class="kw">let</span> <span class="ident">new_needed_len</span> = <span class="ident">pg_prs</span>.<span class="ident">parse_segments</span>(<span class="ident">consumed_buf</span>);
-						<span class="ident">PacketData</span>(<span class="ident">pg_prs</span>, <span class="ident">new_needed_len</span>)
+					Segments(<span class="kw-2">mut </span>pg_prs, <span class="kw">_</span>) =&gt; {
+						<span class="kw">let </span>new_needed_len = pg_prs.parse_segments(consumed_buf);
+						PacketData(pg_prs, new_needed_len)
 					},
-					<span class="ident">PacketData</span>(<span class="ident">pg_prs</span>, <span class="kw">_</span>) =&gt; {
-						<span class="ident">ret</span> = <span class="prelude-val">Some</span>(<span class="macro">tri!</span>(<span class="ident">pg_prs</span>.<span class="ident">parse_packet_data</span>(<span class="ident">consumed_buf</span>)));
-						<span class="ident">Head</span>
+					PacketData(pg_prs, <span class="kw">_</span>) =&gt; {
+						ret = <span class="prelude-val">Some</span>(<span class="macro">tri!</span>(pg_prs.parse_packet_data(consumed_buf)));
+						Head
 					},
-					<span class="ident">InUpdate</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid state&quot;</span>),
+					InUpdate =&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid state&quot;</span>),
 				};
-				<span class="kw">if</span> <span class="ident">ret</span>.<span class="ident">is_some</span>() {
-					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">ret</span>);
+				<span class="kw">if </span>ret.is_some() {
+					<span class="kw">return </span><span class="prelude-val">Ok</span>(ret);
 				}
 			}
 		}
 
-		<span class="kw">fn</span> <span class="ident">decode_eof</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span> :<span class="kw-2">&amp;mut</span> <span class="ident">BytesMut</span>) -&gt;
-				<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">OggPage</span>&gt;, <span class="ident">OggReadError</span>&gt; {
-			<span class="comment">// Ugly hack for &quot;bytes remaining on stream&quot; error</span>
-			<span class="kw">return</span> <span class="self">self</span>.<span class="ident">decode</span>(<span class="ident">buf</span>);
+		<span class="kw">fn </span>decode_eof(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf :<span class="kw-2">&amp;mut </span>BytesMut) -&gt;
+				<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;OggPage&gt;, OggReadError&gt; {
+			<span class="comment">// Ugly hack for &quot;bytes remaining on stream&quot; error
+			</span><span class="kw">return </span><span class="self">self</span>.decode(buf);
 		}
 	}
 
 	<span class="doccomment">/**
 	Async packet reading functionality.
-	*/</span>
-	<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; <span class="kw">where</span> <span class="ident">T</span> :<span class="ident">AsyncRead</span> {
-		<span class="ident">base_pck_rdr</span> :<span class="ident">BasePacketReader</span>,
-		<span class="ident">pg_rd</span> :<span class="ident">FramedRead</span>&lt;<span class="ident">T</span>, <span class="ident">PageDecoder</span>&gt;,
+	*/
+	</span><span class="kw">pub struct </span>PacketReader&lt;T&gt; <span class="kw">where </span>T :AsyncRead {
+		base_pck_rdr :BasePacketReader,
+		pg_rd :FramedRead&lt;T, PageDecoder&gt;,
 	}
 
-	<span class="kw">impl</span>&lt;<span class="ident">T</span> :<span class="ident">AsyncRead</span>&gt; <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">inner</span> :<span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-			<span class="ident">PacketReader</span> {
-				<span class="ident">base_pck_rdr</span> : <span class="ident">BasePacketReader::new</span>(),
-				<span class="ident">pg_rd</span> : <span class="ident">FramedRead::new</span>(<span class="ident">inner</span>, <span class="ident">PageDecoder::new</span>()),
+	<span class="kw">impl</span>&lt;T :AsyncRead&gt; PacketReader&lt;T&gt; {
+		<span class="kw">pub fn </span>new(inner :T) -&gt; <span class="self">Self </span>{
+			PacketReader {
+				base_pck_rdr : BasePacketReader::new(),
+				pg_rd : FramedRead::new(inner, PageDecoder::new()),
 			}
 		}
 	}
 
-	<span class="kw">impl</span>&lt;<span class="ident">T</span> :<span class="ident">AsyncRead</span>&gt; <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">PacketReader</span>&lt;<span class="ident">T</span>&gt; {
-		<span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">Packet</span>;
-		<span class="kw">type</span> <span class="ident">Error</span> = <span class="ident">OggReadError</span>;
+	<span class="kw">impl</span>&lt;T :AsyncRead&gt; Stream <span class="kw">for </span>PacketReader&lt;T&gt; {
+		<span class="kw">type </span>Item = Packet;
+		<span class="kw">type </span>Error = OggReadError;
 
-		<span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">Poll</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="ident">Packet</span>&gt;, <span class="ident">OggReadError</span>&gt; {
-			<span class="comment">// Read pages until we got a valid entire packet</span>
-			<span class="comment">// (packets may span multiple pages, so reading one page</span>
-			<span class="comment">// doesn&#39;t always suffice to give us a valid packet)</span>
-			<span class="kw">loop</span> {
-				<span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pck</span>) = <span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">read_packet</span>() {
-					<span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Async::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">pck</span>)));
+		<span class="kw">fn </span>poll(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;Packet&gt;, OggReadError&gt; {
+			<span class="comment">// Read pages until we got a valid entire packet
+			// (packets may span multiple pages, so reading one page
+			// doesn&#39;t always suffice to give us a valid packet)
+			</span><span class="kw">loop </span>{
+				<span class="kw">if let </span><span class="prelude-val">Some</span>(pck) = <span class="self">self</span>.base_pck_rdr.read_packet() {
+					<span class="kw">return </span><span class="prelude-val">Ok</span>(Async::Ready(<span class="prelude-val">Some</span>(pck)));
 				}
-				<span class="kw">let</span> <span class="ident">page</span> = <span class="macro">try_ready!</span>(<span class="self">self</span>.<span class="ident">pg_rd</span>.<span class="ident">poll</span>());
-				<span class="kw">match</span> <span class="ident">page</span> {
-					<span class="prelude-val">Some</span>(<span class="ident">page</span>) =&gt; <span class="macro">tri!</span>(<span class="self">self</span>.<span class="ident">base_pck_rdr</span>.<span class="ident">push_page</span>(<span class="ident">page</span>)),
-					<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Async::Ready</span>(<span class="prelude-val">None</span>)),
+				<span class="kw">let </span>page = <span class="macro">try_ready!</span>(<span class="self">self</span>.pg_rd.poll());
+				<span class="kw">match </span>page {
+					<span class="prelude-val">Some</span>(page) =&gt; <span class="macro">tri!</span>(<span class="self">self</span>.base_pck_rdr.push_page(page)),
+					<span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(Async::Ready(<span class="prelude-val">None</span>)),
 				}
 			}
 		}
@@ -2307,4 +2307,4 @@ Asyncronous ogg decoding
 
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ogg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ogg" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

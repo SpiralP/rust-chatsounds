@@ -134,141 +134,141 @@
 <span id="134">134</span>
 <span id="135">135</span>
 <span id="136">136</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::path::{Path, PathBuf};
 
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">bytes::Bytes</span>;
-<span class="kw">use</span> <span class="ident">sha2</span>::{<span class="ident">Digest</span>, <span class="ident">Sha256</span>};
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> = <span class="string">&quot;fs&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">tokio</span>::{
-    <span class="ident">fs</span>,
-    <span class="ident">fs</span>::{<span class="ident">File</span>, <span class="ident">OpenOptions</span>},
-    <span class="ident">io</span>::{<span class="ident">AsyncReadExt</span>, <span class="ident">AsyncWriteExt</span>},
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>bytes::Bytes;
+<span class="kw">use </span>sha2::{Digest, Sha256};
+<span class="attribute">#[cfg(feature = <span class="string">&quot;fs&quot;</span>)]</span>
+<span class="kw">use </span>tokio::{
+    fs,
+    fs::{File, OpenOptions},
+    io::{AsyncReadExt, AsyncWriteExt},
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::utils</span>::{<span class="ident">get</span>, <span class="ident">head_etag</span>};
+<span class="kw">use </span><span class="kw">super</span>::utils::{get, head_etag};
 
-<span class="doccomment">/// if `use_etag` is false, always used cached file if it exists</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">download</span>&lt;<span class="ident">F</span>&gt;(
-    <span class="ident">url</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
-    <span class="ident">use_etag</span>: <span class="ident">bool</span>,
-    <span class="ident">validator</span>: <span class="ident">F</span>,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">Bytes</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt;&gt;,
+<span class="doccomment">/// if `use_etag` is false, always used cached file if it exists
+</span><span class="kw">pub async fn </span>download&lt;F&gt;(
+    url: <span class="kw-2">&amp;</span>str,
+    cache_path: <span class="kw-2">&amp;</span>Path,
+    use_etag: bool,
+    validator: F,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Bytes&gt;
+<span class="kw">where
+    </span>F: FnOnce(Bytes) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Result</span>&lt;Bytes&gt;&gt;,
 {
-    <span class="kw">let</span> (<span class="ident">file_path</span>, <span class="ident">etag_file_path</span>) = <span class="ident">cache_file_path</span>(<span class="ident">url</span>, <span class="ident">cache_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(file_path, etag_file_path) = cache_file_path(url, cache_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">file_cached</span> = <span class="ident">fs::metadata</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">map</span>(|<span class="ident">meta</span>| <span class="ident">meta</span>.<span class="ident">is_file</span>() &amp;&amp; <span class="ident">meta</span>.<span class="ident">len</span>() != <span class="number">0</span>)
-        .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>);
+    <span class="kw">let </span>file_cached = fs::metadata(<span class="kw-2">&amp;</span>file_path)
+        .<span class="kw">await
+        </span>.map(|meta| meta.is_file() &amp;&amp; meta.len() != <span class="number">0</span>)
+        .unwrap_or(<span class="bool-val">false</span>);
 
-    <span class="kw">let</span> <span class="ident">etag_matches</span> = <span class="kw">if</span> <span class="ident">use_etag</span> {
-        <span class="kw">let</span> <span class="ident">etag_file_cached</span> = <span class="ident">fs::metadata</span>(<span class="kw-2">&amp;</span><span class="ident">etag_file_path</span>)
-            .<span class="kw">await</span>
-            .<span class="ident">map</span>(|<span class="ident">meta</span>| <span class="ident">meta</span>.<span class="ident">is_file</span>() &amp;&amp; <span class="ident">meta</span>.<span class="ident">len</span>() != <span class="number">0</span>)
-            .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>);
+    <span class="kw">let </span>etag_matches = <span class="kw">if </span>use_etag {
+        <span class="kw">let </span>etag_file_cached = fs::metadata(<span class="kw-2">&amp;</span>etag_file_path)
+            .<span class="kw">await
+            </span>.map(|meta| meta.is_file() &amp;&amp; meta.len() != <span class="number">0</span>)
+            .unwrap_or(<span class="bool-val">false</span>);
 
-        <span class="comment">// if we have everything cached</span>
-        <span class="kw">if</span> <span class="ident">file_cached</span> &amp;&amp; <span class="ident">etag_file_cached</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">etag_file</span> = <span class="ident">OpenOptions::new</span>()
-                .<span class="ident">read</span>(<span class="bool-val">true</span>)
-                .<span class="ident">open</span>(<span class="kw-2">&amp;</span><span class="ident">etag_file_path</span>)
-                .<span class="kw">await</span>
-                .<span class="ident">context</span>(<span class="string">&quot;open etag_file_path&quot;</span>)<span class="question-mark">?</span>;
+        <span class="comment">// if we have everything cached
+        </span><span class="kw">if </span>file_cached &amp;&amp; etag_file_cached {
+            <span class="kw">let </span><span class="kw-2">mut </span>etag_file = OpenOptions::new()
+                .read(<span class="bool-val">true</span>)
+                .open(<span class="kw-2">&amp;</span>etag_file_path)
+                .<span class="kw">await
+                </span>.context(<span class="string">&quot;open etag_file_path&quot;</span>)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> = <span class="ident">String::new</span>();
-            <span class="ident">etag_file</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;mut</span> <span class="ident">s</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>s = String::new();
+            etag_file.read_to_string(<span class="kw-2">&amp;mut </span>s).<span class="kw">await</span><span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">maybe_etag</span> = <span class="ident">head_etag</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>).<span class="kw">await</span>.<span class="ident">context</span>(<span class="string">&quot;get_head_etag&quot;</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>maybe_etag = head_etag(<span class="kw-2">&amp;</span>url).<span class="kw">await</span>.context(<span class="string">&quot;get_head_etag&quot;</span>)<span class="question-mark">?</span>;
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">etag</span>) = <span class="ident">maybe_etag</span> {
-                <span class="comment">// check if old matches current</span>
-                <span class="ident">s</span> == <span class="ident">etag</span>
-            } <span class="kw">else</span> {
-                <span class="comment">// didn&#39;t have header, can&#39;t use cache</span>
-                <span class="bool-val">false</span>
-            }
-        } <span class="kw">else</span> {
-            <span class="comment">// didn&#39;t have either etag file cached or data file cached</span>
-            <span class="bool-val">false</span>
-        }
-    } <span class="kw">else</span> {
-        <span class="comment">// pretend it matches</span>
-        <span class="bool-val">true</span>
-    };
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(etag) = maybe_etag {
+                <span class="comment">// check if old matches current
+                </span>s == etag
+            } <span class="kw">else </span>{
+                <span class="comment">// didn&#39;t have header, can&#39;t use cache
+                </span><span class="bool-val">false
+            </span>}
+        } <span class="kw">else </span>{
+            <span class="comment">// didn&#39;t have either etag file cached or data file cached
+            </span><span class="bool-val">false
+        </span>}
+    } <span class="kw">else </span>{
+        <span class="comment">// pretend it matches
+        </span><span class="bool-val">true
+    </span>};
 
-    <span class="kw">let</span> <span class="ident">use_cached</span> = <span class="ident">file_cached</span> &amp;&amp; <span class="ident">etag_matches</span>;
+    <span class="kw">let </span>use_cached = file_cached &amp;&amp; etag_matches;
 
-    <span class="prelude-val">Ok</span>(<span class="kw">if</span> <span class="ident">use_cached</span> {
-        <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-            .<span class="kw">await</span>
-            .<span class="ident">with_context</span>(|| <span class="macro">format!</span>(<span class="string">&quot;read_file {:?}&quot;</span>, <span class="ident">file_path</span>))<span class="question-mark">?</span>
-    } <span class="kw">else</span> {
-        <span class="kw">let</span> (<span class="ident">bytes</span>, <span class="ident">maybe_etag</span>) = <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">url</span>).<span class="kw">await</span>.<span class="ident">with_context</span>(|| <span class="macro">format!</span>(<span class="string">&quot;get {:?}&quot;</span>, <span class="ident">url</span>))<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(<span class="kw">if </span>use_cached {
+        read_file(<span class="kw-2">&amp;</span>file_path)
+            .<span class="kw">await
+            </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;read_file {:?}&quot;</span>, file_path))<span class="question-mark">?
+    </span>} <span class="kw">else </span>{
+        <span class="kw">let </span>(bytes, maybe_etag) = get(<span class="kw-2">&amp;</span>url).<span class="kw">await</span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;get {:?}&quot;</span>, url))<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">maybe_bytes</span> = <span class="ident">validator</span>(<span class="ident">bytes</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>maybe_bytes = validator(bytes)<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">bytes</span>) = <span class="ident">maybe_bytes</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> = <span class="ident">File::create</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-                .<span class="kw">await</span>
-                .<span class="ident">with_context</span>(|| <span class="macro">format!</span>(<span class="string">&quot;File::create {:?}&quot;</span>, <span class="ident">file_path</span>))<span class="question-mark">?</span>;
-            <span class="ident">file</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(bytes) = maybe_bytes {
+            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>file_path)
+                .<span class="kw">await
+                </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;File::create {:?}&quot;</span>, file_path))<span class="question-mark">?</span>;
+            file.write_all(<span class="kw-2">&amp;</span>bytes).<span class="kw">await</span><span class="question-mark">?</span>;
 
-            <span class="kw">if</span> <span class="ident">use_etag</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">etag</span>) = <span class="ident">maybe_etag</span> {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> = <span class="ident">File::create</span>(<span class="kw-2">&amp;</span><span class="ident">etag_file_path</span>)
-                        .<span class="kw">await</span>
-                        .<span class="ident">with_context</span>(|| <span class="macro">format!</span>(<span class="string">&quot;File::create {:?}&quot;</span>, <span class="ident">etag_file_path</span>))<span class="question-mark">?</span>;
-                    <span class="ident">file</span>.<span class="ident">write_all</span>(<span class="ident">etag</span>.<span class="ident">as_bytes</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">if </span>use_etag {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(etag) = maybe_etag {
+                    <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>etag_file_path)
+                        .<span class="kw">await
+                        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;File::create {:?}&quot;</span>, etag_file_path))<span class="question-mark">?</span>;
+                    file.write_all(etag.as_bytes()).<span class="kw">await</span><span class="question-mark">?</span>;
                 }
             }
 
-            <span class="ident">bytes</span>
-        } <span class="kw">else</span> {
-            <span class="comment">// light error, try using cache if it exists</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">cached_bytes</span>) = <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="kw">await</span> {
-                <span class="ident">cached_bytes</span>
-            } <span class="kw">else</span> {
-                <span class="ident">maybe_bytes</span><span class="question-mark">?</span>
-            }
+            bytes
+        } <span class="kw">else </span>{
+            <span class="comment">// light error, try using cache if it exists
+            </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(cached_bytes) = read_file(<span class="kw-2">&amp;</span>file_path).<span class="kw">await </span>{
+                cached_bytes
+            } <span class="kw">else </span>{
+                maybe_bytes<span class="question-mark">?
+            </span>}
         }
     })
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">cache_file_path</span>(<span class="ident">url</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">cache_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">PathBuf</span>, <span class="ident">PathBuf</span>)&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> = <span class="ident">Sha256::new</span>();
-    <span class="ident">hasher</span>.<span class="ident">update</span>(<span class="ident">url</span>);
-    <span class="kw">let</span> <span class="ident">hex</span> = <span class="macro">format!</span>(<span class="string">&quot;{:x}&quot;</span>, <span class="ident">hasher</span>.<span class="ident">finalize</span>());
+<span class="kw">async fn </span>cache_file_path(url: <span class="kw-2">&amp;</span>str, cache_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;(PathBuf, PathBuf)&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
+    hasher.update(url);
+    <span class="kw">let </span>hex = <span class="macro">format!</span>(<span class="string">&quot;{:x}&quot;</span>, hasher.finalize());
 
-    <span class="kw">let</span> <span class="ident">hex_dir</span> = <span class="kw-2">&amp;</span><span class="ident">hex</span>[<span class="number">0</span>..<span class="number">2</span>];
-    <span class="kw">let</span> <span class="ident">hex_filename</span> = <span class="kw-2">&amp;</span><span class="ident">hex</span>[<span class="number">2</span>..];
+    <span class="kw">let </span>hex_dir = <span class="kw-2">&amp;</span>hex[<span class="number">0</span>..<span class="number">2</span>];
+    <span class="kw">let </span>hex_filename = <span class="kw-2">&amp;</span>hex[<span class="number">2</span>..];
 
-    <span class="kw">let</span> <span class="ident">dir_path</span> = <span class="ident">cache_path</span>.<span class="ident">join</span>(<span class="ident">hex_dir</span>);
+    <span class="kw">let </span>dir_path = cache_path.join(hex_dir);
 
-    <span class="kw">if</span> !<span class="ident">fs::metadata</span>(<span class="kw-2">&amp;</span><span class="ident">dir_path</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">map</span>(|<span class="ident">meta</span>| <span class="ident">meta</span>.<span class="ident">is_dir</span>())
-        .<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>)
+    <span class="kw">if </span>!fs::metadata(<span class="kw-2">&amp;</span>dir_path)
+        .<span class="kw">await
+        </span>.map(|meta| meta.is_dir())
+        .unwrap_or(<span class="bool-val">false</span>)
     {
-        <span class="ident">fs::create_dir</span>(<span class="kw-2">&amp;</span><span class="ident">dir_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        fs::create_dir(<span class="kw-2">&amp;</span>dir_path).<span class="kw">await</span><span class="question-mark">?</span>;
     }
 
-    <span class="kw">let</span> <span class="ident">file_path</span> = <span class="ident">dir_path</span>.<span class="ident">join</span>(<span class="ident">hex_filename</span>);
-    <span class="kw">let</span> <span class="ident">etag_file_path</span> = <span class="ident">dir_path</span>.<span class="ident">join</span>(<span class="macro">format!</span>(<span class="string">&quot;{}.etag&quot;</span>, <span class="ident">hex_filename</span>));
+    <span class="kw">let </span>file_path = dir_path.join(hex_filename);
+    <span class="kw">let </span>etag_file_path = dir_path.join(<span class="macro">format!</span>(<span class="string">&quot;{}.etag&quot;</span>, hex_filename));
 
-    <span class="prelude-val">Ok</span>((<span class="ident">file_path</span>, <span class="ident">etag_file_path</span>))
+    <span class="prelude-val">Ok</span>((file_path, etag_file_path))
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_file</span>(<span class="ident">file_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Bytes</span>&gt; {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> = <span class="ident">OpenOptions::new</span>().<span class="ident">read</span>(<span class="bool-val">true</span>).<span class="ident">open</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>read_file(file_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Bytes&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>file = OpenOptions::new().read(<span class="bool-val">true</span>).open(<span class="kw-2">&amp;</span>file_path).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vec</span> = <span class="ident">Vec::new</span>();
-    <span class="ident">file</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="ident">vec</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
+    file.read_to_end(<span class="kw-2">&amp;mut </span>vec).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="ident">Bytes::from</span>(<span class="ident">vec</span>))
+    <span class="prelude-val">Ok</span>(Bytes::from(vec))
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

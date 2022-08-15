@@ -101,108 +101,108 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
-</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (c) 2019 est31 &lt;MTest31@outlook.com&gt;</span>
-<span class="comment">// and contributors. All rights reserved.</span>
-<span class="comment">// Licensed under MIT license, or Apache 2 license,</span>
-<span class="comment">// at your option. Please see the LICENSE file</span>
-<span class="comment">// attached to this source distribution for details.</span>
+</pre><pre class="rust"><code><span class="comment">// Vorbis decoder written in Rust
+//
+// Copyright (c) 2019 est31 &lt;MTest31@outlook.com&gt;
+// and contributors. All rights reserved.
+// Licensed under MIT license, or Apache 2 license,
+// at your option. Please see the LICENSE file
+// attached to this source distribution for details.
 
-<span class="doccomment">/*!
+</span><span class="doccomment">/*!
 Traits for sample formats
-*/</span>
+*/
 
-<span class="doccomment">/// Trait for a packet of multiple samples</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Samples</span> {
-	<span class="kw">fn</span> <span class="ident">num_samples</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span>;
-	<span class="kw">fn</span> <span class="ident">truncate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">limit</span> :<span class="ident">usize</span>);
-	<span class="kw">fn</span> <span class="ident">from_floats</span>(<span class="ident">floats</span> :<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;&gt;) -&gt; <span class="self">Self</span>;
+/// Trait for a packet of multiple samples
+</span><span class="kw">pub trait </span>Samples {
+	<span class="kw">fn </span>num_samples(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
+	<span class="kw">fn </span>truncate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, limit :usize);
+	<span class="kw">fn </span>from_floats(floats :Vec&lt;Vec&lt;f32&gt;&gt;) -&gt; <span class="self">Self</span>;
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span> :<span class="ident">Sample</span>&gt; <span class="ident">Samples</span> <span class="kw">for</span> <span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">S</span>&gt;&gt; {
-	<span class="kw">fn</span> <span class="ident">num_samples</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-		<span class="self">self</span>[<span class="number">0</span>].<span class="ident">len</span>()
+<span class="kw">impl</span>&lt;S :Sample&gt; Samples <span class="kw">for </span>Vec&lt;Vec&lt;S&gt;&gt; {
+	<span class="kw">fn </span>num_samples(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+		<span class="self">self</span>[<span class="number">0</span>].len()
 	}
-	<span class="kw">fn</span> <span class="ident">truncate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">limit</span> :<span class="ident">usize</span>) {
-		<span class="kw">for</span> <span class="ident">ch</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">iter_mut</span>() {
-			<span class="kw">if</span> <span class="ident">limit</span> &lt; <span class="ident">ch</span>.<span class="ident">len</span>() {
-				<span class="ident">ch</span>.<span class="ident">truncate</span>(<span class="ident">limit</span>);
+	<span class="kw">fn </span>truncate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, limit :usize) {
+		<span class="kw">for </span>ch <span class="kw">in </span><span class="self">self</span>.iter_mut() {
+			<span class="kw">if </span>limit &lt; ch.len() {
+				ch.truncate(limit);
 			}
 		}
 	}
 
-	<span class="kw">fn</span> <span class="ident">from_floats</span>(<span class="ident">floats</span> :<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;&gt;) -&gt; <span class="self">Self</span> {
-		<span class="ident">floats</span>.<span class="ident">into_iter</span>()
-			.<span class="ident">map</span>(|<span class="ident">samples</span>| {
-				<span class="ident">samples</span>.<span class="ident">into_iter</span>()
-					.<span class="ident">map</span>(<span class="ident">S::from_float</span>)
-					.<span class="ident">collect</span>()
-			}).<span class="ident">collect</span>()
+	<span class="kw">fn </span>from_floats(floats :Vec&lt;Vec&lt;f32&gt;&gt;) -&gt; <span class="self">Self </span>{
+		floats.into_iter()
+			.map(|samples| {
+				samples.into_iter()
+					.map(S::from_float)
+					.collect()
+			}).collect()
 	}
 }
 
-<span class="doccomment">/// A packet of multi-channel interleaved samples</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InterleavedSamples</span>&lt;<span class="ident">S</span> :<span class="ident">Sample</span>&gt; {
-	<span class="kw">pub</span> <span class="ident">samples</span> :<span class="ident">Vec</span>&lt;<span class="ident">S</span>&gt;,
-	<span class="kw">pub</span> <span class="ident">channel_count</span> :<span class="ident">usize</span>,
+<span class="doccomment">/// A packet of multi-channel interleaved samples
+</span><span class="kw">pub struct </span>InterleavedSamples&lt;S :Sample&gt; {
+	<span class="kw">pub </span>samples :Vec&lt;S&gt;,
+	<span class="kw">pub </span>channel_count :usize,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span> :<span class="ident">Sample</span>&gt; <span class="ident">Samples</span> <span class="kw">for</span> <span class="ident">InterleavedSamples</span>&lt;<span class="ident">S</span>&gt; {
-	<span class="kw">fn</span> <span class="ident">num_samples</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-		<span class="self">self</span>.<span class="ident">samples</span>.<span class="ident">len</span>() / <span class="self">self</span>.<span class="ident">channel_count</span>
+<span class="kw">impl</span>&lt;S :Sample&gt; Samples <span class="kw">for </span>InterleavedSamples&lt;S&gt; {
+	<span class="kw">fn </span>num_samples(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+		<span class="self">self</span>.samples.len() / <span class="self">self</span>.channel_count
 	}
-	<span class="kw">fn</span> <span class="ident">truncate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">limit</span> :<span class="ident">usize</span>) {
-		<span class="self">self</span>.<span class="ident">samples</span>.<span class="ident">truncate</span>(<span class="ident">limit</span> * <span class="self">self</span>.<span class="ident">channel_count</span>);
+	<span class="kw">fn </span>truncate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, limit :usize) {
+		<span class="self">self</span>.samples.truncate(limit * <span class="self">self</span>.channel_count);
 	}
-	<span class="kw">fn</span> <span class="ident">from_floats</span>(<span class="ident">floats</span> :<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">f32</span>&gt;&gt;) -&gt; <span class="self">Self</span> {
-		<span class="kw">let</span> <span class="ident">channel_count</span> = <span class="ident">floats</span>.<span class="ident">len</span>();
-		<span class="comment">// Note that a channel count of 0 is forbidden</span>
-		<span class="comment">// by the spec and the header decoding code already</span>
-		<span class="comment">// checks for that.</span>
-		<span class="macro">assert!</span>(<span class="ident">floats</span>.<span class="ident">len</span>() &gt; <span class="number">0</span>);
-		<span class="kw">let</span> <span class="ident">samples_interleaved</span> = <span class="kw">if</span> <span class="ident">channel_count</span> == <span class="number">1</span> {
-			<span class="comment">// Because decoded_pck[0] doesn&#39;t work...</span>
-			&lt;<span class="ident">Vec</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">S</span>&gt;&gt; <span class="kw">as</span> <span class="ident">Samples</span>&gt;<span class="ident">::from_floats</span>(<span class="ident">floats</span>).<span class="ident">into_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>()
-		} <span class="kw">else</span> {
-			<span class="kw">let</span> <span class="ident">len</span> = <span class="ident">floats</span>[<span class="number">0</span>].<span class="ident">len</span>();
-			<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">samples</span> = <span class="ident">Vec::with_capacity</span>(<span class="ident">len</span> * <span class="ident">channel_count</span>);
-			<span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span> .. <span class="ident">len</span> {
-				<span class="kw">for</span> <span class="kw-2">ref</span> <span class="ident">chan</span> <span class="kw">in</span> <span class="ident">floats</span>.<span class="ident">iter</span>() {
-					<span class="ident">samples</span>.<span class="ident">push</span>(<span class="ident">S::from_float</span>(<span class="ident">chan</span>[<span class="ident">i</span>]));
+	<span class="kw">fn </span>from_floats(floats :Vec&lt;Vec&lt;f32&gt;&gt;) -&gt; <span class="self">Self </span>{
+		<span class="kw">let </span>channel_count = floats.len();
+		<span class="comment">// Note that a channel count of 0 is forbidden
+		// by the spec and the header decoding code already
+		// checks for that.
+		</span><span class="macro">assert!</span>(floats.len() &gt; <span class="number">0</span>);
+		<span class="kw">let </span>samples_interleaved = <span class="kw">if </span>channel_count == <span class="number">1 </span>{
+			<span class="comment">// Because decoded_pck[0] doesn&#39;t work...
+			</span>&lt;Vec&lt;Vec&lt;S&gt;&gt; <span class="kw">as </span>Samples&gt;::from_floats(floats).into_iter().next().unwrap()
+		} <span class="kw">else </span>{
+			<span class="kw">let </span>len = floats[<span class="number">0</span>].len();
+			<span class="kw">let </span><span class="kw-2">mut </span>samples = Vec::with_capacity(len * channel_count);
+			<span class="kw">for </span>i <span class="kw">in </span><span class="number">0 </span>.. len {
+				<span class="kw">for </span><span class="kw-2">ref </span>chan <span class="kw">in </span>floats.iter() {
+					samples.push(S::from_float(chan[i]));
 				}
 			}
-			<span class="ident">samples</span>
+			samples
 		};
-		<span class="self">Self</span> {
-			<span class="ident">samples</span> : <span class="ident">samples_interleaved</span>,
-			<span class="ident">channel_count</span>,
+		<span class="self">Self </span>{
+			samples : samples_interleaved,
+			channel_count,
 		}
 	}
 }
 
-<span class="doccomment">/// Trait representing a single sample</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Sample</span> {
-	<span class="kw">fn</span> <span class="ident">from_float</span>(<span class="ident">fl</span> :<span class="ident">f32</span>) -&gt; <span class="self">Self</span>;
+<span class="doccomment">/// Trait representing a single sample
+</span><span class="kw">pub trait </span>Sample {
+	<span class="kw">fn </span>from_float(fl :f32) -&gt; <span class="self">Self</span>;
 }
 
-<span class="kw">impl</span> <span class="ident">Sample</span> <span class="kw">for</span> <span class="ident">f32</span> {
-	<span class="kw">fn</span> <span class="ident">from_float</span>(<span class="ident">fl</span> :<span class="ident">f32</span>) -&gt; <span class="self">Self</span> {
-		<span class="ident">fl</span>
+<span class="kw">impl </span>Sample <span class="kw">for </span>f32 {
+	<span class="kw">fn </span>from_float(fl :f32) -&gt; <span class="self">Self </span>{
+		fl
 	}
 }
 
-<span class="kw">impl</span> <span class="ident">Sample</span> <span class="kw">for</span> <span class="ident">i16</span> {
-	<span class="kw">fn</span> <span class="ident">from_float</span>(<span class="ident">fl</span> :<span class="ident">f32</span>) -&gt; <span class="self">Self</span> {
-		<span class="kw">let</span> <span class="ident">fl</span> = <span class="ident">fl</span> * <span class="number">32768.0</span>;
-		<span class="kw">if</span> <span class="ident">fl</span> &gt; <span class="number">32767.</span> {
-			<span class="number">32767</span>
-		} <span class="kw">else</span> <span class="kw">if</span> <span class="ident">fl</span> &lt; -<span class="number">32768.</span> {
-			-<span class="number">32768</span>
-		} <span class="kw">else</span> {
-			<span class="ident">fl</span> <span class="kw">as</span> <span class="ident">i16</span>
+<span class="kw">impl </span>Sample <span class="kw">for </span>i16 {
+	<span class="kw">fn </span>from_float(fl :f32) -&gt; <span class="self">Self </span>{
+		<span class="kw">let </span>fl = fl * <span class="number">32768.0</span>;
+		<span class="kw">if </span>fl &gt; <span class="number">32767. </span>{
+			<span class="number">32767
+		</span>} <span class="kw">else if </span>fl &lt; -<span class="number">32768. </span>{
+			-<span class="number">32768
+		</span>} <span class="kw">else </span>{
+			fl <span class="kw">as </span>i16
 		}
 	}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lewton" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

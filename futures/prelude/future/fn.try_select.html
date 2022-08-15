@@ -8,22 +8,22 @@ wrapped version of them.</p>
 success/error type you can use the <code>Either::factor_first</code> method to
 conveniently extract out the value at the end.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">futures::future</span>::{<span class="self">self</span>, <span class="ident">Either</span>, <span class="ident">Future</span>, <span class="ident">FutureExt</span>, <span class="ident">TryFuture</span>, <span class="ident">TryFutureExt</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>futures::future::{<span class="self">self</span>, Either, Future, FutureExt, TryFuture, TryFutureExt};
 
-<span class="comment">// A poor-man&#39;s try_join implemented on top of select</span>
+<span class="comment">// A poor-man&#39;s try_join implemented on top of select
 
-<span class="kw">fn</span> <span class="ident">try_join</span>&lt;<span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">E</span>&gt;(<span class="ident">a</span>: <span class="ident">A</span>, <span class="ident">b</span>: <span class="ident">B</span>) -&gt; <span class="kw">impl</span> <span class="ident">TryFuture</span>&lt;<span class="prelude-val">Ok</span>=(<span class="ident">A::Ok</span>, <span class="ident">B::Ok</span>), <span class="ident">Error</span>=<span class="ident">E</span>&gt;
-     <span class="kw">where</span> <span class="ident">A</span>: <span class="ident">TryFuture</span>&lt;<span class="ident">Error</span> = <span class="ident">E</span>&gt; + <span class="ident">Unpin</span> + <span class="lifetime">&#39;static</span>,
-           <span class="ident">B</span>: <span class="ident">TryFuture</span>&lt;<span class="ident">Error</span> = <span class="ident">E</span>&gt; + <span class="ident">Unpin</span> + <span class="lifetime">&#39;static</span>,
-           <span class="ident">E</span>: <span class="lifetime">&#39;static</span>,
+</span><span class="kw">fn </span>try_join&lt;A, B, E&gt;(a: A, b: B) -&gt; <span class="kw">impl </span>TryFuture&lt;<span class="prelude-val">Ok</span>=(A::Ok, B::Ok), Error=E&gt;
+     <span class="kw">where </span>A: TryFuture&lt;Error = E&gt; + Unpin + <span class="lifetime">&#39;static</span>,
+           B: TryFuture&lt;Error = E&gt; + Unpin + <span class="lifetime">&#39;static</span>,
+           E: <span class="lifetime">&#39;static</span>,
 {
-    <span class="ident">future::try_select</span>(<span class="ident">a</span>, <span class="ident">b</span>).<span class="ident">then</span>(|<span class="ident">res</span>| -&gt; <span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Future</span>&lt;<span class="ident">Output</span> = <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt; + <span class="ident">Unpin</span>&gt; {
-        <span class="kw">match</span> <span class="ident">res</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">Either::Left</span>((<span class="ident">x</span>, <span class="ident">b</span>))) =&gt; <span class="ident">Box::new</span>(<span class="ident">b</span>.<span class="ident">map_ok</span>(<span class="kw">move</span> |<span class="ident">y</span>| (<span class="ident">x</span>, <span class="ident">y</span>))),
-            <span class="prelude-val">Ok</span>(<span class="ident">Either::Right</span>((<span class="ident">y</span>, <span class="ident">a</span>))) =&gt; <span class="ident">Box::new</span>(<span class="ident">a</span>.<span class="ident">map_ok</span>(<span class="kw">move</span> |<span class="ident">x</span>| (<span class="ident">x</span>, <span class="ident">y</span>))),
-            <span class="prelude-val">Err</span>(<span class="ident">Either::Left</span>((<span class="ident">e</span>, <span class="kw">_</span>))) =&gt; <span class="ident">Box::new</span>(<span class="ident">future::err</span>(<span class="ident">e</span>)),
-            <span class="prelude-val">Err</span>(<span class="ident">Either::Right</span>((<span class="ident">e</span>, <span class="kw">_</span>))) =&gt; <span class="ident">Box::new</span>(<span class="ident">future::err</span>(<span class="ident">e</span>)),
+    future::try_select(a, b).then(|res| -&gt; Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt; + Unpin&gt; {
+        <span class="kw">match </span>res {
+            <span class="prelude-val">Ok</span>(Either::Left((x, b))) =&gt; Box::new(b.map_ok(<span class="kw">move </span>|y| (x, y))),
+            <span class="prelude-val">Ok</span>(Either::Right((y, a))) =&gt; Box::new(a.map_ok(<span class="kw">move </span>|x| (x, y))),
+            <span class="prelude-val">Err</span>(Either::Left((e, <span class="kw">_</span>))) =&gt; Box::new(future::err(e)),
+            <span class="prelude-val">Err</span>(Either::Right((e, <span class="kw">_</span>))) =&gt; Box::new(future::err(e)),
         }
     })
 }</code></pre></div>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="futures" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

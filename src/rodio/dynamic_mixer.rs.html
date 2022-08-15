@@ -265,272 +265,272 @@
 <span id="265">265</span>
 <span id="266">266</span>
 <span id="267">267</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Mixer that plays multiple sounds at the same time.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Mixer that plays multiple sounds at the same time.
 
-<span class="kw">use</span> <span class="ident">std::sync::atomic</span>::{<span class="ident">AtomicBool</span>, <span class="ident">Ordering</span>};
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</span><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
+<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source</span>::{<span class="ident">Source</span>, <span class="ident">UniformSourceIterator</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Sample</span>;
+<span class="kw">use </span><span class="kw">crate</span>::source::{Source, UniformSourceIterator};
+<span class="kw">use </span><span class="kw">crate</span>::Sample;
 
-<span class="doccomment">/// Builds a new mixer.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// You can choose the characteristics of the output thanks to this constructor. All the sounds</span>
-<span class="doccomment">/// added to the mixer will be converted to these values.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// After creating a mixer, you can add new sounds with the controller.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mixer</span>&lt;<span class="ident">S</span>&gt;(
-    <span class="ident">channels</span>: <span class="ident">u16</span>,
-    <span class="ident">sample_rate</span>: <span class="ident">u32</span>,
-) -&gt; (<span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">S</span>&gt;&gt;, <span class="ident">DynamicMixer</span>&lt;<span class="ident">S</span>&gt;)
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="doccomment">/// Builds a new mixer.
+///
+/// You can choose the characteristics of the output thanks to this constructor. All the sounds
+/// added to the mixer will be converted to these values.
+///
+/// After creating a mixer, you can add new sounds with the controller.
+</span><span class="kw">pub fn </span>mixer&lt;S&gt;(
+    channels: u16,
+    sample_rate: u32,
+) -&gt; (Arc&lt;DynamicMixerController&lt;S&gt;&gt;, DynamicMixer&lt;S&gt;)
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">let</span> <span class="ident">input</span> = <span class="ident">Arc::new</span>(<span class="ident">DynamicMixerController</span> {
-        <span class="ident">has_pending</span>: <span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>),
-        <span class="ident">pending_sources</span>: <span class="ident">Mutex::new</span>(<span class="ident">Vec::new</span>()),
-        <span class="ident">channels</span>,
-        <span class="ident">sample_rate</span>,
+    <span class="kw">let </span>input = Arc::new(DynamicMixerController {
+        has_pending: AtomicBool::new(<span class="bool-val">false</span>),
+        pending_sources: Mutex::new(Vec::new()),
+        channels,
+        sample_rate,
     });
 
-    <span class="kw">let</span> <span class="ident">output</span> = <span class="ident">DynamicMixer</span> {
-        <span class="ident">current_sources</span>: <span class="ident">Vec::with_capacity</span>(<span class="number">16</span>),
-        <span class="ident">input</span>: <span class="ident">input</span>.<span class="ident">clone</span>(),
-        <span class="ident">sample_count</span>: <span class="number">0</span>,
-        <span class="ident">still_pending</span>: <span class="macro">vec!</span>[],
-        <span class="ident">still_current</span>: <span class="macro">vec!</span>[],
+    <span class="kw">let </span>output = DynamicMixer {
+        current_sources: Vec::with_capacity(<span class="number">16</span>),
+        input: input.clone(),
+        sample_count: <span class="number">0</span>,
+        still_pending: <span class="macro">vec!</span>[],
+        still_current: <span class="macro">vec!</span>[],
     };
 
-    (<span class="ident">input</span>, <span class="ident">output</span>)
+    (input, output)
 }
 
-<span class="doccomment">/// The input of the mixer.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DynamicMixerController</span>&lt;<span class="ident">S</span>&gt; {
-    <span class="ident">has_pending</span>: <span class="ident">AtomicBool</span>,
-    <span class="ident">pending_sources</span>: <span class="ident">Mutex</span>&lt;<span class="ident">Vec</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;&gt;&gt;,
-    <span class="ident">channels</span>: <span class="ident">u16</span>,
-    <span class="ident">sample_rate</span>: <span class="ident">u32</span>,
+<span class="doccomment">/// The input of the mixer.
+</span><span class="kw">pub struct </span>DynamicMixerController&lt;S&gt; {
+    has_pending: AtomicBool,
+    pending_sources: Mutex&lt;Vec&lt;Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;&gt;&gt;,
+    channels: u16,
+    sample_rate: u32,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">DynamicMixerController</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; DynamicMixerController&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="doccomment">/// Adds a new source to mix to the existing ones.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>&lt;<span class="ident">T</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">source</span>: <span class="ident">T</span>)
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Adds a new source to mix to the existing ones.
+    </span><span class="attribute">#[inline]</span>
+    <span class="kw">pub fn </span>add&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: T)
+    <span class="kw">where
+        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">uniform_source</span> = <span class="ident">UniformSourceIterator::new</span>(<span class="ident">source</span>, <span class="self">self</span>.<span class="ident">channels</span>, <span class="self">self</span>.<span class="ident">sample_rate</span>);
-        <span class="self">self</span>.<span class="ident">pending_sources</span>
-            .<span class="ident">lock</span>()
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">push</span>(<span class="ident">Box::new</span>(<span class="ident">uniform_source</span>) <span class="kw">as</span> <span class="ident">Box</span>&lt;<span class="kw">_</span>&gt;);
-        <span class="self">self</span>.<span class="ident">has_pending</span>.<span class="ident">store</span>(<span class="bool-val">true</span>, <span class="ident">Ordering::SeqCst</span>); <span class="comment">// TODO: can we relax this ordering?</span>
-    }
+        <span class="kw">let </span>uniform_source = UniformSourceIterator::new(source, <span class="self">self</span>.channels, <span class="self">self</span>.sample_rate);
+        <span class="self">self</span>.pending_sources
+            .lock()
+            .unwrap()
+            .push(Box::new(uniform_source) <span class="kw">as </span>Box&lt;<span class="kw">_</span>&gt;);
+        <span class="self">self</span>.has_pending.store(<span class="bool-val">true</span>, Ordering::SeqCst); <span class="comment">// TODO: can we relax this ordering?
+    </span>}
 }
 
-<span class="doccomment">/// The output of the mixer. Implements `Source`.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DynamicMixer</span>&lt;<span class="ident">S</span>&gt; {
-    <span class="comment">// The current iterator that produces samples.</span>
-    <span class="ident">current_sources</span>: <span class="ident">Vec</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;&gt;,
+<span class="doccomment">/// The output of the mixer. Implements `Source`.
+</span><span class="kw">pub struct </span>DynamicMixer&lt;S&gt; {
+    <span class="comment">// The current iterator that produces samples.
+    </span>current_sources: Vec&lt;Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;&gt;,
 
-    <span class="comment">// The pending sounds.</span>
-    <span class="ident">input</span>: <span class="ident">Arc</span>&lt;<span class="ident">DynamicMixerController</span>&lt;<span class="ident">S</span>&gt;&gt;,
+    <span class="comment">// The pending sounds.
+    </span>input: Arc&lt;DynamicMixerController&lt;S&gt;&gt;,
 
-    <span class="comment">// The number of samples produced so far.</span>
-    <span class="ident">sample_count</span>: <span class="ident">usize</span>,
+    <span class="comment">// The number of samples produced so far.
+    </span>sample_count: usize,
 
-    <span class="comment">// A temporary vec used in start_pending_sources.</span>
-    <span class="ident">still_pending</span>: <span class="ident">Vec</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;&gt;,
+    <span class="comment">// A temporary vec used in start_pending_sources.
+    </span>still_pending: Vec&lt;Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;&gt;,
 
-    <span class="comment">// A temporary vec used in sum_current_sources.</span>
-    <span class="ident">still_current</span>: <span class="ident">Vec</span>&lt;<span class="ident">Box</span>&lt;<span class="kw">dyn</span> <span class="ident">Source</span>&lt;<span class="ident">Item</span> = <span class="ident">S</span>&gt; + <span class="ident">Send</span>&gt;&gt;,
+    <span class="comment">// A temporary vec used in sum_current_sources.
+    </span>still_current: Vec&lt;Box&lt;<span class="kw">dyn </span>Source&lt;Item = S&gt; + Send&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">Source</span> <span class="kw">for</span> <span class="ident">DynamicMixer</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; Source <span class="kw">for </span>DynamicMixer&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">current_frame_len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="prelude-val">None</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="prelude-val">None
+    </span>}
+
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>channels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.input.channels
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">channels</span>
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="self">self</span>.input.sample_rate
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">sample_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">sample_rate</span>
-    }
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">total_duration</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">Duration</span>&gt; {
-        <span class="prelude-val">None</span>
-    }
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
+        <span class="prelude-val">None
+    </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">DynamicMixer</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; Iterator <span class="kw">for </span>DynamicMixer&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="ident">S</span>;
+    <span class="kw">type </span>Item = S;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="ident">S</span>&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">has_pending</span>.<span class="ident">load</span>(<span class="ident">Ordering::SeqCst</span>) {
-            <span class="self">self</span>.<span class="ident">start_pending_sources</span>();
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;S&gt; {
+        <span class="kw">if </span><span class="self">self</span>.input.has_pending.load(Ordering::SeqCst) {
+            <span class="self">self</span>.start_pending_sources();
         }
 
-        <span class="self">self</span>.<span class="ident">sample_count</span> += <span class="number">1</span>;
+        <span class="self">self</span>.sample_count += <span class="number">1</span>;
 
-        <span class="kw">let</span> <span class="ident">sum</span> = <span class="self">self</span>.<span class="ident">sum_current_sources</span>();
+        <span class="kw">let </span>sum = <span class="self">self</span>.sum_current_sources();
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">current_sources</span>.<span class="ident">is_empty</span>() {
-            <span class="prelude-val">None</span>
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">sum</span>)
+        <span class="kw">if </span><span class="self">self</span>.current_sources.is_empty() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(sum)
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span>&lt;<span class="ident">usize</span>&gt;) {
+    <span class="attribute">#[inline]</span>
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
         (<span class="number">0</span>, <span class="prelude-val">None</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="ident">S</span>&gt; <span class="ident">DynamicMixer</span>&lt;<span class="ident">S</span>&gt;
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sample</span> + <span class="ident">Send</span> + <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;S&gt; DynamicMixer&lt;S&gt;
+<span class="kw">where
+    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="comment">// Samples from the #next() function are interlaced for each of the channels.</span>
-    <span class="comment">// We need to ensure we start playing sources so that their samples are</span>
-    <span class="comment">// in-step with the modulo of the samples produced so far. Otherwise, the</span>
-    <span class="comment">// sound will play on the wrong channels, e.g. left / right will be reversed.</span>
-    <span class="kw">fn</span> <span class="ident">start_pending_sources</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pending</span> = <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">pending_sources</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>(); <span class="comment">// TODO: relax ordering?</span>
+    <span class="comment">// Samples from the #next() function are interlaced for each of the channels.
+    // We need to ensure we start playing sources so that their samples are
+    // in-step with the modulo of the samples produced so far. Otherwise, the
+    // sound will play on the wrong channels, e.g. left / right will be reversed.
+    </span><span class="kw">fn </span>start_pending_sources(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>pending = <span class="self">self</span>.input.pending_sources.lock().unwrap(); <span class="comment">// TODO: relax ordering?
 
-        <span class="kw">for</span> <span class="ident">source</span> <span class="kw">in</span> <span class="ident">pending</span>.<span class="ident">drain</span>(..) {
-            <span class="kw">let</span> <span class="ident">in_step</span> = <span class="self">self</span>.<span class="ident">sample_count</span> % <span class="ident">source</span>.<span class="ident">channels</span>() <span class="kw">as</span> <span class="ident">usize</span> == <span class="number">0</span>;
+        </span><span class="kw">for </span>source <span class="kw">in </span>pending.drain(..) {
+            <span class="kw">let </span>in_step = <span class="self">self</span>.sample_count % source.channels() <span class="kw">as </span>usize == <span class="number">0</span>;
 
-            <span class="kw">if</span> <span class="ident">in_step</span> {
-                <span class="self">self</span>.<span class="ident">current_sources</span>.<span class="ident">push</span>(<span class="ident">source</span>);
-            } <span class="kw">else</span> {
-                <span class="self">self</span>.<span class="ident">still_pending</span>.<span class="ident">push</span>(<span class="ident">source</span>);
+            <span class="kw">if </span>in_step {
+                <span class="self">self</span>.current_sources.push(source);
+            } <span class="kw">else </span>{
+                <span class="self">self</span>.still_pending.push(source);
             }
         }
-        <span class="ident">std::mem::swap</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">still_pending</span>, <span class="kw-2">&amp;mut</span> <span class="ident">pending</span>);
+        std::mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.still_pending, <span class="kw-2">&amp;mut </span>pending);
 
-        <span class="kw">let</span> <span class="ident">has_pending</span> = !<span class="ident">pending</span>.<span class="ident">is_empty</span>();
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">has_pending</span>.<span class="ident">store</span>(<span class="ident">has_pending</span>, <span class="ident">Ordering::SeqCst</span>); <span class="comment">// TODO: relax ordering?</span>
-    }
+        <span class="kw">let </span>has_pending = !pending.is_empty();
+        <span class="self">self</span>.input.has_pending.store(has_pending, Ordering::SeqCst); <span class="comment">// TODO: relax ordering?
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">sum_current_sources</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">S</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sum</span> = <span class="ident">S::zero_value</span>();
+    <span class="kw">fn </span>sum_current_sources(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; S {
+        <span class="kw">let </span><span class="kw-2">mut </span>sum = S::zero_value();
 
-        <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">source</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">current_sources</span>.<span class="ident">drain</span>(..) {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>) = <span class="ident">source</span>.<span class="ident">next</span>() {
-                <span class="ident">sum</span> = <span class="ident">sum</span>.<span class="ident">saturating_add</span>(<span class="ident">value</span>);
-                <span class="self">self</span>.<span class="ident">still_current</span>.<span class="ident">push</span>(<span class="ident">source</span>);
+        <span class="kw">for </span><span class="kw-2">mut </span>source <span class="kw">in </span><span class="self">self</span>.current_sources.drain(..) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(value) = source.next() {
+                sum = sum.saturating_add(value);
+                <span class="self">self</span>.still_current.push(source);
             }
         }
-        <span class="ident">std::mem::swap</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">still_current</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">current_sources</span>);
+        std::mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.still_current, <span class="kw-2">&amp;mut </span><span class="self">self</span>.current_sources);
 
-        <span class="ident">sum</span>
+        sum
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::SamplesBuffer</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dynamic_mixer</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::source::Source</span>;
+<span class="attribute">#[cfg(test)]</span>
+<span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::buffer::SamplesBuffer;
+    <span class="kw">use </span><span class="kw">crate</span>::dynamic_mixer;
+    <span class="kw">use </span><span class="kw">crate</span>::source::Source;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">basic</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">dynamic_mixer::mixer</span>(<span class="number">1</span>, <span class="number">48000</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>basic() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = dynamic_mixer::mixer(<span class="number">1</span>, <span class="number">48000</span>);
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">channels</span>(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">sample_rate</span>(), <span class="number">48000</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(rx.channels(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(rx.sample_rate(), <span class="number">48000</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">channels_conv</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">dynamic_mixer::mixer</span>(<span class="number">2</span>, <span class="number">48000</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>channels_conv() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = dynamic_mixer::mixer(<span class="number">2</span>, <span class="number">48000</span>);
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">channels</span>(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">sample_rate</span>(), <span class="number">48000</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(rx.channels(), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(rx.sample_rate(), <span class="number">48000</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">rate_conv</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">dynamic_mixer::mixer</span>(<span class="number">1</span>, <span class="number">96000</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>rate_conv() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = dynamic_mixer::mixer(<span class="number">1</span>, <span class="number">96000</span>);
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">channels</span>(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">sample_rate</span>(), <span class="number">96000</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(rx.channels(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(rx.sample_rate(), <span class="number">96000</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">start_afterwards</span>() {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="kw-2">mut</span> <span class="ident">rx</span>) = <span class="ident">dynamic_mixer::mixer</span>(<span class="number">1</span>, <span class="number">48000</span>);
+    <span class="attribute">#[test]</span>
+    <span class="kw">fn </span>start_afterwards() {
+        <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = dynamic_mixer::mixer(<span class="number">1</span>, <span class="number">48000</span>);
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">10i16</span>, -<span class="number">10</span>, <span class="number">10</span>, -<span class="number">10</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">10</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">10</span>));
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">5i16</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">15</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(-<span class="number">5</span>));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">6</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">6</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">6</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">6</span>));
 
-        <span class="ident">tx</span>.<span class="ident">add</span>(<span class="ident">SamplesBuffer::new</span>(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">2i16</span>]));
+        tx.add(SamplesBuffer::new(<span class="number">1</span>, <span class="number">48000</span>, <span class="macro">vec!</span>[<span class="number">2i16</span>]));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">9</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">7</span>));
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="number">7</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">9</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">7</span>));
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">Some</span>(<span class="number">7</span>));
 
-        <span class="macro">assert_eq!</span>(<span class="ident">rx</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(rx.next(), <span class="prelude-val">None</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rodio" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -40,47 +40,47 @@
 <span id="40">40</span>
 <span id="41">41</span>
 <span id="42">42</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">RmpWrite</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::encode</span>::{<span class="ident">write_marker</span>, <span class="ident">ValueWriteError</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Marker</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::{RmpWrite};
+<span class="kw">use </span><span class="kw">crate</span>::encode::{write_marker, ValueWriteError};
+<span class="kw">use </span><span class="kw">crate</span>::Marker;
 
-<span class="doccomment">/// Encodes and attempts to write the most efficient binary array length implementation to the given</span>
-<span class="doccomment">/// write, returning the marker used.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function is useful when you want to get full control for writing the data itself, for</span>
-<span class="doccomment">/// example, when using non-blocking socket.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Errors</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function will return `ValueWriteError` on any I/O error occurred while writing either the</span>
-<span class="doccomment">/// marker or the data.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_bin_len</span>&lt;<span class="ident">W</span>: <span class="ident">RmpWrite</span>&gt;(<span class="ident">wr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">W</span>, <span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Marker</span>, <span class="ident">ValueWriteError</span>&lt;<span class="ident">W::Error</span>&gt;&gt; {
-    <span class="kw">if</span> <span class="ident">len</span> &lt; <span class="number">256</span> {
-        <span class="ident">write_marker</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">wr</span>, <span class="ident">Marker::Bin8</span>)<span class="question-mark">?</span>;
-        <span class="ident">wr</span>.<span class="ident">write_data_u8</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u8</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">Marker::Bin8</span>)
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">len</span> &lt;= <span class="ident">u16::MAX</span> <span class="kw">as</span> <span class="ident">u32</span> {
-        <span class="ident">write_marker</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">wr</span>, <span class="ident">Marker::Bin16</span>)<span class="question-mark">?</span>;
-        <span class="ident">wr</span>.<span class="ident">write_data_u16</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u16</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">Marker::Bin16</span>)
-    } <span class="kw">else</span> {
-        <span class="ident">write_marker</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">wr</span>, <span class="ident">Marker::Bin32</span>)<span class="question-mark">?</span>;
-        <span class="ident">wr</span>.<span class="ident">write_data_u32</span>(<span class="ident">len</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">Marker::Bin32</span>)
+<span class="doccomment">/// Encodes and attempts to write the most efficient binary array length implementation to the given
+/// write, returning the marker used.
+///
+/// This function is useful when you want to get full control for writing the data itself, for
+/// example, when using non-blocking socket.
+///
+/// # Errors
+///
+/// This function will return `ValueWriteError` on any I/O error occurred while writing either the
+/// marker or the data.
+</span><span class="kw">pub fn </span>write_bin_len&lt;W: RmpWrite&gt;(wr: <span class="kw-2">&amp;mut </span>W, len: u32) -&gt; <span class="prelude-ty">Result</span>&lt;Marker, ValueWriteError&lt;W::Error&gt;&gt; {
+    <span class="kw">if </span>len &lt; <span class="number">256 </span>{
+        write_marker(<span class="kw-2">&amp;mut *</span>wr, Marker::Bin8)<span class="question-mark">?</span>;
+        wr.write_data_u8(len <span class="kw">as </span>u8)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Marker::Bin8)
+    } <span class="kw">else if </span>len &lt;= u16::MAX <span class="kw">as </span>u32 {
+        write_marker(<span class="kw-2">&amp;mut *</span>wr, Marker::Bin16)<span class="question-mark">?</span>;
+        wr.write_data_u16(len <span class="kw">as </span>u16)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Marker::Bin16)
+    } <span class="kw">else </span>{
+        write_marker(<span class="kw-2">&amp;mut *</span>wr, Marker::Bin32)<span class="question-mark">?</span>;
+        wr.write_data_u32(len)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Marker::Bin32)
     }
 }
 
-<span class="doccomment">/// Encodes and attempts to write the most efficient binary implementation to the given `Write`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Errors</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function will return `ValueWriteError` on any I/O error occurred while writing either the</span>
-<span class="doccomment">/// marker or the data.</span>
-<span class="comment">// TODO: Docs, range check, example, visibility.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_bin</span>&lt;<span class="ident">W</span>: <span class="ident">RmpWrite</span>&gt;(<span class="ident">wr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">W</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="ident">ValueWriteError</span>&lt;<span class="ident">W::Error</span>&gt;&gt; {
-    <span class="ident">write_bin_len</span>(<span class="ident">wr</span>, <span class="ident">data</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>)<span class="question-mark">?</span>;
-    <span class="ident">wr</span>.<span class="ident">write_bytes</span>(<span class="ident">data</span>)
-        .<span class="ident">map_err</span>(<span class="ident">ValueWriteError::InvalidDataWrite</span>)
+<span class="doccomment">/// Encodes and attempts to write the most efficient binary implementation to the given `Write`.
+///
+/// # Errors
+///
+/// This function will return `ValueWriteError` on any I/O error occurred while writing either the
+/// marker or the data.
+</span><span class="comment">// TODO: Docs, range check, example, visibility.
+</span><span class="kw">pub fn </span>write_bin&lt;W: RmpWrite&gt;(wr: <span class="kw-2">&amp;mut </span>W, data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), ValueWriteError&lt;W::Error&gt;&gt; {
+    write_bin_len(wr, data.len() <span class="kw">as </span>u32)<span class="question-mark">?</span>;
+    wr.write_bytes(data)
+        .map_err(ValueWriteError::InvalidDataWrite)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rmp" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rmp" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>

@@ -209,216 +209,216 @@
 <span id="209">209</span>
 <span id="210">210</span>
 <span id="211">211</span>
-</pre><pre class="rust"><code><span class="doccomment">//! MIDI devices I/O and enumeration</span>
+</pre><pre class="rust"><code><span class="doccomment">//! MIDI devices I/O and enumeration
 
-<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">c_int</span>, <span class="ident">c_uint</span>, <span class="ident">c_void</span>, <span class="ident">size_t</span>, <span class="ident">c_short</span>, <span class="ident">pollfd</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ctl_int</span>::{<span class="ident">ctl_ptr</span>, <span class="ident">Ctl</span>};
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Direction</span>, <span class="ident">poll</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::error</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alsa</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">ptr</span>, <span class="ident">io</span>};
-<span class="kw">use</span> <span class="ident">std::ffi</span>::{<span class="ident">CStr</span>, <span class="ident">CString</span>};
+</span><span class="kw">use </span>libc::{c_int, c_uint, c_void, size_t, c_short, pollfd};
+<span class="kw">use </span><span class="kw">super</span>::ctl_int::{ctl_ptr, Ctl};
+<span class="kw">use super</span>::{Direction, poll};
+<span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::alsa;
+<span class="kw">use </span>std::{ptr, io};
+<span class="kw">use </span>std::ffi::{CStr, CString};
 
-<span class="doccomment">/// Iterator over [Rawmidi](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) devices and subdevices</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="ident">ctl</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Ctl</span>,
-    <span class="ident">device</span>: <span class="ident">c_int</span>,
-    <span class="ident">in_count</span>: <span class="ident">i32</span>,
-    <span class="ident">out_count</span>: <span class="ident">i32</span>,
-    <span class="ident">current</span>: <span class="ident">i32</span>,
+<span class="doccomment">/// Iterator over [Rawmidi](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) devices and subdevices
+</span><span class="kw">pub struct </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    ctl: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ctl,
+    device: c_int,
+    in_count: i32,
+    out_count: i32,
+    current: i32,
 }
 
-<span class="doccomment">/// [snd_rawmidi_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Info</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_rawmidi_info_t</span>);
+<span class="doccomment">/// [snd_rawmidi_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper
+</span><span class="kw">pub struct </span>Info(<span class="kw-2">*mut </span>alsa::snd_rawmidi_info_t);
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Info</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_free</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
+<span class="kw">impl </span>Drop <span class="kw">for </span>Info {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_free(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
-<span class="kw">impl</span> <span class="ident">Info</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Info</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_info_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Info</span>(<span class="ident">p</span>))
+<span class="kw">impl </span>Info {
+    <span class="kw">fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;Info&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+        <span class="macro">acheck!</span>(snd_rawmidi_info_malloc(<span class="kw-2">&amp;mut </span>p)).map(|<span class="kw">_</span>| Info(p))
     }
 
-    <span class="kw">fn</span> <span class="ident">from_iter</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">Ctl</span>, <span class="ident">device</span>: <span class="ident">i32</span>, <span class="ident">sub</span>: <span class="ident">i32</span>, <span class="ident">dir</span>: <span class="ident">Direction</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Info</span>&gt; {
-        <span class="kw">let</span> <span class="ident">r</span> = <span class="ident">Info::new</span>()<span class="question-mark">?</span>;
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_set_device</span>(<span class="ident">r</span>.<span class="number">0</span>, <span class="ident">device</span> <span class="kw">as</span> <span class="ident">c_uint</span>) };
-        <span class="kw">let</span> <span class="ident">d</span> = <span class="kw">match</span> <span class="ident">dir</span> {
-            <span class="ident">Direction::Playback</span> =&gt; <span class="ident">alsa::SND_RAWMIDI_STREAM_OUTPUT</span>,
-            <span class="ident">Direction::Capture</span> =&gt; <span class="ident">alsa::SND_RAWMIDI_STREAM_INPUT</span>,
+    <span class="kw">fn </span>from_iter(c: <span class="kw-2">&amp;</span>Ctl, device: i32, sub: i32, dir: Direction) -&gt; <span class="prelude-ty">Result</span>&lt;Info&gt; {
+        <span class="kw">let </span>r = Info::new()<span class="question-mark">?</span>;
+        <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_set_device(r.<span class="number">0</span>, device <span class="kw">as </span>c_uint) };
+        <span class="kw">let </span>d = <span class="kw">match </span>dir {
+            Direction::Playback =&gt; alsa::SND_RAWMIDI_STREAM_OUTPUT,
+            Direction::Capture =&gt; alsa::SND_RAWMIDI_STREAM_INPUT,
         };
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_set_stream</span>(<span class="ident">r</span>.<span class="number">0</span>, <span class="ident">d</span>) };
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_set_subdevice</span>(<span class="ident">r</span>.<span class="number">0</span>, <span class="ident">sub</span> <span class="kw">as</span> <span class="ident">c_uint</span>) };
-        <span class="macro">acheck!</span>(<span class="ident">snd_ctl_rawmidi_info</span>(<span class="ident">ctl_ptr</span>(<span class="ident">c</span>), <span class="ident">r</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">r</span>)
+        <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_set_stream(r.<span class="number">0</span>, d) };
+        <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_set_subdevice(r.<span class="number">0</span>, sub <span class="kw">as </span>c_uint) };
+        <span class="macro">acheck!</span>(snd_ctl_rawmidi_info(ctl_ptr(c), r.<span class="number">0</span>)).map(|<span class="kw">_</span>| r)
     }
 
-    <span class="kw">fn</span> <span class="ident">subdev_count</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">Ctl</span>, <span class="ident">device</span>: <span class="ident">c_int</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="ident">i32</span>, <span class="ident">i32</span>)&gt; {
-        <span class="kw">let</span> <span class="ident">i</span> = <span class="ident">Info::from_iter</span>(<span class="ident">c</span>, <span class="ident">device</span>, <span class="number">0</span>, <span class="ident">Direction::Capture</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">o</span> = <span class="ident">Info::from_iter</span>(<span class="ident">c</span>, <span class="ident">device</span>, <span class="number">0</span>, <span class="ident">Direction::Playback</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((<span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_subdevices_count</span>(<span class="ident">o</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">i32</span> },
-            <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_subdevices_count</span>(<span class="ident">i</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">i32</span> }))
+    <span class="kw">fn </span>subdev_count(c: <span class="kw-2">&amp;</span>Ctl, device: c_int) -&gt; <span class="prelude-ty">Result</span>&lt;(i32, i32)&gt; {
+        <span class="kw">let </span>i = Info::from_iter(c, device, <span class="number">0</span>, Direction::Capture)<span class="question-mark">?</span>;
+        <span class="kw">let </span>o = Info::from_iter(c, device, <span class="number">0</span>, Direction::Playback)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>((<span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_subdevices_count(o.<span class="number">0</span>) <span class="kw">as </span>i32 },
+            <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_subdevices_count(i.<span class="number">0</span>) <span class="kw">as </span>i32 }))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_device</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_device</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">i32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_subdevice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i32</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_subdevice</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">i32</span> }}
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_stream</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="kw">super</span>::Direction</span> {
-        <span class="kw">if</span> <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_stream</span>(<span class="self">self</span>.<span class="number">0</span>) } == <span class="ident">alsa::SND_RAWMIDI_STREAM_OUTPUT</span> { <span class="ident"><span class="kw">super</span>::Direction::Playback</span> }
-        <span class="kw">else</span> { <span class="ident"><span class="kw">super</span>::Direction::Capture</span> }
+    <span class="kw">pub fn </span>get_device(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i32 { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_device(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>i32 }}
+    <span class="kw">pub fn </span>get_subdevice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i32 { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_subdevice(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>i32 }}
+    <span class="kw">pub fn </span>get_stream(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">super</span>::Direction {
+        <span class="kw">if unsafe </span>{ alsa::snd_rawmidi_info_get_stream(<span class="self">self</span>.<span class="number">0</span>) } == alsa::SND_RAWMIDI_STREAM_OUTPUT { <span class="kw">super</span>::Direction::Playback }
+        <span class="kw">else </span>{ <span class="kw">super</span>::Direction::Capture }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_subdevice_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_subdevice_name</span>(<span class="self">self</span>.<span class="number">0</span>) };
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_rawmidi_info_get_subdevice_name&quot;</span>, <span class="ident">c</span>).<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">to_string</span>())
+    <span class="kw">pub fn </span>get_subdevice_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span>c = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_subdevice_name(<span class="self">self</span>.<span class="number">0</span>) };
+        from_const(<span class="string">&quot;snd_rawmidi_info_get_subdevice_name&quot;</span>, c).map(|s| s.to_string())
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_info_get_id</span>(<span class="self">self</span>.<span class="number">0</span>) };
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_rawmidi_info_get_id&quot;</span>, <span class="ident">c</span>).<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">to_string</span>())
-    }
-}
-
-<span class="doccomment">/// [snd_rawmidi_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Status</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_rawmidi_status_t</span>);
-
-<span class="kw">impl</span> <span class="ident">Status</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">p</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_status_malloc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">p</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Status</span>(<span class="ident">p</span>))
+    <span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span>c = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_info_get_id(<span class="self">self</span>.<span class="number">0</span>) };
+        from_const(<span class="string">&quot;snd_rawmidi_info_get_id&quot;</span>, c).map(|s| s.to_string())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Status</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_avail</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_status_get_avail</span>(<span class="self">self</span>.<span class="number">0</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span>) } }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_xruns</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_status_get_xruns</span>(<span class="self">self</span>.<span class="number">0</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">_</span>) } }
+<span class="doccomment">/// [snd_rawmidi_info_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper
+</span><span class="kw">pub struct </span>Status(<span class="kw-2">*mut </span>alsa::snd_rawmidi_status_t);
+
+<span class="kw">impl </span>Status {
+    <span class="kw">fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>p = ptr::null_mut();
+        <span class="macro">acheck!</span>(snd_rawmidi_status_malloc(<span class="kw-2">&amp;mut </span>p)).map(|<span class="kw">_</span>| Status(p))
+    }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Status</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_status_free</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
+<span class="kw">impl </span>Status {
+    <span class="kw">pub fn </span>get_avail(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_status_get_avail(<span class="self">self</span>.<span class="number">0 </span><span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>) } }
+    <span class="kw">pub fn </span>get_xruns(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_status_get_xruns(<span class="self">self</span>.<span class="number">0 </span><span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>) } }
+}
+
+<span class="kw">impl </span>Drop <span class="kw">for </span>Status {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_status_free(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Ctl</span>) -&gt; <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt; { <span class="ident">Iter</span> { <span class="ident">ctl</span>: <span class="ident">c</span>, <span class="ident">device</span>: -<span class="number">1</span>, <span class="ident">in_count</span>: <span class="number">0</span>, <span class="ident">out_count</span>: <span class="number">0</span>, <span class="ident">current</span>: <span class="number">0</span> }}
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub fn </span>new(c: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ctl) -&gt; Iter&lt;<span class="lifetime">&#39;a</span>&gt; { Iter { ctl: c, device: -<span class="number">1</span>, in_count: <span class="number">0</span>, out_count: <span class="number">0</span>, current: <span class="number">0 </span>}}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Iter</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type</span> <span class="ident">Item</span> = <span class="prelude-ty">Result</span>&lt;<span class="ident">Info</span>&gt;;
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="ident">Info</span>&gt;&gt; {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">current</span> &lt; <span class="self">self</span>.<span class="ident">in_count</span> {
-            <span class="self">self</span>.<span class="ident">current</span> += <span class="number">1</span>;
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">Info::from_iter</span>(<span class="self">self</span>.<span class="ident">ctl</span>, <span class="self">self</span>.<span class="ident">device</span>, <span class="self">self</span>.<span class="ident">current</span>-<span class="number">1</span>, <span class="ident">Direction::Capture</span>));
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;Info&gt;;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Info&gt;&gt; {
+        <span class="kw">if </span><span class="self">self</span>.current &lt; <span class="self">self</span>.in_count {
+            <span class="self">self</span>.current += <span class="number">1</span>;
+            <span class="kw">return </span><span class="prelude-val">Some</span>(Info::from_iter(<span class="self">self</span>.ctl, <span class="self">self</span>.device, <span class="self">self</span>.current-<span class="number">1</span>, Direction::Capture));
         }
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">current</span> - <span class="self">self</span>.<span class="ident">in_count</span> &lt; <span class="self">self</span>.<span class="ident">out_count</span> {
-            <span class="self">self</span>.<span class="ident">current</span> += <span class="number">1</span>;
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">Info::from_iter</span>(<span class="self">self</span>.<span class="ident">ctl</span>, <span class="self">self</span>.<span class="ident">device</span>, <span class="self">self</span>.<span class="ident">current</span>-<span class="number">1</span>-<span class="self">self</span>.<span class="ident">in_count</span>, <span class="ident">Direction::Playback</span>));
+        <span class="kw">if </span><span class="self">self</span>.current - <span class="self">self</span>.in_count &lt; <span class="self">self</span>.out_count {
+            <span class="self">self</span>.current += <span class="number">1</span>;
+            <span class="kw">return </span><span class="prelude-val">Some</span>(Info::from_iter(<span class="self">self</span>.ctl, <span class="self">self</span>.device, <span class="self">self</span>.current-<span class="number">1</span>-<span class="self">self</span>.in_count, Direction::Playback));
         }
 
-        <span class="kw">let</span> <span class="ident">r</span> = <span class="macro">acheck!</span>(<span class="ident">snd_ctl_rawmidi_next_device</span>(<span class="ident">ctl_ptr</span>(<span class="self">self</span>.<span class="ident">ctl</span>), <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">device</span>));
-        <span class="kw">match</span> <span class="ident">r</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)),
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="kw">if</span> <span class="self">self</span>.<span class="ident">device</span> == -<span class="number">1</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
-            <span class="kw">_</span> =&gt; {},
+        <span class="kw">let </span>r = <span class="macro">acheck!</span>(snd_ctl_rawmidi_next_device(ctl_ptr(<span class="self">self</span>.ctl), <span class="kw-2">&amp;mut </span><span class="self">self</span>.device));
+        <span class="kw">match </span>r {
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)),
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="kw">if </span><span class="self">self</span>.device == -<span class="number">1 </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; {},
         }
-        <span class="self">self</span>.<span class="ident">current</span> = <span class="number">0</span>;
-        <span class="kw">match</span> <span class="ident">Info::subdev_count</span>(<span class="self">self</span>.<span class="ident">ctl</span>, <span class="self">self</span>.<span class="ident">device</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)),
-            <span class="prelude-val">Ok</span>((<span class="ident">oo</span>, <span class="ident">ii</span>)) =&gt; {
-                <span class="self">self</span>.<span class="ident">in_count</span> = <span class="ident">ii</span>;
-                <span class="self">self</span>.<span class="ident">out_count</span> = <span class="ident">oo</span>;
-                <span class="self">self</span>.<span class="ident">next</span>()
+        <span class="self">self</span>.current = <span class="number">0</span>;
+        <span class="kw">match </span>Info::subdev_count(<span class="self">self</span>.ctl, <span class="self">self</span>.device) {
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)),
+            <span class="prelude-val">Ok</span>((oo, ii)) =&gt; {
+                <span class="self">self</span>.in_count = ii;
+                <span class="self">self</span>.out_count = oo;
+                <span class="self">self</span>.next()
             }
         }
     }
 }
 
-<span class="doccomment">/// [snd_rawmidi_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rawmidi</span>(<span class="kw-2">*mut</span> <span class="ident">alsa::snd_rawmidi_t</span>);
+<span class="doccomment">/// [snd_rawmidi_t](http://www.alsa-project.org/alsa-doc/alsa-lib/group___raw_midi.html) wrapper
+</span><span class="kw">pub struct </span>Rawmidi(<span class="kw-2">*mut </span>alsa::snd_rawmidi_t);
 
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Rawmidi</span> {}
+<span class="kw">unsafe impl </span>Send <span class="kw">for </span>Rawmidi {}
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Rawmidi</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) { <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_close</span>(<span class="self">self</span>.<span class="number">0</span>) }; }
+<span class="kw">impl </span>Drop <span class="kw">for </span>Rawmidi {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) { <span class="kw">unsafe </span>{ alsa::snd_rawmidi_close(<span class="self">self</span>.<span class="number">0</span>) }; }
 }
 
-<span class="kw">impl</span> <span class="ident">Rawmidi</span> {
+<span class="kw">impl </span>Rawmidi {
 
-    <span class="doccomment">/// Wrapper around open that takes a &amp;str instead of a &amp;CStr</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">dir</span>: <span class="ident">Direction</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="ident"><span class="self">Self</span>::open</span>(<span class="kw-2">&amp;</span><span class="ident">CString::new</span>(<span class="ident">name</span>).<span class="ident">unwrap</span>(), <span class="ident">dir</span>, <span class="ident">nonblock</span>)
+    <span class="doccomment">/// Wrapper around open that takes a &amp;str instead of a &amp;CStr
+    </span><span class="kw">pub fn </span>new(name: <span class="kw-2">&amp;</span>str, dir: Direction, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="self">Self</span>::open(<span class="kw-2">&amp;</span>CString::new(name).unwrap(), dir, nonblock)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">open</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">CStr</span>, <span class="ident">dir</span>: <span class="ident">Direction</span>, <span class="ident">nonblock</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Rawmidi</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h</span> = <span class="ident">ptr::null_mut</span>();
-        <span class="kw">let</span> <span class="ident">flags</span> = <span class="kw">if</span> <span class="ident">nonblock</span> { <span class="number">2</span> } <span class="kw">else</span> { <span class="number">0</span> }; <span class="comment">// FIXME: alsa::SND_RAWMIDI_NONBLOCK does not exist in alsa-sys</span>
-        <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_open</span>(
-            <span class="kw">if</span> <span class="ident">dir</span> == <span class="ident">Direction::Capture</span> { <span class="kw-2">&amp;mut</span> <span class="ident">h</span> } <span class="kw">else</span> { <span class="ident">ptr::null_mut</span>() },
-            <span class="kw">if</span> <span class="ident">dir</span> == <span class="ident">Direction::Playback</span> { <span class="kw-2">&amp;mut</span> <span class="ident">h</span> } <span class="kw">else</span> { <span class="ident">ptr::null_mut</span>() },
-            <span class="ident">name</span>.<span class="ident">as_ptr</span>(), <span class="ident">flags</span>))
-            .<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">Rawmidi</span>(<span class="ident">h</span>))
+    <span class="kw">pub fn </span>open(name: <span class="kw-2">&amp;</span>CStr, dir: Direction, nonblock: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Rawmidi&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>h = ptr::null_mut();
+        <span class="kw">let </span>flags = <span class="kw">if </span>nonblock { <span class="number">2 </span>} <span class="kw">else </span>{ <span class="number">0 </span>}; <span class="comment">// FIXME: alsa::SND_RAWMIDI_NONBLOCK does not exist in alsa-sys
+        </span><span class="macro">acheck!</span>(snd_rawmidi_open(
+            <span class="kw">if </span>dir == Direction::Capture { <span class="kw-2">&amp;mut </span>h } <span class="kw">else </span>{ ptr::null_mut() },
+            <span class="kw">if </span>dir == Direction::Playback { <span class="kw-2">&amp;mut </span>h } <span class="kw">else </span>{ ptr::null_mut() },
+            name.as_ptr(), flags))
+            .map(|<span class="kw">_</span>| Rawmidi(h))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Info</span>&gt; {
-        <span class="ident">Info::new</span>().<span class="ident">and_then</span>(|<span class="ident">i</span>| <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_info</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">i</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">i</span>))
+    <span class="kw">pub fn </span>info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Info&gt; {
+        Info::new().and_then(|i| <span class="macro">acheck!</span>(snd_rawmidi_info(<span class="self">self</span>.<span class="number">0</span>, i.<span class="number">0</span>)).map(|<span class="kw">_</span>| i))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">status</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">Status</span>&gt; {
-        <span class="ident">Status::new</span>().<span class="ident">and_then</span>(|<span class="ident">i</span>| <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_status</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">i</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">i</span>))
+    <span class="kw">pub fn </span>status(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Status&gt; {
+        Status::new().and_then(|i| <span class="macro">acheck!</span>(snd_rawmidi_status(<span class="self">self</span>.<span class="number">0</span>, i.<span class="number">0</span>)).map(|<span class="kw">_</span>| i))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; { <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_drop</span>(<span class="self">self</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ()) }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drain</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; { <span class="macro">acheck!</span>(<span class="ident">snd_rawmidi_drain</span>(<span class="self">self</span>.<span class="number">0</span>)).<span class="ident">map</span>(|<span class="kw">_</span>| ()) }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">String</span>&gt; {
-        <span class="kw">let</span> <span class="ident">c</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_name</span>(<span class="self">self</span>.<span class="number">0</span>) };
-        <span class="ident">from_const</span>(<span class="string">&quot;snd_rawmidi_name&quot;</span>, <span class="ident">c</span>).<span class="ident">map</span>(|<span class="ident">s</span>| <span class="ident">s</span>.<span class="ident">to_string</span>())
+    <span class="kw">pub fn </span>drop(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; { <span class="macro">acheck!</span>(snd_rawmidi_drop(<span class="self">self</span>.<span class="number">0</span>)).map(|<span class="kw">_</span>| ()) }
+    <span class="kw">pub fn </span>drain(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; { <span class="macro">acheck!</span>(snd_rawmidi_drain(<span class="self">self</span>.<span class="number">0</span>)).map(|<span class="kw">_</span>| ()) }
+    <span class="kw">pub fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+        <span class="kw">let </span>c = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_name(<span class="self">self</span>.<span class="number">0</span>) };
+        from_const(<span class="string">&quot;snd_rawmidi_name&quot;</span>, c).map(|s| s.to_string())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">io</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">IO</span> { <span class="ident">IO</span>(<span class="self">self</span>) }
+    <span class="kw">pub fn </span>io(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; IO { IO(<span class="self">self</span>) }
 }
 
-<span class="kw">impl</span> <span class="ident">poll::Descriptors</span> <span class="kw">for</span> <span class="ident">Rawmidi</span> {
-    <span class="kw">fn</span> <span class="ident">count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_poll_descriptors_count</span>(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as</span> <span class="ident">usize</span> }
+<span class="kw">impl </span>poll::Descriptors <span class="kw">for </span>Rawmidi {
+    <span class="kw">fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">unsafe </span>{ alsa::snd_rawmidi_poll_descriptors_count(<span class="self">self</span>.<span class="number">0</span>) <span class="kw">as </span>usize }
     }
-    <span class="kw">fn</span> <span class="ident">fill</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_poll_descriptors</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_mut_ptr</span>(), <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_rawmidi_poll_descriptors&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">z</span> <span class="kw">as</span> <span class="ident">usize</span>)
+    <span class="kw">fn </span>fill(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_poll_descriptors(<span class="self">self</span>.<span class="number">0</span>, p.as_mut_ptr(), p.len() <span class="kw">as </span>c_uint) };
+        from_code(<span class="string">&quot;snd_rawmidi_poll_descriptors&quot;</span>, z).map(|<span class="kw">_</span>| z <span class="kw">as </span>usize)
     }
-    <span class="kw">fn</span> <span class="ident">revents</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="kw-2">&amp;</span>[<span class="ident">pollfd</span>]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="ident">poll::Flags</span>&gt; {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> = <span class="number">0</span>;
-        <span class="kw">let</span> <span class="ident">z</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_poll_descriptors_revents</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">p</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">pollfd</span>, <span class="ident">p</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">c_uint</span>, <span class="kw-2">&amp;mut</span> <span class="ident">r</span>) };
-        <span class="ident">from_code</span>(<span class="string">&quot;snd_rawmidi_poll_descriptors_revents&quot;</span>, <span class="ident">z</span>).<span class="ident">map</span>(|<span class="kw">_</span>| <span class="ident">poll::Flags::from_bits_truncate</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">c_short</span>))
-    }
-}
-
-<span class="doccomment">/// Implements `std::io::Read` and `std::io::Write` for `Rawmidi`</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IO</span>&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Rawmidi</span>);
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">io::Read</span> <span class="kw">for</span> <span class="ident">IO</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">let</span> <span class="ident">r</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_read</span>((<span class="self">self</span>.<span class="number">0</span>).<span class="number">0</span>, <span class="ident">buf</span>.<span class="ident">as_mut_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">c_void</span>, <span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">size_t</span>) };
-        <span class="kw">if</span> <span class="ident">r</span> &lt; <span class="number">0</span> { <span class="prelude-val">Err</span>(<span class="ident">io::Error::from_raw_os_error</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">i32</span>)) }
-        <span class="kw">else</span> { <span class="prelude-val">Ok</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+    <span class="kw">fn </span>revents(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;</span>[pollfd]) -&gt; <span class="prelude-ty">Result</span>&lt;poll::Flags&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>r = <span class="number">0</span>;
+        <span class="kw">let </span>z = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_poll_descriptors_revents(<span class="self">self</span>.<span class="number">0</span>, p.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>pollfd, p.len() <span class="kw">as </span>c_uint, <span class="kw-2">&amp;mut </span>r) };
+        from_code(<span class="string">&quot;snd_rawmidi_poll_descriptors_revents&quot;</span>, z).map(|<span class="kw">_</span>| poll::Flags::from_bits_truncate(r <span class="kw">as </span>c_short))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="ident">io::Write</span> <span class="kw">for</span> <span class="ident">IO</span>&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">io::Result</span>&lt;<span class="ident">usize</span>&gt; {
-        <span class="kw">let</span> <span class="ident">r</span> = <span class="kw">unsafe</span> { <span class="ident">alsa::snd_rawmidi_write</span>((<span class="self">self</span>.<span class="number">0</span>).<span class="number">0</span>, <span class="ident">buf</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">c_void</span>, <span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">size_t</span>) };
-        <span class="kw">if</span> <span class="ident">r</span> &lt; <span class="number">0</span> { <span class="prelude-val">Err</span>(<span class="ident">io::Error::from_raw_os_error</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">i32</span>)) }
-        <span class="kw">else</span> { <span class="prelude-val">Ok</span>(<span class="ident">r</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+<span class="doccomment">/// Implements `std::io::Read` and `std::io::Write` for `Rawmidi`
+</span><span class="kw">pub struct </span>IO&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Rawmidi);
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; io::Read <span class="kw">for </span>IO&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
+        <span class="kw">let </span>r = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_read((<span class="self">self</span>.<span class="number">0</span>).<span class="number">0</span>, buf.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>c_void, buf.len() <span class="kw">as </span>size_t) };
+        <span class="kw">if </span>r &lt; <span class="number">0 </span>{ <span class="prelude-val">Err</span>(io::Error::from_raw_os_error(r <span class="kw">as </span>i32)) }
+        <span class="kw">else </span>{ <span class="prelude-val">Ok</span>(r <span class="kw">as </span>usize) }
     }
-    <span class="kw">fn</span> <span class="ident">flush</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">io::Result</span>&lt;()&gt; { <span class="prelude-val">Ok</span>(()) }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; io::Write <span class="kw">for </span>IO&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
+        <span class="kw">let </span>r = <span class="kw">unsafe </span>{ alsa::snd_rawmidi_write((<span class="self">self</span>.<span class="number">0</span>).<span class="number">0</span>, buf.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span>c_void, buf.len() <span class="kw">as </span>size_t) };
+        <span class="kw">if </span>r &lt; <span class="number">0 </span>{ <span class="prelude-val">Err</span>(io::Error::from_raw_os_error(r <span class="kw">as </span>i32)) }
+        <span class="kw">else </span>{ <span class="prelude-val">Ok</span>(r <span class="kw">as </span>usize) }
+    }
+    <span class="kw">fn </span>flush(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; { <span class="prelude-val">Ok</span>(()) }
 }
 
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">print_rawmidis</span>() {
-    <span class="kw">for</span> <span class="ident">a</span> <span class="kw">in</span> <span class="ident"><span class="kw">super</span>::card::Iter::new</span>().<span class="ident">map</span>(|<span class="ident">a</span>| <span class="ident">a</span>.<span class="ident">unwrap</span>()) {
-        <span class="kw">for</span> <span class="ident">b</span> <span class="kw">in</span> <span class="ident">Iter::new</span>(<span class="kw-2">&amp;</span><span class="ident">Ctl::from_card</span>(<span class="kw-2">&amp;</span><span class="ident">a</span>, <span class="bool-val">false</span>).<span class="ident">unwrap</span>()).<span class="ident">map</span>(|<span class="ident">b</span>| <span class="ident">b</span>.<span class="ident">unwrap</span>()) {
-            <span class="macro">println!</span>(<span class="string">&quot;Rawmidi {:?} (hw:{},{},{}) {} - {}&quot;</span>, <span class="ident">b</span>.<span class="ident">get_stream</span>(), <span class="ident">a</span>.<span class="ident">get_index</span>(), <span class="ident">b</span>.<span class="ident">get_device</span>(), <span class="ident">b</span>.<span class="ident">get_subdevice</span>(),
-                 <span class="ident">a</span>.<span class="ident">get_name</span>().<span class="ident">unwrap</span>(), <span class="ident">b</span>.<span class="ident">get_subdevice_name</span>().<span class="ident">unwrap</span>())
+<span class="attribute">#[test]</span>
+<span class="kw">fn </span>print_rawmidis() {
+    <span class="kw">for </span>a <span class="kw">in </span><span class="kw">super</span>::card::Iter::new().map(|a| a.unwrap()) {
+        <span class="kw">for </span>b <span class="kw">in </span>Iter::new(<span class="kw-2">&amp;</span>Ctl::from_card(<span class="kw-2">&amp;</span>a, <span class="bool-val">false</span>).unwrap()).map(|b| b.unwrap()) {
+            <span class="macro">println!</span>(<span class="string">&quot;Rawmidi {:?} (hw:{},{},{}) {} - {}&quot;</span>, b.get_stream(), a.get_index(), b.get_device(), b.get_subdevice(),
+                 a.get_name().unwrap(), b.get_subdevice_name().unwrap())
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (f22819bcc 2022-08-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="alsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (801821d15 2022-08-14)" ></div></body></html>
