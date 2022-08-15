@@ -1,10 +1,16 @@
 use std::path::{Component, Path};
 
-use anyhow::{anyhow, bail, Result};
+use quick_error::ResultExt;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 use serde::Deserialize;
 
-use crate::{cache::download, types::Chatsound, Chatsounds};
+use crate::{
+    bail,
+    cache::download,
+    error::{Error, Result},
+    types::Chatsound,
+    Chatsounds,
+};
 
 #[derive(Deserialize)]
 pub struct GitHubApiFileEntry {
@@ -44,7 +50,7 @@ impl Chatsounds {
             }
 
             if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
-                let error = anyhow!("GitHub Error: {}", err.message);
+                let error = Error::GitHub(err.message.to_owned(), api_url.to_owned());
                 // if we're rate limited, don't remove cached file
                 if err.message.starts_with("API rate limit exceeded") {
                     Ok(Err(error))
@@ -57,7 +63,7 @@ impl Chatsounds {
         })
         .await?;
 
-        let trees: GitHubApiTrees = serde_json::from_slice(&bytes)?;
+        let trees: GitHubApiTrees = serde_json::from_slice(&bytes).context(&api_url)?;
 
         Ok(trees)
     }
@@ -114,7 +120,8 @@ impl Chatsounds {
 
         // these raw links don't have a rate limit so we won't cache bad results
         let bytes = download(&msgpack_url, cache, use_etag, |bytes| Ok(Ok(bytes))).await?;
-        let entries: GitHubMsgpackEntries = rmp_serde::decode::from_slice(&bytes)?;
+        let entries: GitHubMsgpackEntries =
+            rmp_serde::decode::from_slice(&bytes).context(&msgpack_url)?;
 
         Ok(entries)
     }

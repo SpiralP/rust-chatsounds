@@ -1,6 +1,5 @@
 mod modifiers;
 
-use anyhow::{bail, Result};
 use nom::{
     bytes::complete::take_while1,
     character::{is_alphanumeric, is_space},
@@ -10,6 +9,7 @@ use nom::{
 
 pub use self::modifiers::ModifierTrait;
 use self::modifiers::{parse_modifier, Modifier};
+use crate::error::{Error, Result};
 
 #[derive(Debug, PartialEq)]
 pub struct ParsedChatsound {
@@ -39,9 +39,7 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
 pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
     match many1(parse_chatsound)(input) {
         Ok((_input, chatsounds)) => Ok(chatsounds),
-        Err(e) => {
-            bail!("{:?}", e);
-        }
+        Err(e) => Err(Error::Nom(format!("{:?}", e), input.to_owned())),
     }
 }
 

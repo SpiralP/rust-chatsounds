@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
 use bytes::Bytes;
+use quick_error::ResultExt;
 use sha2::{Digest, Sha256};
 #[cfg(feature = "fs")]
 use tokio::{
@@ -11,6 +11,7 @@ use tokio::{
 };
 
 use super::utils::{get, head_etag};
+use crate::error::Result;
 
 /// if `use_etag` is false, always used cached file if it exists
 pub async fn download<F>(
@@ -41,12 +42,15 @@ where
                 .read(true)
                 .open(&etag_file_path)
                 .await
-                .context("open etag_file_path")?;
+                .context(&etag_file_path)?;
 
             let mut s = String::new();
-            etag_file.read_to_string(&mut s).await?;
+            etag_file
+                .read_to_string(&mut s)
+                .await
+                .context(&etag_file_path)?;
 
-            let maybe_etag = head_etag(&url).await.context("get_head_etag")?;
+            let maybe_etag = head_etag(url).await?;
 
             if let Some(etag) = maybe_etag {
                 // check if old matches current
@@ -67,26 +71,24 @@ where
     let use_cached = file_cached && etag_matches;
 
     Ok(if use_cached {
-        read_file(&file_path)
-            .await
-            .with_context(|| format!("read_file {:?}", file_path))?
+        read_file(&file_path).await?
     } else {
-        let (bytes, maybe_etag) = get(&url).await.with_context(|| format!("get {:?}", url))?;
+        let (bytes, maybe_etag) = get(url).await?;
 
         let maybe_bytes = validator(bytes)?;
 
         if let Ok(bytes) = maybe_bytes {
-            let mut file = File::create(&file_path)
-                .await
-                .with_context(|| format!("File::create {:?}", file_path))?;
-            file.write_all(&bytes).await?;
+            let mut file = File::create(&file_path).await.context(&file_path)?;
+            file.write_all(&bytes).await.context(&file_path)?;
 
             if use_etag {
                 if let Some(etag) = maybe_etag {
                     let mut file = File::create(&etag_file_path)
                         .await
-                        .with_context(|| format!("File::create {:?}", etag_file_path))?;
-                    file.write_all(etag.as_bytes()).await?;
+                        .context(&etag_file_path)?;
+                    file.write_all(etag.as_bytes())
+                        .await
+                        .context(&etag_file_path)?;
                 }
             }
 
@@ -117,7 +119,7 @@ async fn cache_file_path(url: &str, cache_path: &Path) -> Result<(PathBuf, PathB
         .map(|meta| meta.is_dir())
         .unwrap_or(false)
     {
-        fs::create_dir(&dir_path).await?;
+        fs::create_dir(&dir_path).await.context(&dir_path)?;
     }
 
     let file_path = dir_path.join(hex_filename);
@@ -127,10 +129,14 @@ async fn cache_file_path(url: &str, cache_path: &Path) -> Result<(PathBuf, PathB
 }
 
 async fn read_file(file_path: &Path) -> Result<Bytes> {
-    let mut file = OpenOptions::new().read(true).open(&file_path).await?;
+    let mut file = OpenOptions::new()
+        .read(true)
+        .open(&file_path)
+        .await
+        .context(file_path)?;
 
     let mut vec = Vec::new();
-    file.read_to_end(&mut vec).await?;
+    file.read_to_end(&mut vec).await.context(file_path)?;
 
     Ok(Bytes::from(vec))
 }

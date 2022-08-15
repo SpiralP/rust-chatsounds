@@ -3,11 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
 
-use crate::cache::utils::get;
+use crate::{cache::utils::get, error::Result};
 
 pub async fn download<F>(
     url: &str,
@@ -21,7 +20,7 @@ where
     if let Some(bytes) = fs_memory.get(url) {
         Ok(bytes.clone())
     } else {
-        let (bytes, maybe_etag) = get(&url).await.with_context(|| format!("get {:?}", url))?;
+        let (bytes, maybe_etag) = get(url).await?;
         fs_memory.insert(url.to_owned(), bytes.clone());
 
         Ok(bytes)

@@ -1,7 +1,11 @@
 mod cache;
+mod error;
 mod fetching;
 mod parsing;
 mod types;
+
+#[macro_use]
+extern crate quick_error;
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -10,13 +14,15 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{ensure, Context, Result};
+use quick_error::ResultExt;
 use rand::prelude::*;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 #[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
 
+pub use self::error::Error;
 use self::{
+    error::Result,
     parsing::{parse, ModifierTrait},
     types::{BoxSource, Chatsound, ChatsoundsSink},
 };
@@ -50,13 +56,12 @@ unsafe impl Sync for Chatsounds {}
 impl Chatsounds {
     pub fn new(#[cfg(feature = "fs")] cache_path: &Path) -> Result<Self> {
         #[cfg(feature = "fs")]
-        let cache_path = cache_path.canonicalize()?;
+        let cache_path = cache_path.canonicalize().context(cache_path)?;
         #[cfg(feature = "fs")]
-        ensure!(cache_path.is_dir(), "cache_path doesn't exist!");
+        ensure!(cache_path.is_dir(), Error::DirMissing(cache_path));
 
         #[cfg(feature = "playback")]
-        let (output_stream, output_stream_handle) =
-            OutputStream::try_default().context("OutputStream::try_default")?;
+        let (output_stream, output_stream_handle) = OutputStream::try_default()?;
 
         Ok(Self {
             #[cfg(feature = "fs")]
@@ -199,7 +204,7 @@ impl Chatsounds {
                 // TODO random hashed number passed in?
                 chatsounds
                     .choose(&mut rng)
-                    .context("choose(rng)")?
+                    .ok_or_else(|| Error::EmptyChoose(text.to_owned()))?
                     .to_owned()
             } else {
                 continue;
@@ -214,7 +219,7 @@ impl Chatsounds {
                 let bytes = chatsound.load(cache).await?;
 
                 let reader = BufReader::new(Cursor::new(bytes));
-                Box::new(Decoder::new(reader)?)
+                Box::new(Decoder::new(reader).context(&chatsound)?)
             };
             for modifier in parsed_chatsound.modifiers {
                 source = modifier.modify(source);
@@ -231,211 +236,5 @@ impl Chatsounds {
         for mut sink in self.sinks.drain(..) {
             sink.sleep_until_end();
         }
-    }
-}
-
-#[cfg(all(test, not(feature = "wasm"), feature = "fs"))]
-mod tests {
-    use futures::stream::{StreamExt, TryStreamExt};
-    use tokio::fs;
-
-    use super::*;
-
-    #[derive(Debug, Clone)]
-    enum Source {
-        Api(&'static str, &'static str),
-        Msgpack(&'static str, &'static str),
-    }
-
-    const SOURCES: &[Source] = &[
-        Source::Api("NotAwesome2/chatsounds", "sounds"),
-        Source::Api(
-            "Metastruct/garrysmod-chatsounds",
-            "sound/chatsounds/autoadd",
-        ),
-        Source::Api("PAC3-Server/chatsounds", "sounds/chatsounds"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "csgo"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "css"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "ep1"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "ep2"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "hl1"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "hl2"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "l4d"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "l4d2"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "portal"),
-        Source::Msgpack("PAC3-Server/chatsounds-valve-games", "tf2"),
-    ];
-
-    async fn setup() -> Chatsounds {
-        fs::create_dir_all("cache").await.unwrap();
-
-        let chatsounds = Arc::new(futures::lock::Mutex::new(
-            Chatsounds::new(&PathBuf::from("cache")).unwrap(),
-        ));
-
-        {
-            println!("fetching sources");
-            let chatsounds = chatsounds.clone();
-            futures::stream::iter(SOURCES)
-                .map(Ok)
-                .try_for_each_concurrent(4, move |source| {
-                    let source = source.to_owned();
-                    let chatsounds = chatsounds.clone();
-                    async move {
-                        let mut chatsounds = chatsounds.lock().await;
-                        match source {
-                            Source::Api(repo, repo_path) => {
-                                let data =
-                                    chatsounds.fetch_github_api(repo, repo_path, true).await?;
-                                chatsounds.load_github_api(repo, repo_path, data).unwrap();
-                            }
-
-                            Source::Msgpack(repo, repo_path) => {
-                                let data = chatsounds
-                                    .fetch_github_msgpack(repo, repo_path, true)
-                                    .await?;
-                                chatsounds
-                                    .load_github_msgpack(repo, repo_path, data)
-                                    .unwrap();
-                            }
-                        }
-                        Ok::<_, anyhow::Error>(())
-                    }
-                })
-                .await
-                .unwrap();
-
-            println!("done");
-        }
-        Arc::try_unwrap(chatsounds).unwrap().into_inner()
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn negative_pitch() {
-        let mut chatsounds = setup().await;
-
-        chatsounds
-            .play("helloh:speed(1) musicbox:pitch(-1)", thread_rng())
-            .await
-            .unwrap()
-            .sleep_until_end();
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn it_works() {
-        let mut chatsounds = setup().await;
-
-        chatsounds
-            .play(
-                "helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
-                thread_rng(),
-            )
-            .await
-            .unwrap()
-            .sleep_until_end();
-    }
-
-    #[tokio::test]
-    async fn test_autocomplete() {
-        let chatsounds = setup().await;
-
-        println!("searching {} keys", chatsounds.map_store.keys().count());
-        let search = "and thats what";
-
-        let t0 = std::time::Instant::now();
-        let positions = chatsounds.search(search);
-        let t1 = std::time::Instant::now();
-        println!("took {:?}", t1 - t0);
-
-        println!(
-            "{:#?}",
-            positions.iter().rev().take(10).rev().collect::<Vec<_>>()
-        );
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_spatial() {
-        let mut chatsounds = setup().await;
-
-        let mut emitter_pos = [2.0, 0.0, 0.0];
-        let left_ear_pos = [-1.0, 0.0, 0.0];
-        let right_ear_pos = [1.0, 0.0, 0.0];
-
-        println!("play");
-        let mut sink = chatsounds
-            .play_spatial(
-                "fuckbeesremastered",
-                thread_rng(),
-                emitter_pos,
-                left_ear_pos,
-                right_ear_pos,
-            )
-            .await
-            .unwrap();
-
-        // start in right headphone, move left
-        let mut i: f32 = 0.0;
-        while !sink.empty() {
-            emitter_pos[0] = i.cos() * 2.0;
-
-            sink.set_left_ear_position(left_ear_pos);
-            sink.set_right_ear_position(right_ear_pos);
-            sink.set_emitter_position(emitter_pos);
-
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            i += 0.01;
-        }
-
-        sink.sleep_until_end();
-
-        chatsounds.sleep_until_end();
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_mono_bug() {
-        let mut chatsounds = setup().await;
-
-        let sounds = chatsounds.get("mktheme").unwrap();
-        if let Some(chatsound) = sounds.get(0).cloned() {
-            println!("play");
-
-            let data = chatsound.load(&chatsounds.cache_path).await.unwrap();
-
-            let reader = BufReader::new(Cursor::new(data));
-            let source = Decoder::new(reader).unwrap();
-
-            let source = rodio::source::ChannelVolume::new(source, vec![0.2, 1.0]);
-            let sink = Sink::try_new(&chatsounds.output_stream_handle).unwrap();
-            sink.set_volume(0.1);
-            sink.append(source);
-
-            sink.sleep_until_end();
-        }
-
-        chatsounds.sleep_until_end();
-    }
-
-    #[tokio::test]
-    async fn test_get_samples() {
-        let mut chatsounds = setup().await;
-
-        let mut sources = chatsounds
-            .get_sources("mktheme", thread_rng())
-            .await
-            .unwrap();
-
-        let (sink, queue) = rodio::queue::queue(false);
-        for source in sources.drain(..) {
-            sink.append(source);
-        }
-
-        let queue: rodio::source::UniformSourceIterator<SourcesQueueOutput<i16>, i16> =
-            rodio::source::UniformSourceIterator::new(queue, 2, 44100);
-
-        println!("{} samples", queue.count());
     }
 }

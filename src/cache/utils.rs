@@ -1,6 +1,11 @@
-use anyhow::Result;
 use bytes::Bytes;
+use quick_error::ResultExt;
 use reqwest::Client;
+
+use crate::{
+    ensure,
+    error::{Error, Result},
+};
 
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
@@ -16,9 +21,15 @@ pub fn make_client() -> reqwest::Result<Client> {
     }
 }
 
-pub async fn get<S: AsRef<str>>(url: S) -> Result<(Bytes, Option<String>)> {
-    let client = make_client()?;
-    let response = client.get(url.as_ref()).send().await?;
+pub async fn get(url: &str) -> Result<(Bytes, Option<String>)> {
+    let client = make_client().map_err(Error::ReqwestMakeClient)?;
+    let response = client.get(url).send().await.context(url)?;
+
+    let status = response.status();
+    ensure!(
+        status.is_success(),
+        Error::ReqwestStatus(status, url.to_owned())
+    );
 
     let etag = response
         .headers()
@@ -26,14 +37,14 @@ pub async fn get<S: AsRef<str>>(url: S) -> Result<(Bytes, Option<String>)> {
         .and_then(|value| value.to_str().ok())
         .map(|value| value.to_string());
 
-    let bytes = response.bytes().await?;
+    let bytes = response.bytes().await.context(url)?;
 
     Ok((bytes, etag))
 }
 
-pub async fn head_etag<S: AsRef<str>>(url: S) -> Result<Option<String>> {
-    let client = make_client()?;
-    let response = client.head(url.as_ref()).send().await?;
+pub async fn head_etag(url: &str) -> Result<Option<String>> {
+    let client = make_client().map_err(Error::ReqwestMakeClient)?;
+    let response = client.head(url).send().await.context(url)?;
 
     let etag = response
         .headers()

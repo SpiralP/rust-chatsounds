@@ -1,10 +1,9 @@
 use std::{path::Path, sync::Arc};
 
-use anyhow::Result;
 use bytes::Bytes;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 
-use crate::cache::download;
+use crate::{cache::download, error::Result};
 
 pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
 
@@ -38,7 +37,7 @@ impl Chatsound {
         fs_memory: &mut std::collections::HashMap<String, Bytes>,
     ) -> Result<Bytes> {
         let url = self.get_url();
-        Ok(download(&url, fs_memory, false, |bytes| Ok(Ok(bytes))).await?)
+        download(&url, fs_memory, false, |bytes| Ok(Ok(bytes))).await
     }
 }
 
