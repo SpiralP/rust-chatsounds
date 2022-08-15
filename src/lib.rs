@@ -234,7 +234,7 @@ impl Chatsounds {
     }
 }
 
-#[cfg(all(test, not(feature = "wasm")))]
+#[cfg(all(test, not(feature = "wasm"), feature = "fs"))]
 mod tests {
     use futures::stream::{StreamExt, TryStreamExt};
     use tokio::fs;

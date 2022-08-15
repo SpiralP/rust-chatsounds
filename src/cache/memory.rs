@@ -18,7 +18,12 @@ pub async fn download<F>(
 where
     F: FnOnce(Bytes) -> Result<Result<Bytes>>,
 {
-    let (bytes, maybe_etag) = get(&url).await.with_context(|| format!("get {:?}", url))?;
+    if let Some(bytes) = fs_memory.get(url) {
+        Ok(bytes.clone())
+    } else {
+        let (bytes, maybe_etag) = get(&url).await.with_context(|| format!("get {:?}", url))?;
+        fs_memory.insert(url.to_owned(), bytes.clone());
 
-    Ok(bytes)
+        Ok(bytes)
+    }
 }
