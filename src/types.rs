@@ -31,11 +31,8 @@ impl Chatsound {
         download(&url, cache_path, false, |bytes| Ok(Ok(bytes))).await
     }
 
-    #[cfg(not(feature = "fs"))]
-    pub async fn load(
-        &self,
-        fs_memory: &mut std::collections::HashMap<String, Bytes>,
-    ) -> Result<Bytes> {
+    #[cfg(feature = "memory")]
+    pub async fn load(&self, fs_memory: crate::FsMemory) -> Result<Bytes> {
         let url = self.get_url();
         download(&url, fs_memory, false, |bytes| Ok(Ok(bytes))).await
     }

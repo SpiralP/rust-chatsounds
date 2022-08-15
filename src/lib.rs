@@ -14,18 +14,26 @@ use std::{
     sync::Arc,
 };
 
+pub use bytes::Bytes;
 use quick_error::ResultExt;
 use rand::prelude::*;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 #[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
 
-pub use self::error::Error;
+pub use self::{
+    error::Error,
+    fetching::{GitHubApiFileEntry, GitHubApiTrees, GitHubMsgpackEntries},
+    types::Chatsound,
+};
 use self::{
     error::Result,
     parsing::{parse, ModifierTrait},
-    types::{BoxSource, Chatsound, ChatsoundsSink},
+    types::{BoxSource, ChatsoundsSink},
 };
+
+#[cfg(feature = "memory")]
+type FsMemory = Arc<async_lock::RwLock<HashMap<String, Bytes>>>;
 
 pub struct Chatsounds {
     #[cfg(feature = "fs")]
@@ -45,8 +53,8 @@ pub struct Chatsounds {
     #[cfg(feature = "playback")]
     sinks: VecDeque<Box<dyn ChatsoundsSink>>,
 
-    #[cfg(not(feature = "fs"))]
-    fs_memory: HashMap<String, bytes::Bytes>,
+    #[cfg(feature = "memory")]
+    fs_memory: FsMemory,
 }
 
 // TODO ???
@@ -80,8 +88,8 @@ impl Chatsounds {
             #[cfg(feature = "playback")]
             sinks: VecDeque::new(),
 
-            #[cfg(not(feature = "fs"))]
-            fs_memory: HashMap::new(),
+            #[cfg(feature = "memory")]
+            fs_memory: Default::default(),
         })
     }
 
@@ -213,8 +221,8 @@ impl Chatsounds {
             let mut source: BoxSource = {
                 #[cfg(feature = "fs")]
                 let cache = &self.cache_path;
-                #[cfg(not(feature = "fs"))]
-                let cache = &mut self.fs_memory;
+                #[cfg(feature = "memory")]
+                let cache = self.fs_memory.clone();
 
                 let bytes = chatsound.load(cache).await?;
 

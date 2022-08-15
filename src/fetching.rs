@@ -28,7 +28,7 @@ pub type GitHubMsgpackEntries = Vec<Vec<String>>;
 
 impl Chatsounds {
     pub async fn fetch_github_api(
-        &mut self,
+        &self,
         repo: &str,
         _repo_path: &str,
         use_etag: bool,
@@ -40,8 +40,8 @@ impl Chatsounds {
 
         #[cfg(feature = "fs")]
         let cache = &self.cache_path;
-        #[cfg(not(feature = "fs"))]
-        let cache = &mut self.fs_memory;
+        #[cfg(feature = "memory")]
+        let cache = self.fs_memory.clone();
 
         let bytes = download(&api_url, cache, use_etag, |bytes| {
             #[derive(Deserialize)]
@@ -103,7 +103,7 @@ impl Chatsounds {
     }
 
     pub async fn fetch_github_msgpack(
-        &mut self,
+        &self,
         repo: &str,
         repo_path: &str,
         use_etag: bool,
@@ -115,8 +115,8 @@ impl Chatsounds {
 
         #[cfg(feature = "fs")]
         let cache = &self.cache_path;
-        #[cfg(not(feature = "fs"))]
-        let cache = &mut self.fs_memory;
+        #[cfg(feature = "memory")]
+        let cache = self.fs_memory.clone();
 
         // these raw links don't have a rate limit so we won't cache bad results
         let bytes = download(&msgpack_url, cache, use_etag, |bytes| Ok(Ok(bytes))).await?;
