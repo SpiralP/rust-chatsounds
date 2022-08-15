@@ -19,7 +19,7 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
-    fn get_url(&self) -> String {
+    pub fn get_url(&self) -> String {
         format!(
             "https://raw.githubusercontent.com/{}/HEAD/{}/{}",
             self.repo, self.repo_path, self.sound_path
