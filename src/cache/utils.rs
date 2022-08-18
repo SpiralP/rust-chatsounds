@@ -65,6 +65,7 @@ pub async fn get(url: &str) -> Result<(Bytes, Option<HeaderValue>)> {
     }
 }
 
+#[cfg(test)]
 #[tokio::test]
 async fn test_get_not_changed() {
     // got 304 without passing etag (ie we don't have anything cached)

@@ -8,15 +8,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{cache::utils::get, error::Result};
 
-pub async fn download<F>(
-    url: &str,
-    fs_memory: crate::FsMemory,
-    use_etag: bool,
-    validator: F,
-) -> Result<Bytes>
-where
-    F: FnOnce(Bytes) -> Result<Result<Bytes>>,
-{
+pub async fn download(url: &str, fs_memory: crate::FsMemory, _use_etag: bool) -> Result<Bytes> {
     {
         let fs_memory = fs_memory.read().await;
         if let Some(bytes) = fs_memory.get(url) {
