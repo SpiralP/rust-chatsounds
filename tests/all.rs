@@ -57,14 +57,12 @@ async fn setup() -> (Chatsounds, PathBuf) {
                     let mut chatsounds = chatsounds.lock().await;
                     match source {
                         Source::Api(repo, repo_path) => {
-                            let data = chatsounds.fetch_github_api(repo, repo_path, true).await?;
+                            let data = chatsounds.fetch_github_api(repo, repo_path).await?;
                             chatsounds.load_github_api(repo, repo_path, data).unwrap();
                         }
 
                         Source::Msgpack(repo, repo_path) => {
-                            let data = chatsounds
-                                .fetch_github_msgpack(repo, repo_path, true)
-                                .await?;
+                            let data = chatsounds.fetch_github_msgpack(repo, repo_path).await?;
                             chatsounds
                                 .load_github_msgpack(repo, repo_path, data)
                                 .unwrap();

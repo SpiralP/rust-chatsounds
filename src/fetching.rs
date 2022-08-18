@@ -4,13 +4,7 @@ use quick_error::ResultExt;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 use serde::Deserialize;
 
-use crate::{
-    bail,
-    cache::download,
-    error::{Error, Result},
-    types::Chatsound,
-    Chatsounds,
-};
+use crate::{cache::download, error::Result, types::Chatsound, Chatsounds};
 
 #[derive(Deserialize)]
 pub struct GitHubApiFileEntry {
@@ -27,12 +21,7 @@ pub struct GitHubApiTrees {
 pub type GitHubMsgpackEntries = Vec<Vec<String>>;
 
 impl Chatsounds {
-    pub async fn fetch_github_api(
-        &self,
-        repo: &str,
-        _repo_path: &str,
-        use_etag: bool,
-    ) -> Result<GitHubApiTrees> {
+    pub async fn fetch_github_api(&self, repo: &str, _repo_path: &str) -> Result<GitHubApiTrees> {
         let api_url = format!(
             "https://api.github.com/repos/{}/git/trees/HEAD?recursive=1",
             repo
@@ -43,25 +32,7 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
-        let bytes = download(&api_url, cache, use_etag, |bytes| {
-            #[derive(Deserialize)]
-            struct GitHubError {
-                message: String,
-            }
-
-            if let Ok(err) = serde_json::from_slice::<GitHubError>(&bytes) {
-                let error = Error::GitHub(err.message.to_owned(), api_url.to_owned());
-                // if we're rate limited, don't remove cached file
-                if err.message.starts_with("API rate limit exceeded") {
-                    Ok(Err(error))
-                } else {
-                    bail!(error);
-                }
-            } else {
-                Ok(Ok(bytes))
-            }
-        })
-        .await?;
+        let bytes = download(&api_url, cache, true).await?;
 
         let trees: GitHubApiTrees = serde_json::from_slice(&bytes).context(&api_url)?;
 
@@ -106,7 +77,6 @@ impl Chatsounds {
         &self,
         repo: &str,
         repo_path: &str,
-        use_etag: bool,
     ) -> Result<GitHubMsgpackEntries> {
         let msgpack_url = format!(
             "https://raw.githubusercontent.com/{}/HEAD/{}/list.msgpack",
@@ -118,8 +88,7 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
-        // these raw links don't have a rate limit so we won't cache bad results
-        let bytes = download(&msgpack_url, cache, use_etag, |bytes| Ok(Ok(bytes))).await?;
+        let bytes = download(&msgpack_url, cache, true).await?;
         let entries: GitHubMsgpackEntries =
             rmp_serde::decode::from_slice(&bytes).context(&msgpack_url)?;
 

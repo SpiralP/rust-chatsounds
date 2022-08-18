@@ -51,6 +51,11 @@ quick_error! {
             display("reqwest http status Error: {:?} {:?}", status, url)
         }
 
+        InvalidHeaderValue(err: reqwest::header::InvalidHeaderValue, url: String) {
+            context(url: AsRef<str>, err: reqwest::header::InvalidHeaderValue)
+                -> (err, url.as_ref().to_owned())
+        }
+
         Nom(err: String, text: String) {
             display("nom Error for {:?}: {:?}", text, err)
         }
