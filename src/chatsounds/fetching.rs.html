@@ -120,50 +120,13 @@
 <span id="120">120</span>
 <span id="121">121</span>
 <span id="122">122</span>
-<span id="123">123</span>
-<span id="124">124</span>
-<span id="125">125</span>
-<span id="126">126</span>
-<span id="127">127</span>
-<span id="128">128</span>
-<span id="129">129</span>
-<span id="130">130</span>
-<span id="131">131</span>
-<span id="132">132</span>
-<span id="133">133</span>
-<span id="134">134</span>
-<span id="135">135</span>
-<span id="136">136</span>
-<span id="137">137</span>
-<span id="138">138</span>
-<span id="139">139</span>
-<span id="140">140</span>
-<span id="141">141</span>
-<span id="142">142</span>
-<span id="143">143</span>
-<span id="144">144</span>
-<span id="145">145</span>
-<span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::{Component, Path};
 
 <span class="kw">use </span>quick_error::ResultExt;
 <span class="kw">pub use </span>rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 <span class="kw">use </span>serde::Deserialize;
 
-<span class="kw">use crate</span>::{
-    bail,
-    cache::download,
-    error::{Error, <span class="prelude-ty">Result</span>},
-    types::Chatsound,
-    Chatsounds,
-};
+<span class="kw">use crate</span>::{cache::download, error::Result, types::Chatsound, Chatsounds};
 
 <span class="attribute">#[derive(Deserialize)]</span>
 <span class="kw">pub struct </span>GitHubApiFileEntry {
@@ -180,12 +143,7 @@
 <span class="kw">pub type </span>GitHubMsgpackEntries = Vec&lt;Vec&lt;String&gt;&gt;;
 
 <span class="kw">impl </span>Chatsounds {
-    <span class="kw">pub async fn </span>fetch_github_api(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        repo: <span class="kw-2">&amp;</span>str,
-        _repo_path: <span class="kw-2">&amp;</span>str,
-        use_etag: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;GitHubApiTrees&gt; {
+    <span class="kw">pub async fn </span>fetch_github_api(<span class="kw-2">&amp;</span><span class="self">self</span>, repo: <span class="kw-2">&amp;</span>str, _repo_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;GitHubApiTrees&gt; {
         <span class="kw">let </span>api_url = <span class="macro">format!</span>(
             <span class="string">&quot;https://api.github.com/repos/{}/git/trees/HEAD?recursive=1&quot;</span>,
             repo
@@ -196,25 +154,7 @@
         <span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
         <span class="kw">let </span>cache = <span class="self">self</span>.fs_memory.clone();
 
-        <span class="kw">let </span>bytes = download(<span class="kw-2">&amp;</span>api_url, cache, use_etag, |bytes| {
-            <span class="attribute">#[derive(Deserialize)]</span>
-            <span class="kw">struct </span>GitHubError {
-                message: String,
-            }
-
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(err) = serde_json::from_slice::&lt;GitHubError&gt;(<span class="kw-2">&amp;</span>bytes) {
-                <span class="kw">let </span>error = Error::GitHub(err.message.to_owned(), api_url.to_owned());
-                <span class="comment">// if we&#39;re rate limited, don&#39;t remove cached file
-                </span><span class="kw">if </span>err.message.starts_with(<span class="string">&quot;API rate limit exceeded&quot;</span>) {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(error))
-                } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(error);
-                }
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(bytes))
-            }
-        })
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>bytes = download(<span class="kw-2">&amp;</span>api_url, cache, <span class="bool-val">true</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>trees: GitHubApiTrees = serde_json::from_slice(<span class="kw-2">&amp;</span>bytes).context(<span class="kw-2">&amp;</span>api_url)<span class="question-mark">?</span>;
 
@@ -259,7 +199,6 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         repo: <span class="kw-2">&amp;</span>str,
         repo_path: <span class="kw-2">&amp;</span>str,
-        use_etag: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;GitHubMsgpackEntries&gt; {
         <span class="kw">let </span>msgpack_url = <span class="macro">format!</span>(
             <span class="string">&quot;https://raw.githubusercontent.com/{}/HEAD/{}/list.msgpack&quot;</span>,
@@ -271,8 +210,7 @@
         <span class="attribute">#[cfg(feature = <span class="string">&quot;memory&quot;</span>)]</span>
         <span class="kw">let </span>cache = <span class="self">self</span>.fs_memory.clone();
 
-        <span class="comment">// these raw links don&#39;t have a rate limit so we won&#39;t cache bad results
-        </span><span class="kw">let </span>bytes = download(<span class="kw-2">&amp;</span>msgpack_url, cache, use_etag, |bytes| <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(bytes))).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>bytes = download(<span class="kw-2">&amp;</span>msgpack_url, cache, <span class="bool-val">true</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>entries: GitHubMsgpackEntries =
             rmp_serde::decode::from_slice(<span class="kw-2">&amp;</span>bytes).context(<span class="kw-2">&amp;</span>msgpack_url)<span class="question-mark">?</span>;
 
@@ -305,4 +243,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (40336865f 2022-08-15)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="chatsounds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (9c20b2a8c 2022-08-17)" ></div></body></html>
