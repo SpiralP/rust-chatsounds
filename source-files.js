@@ -7,7 +7,7 @@ var sourcesIndex = JSON.parse('{\
 "byteorder":["",[],["io.rs","lib.rs"]],\
 "bytes":["",[["buf",[],["buf_impl.rs","buf_mut.rs","chain.rs","iter.rs","limit.rs","mod.rs","reader.rs","take.rs","uninit_slice.rs","vec_deque.rs","writer.rs"]],["fmt",[],["debug.rs","hex.rs","mod.rs"]]],["bytes.rs","bytes_mut.rs","lib.rs","loom.rs"]],\
 "cfg_if":["",[],["lib.rs"]],\
-"chatsounds":["",[["cache",[],["fs.rs","mod.rs","utils.rs"]],["parsing",[["modifiers",[],["echo.rs","mod.rs","pitch.rs","volume.rs"]]],["mod.rs"]]],["error.rs","fetching.rs","lib.rs","types.rs"]],\
+"chatsounds":["",[["cache",[],["fs.rs","mod.rs","utils.rs"]],["parsing",[["modifiers",[],["echo.rs","mod.rs","pitch.rs","select.rs","volume.rs"]]],["mod.rs"]]],["error.rs","fetching.rs","lib.rs","types.rs"]],\
 "cpal":["",[["host",[["alsa",[],["enumerate.rs","mod.rs"]],["null",[],["mod.rs"]]],["mod.rs"]],["platform",[],["mod.rs"]]],["error.rs","lib.rs","samples_formats.rs","traits.rs"]],\
 "cpufeatures":["",[],["lib.rs","x86.rs"]],\
 "crossbeam_channel":["",[["flavors",[],["array.rs","at.rs","list.rs","mod.rs","never.rs","tick.rs","zero.rs"]]],["channel.rs","context.rs","counter.rs","err.rs","lib.rs","select.rs","select_macro.rs","utils.rs","waker.rs"]],\
