@@ -120,6 +120,23 @@
 <span id="120">120</span>
 <span id="121">121</span>
 <span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::{Component, Path};
 
 <span class="kw">use </span>quick_error::ResultExt;
@@ -179,15 +196,22 @@
             <span class="kw">if let </span><span class="prelude-val">Some</span>(Component::Normal(s)) = path.components().nth(<span class="number">1</span>) {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(sentence) = Path::new(<span class="kw-2">&amp;</span>s).file_stem() {
                     <span class="kw">let </span>sentence = sentence.to_string_lossy().to_string();
-                    <span class="kw">let </span>vec = <span class="self">self
-                        </span>.map_store
-                        .entry(sentence.to_string())
-                        .or_insert_with(Vec::new);
-                    vec.push(Chatsound {
+                    <span class="kw">let </span>vec = <span class="self">self</span>.map_store.entry(sentence).or_insert_with(Vec::new);
+                    <span class="kw">let </span>chatsound = Chatsound {
                         repo: repo.to_string(),
                         repo_path: repo_path.to_string(),
                         sound_path,
-                    });
+                    };
+
+                    <span class="kw">let </span>url = chatsound.get_url();
+                    <span class="kw">match </span>vec.binary_search_by(|c| c.get_url().cmp(<span class="kw-2">&amp;</span>url)) {
+                        <span class="prelude-val">Ok</span>(_pos) =&gt; {
+                            <span class="comment">// already exists, don&#39;t add again
+                        </span>}
+                        <span class="prelude-val">Err</span>(pos) =&gt; {
+                            vec.insert(pos, chatsound);
+                        }
+                    }
                 }
             }
         }
@@ -232,11 +256,21 @@
                 .entry(sentence.to_string())
                 .or_insert_with(Vec::new);
 
-            vec.push(Chatsound {
+            <span class="kw">let </span>chatsound = Chatsound {
                 repo: repo.to_string(),
                 repo_path: repo_path.to_string(),
                 sound_path,
-            });
+            };
+
+            <span class="kw">let </span>url = chatsound.get_url();
+            <span class="kw">match </span>vec.binary_search_by(|c| c.get_url().cmp(<span class="kw-2">&amp;</span>url)) {
+                <span class="prelude-val">Ok</span>(_pos) =&gt; {
+                    <span class="comment">// already exists, don&#39;t add again
+                </span>}
+                <span class="prelude-val">Err</span>(pos) =&gt; {
+                    vec.insert(pos, chatsound);
+                }
+            }
         }
 
         <span class="prelude-val">Ok</span>(())
