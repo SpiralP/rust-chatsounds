@@ -1,9 +1,8 @@
 mod echo;
 mod pitch;
+mod select;
 mod volume;
 
-pub use self::{echo::EchoModifier, pitch::PitchModifier, volume::VolumeModifier};
-use crate::BoxSource;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -13,12 +12,19 @@ use nom::{
     IResult,
 };
 
+pub use self::{
+    echo::EchoModifier, pitch::PitchModifier, select::SelectModifier, volume::VolumeModifier,
+};
+use crate::BoxSource;
+
 pub trait ModifierTrait: Send + std::fmt::Debug + PartialEq {
     fn parse(input: &str) -> IResult<&str, Self>
     where
         Self: Sized;
 
-    fn modify(&self, source: BoxSource) -> BoxSource;
+    fn modify(&self, source: BoxSource) -> BoxSource {
+        source
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +32,7 @@ pub enum Modifier {
     Pitch(PitchModifier),
     Volume(VolumeModifier),
     Echo(EchoModifier),
+    Select(SelectModifier),
 }
 
 impl ModifierTrait for Modifier {
@@ -34,6 +41,7 @@ impl ModifierTrait for Modifier {
             map(PitchModifier::parse, Modifier::Pitch),
             map(VolumeModifier::parse, Modifier::Volume),
             map(EchoModifier::parse, Modifier::Echo),
+            map(SelectModifier::parse, Modifier::Select),
         ))(input)
     }
 
@@ -42,6 +50,7 @@ impl ModifierTrait for Modifier {
             Modifier::Pitch(modifier) => modifier.modify(source),
             Modifier::Volume(modifier) => modifier.modify(source),
             Modifier::Echo(modifier) => modifier.modify(source),
+            Modifier::Select(modifier) => modifier.modify(source),
         }
     }
 }

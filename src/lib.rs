@@ -210,8 +210,8 @@ impl Chatsounds {
         for parsed_chatsound in parsed_chatsounds {
             let chatsound = if let Some(chatsounds) = self.get(&parsed_chatsound.sentence) {
                 // TODO random hashed number passed in?
-                chatsounds
-                    .choose(&mut rng)
+                parsed_chatsound
+                    .choose(chatsounds, &mut rng)
                     .ok_or_else(|| Error::EmptyChoose(text.to_owned()))?
                     .to_owned()
             } else {

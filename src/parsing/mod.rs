@@ -6,15 +6,37 @@ use nom::{
     multi::{many0, many1},
     IResult,
 };
+use rand::{seq::SliceRandom, RngCore};
 
 pub use self::modifiers::ModifierTrait;
-use self::modifiers::{parse_modifier, Modifier};
-use crate::error::{Error, Result};
+use self::modifiers::{parse_modifier, Modifier, SelectModifier};
+use crate::{
+    error::{Error, Result},
+    Chatsound,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct ParsedChatsound {
     pub sentence: String,
     pub modifiers: Vec<Modifier>,
+}
+
+impl ParsedChatsound {
+    pub fn choose<'a, R: RngCore>(
+        &self,
+        chatsounds: &'a Vec<Chatsound>,
+        mut rng: R,
+    ) -> Option<&'a Chatsound> {
+        let modifier = self
+            .modifiers
+            .iter()
+            .find(|m| matches!(m, Modifier::Select(_)));
+        if let Some(Modifier::Select(SelectModifier { select })) = modifier {
+            chatsounds.get(*select as usize)
+        } else {
+            chatsounds.choose(&mut rng)
+        }
+    }
 }
 
 fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
@@ -82,6 +104,13 @@ fn test_parser() {
         vec![ParsedChatsound {
             sentence: "hello".to_string(),
             modifiers: vec![]
+        }]
+    );
+    assert_eq!(
+        parse("hello:select(2)").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "hello".to_string(),
+            modifiers: vec![Modifier::Select(SelectModifier { select: 1 })]
         }]
     );
 
