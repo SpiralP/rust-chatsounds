@@ -19,11 +19,6 @@ enum Source {
 }
 
 const SOURCES: &[Source] = &[
-    Source::Api("NotAwesome2/chatsounds", "sounds"),
-    Source::Api(
-        "Metastruct/garrysmod-chatsounds",
-        "sound/chatsounds/autoadd",
-    ),
     Source::Api("PAC3-Server/chatsounds", "sounds/chatsounds"),
     Source::Msgpack("PAC3-Server/chatsounds-valve-games", "csgo"),
     Source::Msgpack("PAC3-Server/chatsounds-valve-games", "css"),
@@ -35,6 +30,11 @@ const SOURCES: &[Source] = &[
     Source::Msgpack("PAC3-Server/chatsounds-valve-games", "l4d2"),
     Source::Msgpack("PAC3-Server/chatsounds-valve-games", "portal"),
     Source::Msgpack("PAC3-Server/chatsounds-valve-games", "tf2"),
+    Source::Api("NotAwesome2/chatsounds", "sounds"),
+    Source::Api(
+        "Metastruct/garrysmod-chatsounds",
+        "sound/chatsounds/autoadd",
+    ),
 ];
 
 async fn setup() -> (Chatsounds, PathBuf) {
@@ -122,6 +122,18 @@ async fn test_search() {
     println!(
         "{:#?}",
         positions.iter().rev().take(10).rev().collect::<Vec<_>>()
+    );
+}
+
+#[tokio::test]
+async fn test_get() {
+    let (chatsounds, _) = setup().await;
+
+    let chatsounds = chatsounds.get("a").unwrap();
+
+    println!(
+        "{:#?}",
+        chatsounds.iter().map(|c| c.get_url()).collect::<Vec<_>>()
     );
 }
 

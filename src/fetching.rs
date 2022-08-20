@@ -57,15 +57,22 @@ impl Chatsounds {
             if let Some(Component::Normal(s)) = path.components().nth(1) {
                 if let Some(sentence) = Path::new(&s).file_stem() {
                     let sentence = sentence.to_string_lossy().to_string();
-                    let vec = self
-                        .map_store
-                        .entry(sentence.to_string())
-                        .or_insert_with(Vec::new);
-                    vec.push(Chatsound {
+                    let vec = self.map_store.entry(sentence).or_insert_with(Vec::new);
+                    let chatsound = Chatsound {
                         repo: repo.to_string(),
                         repo_path: repo_path.to_string(),
                         sound_path,
-                    });
+                    };
+
+                    let url = chatsound.get_url();
+                    match vec.binary_search_by(|c| c.get_url().cmp(&url)) {
+                        Ok(_pos) => {
+                            // already exists, don't add again
+                        }
+                        Err(pos) => {
+                            vec.insert(pos, chatsound);
+                        }
+                    }
                 }
             }
         }
@@ -110,11 +117,21 @@ impl Chatsounds {
                 .entry(sentence.to_string())
                 .or_insert_with(Vec::new);
 
-            vec.push(Chatsound {
+            let chatsound = Chatsound {
                 repo: repo.to_string(),
                 repo_path: repo_path.to_string(),
                 sound_path,
-            });
+            };
+
+            let url = chatsound.get_url();
+            match vec.binary_search_by(|c| c.get_url().cmp(&url)) {
+                Ok(_pos) => {
+                    // already exists, don't add again
+                }
+                Err(pos) => {
+                    vec.insert(pos, chatsound);
+                }
+            }
         }
 
         Ok(())
