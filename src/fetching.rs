@@ -46,7 +46,7 @@ impl Chatsounds {
         mut trees: GitHubApiTrees,
     ) -> Result<()> {
         for entry in trees.tree.iter_mut() {
-            if entry.r#type != "blob" || !entry.path.starts_with(&repo_path) {
+            if entry.r#type != "blob" || !entry.path.starts_with(repo_path) {
                 continue;
             }
 
