@@ -57,7 +57,7 @@ impl Chatsounds {
             if let Some(Component::Normal(s)) = path.components().nth(1) {
                 if let Some(sentence) = Path::new(&s).file_stem() {
                     let sentence = sentence.to_string_lossy().to_string();
-                    let vec = self.map_store.entry(sentence).or_insert_with(Vec::new);
+                    let vec = self.map_store.entry(sentence).or_default();
                     let chatsound = Chatsound {
                         repo: repo.to_string(),
                         repo_path: repo_path.to_string(),
@@ -112,10 +112,7 @@ impl Chatsounds {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
             let sentence = entry[1].clone();
             let sound_path = entry[2].clone();
-            let vec = self
-                .map_store
-                .entry(sentence.to_string())
-                .or_insert_with(Vec::new);
+            let vec = self.map_store.entry(sentence.to_string()).or_default();
 
             let chatsound = Chatsound {
                 repo: repo.to_string(),
