@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.55/src/hash.rs`."><title>hash.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../openssl/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.64/src/hash.rs`."><title>hash.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../openssl/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -808,8 +810,8 @@
 //! # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 //! use openssl::hash::{hash, MessageDigest};
 //!
-//! let data = b&quot;\x42\xF4\x97\xE0&quot;;
-//! let spec = b&quot;\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2&quot;;
+//! let data = b"\x42\xF4\x97\xE0";
+//! let spec = b"\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2";
 //! let res = hash(MessageDigest::md5(), data)?;
 //! assert_eq!(&amp;*res, spec);
 //! # Ok(()) }
@@ -822,11 +824,11 @@
 //!
 //! # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 //! let mut hasher = Hasher::new(MessageDigest::sha256())?;
-//! hasher.update(b&quot;test&quot;)?;
-//! hasher.update(b&quot;this&quot;)?;
+//! hasher.update(b"test")?;
+//! hasher.update(b"this")?;
 //! let digest: &amp;[u8] = &amp;hasher.finish()?;
 //!
-//! let expected = hex::decode(&quot;9740e652ab5b4acd997a7cca13d6696702ccb2d441cca59fc6e285127f28cfe6&quot;)?;
+//! let expected = hex::decode("9740e652ab5b4acd997a7cca13d6696702ccb2d441cca59fc6e285127f28cfe6")?;
 //! assert_eq!(digest, expected);
 //! # Ok(()) }
 //! ```
@@ -842,8 +844,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::nid::Nid;
 <span class="kw">use crate</span>::{cvt, cvt_p};
 
-<span class="macro">cfg_if! </span>{
-    <span class="kw">if </span><span class="attr">#[cfg(any(ossl110, boringssl))] </span>{
+<span class="macro">cfg_if!</span> {
+    <span class="kw">if </span><span class="attr">#[cfg(any(ossl110, boringssl, libressl382))] </span>{
         <span class="kw">use </span>ffi::{EVP_MD_CTX_free, EVP_MD_CTX_new};
     } <span class="kw">else </span>{
         <span class="kw">use </span>ffi::{EVP_MD_CTX_create <span class="kw">as </span>EVP_MD_CTX_new, EVP_MD_CTX_destroy <span class="kw">as </span>EVP_MD_CTX_free};
@@ -927,22 +929,22 @@
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sha512()) }
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     </span><span class="kw">pub fn </span>sha3_224() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sha3_224()) }
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     </span><span class="kw">pub fn </span>sha3_256() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sha3_256()) }
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     </span><span class="kw">pub fn </span>sha3_384() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sha3_384()) }
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     </span><span class="kw">pub fn </span>sha3_512() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sha3_512()) }
     }
@@ -957,12 +959,12 @@
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_shake256()) }
     }
 
-    <span class="attr">#[cfg(not(any(boringssl, osslconf = <span class="string">&quot;OPENSSL_NO_RMD160&quot;</span>)))]
+    <span class="attr">#[cfg(not(osslconf = <span class="string">"OPENSSL_NO_RMD160"</span>))]
     </span><span class="kw">pub fn </span>ripemd160() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_ripemd160()) }
     }
 
-    <span class="attr">#[cfg(all(any(ossl111, libressl291), not(osslconf = <span class="string">&quot;OPENSSL_NO_SM3&quot;</span>)))]
+    <span class="attr">#[cfg(all(any(ossl111, libressl291), not(osslconf = <span class="string">"OPENSSL_NO_SM3"</span>)))]
     </span><span class="kw">pub fn </span>sm3() -&gt; MessageDigest {
         <span class="kw">unsafe </span>{ MessageDigest(ffi::EVP_sm3()) }
     }
@@ -1011,8 +1013,8 @@
 /// use openssl::hash::{Hasher, MessageDigest};
 ///
 /// # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-/// let data = [b&quot;\x42\xF4&quot;, b&quot;\x97\xE0&quot;];
-/// let spec = b&quot;\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2&quot;;
+/// let data = [b"\x42\xF4", b"\x97\xE0"];
+/// let spec = b"\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2";
 /// let mut h = Hasher::new(MessageDigest::md5())?;
 /// h.update(data[0])?;
 /// h.update(data[1])?;
@@ -1023,9 +1025,9 @@
 ///
 /// # Warning
 ///
-/// Don&#39;t actually use MD5 and SHA-1 hashes, they&#39;re not secure anymore.
+/// Don't actually use MD5 and SHA-1 hashes, they're not secure anymore.
 ///
-/// Don&#39;t ever hash passwords, use the functions in the `pkcs5` module or bcrypt/scrypt instead.
+/// Don't ever hash passwords, use the functions in the `pkcs5` module or bcrypt/scrypt instead.
 ///
 /// For extendable output functions (XOFs, i.e. SHAKE128/SHAKE256),
 /// you must use [`Hasher::finish_xof`] instead of [`Hasher::finish`]
@@ -1214,7 +1216,7 @@
 }
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>DigestBytes {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         fmt::Debug::fmt(<span class="kw-2">&amp;**</span><span class="self">self</span>, fmt)
     }
 }
@@ -1227,8 +1229,8 @@
 /// # fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 /// use openssl::hash::{hash, MessageDigest};
 ///
-/// let data = b&quot;\x42\xF4\x97\xE0&quot;;
-/// let spec = b&quot;\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2&quot;;
+/// let data = b"\x42\xF4\x97\xE0";
+/// let spec = b"\x7c\x43\x0f\x17\x8a\xef\xdf\x14\x87\xfe\xe7\x14\x4e\x96\x41\xe2";
 /// let res = hash(MessageDigest::md5(), data)?;
 /// assert_eq!(&amp;*res, spec);
 /// # Ok(()) }
@@ -1246,8 +1248,8 @@
 /// ```
 /// use openssl::hash::{hash_xof, MessageDigest};
 ///
-/// let data = b&quot;\x41\x6c\x6c\x20\x79\x6f\x75\x72\x20\x62\x61\x73\x65\x20\x61\x72\x65\x20\x62\x65\x6c\x6f\x6e\x67\x20\x74\x6f\x20\x75\x73&quot;;
-/// let spec = b&quot;\x49\xd0\x69\x7f\xf5\x08\x11\x1d\x8b\x84\xf1\x5e\x46\xda\xf1\x35&quot;;
+/// let data = b"\x41\x6c\x6c\x20\x79\x6f\x75\x72\x20\x62\x61\x73\x65\x20\x61\x72\x65\x20\x62\x65\x6c\x6f\x6e\x67\x20\x74\x6f\x20\x75\x73";
+/// let spec = b"\x49\xd0\x69\x7f\xf5\x08\x11\x1d\x8b\x84\xf1\x5e\x46\xda\xf1\x35";
 /// let mut buf = vec![0; 16];
 /// hash_xof(MessageDigest::shake_128(), data, buf.as_mut_slice()).unwrap();
 /// assert_eq!(buf, spec);
@@ -1293,21 +1295,21 @@
 
     <span class="comment">// Test vectors from http://www.nsrl.nist.gov/testdata/
     </span><span class="kw">const </span>MD5_TESTS: [(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str); <span class="number">13</span>] = [
-        (<span class="string">&quot;&quot;</span>, <span class="string">&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</span>),
-        (<span class="string">&quot;7F&quot;</span>, <span class="string">&quot;83acb6e67e50e31db6ed341dd2de1595&quot;</span>),
-        (<span class="string">&quot;EC9C&quot;</span>, <span class="string">&quot;0b07f0d4ca797d8ac58874f887cb0b68&quot;</span>),
-        (<span class="string">&quot;FEE57A&quot;</span>, <span class="string">&quot;e0d583171eb06d56198fc0ef22173907&quot;</span>),
-        (<span class="string">&quot;42F497E0&quot;</span>, <span class="string">&quot;7c430f178aefdf1487fee7144e9641e2&quot;</span>),
-        (<span class="string">&quot;C53B777F1C&quot;</span>, <span class="string">&quot;75ef141d64cb37ec423da2d9d440c925&quot;</span>),
-        (<span class="string">&quot;89D5B576327B&quot;</span>, <span class="string">&quot;ebbaf15eb0ed784c6faa9dc32831bf33&quot;</span>),
-        (<span class="string">&quot;5D4CCE781EB190&quot;</span>, <span class="string">&quot;ce175c4b08172019f05e6b5279889f2c&quot;</span>),
-        (<span class="string">&quot;81901FE94932D7B9&quot;</span>, <span class="string">&quot;cd4d2f62b8cdb3a0cf968a735a239281&quot;</span>),
-        (<span class="string">&quot;C9FFDEE7788EFB4EC9&quot;</span>, <span class="string">&quot;e0841a231ab698db30c6c0f3f246c014&quot;</span>),
-        (<span class="string">&quot;66AC4B7EBA95E53DC10B&quot;</span>, <span class="string">&quot;a3b3cea71910d9af56742aa0bb2fe329&quot;</span>),
-        (<span class="string">&quot;A510CD18F7A56852EB0319&quot;</span>, <span class="string">&quot;577e216843dd11573574d3fb209b97d8&quot;</span>),
+        (<span class="string">""</span>, <span class="string">"d41d8cd98f00b204e9800998ecf8427e"</span>),
+        (<span class="string">"7F"</span>, <span class="string">"83acb6e67e50e31db6ed341dd2de1595"</span>),
+        (<span class="string">"EC9C"</span>, <span class="string">"0b07f0d4ca797d8ac58874f887cb0b68"</span>),
+        (<span class="string">"FEE57A"</span>, <span class="string">"e0d583171eb06d56198fc0ef22173907"</span>),
+        (<span class="string">"42F497E0"</span>, <span class="string">"7c430f178aefdf1487fee7144e9641e2"</span>),
+        (<span class="string">"C53B777F1C"</span>, <span class="string">"75ef141d64cb37ec423da2d9d440c925"</span>),
+        (<span class="string">"89D5B576327B"</span>, <span class="string">"ebbaf15eb0ed784c6faa9dc32831bf33"</span>),
+        (<span class="string">"5D4CCE781EB190"</span>, <span class="string">"ce175c4b08172019f05e6b5279889f2c"</span>),
+        (<span class="string">"81901FE94932D7B9"</span>, <span class="string">"cd4d2f62b8cdb3a0cf968a735a239281"</span>),
+        (<span class="string">"C9FFDEE7788EFB4EC9"</span>, <span class="string">"e0841a231ab698db30c6c0f3f246c014"</span>),
+        (<span class="string">"66AC4B7EBA95E53DC10B"</span>, <span class="string">"a3b3cea71910d9af56742aa0bb2fe329"</span>),
+        (<span class="string">"A510CD18F7A56852EB0319"</span>, <span class="string">"577e216843dd11573574d3fb209b97d8"</span>),
         (
-            <span class="string">&quot;AAED18DBE8938C19ED734A8D&quot;</span>,
-            <span class="string">&quot;6f80fb775f27e0a4ce5c2f42fc72c5f1&quot;</span>,
+            <span class="string">"AAED18DBE8938C19ED734A8D"</span>,
+            <span class="string">"6f80fb775f27e0a4ce5c2f42fc72c5f1"</span>,
         ),
     ];
 
@@ -1350,11 +1352,11 @@
         <span class="kw">let </span>p = inp.len() / <span class="number">2</span>;
         <span class="kw">let </span>h0 = Hasher::new(MessageDigest::md5()).unwrap();
 
-        <span class="macro">println!</span>(<span class="string">&quot;Clone a new hasher&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Clone a new hasher"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>h1 = h0.clone();
         h1.write_all(<span class="kw-2">&amp;</span>inp[..p]).unwrap();
         {
-            <span class="macro">println!</span>(<span class="string">&quot;Clone an updated hasher&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">"Clone an updated hasher"</span>);
             <span class="kw">let </span><span class="kw-2">mut </span>h2 = h1.clone();
             h2.write_all(<span class="kw-2">&amp;</span>inp[p..]).unwrap();
             <span class="kw">let </span>res = h2.finish().unwrap();
@@ -1364,7 +1366,7 @@
         <span class="kw">let </span>res = h1.finish().unwrap();
         <span class="macro">assert_eq!</span>(hex::encode(res), MD5_TESTS[i].<span class="number">1</span>);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Clone a finished hasher&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Clone a finished hasher"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>h3 = h1.clone();
         h3.write_all(<span class="kw-2">&amp;</span>Vec::from_hex(MD5_TESTS[i + <span class="number">1</span>].<span class="number">0</span>).unwrap())
             .unwrap();
@@ -1374,7 +1376,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_sha1() {
-        <span class="kw">let </span>tests = [(<span class="string">&quot;616263&quot;</span>, <span class="string">&quot;a9993e364706816aba3e25717850c26c9cd0d89d&quot;</span>)];
+        <span class="kw">let </span>tests = [(<span class="string">"616263"</span>, <span class="string">"a9993e364706816aba3e25717850c26c9cd0d89d"</span>)];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
             hash_test(MessageDigest::sha1(), test);
@@ -1388,8 +1390,8 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_sha256() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;616263&quot;</span>,
-            <span class="string">&quot;ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad&quot;</span>,
+            <span class="string">"616263"</span>,
+            <span class="string">"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1407,9 +1409,9 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_sha512() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;737465766566696e647365766572797468696e67&quot;</span>,
-            <span class="string">&quot;ba61d1f1af0f2dd80729f6cc900f19c0966bd38ba5c75e4471ef11b771dfe7551afab7fcbd300fdc4418f2\
-            b07a028fcd99e7b6446a566f2d9bcd7c604a1ea801&quot;</span>,
+            <span class="string">"737465766566696e647365766572797468696e67"</span>,
+            <span class="string">"ba61d1f1af0f2dd80729f6cc900f19c0966bd38ba5c75e4471ef11b771dfe7551afab7fcbd300fdc4418f2\
+            b07a028fcd99e7b6446a566f2d9bcd7c604a1ea801"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1424,12 +1426,12 @@
         );
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     #[test]
     </span><span class="kw">fn </span>test_sha3_224() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;1de092dd9fbcbbf450f26264f4778abd48af851f2832924554c56913&quot;</span>,
+            <span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"1de092dd9fbcbbf450f26264f4778abd48af851f2832924554c56913"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1444,12 +1446,12 @@
         );
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     #[test]
     </span><span class="kw">fn </span>test_sha3_256() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;b38e38f08bc1c0091ed4b5f060fe13e86aa4179578513ad11a6e3abba0062f61&quot;</span>,
+            <span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"b38e38f08bc1c0091ed4b5f060fe13e86aa4179578513ad11a6e3abba0062f61"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1464,12 +1466,12 @@
         );
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     #[test]
     </span><span class="kw">fn </span>test_sha3_384() {
-        <span class="kw">let </span>tests = [(<span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;966ee786ab3482dd811bf7c8fa8db79aa1f52f6c3c369942ef14240ebd857c6ff626ec35d9e131ff64d328\
-            ef2008ff16&quot;
+        <span class="kw">let </span>tests = [(<span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"966ee786ab3482dd811bf7c8fa8db79aa1f52f6c3c369942ef14240ebd857c6ff626ec35d9e131ff64d328\
+            ef2008ff16"
         </span>)];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1484,12 +1486,12 @@
         );
     }
 
-    <span class="attr">#[cfg(ossl111)]
+    <span class="attr">#[cfg(any(ossl111, libressl380))]
     #[test]
     </span><span class="kw">fn </span>test_sha3_512() {
-        <span class="kw">let </span>tests = [(<span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;c072288ef728cd53a029c47687960b9225893532f42b923156e37020bdc1eda753aafbf30af859d4f4c3a1\
-            807caee3a79f8eb02dcd61589fbbdf5f40c8787a72&quot;
+        <span class="kw">let </span>tests = [(<span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"c072288ef728cd53a029c47687960b9225893532f42b923156e37020bdc1eda753aafbf30af859d4f4c3a1\
+            807caee3a79f8eb02dcd61589fbbdf5f40c8787a72"
         </span>)];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1508,8 +1510,8 @@
     #[test]
     </span><span class="kw">fn </span>test_shake_128() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;49d0697ff508111d8b84f15e46daf135&quot;</span>,
+            <span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"49d0697ff508111d8b84f15e46daf135"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1528,8 +1530,8 @@
     #[test]
     </span><span class="kw">fn </span>test_shake_256() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;416c6c20796f75722062617365206172652062656c6f6e6720746f207573&quot;</span>,
-            <span class="string">&quot;4e2dfdaa75d1e049d0eaeffe28e76b17cea47b650fb8826fe48b94664326a697&quot;</span>,
+            <span class="string">"416c6c20796f75722062617365206172652062656c6f6e6720746f207573"</span>,
+            <span class="string">"4e2dfdaa75d1e049d0eaeffe28e76b17cea47b650fb8826fe48b94664326a697"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1545,13 +1547,13 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(not(boringssl))]
+    #[cfg(not(osslconf = <span class="string">"OPENSSL_NO_RMD160"</span>))]
     #[cfg_attr(ossl300, ignore)]
     </span><span class="kw">fn </span>test_ripemd160() {
         <span class="attr">#[cfg(ossl300)]
-        </span><span class="kw">let </span>_provider = <span class="kw">crate</span>::provider::Provider::try_load(<span class="prelude-val">None</span>, <span class="string">&quot;legacy&quot;</span>, <span class="bool-val">true</span>).unwrap();
+        </span><span class="kw">let </span>_provider = <span class="kw">crate</span>::provider::Provider::try_load(<span class="prelude-val">None</span>, <span class="string">"legacy"</span>, <span class="bool-val">true</span>).unwrap();
 
-        <span class="kw">let </span>tests = [(<span class="string">&quot;616263&quot;</span>, <span class="string">&quot;8eb208f7e05d987a9b044a8e98c6b087f15a0bfc&quot;</span>)];
+        <span class="kw">let </span>tests = [(<span class="string">"616263"</span>, <span class="string">"8eb208f7e05d987a9b044a8e98c6b087f15a0bfc"</span>)];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
             hash_test(MessageDigest::ripemd160(), test);
@@ -1565,12 +1567,12 @@
         );
     }
 
-    <span class="attr">#[cfg(all(any(ossl111, libressl291), not(osslconf = <span class="string">&quot;OPENSSL_NO_SM3&quot;</span>)))]
+    <span class="attr">#[cfg(all(any(ossl111, libressl291), not(osslconf = <span class="string">"OPENSSL_NO_SM3"</span>)))]
     #[test]
     </span><span class="kw">fn </span>test_sm3() {
         <span class="kw">let </span>tests = [(
-            <span class="string">&quot;616263&quot;</span>,
-            <span class="string">&quot;66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0&quot;</span>,
+            <span class="string">"616263"</span>,
+            <span class="string">"66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"</span>,
         )];
 
         <span class="kw">for </span>test <span class="kw">in </span>tests.iter() {
@@ -1593,7 +1595,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>from_name() {
         <span class="macro">assert_eq!</span>(
-            MessageDigest::from_name(<span class="string">&quot;SHA256&quot;</span>).unwrap().as_ptr(),
+            MessageDigest::from_name(<span class="string">"SHA256"</span>).unwrap().as_ptr(),
             MessageDigest::sha256().as_ptr()
         )
     }

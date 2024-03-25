@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.17.1/src/queue.rs`."><title>queue.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../rodio/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.17.3/src/queue.rs`."><title>queue.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../rodio/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -294,15 +296,25 @@
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
 <a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Queue that plays sounds one after the other.
 
 </span><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
-<span class="kw">use </span>std::sync::mpsc::{Receiver, Sender};
-<span class="kw">use </span>std::sync::{mpsc, Arc, Mutex};
+<span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span><span class="kw">crate</span>::source::{Empty, Source, Zero};
 <span class="kw">use </span><span class="kw">crate</span>::Sample;
+
+<span class="attr">#[cfg(feature = <span class="string">"crossbeam-channel"</span>)]
+</span><span class="kw">use </span>crossbeam_channel::{unbounded <span class="kw">as </span>channel, Receiver, Sender};
+<span class="attr">#[cfg(not(feature = <span class="string">"crossbeam-channel"</span>))]
+</span><span class="kw">use </span>std::sync::mpsc::{channel, Receiver, Sender};
 
 <span class="doccomment">/// Builds a new queue. It consists of an input and an output.
 ///
@@ -317,7 +329,7 @@
 ///
 </span><span class="kw">pub fn </span>queue&lt;S&gt;(keep_alive_if_empty: bool) -&gt; (Arc&lt;SourcesQueueInput&lt;S&gt;&gt;, SourcesQueueOutput&lt;S&gt;)
 <span class="kw">where
-    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Sample + Send + <span class="lifetime">'static</span>,
 {
     <span class="kw">let </span>input = Arc::new(SourcesQueueInput {
         next_sounds: Mutex::new(Vec::new()),
@@ -345,13 +357,13 @@
 
 <span class="kw">impl</span>&lt;S&gt; SourcesQueueInput&lt;S&gt;
 <span class="kw">where
-    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Sample + Send + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Adds a new source to the end of the queue.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>append&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: T)
     <span class="kw">where
-        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">'static</span>,
     {
         <span class="self">self</span>.next_sounds
             .lock()
@@ -362,12 +374,14 @@
     <span class="doccomment">/// Adds a new source to the end of the queue.
     ///
     /// The `Receiver` will be signalled when the sound has finished playing.
+    ///
+    /// Enable the feature flag `crossbeam-channel` in rodio to use a `crossbeam_channel::Receiver` instead.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>append_with_signal&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, source: T) -&gt; Receiver&lt;()&gt;
     <span class="kw">where
-        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>T: Source&lt;Item = S&gt; + Send + <span class="lifetime">'static</span>,
     {
-        <span class="kw">let </span>(tx, rx) = mpsc::channel();
+        <span class="kw">let </span>(tx, rx) = channel();
         <span class="self">self</span>.next_sounds
             .lock()
             .unwrap()
@@ -375,7 +389,7 @@
         rx
     }
 
-    <span class="doccomment">/// Sets whether the queue stays alive if there&#39;s no more sound to play.
+    <span class="doccomment">/// Sets whether the queue stays alive if there's no more sound to play.
     ///
     /// See also the constructor.
     </span><span class="kw">pub fn </span>set_keep_alive_if_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, keep_alive_if_empty: bool) {
@@ -406,7 +420,7 @@
 <span class="kw">const </span>THRESHOLD: usize = <span class="number">512</span>;
 <span class="kw">impl</span>&lt;S&gt; Source <span class="kw">for </span>SourcesQueueOutput&lt;S&gt;
 <span class="kw">where
-    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Sample + Send + <span class="lifetime">'static</span>,
 {
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>current_frame_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
@@ -436,7 +450,7 @@
         <span class="comment">// Try the size hint.
         </span><span class="kw">let </span>(lower_bound, <span class="kw">_</span>) = <span class="self">self</span>.current.size_hint();
         <span class="comment">// The iterator default implementation just returns 0.
-        // That&#39;s a problematic value, so skip it.
+        // That's a problematic value, so skip it.
         </span><span class="kw">if </span>lower_bound &gt; <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Some</span>(lower_bound);
         }
@@ -463,7 +477,7 @@
 
 <span class="kw">impl</span>&lt;S&gt; Iterator <span class="kw">for </span>SourcesQueueOutput&lt;S&gt;
 <span class="kw">where
-    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Sample + Send + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Item = S;
 
@@ -491,7 +505,7 @@
 
 <span class="kw">impl</span>&lt;S&gt; SourcesQueueOutput&lt;S&gt;
 <span class="kw">where
-    </span>S: Sample + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Sample + Send + <span class="lifetime">'static</span>,
 {
     <span class="comment">// Called when `current` is empty and we must jump to the next element.
     // Returns `Ok` if the sound should continue playing, or an error if it should stop.

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.55/src/pkey.rs`."><title>pkey.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../openssl/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.64/src/pkey.rs`."><title>pkey.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../openssl/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1171,14 +1173,44 @@
 <a href="#1171" id="1171">1171</a>
 <a href="#1172" id="1172">1172</a>
 <a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Public/private key processing.
 //!
 //! Asymmetric public key algorithms solve the problem of establishing and sharing
 //! secret keys to securely send and receive messages.
 //! This system uses a pair of keys: a public key, which can be freely
 //! distributed, and a private key, which is kept to oneself. An entity may
-//! encrypt information using a user&#39;s public key. The encrypted information can
-//! only be deciphered using that user&#39;s private key.
+//! encrypt information using a user's public key. The encrypted information can
+//! only be deciphered using that user's private key.
 //!
 //! This module offers support for five popular algorithms:
 //!
@@ -1210,7 +1242,7 @@
 //! let pkey = PKey::from_rsa(rsa).unwrap();
 //!
 //! let pub_key: Vec&lt;u8&gt; = pkey.public_key_to_pem().unwrap();
-//! println!(&quot;{:?}&quot;, str::from_utf8(pub_key.as_slice()).unwrap());
+//! println!("{:?}", str::from_utf8(pub_key.as_slice()).unwrap());
 //! ```
 </span><span class="attr">#![allow(clippy::missing_safety_doc)]
 </span><span class="kw">use </span><span class="kw">crate</span>::bio::{MemBio, MemBioSlice};
@@ -1251,17 +1283,21 @@
 
 <span class="kw">impl </span>Id {
     <span class="kw">pub const </span>RSA: Id = Id(ffi::EVP_PKEY_RSA);
+    <span class="attr">#[cfg(any(ossl111, libressl310, boringssl))]
+    </span><span class="kw">pub const </span>RSA_PSS: Id = Id(ffi::EVP_PKEY_RSA_PSS);
     <span class="attr">#[cfg(not(boringssl))]
     </span><span class="kw">pub const </span>HMAC: Id = Id(ffi::EVP_PKEY_HMAC);
     <span class="attr">#[cfg(not(boringssl))]
     </span><span class="kw">pub const </span>CMAC: Id = Id(ffi::EVP_PKEY_CMAC);
     <span class="kw">pub const </span>DSA: Id = Id(ffi::EVP_PKEY_DSA);
     <span class="kw">pub const </span>DH: Id = Id(ffi::EVP_PKEY_DH);
+    <span class="attr">#[cfg(ossl110)]
+    </span><span class="kw">pub const </span>DHX: Id = Id(ffi::EVP_PKEY_DHX);
     <span class="kw">pub const </span>EC: Id = Id(ffi::EVP_PKEY_EC);
     <span class="attr">#[cfg(ossl111)]
     </span><span class="kw">pub const </span>SM2: Id = Id(ffi::EVP_PKEY_SM2);
 
-    <span class="attr">#[cfg(any(ossl110, boringssl))]
+    <span class="attr">#[cfg(any(ossl110, boringssl, libressl360))]
     </span><span class="kw">pub const </span>HKDF: Id = Id(ffi::EVP_PKEY_HKDF);
 
     <span class="attr">#[cfg(any(ossl111, boringssl, libressl370))]
@@ -1306,7 +1342,7 @@
 
 <span class="kw">unsafe impl </span>HasPrivate <span class="kw">for </span>Private {}
 
-<span class="macro">generic_foreign_type_and_impl_send_sync! </span>{
+<span class="macro">generic_foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::EVP_PKEY;
     <span class="kw">fn </span>drop = ffi::EVP_PKEY_free;
 
@@ -1381,7 +1417,7 @@
 <span class="kw">where
     </span>T: HasPublic,
 {
-    <span class="macro">to_pem! </span>{
+    <span class="macro">to_pem!</span> {
         <span class="doccomment">/// Serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure.
         ///
         /// The output will have a header of `-----BEGIN PUBLIC KEY-----`.
@@ -1390,7 +1426,7 @@
         ffi::PEM_write_bio_PUBKEY
     }
 
-    <span class="macro">to_der! </span>{
+    <span class="macro">to_der!</span> {
         <span class="doccomment">/// Serializes the public key into a DER-encoded SubjectPublicKeyInfo structure.
         </span><span class="attr">#[corresponds(i2d_PUBKEY)]
         </span>public_key_to_der,
@@ -1458,7 +1494,7 @@
 <span class="kw">where
     </span>T: HasPrivate,
 {
-    <span class="macro">private_key_to_pem! </span>{
+    <span class="macro">private_key_to_pem!</span> {
         <span class="doccomment">/// Serializes the private key to a PEM-encoded PKCS#8 PrivateKeyInfo structure.
         ///
         /// The output will have a header of `-----BEGIN PRIVATE KEY-----`.
@@ -1472,7 +1508,7 @@
         ffi::PEM_write_bio_PKCS8PrivateKey
     }
 
-    <span class="macro">to_der! </span>{
+    <span class="macro">to_der!</span> {
         <span class="doccomment">/// Serializes the private key to a DER-encoded key type specific format.
         </span><span class="attr">#[corresponds(i2d_PrivateKey)]
         </span>private_key_to_der,
@@ -1549,21 +1585,21 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>PKey&lt;T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         <span class="kw">let </span>alg = <span class="kw">match </span><span class="self">self</span>.id() {
-            Id::RSA =&gt; <span class="string">&quot;RSA&quot;</span>,
+            Id::RSA =&gt; <span class="string">"RSA"</span>,
             <span class="attr">#[cfg(not(boringssl))]
-            </span>Id::HMAC =&gt; <span class="string">&quot;HMAC&quot;</span>,
-            Id::DSA =&gt; <span class="string">&quot;DSA&quot;</span>,
-            Id::DH =&gt; <span class="string">&quot;DH&quot;</span>,
-            Id::EC =&gt; <span class="string">&quot;EC&quot;</span>,
+            </span>Id::HMAC =&gt; <span class="string">"HMAC"</span>,
+            Id::DSA =&gt; <span class="string">"DSA"</span>,
+            Id::DH =&gt; <span class="string">"DH"</span>,
+            Id::EC =&gt; <span class="string">"EC"</span>,
             <span class="attr">#[cfg(ossl111)]
-            </span>Id::ED25519 =&gt; <span class="string">&quot;Ed25519&quot;</span>,
+            </span>Id::ED25519 =&gt; <span class="string">"Ed25519"</span>,
             <span class="attr">#[cfg(ossl111)]
-            </span>Id::ED448 =&gt; <span class="string">&quot;Ed448&quot;</span>,
-            <span class="kw">_ </span>=&gt; <span class="string">&quot;unknown&quot;</span>,
+            </span>Id::ED448 =&gt; <span class="string">"Ed448"</span>,
+            <span class="kw">_ </span>=&gt; <span class="string">"unknown"</span>,
         };
-        fmt.debug_struct(<span class="string">&quot;PKey&quot;</span>).field(<span class="string">&quot;algorithm&quot;</span>, <span class="kw-2">&amp;</span>alg).finish()
+        fmt.debug_struct(<span class="string">"PKey"</span>).field(<span class="string">"algorithm"</span>, <span class="kw-2">&amp;</span>alg).finish()
         <span class="comment">// TODO: Print details for each specific type of key
     </span>}
 }
@@ -1607,6 +1643,22 @@
             <span class="kw">let </span>evp = cvt_p(ffi::EVP_PKEY_new())<span class="question-mark">?</span>;
             <span class="kw">let </span>pkey = PKey::from_ptr(evp);
             cvt(ffi::EVP_PKEY_assign_DH(pkey.<span class="number">0</span>, dh.as_ptr()))<span class="question-mark">?</span>;
+            mem::forget(dh);
+            <span class="prelude-val">Ok</span>(pkey)
+        }
+    }
+
+    <span class="doccomment">/// Creates a new `PKey` containing a Diffie-Hellman key with type DHX.
+    </span><span class="attr">#[cfg(all(not(boringssl), ossl110))]
+    </span><span class="kw">pub fn </span>from_dhx(dh: Dh&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;PKey&lt;T&gt;, ErrorStack&gt; {
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span>evp = cvt_p(ffi::EVP_PKEY_new())<span class="question-mark">?</span>;
+            <span class="kw">let </span>pkey = PKey::from_ptr(evp);
+            cvt(ffi::EVP_PKEY_assign(
+                pkey.<span class="number">0</span>,
+                ffi::EVP_PKEY_DHX,
+                dh.as_ptr().cast(),
+            ))<span class="question-mark">?</span>;
             mem::forget(dh);
             <span class="prelude-val">Ok</span>(pkey)
         }
@@ -1793,7 +1845,7 @@
         }
     }
 
-    <span class="macro">private_key_from_pem! </span>{
+    <span class="macro">private_key_from_pem!</span> {
         <span class="doccomment">/// Deserializes a private key from a PEM-encoded key type specific format.
         </span><span class="attr">#[corresponds(PEM_read_bio_PrivateKey)]
         </span>private_key_from_pem,
@@ -1811,7 +1863,7 @@
         ffi::PEM_read_bio_PrivateKey
     }
 
-    <span class="macro">from_der! </span>{
+    <span class="macro">from_der!</span> {
         <span class="doccomment">/// Decodes a DER-encoded private key.
         ///
         /// This function will attempt to automatically detect the underlying key format, and
@@ -1916,17 +1968,27 @@
 }
 
 <span class="kw">impl </span>PKey&lt;Public&gt; {
-    <span class="macro">from_pem! </span>{
+    <span class="macro">private_key_from_pem!</span> {
         <span class="doccomment">/// Decodes a PEM-encoded SubjectPublicKeyInfo structure.
         ///
         /// The input should have a header of `-----BEGIN PUBLIC KEY-----`.
         </span><span class="attr">#[corresponds(PEM_read_bio_PUBKEY)]
         </span>public_key_from_pem,
+
+        <span class="doccomment">/// Decodes a PEM-encoded SubjectPublicKeyInfo structure.
+        </span><span class="attr">#[corresponds(PEM_read_bio_PUBKEY)]
+        </span>public_key_from_pem_passphrase,
+
+        <span class="doccomment">/// Decodes a PEM-encoded SubjectPublicKeyInfo structure.
+        ///
+        /// The callback should fill the password into the provided buffer and return its length.
+        </span><span class="attr">#[corresponds(PEM_read_bio_PrivateKey)]
+        </span>public_key_from_pem_callback,
         PKey&lt;Public&gt;,
         ffi::PEM_read_bio_PUBKEY
     }
 
-    <span class="macro">from_der! </span>{
+    <span class="macro">from_der!</span> {
         <span class="doccomment">/// Decodes a DER-encoded SubjectPublicKeyInfo structure.
         </span><span class="attr">#[corresponds(d2i_PUBKEY)]
         </span>public_key_from_der,
@@ -1956,17 +2018,17 @@
     }
 }
 
-<span class="macro">cfg_if! </span>{
+<span class="macro">cfg_if!</span> {
     <span class="kw">if </span><span class="attr">#[cfg(any(boringssl, ossl110, libressl270))] </span>{
         <span class="kw">use </span>ffi::EVP_PKEY_up_ref;
     } <span class="kw">else </span>{
         <span class="attr">#[allow(bad_style)]
-        </span><span class="kw">unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>EVP_PKEY_up_ref(pkey: <span class="kw-2">*mut </span>ffi::EVP_PKEY) {
+        </span><span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn </span>EVP_PKEY_up_ref(pkey: <span class="kw-2">*mut </span>ffi::EVP_PKEY) {
             ffi::CRYPTO_add_lock(
                 <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>pkey).references,
                 <span class="number">1</span>,
                 ffi::CRYPTO_LOCK_EVP_PKEY,
-                <span class="string">&quot;pkey.rs\0&quot;</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>,
+                <span class="string">"pkey.rs\0"</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>,
                 <span class="macro">line!</span>() <span class="kw">as </span>c_int,
             );
         }
@@ -2061,15 +2123,15 @@
         <span class="kw">let </span>rsa = Rsa::generate(<span class="number">2048</span>).unwrap();
         <span class="kw">let </span>pkey = PKey::from_rsa(rsa).unwrap();
         <span class="kw">let </span>pem = pkey
-            .private_key_to_pem_pkcs8_passphrase(Cipher::aes_128_cbc(), <span class="string">b&quot;foobar&quot;</span>)
+            .private_key_to_pem_pkcs8_passphrase(Cipher::aes_128_cbc(), <span class="string">b"foobar"</span>)
             .unwrap();
-        PKey::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b&quot;foobar&quot;</span>).unwrap();
-        <span class="macro">assert!</span>(PKey::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b&quot;fizzbuzz&quot;</span>).is_err());
+        PKey::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b"foobar"</span>).unwrap();
+        <span class="macro">assert!</span>(PKey::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b"fizzbuzz"</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_unencrypted_pkcs8() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/pkcs8-nocrypt.der&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/pkcs8-nocrypt.der"</span>);
         <span class="kw">let </span>pkey = PKey::private_key_from_pkcs8(key).unwrap();
         <span class="kw">let </span>serialized = pkey.private_key_to_pkcs8().unwrap();
         <span class="kw">let </span>pkey2 = PKey::private_key_from_pkcs8(<span class="kw-2">&amp;</span>serialized).unwrap();
@@ -2082,15 +2144,15 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_encrypted_pkcs8_passphrase() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/pkcs8.der&quot;</span>);
-        PKey::private_key_from_pkcs8_passphrase(key, <span class="string">b&quot;mypass&quot;</span>).unwrap();
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/pkcs8.der"</span>);
+        PKey::private_key_from_pkcs8_passphrase(key, <span class="string">b"mypass"</span>).unwrap();
 
         <span class="kw">let </span>rsa = Rsa::generate(<span class="number">2048</span>).unwrap();
         <span class="kw">let </span>pkey = PKey::from_rsa(rsa).unwrap();
         <span class="kw">let </span>der = pkey
-            .private_key_to_pkcs8_passphrase(Cipher::aes_128_cbc(), <span class="string">b&quot;mypass&quot;</span>)
+            .private_key_to_pkcs8_passphrase(Cipher::aes_128_cbc(), <span class="string">b"mypass"</span>)
             .unwrap();
-        <span class="kw">let </span>pkey2 = PKey::private_key_from_pkcs8_passphrase(<span class="kw-2">&amp;</span>der, <span class="string">b&quot;mypass&quot;</span>).unwrap();
+        <span class="kw">let </span>pkey2 = PKey::private_key_from_pkcs8_passphrase(<span class="kw-2">&amp;</span>der, <span class="string">b"mypass"</span>).unwrap();
         <span class="macro">assert_eq!</span>(
             pkey.private_key_to_der().unwrap(),
             pkey2.private_key_to_der().unwrap()
@@ -2100,10 +2162,10 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_encrypted_pkcs8_callback() {
         <span class="kw">let </span><span class="kw-2">mut </span>password_queried = <span class="bool-val">false</span>;
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/pkcs8.der&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/pkcs8.der"</span>);
         PKey::private_key_from_pkcs8_callback(key, |password| {
             password_queried = <span class="bool-val">true</span>;
-            password[..<span class="number">6</span>].copy_from_slice(<span class="string">b&quot;mypass&quot;</span>);
+            password[..<span class="number">6</span>].copy_from_slice(<span class="string">b"mypass"</span>);
             <span class="prelude-val">Ok</span>(<span class="number">6</span>)
         })
         .unwrap();
@@ -2112,31 +2174,31 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_private_key_from_pem() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.pem&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.pem"</span>);
         PKey::private_key_from_pem(key).unwrap();
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_public_key_from_pem() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.pem.pub&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.pem.pub"</span>);
         PKey::public_key_from_pem(key).unwrap();
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_public_key_from_der() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.der.pub&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.der.pub"</span>);
         PKey::public_key_from_der(key).unwrap();
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_private_key_from_der() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.der&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.der"</span>);
         PKey::private_key_from_der(key).unwrap();
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_pem() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.pem&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.pem"</span>);
         <span class="kw">let </span>key = PKey::private_key_from_pem(key).unwrap();
 
         <span class="kw">let </span>priv_key = key.private_key_to_pem_pkcs8().unwrap();
@@ -2144,8 +2206,8 @@
 
         <span class="comment">// As a super-simple verification, just check that the buffers contain
         // the `PRIVATE KEY` or `PUBLIC KEY` strings.
-        </span><span class="macro">assert!</span>(priv_key.windows(<span class="number">11</span>).any(|s| s == <span class="string">b&quot;PRIVATE KEY&quot;</span>));
-        <span class="macro">assert!</span>(pub_key.windows(<span class="number">10</span>).any(|s| s == <span class="string">b&quot;PUBLIC KEY&quot;</span>));
+        </span><span class="macro">assert!</span>(priv_key.windows(<span class="number">11</span>).any(|s| s == <span class="string">b"PRIVATE KEY"</span>));
+        <span class="macro">assert!</span>(pub_key.windows(<span class="number">10</span>).any(|s| s == <span class="string">b"PUBLIC KEY"</span>));
     }
 
     <span class="attr">#[test]
@@ -2169,7 +2231,7 @@
     <span class="attr">#[test]
     #[cfg(not(boringssl))]
     </span><span class="kw">fn </span>test_dh_accessor() {
-        <span class="kw">let </span>dh = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/dhparams.pem&quot;</span>);
+        <span class="kw">let </span>dh = <span class="macro">include_bytes!</span>(<span class="string">"../test/dhparams.pem"</span>);
         <span class="kw">let </span>dh = Dh::params_from_pem(dh).unwrap();
         <span class="kw">let </span>pkey = PKey::from_dh(dh).unwrap();
         pkey.dh().unwrap();
@@ -2228,7 +2290,7 @@
     <span class="attr">#[test]
     #[cfg(not(boringssl))]
     </span><span class="kw">fn </span>test_dh_conversion() {
-        <span class="kw">let </span>dh_params = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/dhparams.pem&quot;</span>);
+        <span class="kw">let </span>dh_params = <span class="macro">include_bytes!</span>(<span class="string">"../test/dhparams.pem"</span>);
         <span class="kw">let </span>dh_params = Dh::params_from_pem(dh_params).unwrap();
         <span class="kw">let </span>dh = dh_params.generate_key().unwrap();
 
@@ -2327,7 +2389,7 @@
     <span class="attr">#[cfg(ossl300)]
     #[test]
     </span><span class="kw">fn </span>test_ec_gen() {
-        <span class="kw">let </span>key = PKey::ec_gen(<span class="string">&quot;prime256v1&quot;</span>).unwrap();
+        <span class="kw">let </span>key = PKey::ec_gen(<span class="string">"prime256v1"</span>).unwrap();
         <span class="macro">assert!</span>(key.ec_key().is_ok());
     }
 

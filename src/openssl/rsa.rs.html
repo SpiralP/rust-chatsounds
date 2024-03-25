@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.55/src/rsa.rs`."><title>rsa.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../openssl/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.64/src/rsa.rs`."><title>rsa.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../openssl/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -861,7 +863,7 @@
 //! establishing a TLS/SSL connection.
 //!
 //! The RSA acronym is derived from the first letters of the surnames of the
-//! algorithm&#39;s founding trio.
+//! algorithm's founding trio.
 //!
 //! # Example
 //!
@@ -871,7 +873,7 @@
 //! use openssl::rsa::{Rsa, Padding};
 //!
 //! let rsa = Rsa::generate(2048).unwrap();
-//! let data = b&quot;foobar&quot;;
+//! let data = b"foobar";
 //! let mut buf = vec![0; rsa.size() as usize];
 //! let encrypted_len = rsa.public_encrypt(data, &amp;mut buf, Padding::PKCS1).unwrap();
 //! ```
@@ -915,7 +917,7 @@
     </span>}
 }
 
-<span class="macro">generic_foreign_type_and_impl_send_sync! </span>{
+<span class="macro">generic_foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::RSA;
     <span class="kw">fn </span>drop = ffi::RSA_free;
 
@@ -947,7 +949,7 @@
 <span class="kw">where
     </span>T: HasPrivate,
 {
-    <span class="macro">private_key_to_pem! </span>{
+    <span class="macro">private_key_to_pem!</span> {
         <span class="doccomment">/// Serializes the private key to a PEM-encoded PKCS#1 RSAPrivateKey structure.
         ///
         /// The output will have a header of `-----BEGIN RSA PRIVATE KEY-----`.
@@ -961,7 +963,7 @@
         ffi::PEM_write_bio_RSAPrivateKey
     }
 
-    <span class="macro">to_der! </span>{
+    <span class="macro">to_der!</span> {
         <span class="doccomment">/// Serializes the private key to a DER-encoded PKCS#1 RSAPrivateKey structure.
         </span><span class="attr">#[corresponds(i2d_RSAPrivateKey)]
         </span>private_key_to_der,
@@ -1103,7 +1105,7 @@
 <span class="kw">where
     </span>T: HasPublic,
 {
-    <span class="macro">to_pem! </span>{
+    <span class="macro">to_pem!</span> {
         <span class="doccomment">/// Serializes the public key into a PEM-encoded SubjectPublicKeyInfo structure.
         ///
         /// The output will have a header of `-----BEGIN PUBLIC KEY-----`.
@@ -1112,14 +1114,14 @@
         ffi::PEM_write_bio_RSA_PUBKEY
     }
 
-    <span class="macro">to_der! </span>{
+    <span class="macro">to_der!</span> {
         <span class="doccomment">/// Serializes the public key into a DER-encoded SubjectPublicKeyInfo structure.
         </span><span class="attr">#[corresponds(i2d_RSA_PUBKEY)]
         </span>public_key_to_der,
         ffi::i2d_RSA_PUBKEY
     }
 
-    <span class="macro">to_pem! </span>{
+    <span class="macro">to_pem!</span> {
         <span class="doccomment">/// Serializes the public key into a PEM-encoded PKCS#1 RSAPublicKey structure.
         ///
         /// The output will have a header of `-----BEGIN RSA PUBLIC KEY-----`.
@@ -1128,7 +1130,7 @@
         ffi::PEM_write_bio_RSAPublicKey
     }
 
-    <span class="macro">to_der! </span>{
+    <span class="macro">to_der!</span> {
         <span class="doccomment">/// Serializes the public key into a DER-encoded PKCS#1 RSAPublicKey structure.
         </span><span class="attr">#[corresponds(i2d_RSAPublicKey)]
         </span>public_key_to_der_pkcs1,
@@ -1235,7 +1237,7 @@
         }
     }
 
-    <span class="macro">from_pem! </span>{
+    <span class="macro">from_pem!</span> {
         <span class="doccomment">/// Decodes a PEM-encoded SubjectPublicKeyInfo structure containing an RSA key.
         ///
         /// The input should have a header of `-----BEGIN PUBLIC KEY-----`.
@@ -1245,7 +1247,7 @@
         ffi::PEM_read_bio_RSA_PUBKEY
     }
 
-    <span class="macro">from_pem! </span>{
+    <span class="macro">from_pem!</span> {
         <span class="doccomment">/// Decodes a PEM-encoded PKCS#1 RSAPublicKey structure.
         ///
         /// The input should have a header of `-----BEGIN RSA PUBLIC KEY-----`.
@@ -1255,7 +1257,7 @@
         ffi::PEM_read_bio_RSAPublicKey
     }
 
-    <span class="macro">from_der! </span>{
+    <span class="macro">from_der!</span> {
         <span class="doccomment">/// Decodes a DER-encoded SubjectPublicKeyInfo structure containing an RSA key.
         </span><span class="attr">#[corresponds(d2i_RSA_PUBKEY)]
         </span>public_key_from_der,
@@ -1263,7 +1265,7 @@
         ffi::d2i_RSA_PUBKEY
     }
 
-    <span class="macro">from_der! </span>{
+    <span class="macro">from_der!</span> {
         <span class="doccomment">/// Decodes a DER-encoded PKCS#1 RSAPublicKey structure.
         </span><span class="attr">#[corresponds(d2i_RSAPublicKey)]
         </span>public_key_from_der_pkcs1,
@@ -1383,7 +1385,7 @@
 
     <span class="doccomment">/// Generates a public/private key pair with the specified size and a custom exponent.
     ///
-    /// Unless you have specific needs and know what you&#39;re doing, use `Rsa::generate` instead.
+    /// Unless you have specific needs and know what you're doing, use `Rsa::generate` instead.
     </span><span class="attr">#[corresponds(RSA_generate_key_ex)]
     </span><span class="kw">pub fn </span>generate_with_e(bits: u32, e: <span class="kw-2">&amp;</span>BigNumRef) -&gt; <span class="prelude-ty">Result</span>&lt;Rsa&lt;Private&gt;, ErrorStack&gt; {
         <span class="kw">unsafe </span>{
@@ -1399,7 +1401,7 @@
     }
 
     <span class="comment">// FIXME these need to identify input formats
-    </span><span class="macro">private_key_from_pem! </span>{
+    </span><span class="macro">private_key_from_pem!</span> {
         <span class="doccomment">/// Deserializes a private key from a PEM-encoded PKCS#1 RSAPrivateKey structure.
         </span><span class="attr">#[corresponds(PEM_read_bio_RSAPrivateKey)]
         </span>private_key_from_pem,
@@ -1417,7 +1419,7 @@
         ffi::PEM_read_bio_RSAPrivateKey
     }
 
-    <span class="macro">from_der! </span>{
+    <span class="macro">from_der!</span> {
         <span class="doccomment">/// Decodes a DER-encoded PKCS#1 RSAPrivateKey structure.
         </span><span class="attr">#[corresponds(d2i_RSAPrivateKey)]
         </span>private_key_from_der,
@@ -1427,12 +1429,12 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Rsa&lt;T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;Rsa&quot;</span>)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">"Rsa"</span>)
     }
 }
 
-<span class="macro">cfg_if! </span>{
+<span class="macro">cfg_if!</span> {
     <span class="kw">if </span><span class="attr">#[cfg(any(ossl110, libressl273, boringssl))] </span>{
         <span class="kw">use </span>ffi::{
             RSA_get0_key, RSA_get0_factors, RSA_get0_crt_params, RSA_set0_key, RSA_set0_factors,
@@ -1536,17 +1538,17 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_from_password() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/rsa-encrypted.pem&quot;</span>);
-        Rsa::private_key_from_pem_passphrase(key, <span class="string">b&quot;mypass&quot;</span>).unwrap();
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/rsa-encrypted.pem"</span>);
+        Rsa::private_key_from_pem_passphrase(key, <span class="string">b"mypass"</span>).unwrap();
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_from_password_callback() {
         <span class="kw">let </span><span class="kw-2">mut </span>password_queried = <span class="bool-val">false</span>;
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/rsa-encrypted.pem&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/rsa-encrypted.pem"</span>);
         Rsa::private_key_from_pem_callback(key, |password| {
             password_queried = <span class="bool-val">true</span>;
-            password[..<span class="number">6</span>].copy_from_slice(<span class="string">b&quot;mypass&quot;</span>);
+            password[..<span class="number">6</span>].copy_from_slice(<span class="string">b"mypass"</span>);
             <span class="prelude-val">Ok</span>(<span class="number">6</span>)
         })
         .unwrap();
@@ -1558,25 +1560,25 @@
     </span><span class="kw">fn </span>test_to_password() {
         <span class="kw">let </span>key = Rsa::generate(<span class="number">2048</span>).unwrap();
         <span class="kw">let </span>pem = key
-            .private_key_to_pem_passphrase(Cipher::aes_128_cbc(), <span class="string">b&quot;foobar&quot;</span>)
+            .private_key_to_pem_passphrase(Cipher::aes_128_cbc(), <span class="string">b"foobar"</span>)
             .unwrap();
-        Rsa::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b&quot;foobar&quot;</span>).unwrap();
-        <span class="macro">assert!</span>(Rsa::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b&quot;fizzbuzz&quot;</span>).is_err());
+        Rsa::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b"foobar"</span>).unwrap();
+        <span class="macro">assert!</span>(Rsa::private_key_from_pem_passphrase(<span class="kw-2">&amp;</span>pem, <span class="string">b"fizzbuzz"</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_public_encrypt_private_decrypt_with_padding() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/rsa.pem.pub&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/rsa.pem.pub"</span>);
         <span class="kw">let </span>public_key = Rsa::public_key_from_pem(key).unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="macro">vec!</span>[<span class="number">0</span>; public_key.size() <span class="kw">as </span>usize];
-        <span class="kw">let </span>original_data = <span class="string">b&quot;This is test&quot;</span>;
+        <span class="kw">let </span>original_data = <span class="string">b"This is test"</span>;
         <span class="kw">let </span>len = public_key
             .public_encrypt(original_data, <span class="kw-2">&amp;mut </span>result, Padding::PKCS1)
             .unwrap();
         <span class="macro">assert_eq!</span>(len, <span class="number">256</span>);
 
-        <span class="kw">let </span>pkey = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/rsa.pem&quot;</span>);
+        <span class="kw">let </span>pkey = <span class="macro">include_bytes!</span>(<span class="string">"../test/rsa.pem"</span>);
         <span class="kw">let </span>private_key = Rsa::private_key_from_pem(pkey).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>dec_result = <span class="macro">vec!</span>[<span class="number">0</span>; private_key.size() <span class="kw">as </span>usize];
         <span class="kw">let </span>len = private_key
@@ -1623,14 +1625,14 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_public_key_from_pem_pkcs1() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/pkcs1.pem.pub&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/pkcs1.pem.pub"</span>);
         Rsa::public_key_from_pem_pkcs1(key).unwrap();
     }
 
     <span class="attr">#[test]
     #[should_panic]
     </span><span class="kw">fn </span>test_public_key_from_pem_pkcs1_file_panic() {
-        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">&quot;../test/key.pem.pub&quot;</span>);
+        <span class="kw">let </span>key = <span class="macro">include_bytes!</span>(<span class="string">"../test/key.pem.pub"</span>);
         Rsa::public_key_from_pem_pkcs1(key).unwrap();
     }
 
@@ -1654,7 +1656,7 @@
         <span class="kw">let </span>keypair = <span class="kw">super</span>::Rsa::generate(<span class="number">2048</span>).unwrap();
         <span class="kw">let </span>pubkey_pem = keypair.public_key_to_pem_pkcs1().unwrap();
         <span class="kw">let </span>pubkey = <span class="kw">super</span>::Rsa::public_key_from_pem_pkcs1(<span class="kw-2">&amp;</span>pubkey_pem).unwrap();
-        <span class="kw">let </span>msg = <span class="string">b&quot;Hello, world!&quot;</span>;
+        <span class="kw">let </span>msg = <span class="string">b"Hello, world!"</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>encrypted = <span class="macro">vec!</span>[<span class="number">0</span>; pubkey.size() <span class="kw">as </span>usize];
         <span class="kw">let </span>len = pubkey
@@ -1674,7 +1676,7 @@
         <span class="kw">let </span>keypair = <span class="kw">super</span>::Rsa::generate(<span class="number">2048</span>).unwrap();
         <span class="kw">let </span>pubkey_pem = keypair.public_key_to_pem_pkcs1().unwrap();
         <span class="kw">let </span>pubkey = <span class="kw">super</span>::Rsa::public_key_from_pem_pkcs1(<span class="kw-2">&amp;</span>pubkey_pem).unwrap();
-        <span class="kw">let </span>msg = <span class="string">b&quot;foo&quot;</span>;
+        <span class="kw">let </span>msg = <span class="string">b"foo"</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>encrypted1 = <span class="macro">vec!</span>[<span class="number">0</span>; pubkey.size() <span class="kw">as </span>usize];
         <span class="kw">let </span><span class="kw-2">mut </span>encrypted2 = <span class="macro">vec!</span>[<span class="number">0</span>; pubkey.size() <span class="kw">as </span>usize];

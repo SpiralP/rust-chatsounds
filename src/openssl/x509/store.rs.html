@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.55/src/x509/store.rs`."><title>store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../openssl/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/openssl-0.10.64/src/x509/store.rs`."><title>store.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="openssl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../openssl/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -285,6 +287,23 @@
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Describe a context in which to verify an `X509` certificate.
 //!
 //! The `X509` certificate store holds trusted CA certificates used to verify
@@ -305,7 +324,7 @@
 //! let pkey = PKey::from_rsa(rsa).unwrap();
 //!
 //! let mut name = X509Name::builder().unwrap();
-//! name.append_entry_by_nid(Nid::COMMONNAME, &quot;foobar.com&quot;).unwrap();
+//! name.append_entry_by_nid(Nid::COMMONNAME, "foobar.com").unwrap();
 //! let name = name.build();
 //!
 //! // Sep 27th, 2016
@@ -329,14 +348,17 @@
 //! ```
 
 </span><span class="kw">use </span>cfg_if::cfg_if;
-<span class="kw">use </span>foreign_types::ForeignTypeRef;
+<span class="kw">use </span>foreign_types::{ForeignType, ForeignTypeRef};
 <span class="kw">use </span>std::mem;
 
 <span class="kw">use </span><span class="kw">crate</span>::error::ErrorStack;
 <span class="attr">#[cfg(not(boringssl))]
 </span><span class="kw">use </span><span class="kw">crate</span>::ssl::SslFiletype;
+<span class="attr">#[cfg(ossl300)]
+</span><span class="kw">use </span><span class="kw">crate</span>::stack::Stack;
 <span class="kw">use </span><span class="kw">crate</span>::stack::StackRef;
-<span class="attr">#[cfg(any(ossl102, libressl261))]
+<span class="kw">use </span><span class="kw">crate</span>::util::ForeignTypeRefExt;
+<span class="attr">#[cfg(any(ossl102, boringssl, libressl261))]
 </span><span class="kw">use </span><span class="kw">crate</span>::x509::verify::{X509VerifyFlags, X509VerifyParamRef};
 <span class="kw">use </span><span class="kw">crate</span>::x509::{X509Object, X509PurposeId, X509};
 <span class="kw">use crate</span>::{cvt, cvt_p};
@@ -346,7 +368,7 @@
 <span class="attr">#[cfg(not(boringssl))]
 </span><span class="kw">use </span>std::path::Path;
 
-<span class="macro">foreign_type_and_impl_send_sync! </span>{
+<span class="macro">foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::X509_STORE;
     <span class="kw">fn </span>drop = ffi::X509_STORE_free;
 
@@ -399,7 +421,7 @@
     </span><span class="attr">#[corresponds(X509_STORE_add_lookup)]
     </span><span class="kw">pub fn </span>add_lookup&lt;T&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        method: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>X509LookupMethodRef&lt;T&gt;,
+        method: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>X509LookupMethodRef&lt;T&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>X509LookupRef&lt;T&gt;, ErrorStack&gt; {
         <span class="kw">let </span>lookup = <span class="kw">unsafe </span>{ ffi::X509_STORE_add_lookup(<span class="self">self</span>.as_ptr(), method.as_ptr()) };
         cvt_p(lookup).map(|ptr| <span class="kw">unsafe </span>{ X509LookupRef::from_ptr_mut(ptr) })
@@ -407,7 +429,7 @@
 
     <span class="doccomment">/// Sets certificate chain validation related flags.
     </span><span class="attr">#[corresponds(X509_STORE_set_flags)]
-    #[cfg(any(ossl102, libressl261))]
+    #[cfg(any(ossl102, boringssl, libressl261))]
     </span><span class="kw">pub fn </span>set_flags(<span class="kw-2">&amp;mut </span><span class="self">self</span>, flags: X509VerifyFlags) -&gt; <span class="prelude-ty">Result</span>&lt;(), ErrorStack&gt; {
         <span class="kw">unsafe </span>{ cvt(ffi::X509_STORE_set_flags(<span class="self">self</span>.as_ptr(), flags.bits())).map(|<span class="kw">_</span>| ()) }
     }
@@ -421,13 +443,13 @@
 
     <span class="doccomment">/// Sets certificate chain validation related parameters.
     </span><span class="attr">#[corresponds[X509_STORE_set1_param]</span>]
-    <span class="attr">#[cfg(any(ossl102, libressl261))]
+    <span class="attr">#[cfg(any(ossl102, boringssl, libressl261))]
     </span><span class="kw">pub fn </span>set_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, param: <span class="kw-2">&amp;</span>X509VerifyParamRef) -&gt; <span class="prelude-ty">Result</span>&lt;(), ErrorStack&gt; {
         <span class="kw">unsafe </span>{ cvt(ffi::X509_STORE_set1_param(<span class="self">self</span>.as_ptr(), param.as_ptr())).map(|<span class="kw">_</span>| ()) }
     }
 }
 
-<span class="macro">generic_foreign_type_and_impl_send_sync! </span>{
+<span class="macro">generic_foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::X509_LOOKUP;
     <span class="kw">fn </span>drop = ffi::X509_LOOKUP_free;
 
@@ -449,8 +471,8 @@
     /// each lookup, so that newer CRLs are used as soon as they appear in the
     /// directory.
     </span><span class="attr">#[corresponds(X509_LOOKUP_hash_dir)]
-    </span><span class="kw">pub fn </span>hash_dir() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>X509LookupMethodRef&lt;HashDir&gt; {
-        <span class="kw">unsafe </span>{ X509LookupMethodRef::from_ptr(ffi::X509_LOOKUP_hash_dir()) }
+    </span><span class="kw">pub fn </span>hash_dir() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>X509LookupMethodRef&lt;HashDir&gt; {
+        <span class="kw">unsafe </span>{ X509LookupMethodRef::from_const_ptr(ffi::X509_LOOKUP_hash_dir()) }
     }
 }
 
@@ -481,8 +503,8 @@
     <span class="doccomment">/// Lookup method loads all the certificates or CRLs present in a file
     /// into memory at the time the file is added as a lookup source.
     </span><span class="attr">#[corresponds(X509_LOOKUP_file)]
-    </span><span class="kw">pub fn </span>file() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>X509LookupMethodRef&lt;File&gt; {
-        <span class="kw">unsafe </span>{ X509LookupMethodRef::from_ptr(ffi::X509_LOOKUP_file()) }
+    </span><span class="kw">pub fn </span>file() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>X509LookupMethodRef&lt;File&gt; {
+        <span class="kw">unsafe </span>{ X509LookupMethodRef::from_const_ptr(ffi::X509_LOOKUP_file()) }
     }
 }
 
@@ -490,7 +512,7 @@
 </span><span class="kw">impl </span>X509LookupRef&lt;File&gt; {
     <span class="doccomment">/// Specifies a file from which certificates will be loaded
     </span><span class="attr">#[corresponds(X509_load_cert_file)]
-    </span><span class="comment">// FIXME should return &#39;Result&lt;i32, ErrorStack&#39; like load_crl_file
+    </span><span class="comment">// FIXME should return 'Result&lt;i32, ErrorStack' like load_crl_file
     </span><span class="kw">pub fn </span>load_cert_file&lt;P: AsRef&lt;Path&gt;&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         file: P,
@@ -525,7 +547,7 @@
     }
 }
 
-<span class="macro">generic_foreign_type_and_impl_send_sync! </span>{
+<span class="macro">generic_foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::X509_LOOKUP_METHOD;
     <span class="kw">fn </span>drop = X509_LOOKUP_meth_free;
 
@@ -535,7 +557,7 @@
     </span><span class="kw">pub struct </span>X509LookupMethodRef&lt;T&gt;;
 }
 
-<span class="macro">foreign_type_and_impl_send_sync! </span>{
+<span class="macro">foreign_type_and_impl_send_sync!</span> {
     <span class="kw">type </span>CType = ffi::X509_STORE;
     <span class="kw">fn </span>drop = ffi::X509_STORE_free;
 
@@ -547,13 +569,27 @@
 
 <span class="kw">impl </span>X509StoreRef {
     <span class="doccomment">/// Get a reference to the cache of certificates in this store.
-    </span><span class="attr">#[corresponds(X509_STORE_get0_objects)]
+    ///
+    /// This method is deprecated. It is **unsound** and will be removed in a
+    /// future version of rust-openssl. `X509StoreRef::all_certificates`
+    /// should be used instead.
+    </span><span class="attr">#[deprecated(
+        note = <span class="string">"This method is unsound, and will be removed in a future version of rust-openssl. X509StoreRef::all_certificates should be used instead."
+    </span>)]
+    #[corresponds(X509_STORE_get0_objects)]
     </span><span class="kw">pub fn </span>objects(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>StackRef&lt;X509Object&gt; {
         <span class="kw">unsafe </span>{ StackRef::from_ptr(X509_STORE_get0_objects(<span class="self">self</span>.as_ptr())) }
     }
+
+    <span class="doccomment">/// Returns a stack of all the certificates in this store.
+    </span><span class="attr">#[corresponds(X509_STORE_get1_all_certs)]
+    #[cfg(ossl300)]
+    </span><span class="kw">pub fn </span>all_certificates(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stack&lt;X509&gt; {
+        <span class="kw">unsafe </span>{ Stack::from_ptr(ffi::X509_STORE_get1_all_certs(<span class="self">self</span>.as_ptr())) }
+    }
 }
 
-<span class="macro">cfg_if! </span>{
+<span class="macro">cfg_if!</span> {
     <span class="kw">if </span><span class="attr">#[cfg(any(boringssl, ossl110, libressl270))] </span>{
         <span class="kw">use </span>ffi::X509_STORE_get0_objects;
     } <span class="kw">else </span>{
@@ -564,7 +600,7 @@
     }
 }
 
-<span class="macro">cfg_if! </span>{
+<span class="macro">cfg_if!</span> {
     <span class="kw">if </span><span class="attr">#[cfg(ossl110)] </span>{
         <span class="kw">use </span>ffi::X509_LOOKUP_meth_free;
     } <span class="kw">else </span>{

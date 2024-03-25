@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/symphonia-bundle-mp3-0.5.3/src/layer3/requantize.rs`."><title>requantize.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="symphonia_bundle_mp3" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../symphonia_bundle_mp3/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/symphonia-bundle-mp3-0.5.4/src/layer3/requantize.rs`."><title>requantize.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="symphonia_bundle_mp3" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../symphonia_bundle_mp3/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -383,11 +385,6 @@
 <a href="#383" id="383">383</a>
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
 </pre></div><pre class="rust"><code><span class="comment">// Symphonia
 // Copyright (c) 2019-2022 The Project Symphonia Developers.
 //
@@ -409,7 +406,7 @@
 
 <span class="kw">use </span>log::info;
 
-<span class="macro">lazy_static! </span>{
+<span class="macro">lazy_static!</span> {
     <span class="doccomment">/// Lookup table for computing x(i) = s(i)^(4/3) where s(i) is a decoded Huffman sample. The
     /// value of s(i) is bound between 0..8207.
     </span><span class="kw">static </span><span class="kw-2">ref </span>REQUANTIZE_POW43: [f32; <span class="number">8207</span>] = {
@@ -428,9 +425,7 @@
 <span class="doccomment">/// Zero a sample buffer.
 </span><span class="attr">#[inline(always)]
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>zero(buf: <span class="kw-2">&amp;mut </span>[f32; <span class="number">576</span>]) {
-    <span class="kw">for </span>s <span class="kw">in </span>buf.iter_mut() {
-        <span class="kw-2">*</span>s = <span class="number">0.0</span>;
-    }
+    buf.fill(<span class="number">0.0</span>);
 }
 
 <span class="doccomment">/// Reads the Huffman coded spectral samples for a given channel in a granule from a `BitStream`
@@ -438,7 +433,7 @@
 /// rzero partition).
 ///
 /// Note, each spectral sample is raised to the (4/3)-rd power. This is not actually part of the
-/// Huffman decoding process, but, by converting the integer sample to floating point here we don&#39;t
+/// Huffman decoding process, but, by converting the integer sample to floating point here we don't
 /// need to do pointless casting or use an extra buffer.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>read_huffman_samples&lt;B: ReadBitsLtr&gt;(
     bs: <span class="kw-2">&amp;mut </span>B,
@@ -448,7 +443,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
     <span class="comment">// If there are no Huffman code bits, zero all samples and return immediately.
     </span><span class="kw">if </span>part3_bits == <span class="number">0 </span>{
-        zero(buf);
+        buf.fill(<span class="number">0.0</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="number">0</span>);
     }
 
@@ -473,7 +468,7 @@
 
     <span class="comment">// Iterate over each region in big_values.
     </span><span class="kw">for </span>(region_idx, region_end) <span class="kw">in </span>regions.iter().enumerate() {
-        <span class="comment">// Select the Huffman table based on the region&#39;s table select value.
+        <span class="comment">// Select the Huffman table based on the region's table select value.
         </span><span class="kw">let </span>table_select = channel.table_select[region_idx] <span class="kw">as </span>usize;
 
         <span class="comment">// Tables 0..16 are all unique, while tables 16..24 and 24..32 each use one table but
@@ -606,31 +601,28 @@
         i += <span class="number">4</span>;
     }
 
-    <span class="comment">// Ignore any extra &quot;stuffing&quot; bits.
+    <span class="comment">// Ignore any extra "stuffing" bits.
     </span><span class="kw">if </span>bits_read &lt; part3_bits {
         bs.ignore_bits(part3_bits - bits_read)<span class="question-mark">?</span>;
     }
-    <span class="comment">// Word on the street is that some encoders are poor at &quot;stuffing&quot; bits, resulting in part3_len
+    <span class="comment">// Word on the street is that some encoders are poor at "stuffing" bits, resulting in part3_len
     // being ever so slightly too large. This causes the Huffman decode loop to decode the next few
     // bits as spectral samples. However, these bits are actually random data and are not real
     // samples, therefore, undo them! The caller will be reponsible for re-aligning the bitstream
     // reader. Candy Pop confirms this.
     </span><span class="kw">else if </span>bits_read &gt; part3_bits &amp;&amp; i &gt; big_values_len {
-        <span class="macro">info!</span>(<span class="string">&quot;count1 overrun, malformed bitstream&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"count1 overrun, malformed bitstream"</span>);
         i -= <span class="number">4</span>;
     }
     <span class="kw">else if </span>bits_read &gt; part3_bits {
-        <span class="comment">// It seems that most other decoders don&#39;t undo overruns of the big values. We&#39;ll just print
+        <span class="comment">// It seems that most other decoders don't undo overruns of the big values. We'll just print
         // a message for now.
-        </span><span class="macro">info!</span>(<span class="string">&quot;big_values overrun, malformed bitstream&quot;</span>);
+        </span><span class="macro">info!</span>(<span class="string">"big_values overrun, malformed bitstream"</span>);
     }
 
     <span class="comment">// The final partition after the count1 partition is the rzero partition. Samples in this
     // partition are all 0.
-    </span><span class="kw">for </span>j <span class="kw">in </span>(i..<span class="number">576</span>).step_by(<span class="number">2</span>) {
-        buf[j + <span class="number">0</span>] = <span class="number">0.0</span>;
-        buf[j + <span class="number">1</span>] = <span class="number">0.0</span>;
-    }
+    </span>buf[i..].fill(<span class="number">0.0</span>);
 
     <span class="prelude-val">Ok</span>(i)
 }

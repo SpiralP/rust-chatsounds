@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/lewton-0.10.2/src/imdct.rs`."><title>imdct.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-8092eaa720ad3b6f.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lewton" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (5bd28f5ea 2023-06-28)" data-channel="nightly" data-search-js="search-c507e026dd61038c.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../lewton/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/lewton-0.10.2/src/imdct.rs`."><title>imdct.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lewton" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../lewton/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -863,17 +865,17 @@
 	<span class="kw">let </span><span class="kw-2">mut </span>i_offs = i_off;
 	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = i_off <span class="kw">as </span>isize + k_off;
 
-	<span class="macro">macro_rules! </span>ee0 {
+	<span class="macro">macro_rules!</span> ee0 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules! </span>ee2 {
+	<span class="macro">macro_rules!</span> ee2 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs - <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs + <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]}
 	}
 
-	<span class="macro">macro_rules! </span>aa {
+	<span class="macro">macro_rules!</span> aa {
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
@@ -923,17 +925,17 @@
 	<span class="kw">let </span><span class="kw-2">mut </span>d0_offs = d0;
 	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = d0 <span class="kw">as </span>isize + k_off;
 
-	<span class="macro">macro_rules! </span>e0 {
+	<span class="macro">macro_rules!</span> e0 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[d0_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules! </span>e2 {
+	<span class="macro">macro_rules!</span> e2 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs - <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[(k_offs + <span class="macro-nonterminal">$x</span>) <span class="kw">as </span>usize]}
 	}
 
-	<span class="macro">macro_rules! </span>aa {
+	<span class="macro">macro_rules!</span> aa {
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
@@ -993,12 +995,12 @@
 	<span class="kw">let </span><span class="kw-2">mut </span>i_offs = i_off;
 	<span class="kw">let </span><span class="kw-2">mut </span>k_offs = (i_off <span class="kw">as </span>isize + k_off) <span class="kw">as </span>usize;
 
-	<span class="macro">macro_rules! </span>ee0 {
+	<span class="macro">macro_rules!</span> ee0 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[i_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
-	<span class="macro">macro_rules! </span>ee2 {
+	<span class="macro">macro_rules!</span> ee2 {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[k_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]};
 		(<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[k_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
@@ -1088,7 +1090,7 @@
 
 	<span class="kw">let </span>basep16 = i_off - <span class="number">16 </span>* (n - <span class="number">1 </span><span class="kw">as </span>usize);
 
-	<span class="macro">macro_rules! </span>z {
+	<span class="macro">macro_rules!</span> z {
 		(-<span class="macro-nonterminal">$x</span>:expr) =&gt; {e[z_offs - (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 	}
 
@@ -1153,7 +1155,7 @@
 	<span class="kw">let </span>b :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.b;
 	<span class="kw">let </span>c :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.c;
 
-	<span class="macro">macro_rules! </span>break_if_sub_overflows {
+	<span class="macro">macro_rules!</span> break_if_sub_overflows {
 		(<span class="macro-nonterminal">$i</span>:ident, <span class="macro-nonterminal">$x</span>:expr) =&gt; {
 			<span class="macro-nonterminal">$i </span>= <span class="kw">match </span><span class="macro-nonterminal">$i</span>.checked_sub(<span class="macro-nonterminal">$x</span>) {
 				<span class="prelude-val">Some</span>(v) =&gt; v,
@@ -1162,8 +1164,8 @@
 		}
 	}
 
-	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;
-	// See notes about bugs in that paper in less-optimal implementation &#39;inverse_mdct_old&#39; in stb_vorbis original.
+	<span class="comment">// IMDCT algorithm from "The use of multirate filter banks for coding of high quality digital audio"
+	// See notes about bugs in that paper in less-optimal implementation 'inverse_mdct_old' in stb_vorbis original.
 
 	// kernel from paper
 
@@ -1177,7 +1179,7 @@
 	// by step 0). inexplicable inefficiency! this became obvious
 	// once I combined the passes.
 
-	// so there&#39;s a missing &#39;times 2&#39; here (for adding X to itself).
+	// so there's a missing 'times 2' here (for adding X to itself).
 	// this propogates through linearly to the end, where the numbers
 	// are 1/2 too small, and need to be compensated for.
 
@@ -1187,13 +1189,13 @@
 		<span class="kw">let </span><span class="kw-2">mut </span>e_offs = <span class="number">0</span>;
 		<span class="kw">let </span>e_stop = n2;
 
-		<span class="macro">macro_rules! </span>d {
+		<span class="macro">macro_rules!</span> d {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buf2[d_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>aa {
+		<span class="macro">macro_rules!</span> aa {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>e {
+		<span class="macro">macro_rules!</span> e {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
 
@@ -1228,7 +1230,7 @@
 
 		<span class="comment">// step 2    (paper output is w, now u)
 		// this could be in place, but the data ends up in the wrong
-		// place... _somebody_&#39;s got to swap it, so this is nominated
+		// place... _somebody_'s got to swap it, so this is nominated
 		</span>{
 			<span class="kw">let </span><span class="kw-2">mut </span>a_offs = n2 - <span class="number">8</span>;
 			<span class="kw">let </span><span class="kw-2">mut </span>d0_offs = n4;
@@ -1236,19 +1238,19 @@
 			<span class="kw">let </span><span class="kw-2">mut </span>e0_offs = n4;
 			<span class="kw">let </span><span class="kw-2">mut </span>e1_offs = <span class="number">0</span>;
 
-			<span class="macro">macro_rules! </span>aa {
+			<span class="macro">macro_rules!</span> aa {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {a[a_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>d0 {
+			<span class="macro">macro_rules!</span> d0 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {u[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>d1 {
+			<span class="macro">macro_rules!</span> d1 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {u[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>e0 {
+			<span class="macro">macro_rules!</span> e0 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>e1 {
+			<span class="macro">macro_rules!</span> e1 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
 
@@ -1284,7 +1286,7 @@
 		<span class="comment">// optimized step 3:
 
 		// the original step3 loop can be nested r inside s or s inside r;
-		// it&#39;s written originally as s inside r, but this is dumb when r
+		// it's written originally as s inside r, but this is dumb when r
 		// iterates many times, and s few. So I have two copies of it and
 		// switch between them halfway.
 
@@ -1336,22 +1338,22 @@
 		// cannot be in-place because of step 5
 		</span>{
 			<span class="kw">let </span>bitrev_vec = <span class="kw-2">&amp;</span>cached_bd.bitrev;
-			<span class="comment">// weirdly, I&#39;d have thought reading sequentially and writing
+			<span class="comment">// weirdly, I'd have thought reading sequentially and writing
 			// erratically would have been better than vice-versa, but in
-			// fact that&#39;s not what my testing showed. (That is, with
+			// fact that's not what my testing showed. (That is, with
 			// j = bitreverse(i), do you read i and write j, or read j and write i.)
 
 			</span><span class="kw">let </span><span class="kw-2">mut </span>d0_offs = n4 - <span class="number">4</span>;
 			<span class="kw">let </span><span class="kw-2">mut </span>d1_offs = n2 - <span class="number">4</span>;
 			<span class="kw">let </span><span class="kw-2">mut </span>bitrev_offs = <span class="number">0</span>;
 
-			<span class="macro">macro_rules! </span>d0 {
+			<span class="macro">macro_rules!</span> d0 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>d1 {
+			<span class="macro">macro_rules!</span> d1 {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>bitrev {
+			<span class="macro">macro_rules!</span> bitrev {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {bitrev_vec[bitrev_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
 
@@ -1382,13 +1384,13 @@
 			<span class="kw">let </span><span class="kw-2">mut </span>d_offs = <span class="number">0</span>;
 			<span class="kw">let </span><span class="kw-2">mut </span>e_offs = n2 - <span class="number">4</span>;
 
-			<span class="macro">macro_rules! </span>cc {
+			<span class="macro">macro_rules!</span> cc {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {c[c_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>d {
+			<span class="macro">macro_rules!</span> d {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[d_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
-			<span class="macro">macro_rules! </span>e {
+			<span class="macro">macro_rules!</span> e {
 				(<span class="macro-nonterminal">$x</span>:expr) =&gt; {v[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 			}
 			<span class="kw">while </span>d_offs &lt; e_offs {
@@ -1442,23 +1444,23 @@
 		<span class="kw">let </span><span class="kw-2">mut </span>b_offs = n2 - <span class="number">8</span>;
 		<span class="kw">let </span><span class="kw-2">mut </span>e_offs = n2 - <span class="number">8</span>;
 
-		<span class="macro">macro_rules! </span>d0 {
+		<span class="macro">macro_rules!</span> d0 {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d0_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>d1 {
+		<span class="macro">macro_rules!</span> d1 {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d1_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>d2 {
+		<span class="macro">macro_rules!</span> d2 {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d2_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>d3 {
+		<span class="macro">macro_rules!</span> d3 {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buffer[d3_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
 
-		<span class="macro">macro_rules! </span>b {
+		<span class="macro">macro_rules!</span> b {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {b[b_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
-		<span class="macro">macro_rules! </span>e {
+		<span class="macro">macro_rules!</span> e {
 			(<span class="macro-nonterminal">$x</span>:expr) =&gt; {buf2[e_offs + (<span class="macro-nonterminal">$x </span><span class="kw">as </span>usize)]}
 		}
 
@@ -1524,12 +1526,12 @@
 	<span class="kw">let </span>b :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.b;
 	<span class="kw">let </span>c :<span class="kw-2">&amp;</span>[f32] = <span class="kw-2">&amp;</span>ctf.c;
 
-	<span class="comment">// IMDCT algorithm from &quot;The use of multirate filter banks for coding of high quality digital audio&quot;
+	<span class="comment">// IMDCT algorithm from "The use of multirate filter banks for coding of high quality digital audio"
 	// Note there are bugs in that pseudocode, presumably due to them attempting
 	// to rename the arrays nicely rather than representing the way their actual
 	// implementation bounces buffers back and forth. As a result, even in the
-	// &quot;some formulars corrected&quot; version, a direct implementation fails. These
-	// are noted below as &quot;paper bug&quot;.
+	// "some formulars corrected" version, a direct implementation fails. These
+	// are noted below as "paper bug".
 
 	// copy and reflect spectral data
 	</span><span class="kw">for </span>k <span class="kw">in </span><span class="number">0 </span>.. n2 {
@@ -1670,7 +1672,7 @@
 		<span class="number">0.00005</span>, <span class="bool-val">true</span>);
 	<span class="kw">let </span>mismatches_limit = <span class="number">0</span>;
 	<span class="kw">if </span>mismatches &gt; mismatches_limit {
-		<span class="macro">panic!</span>(<span class="string">&quot;Numer of mismatches {} was larger than limit of {}&quot;</span>,
+		<span class="macro">panic!</span>(<span class="string">"Numer of mismatches {} was larger than limit of {}"</span>,
 			mismatches, mismatches_limit);
 	}
 }
@@ -1688,7 +1690,7 @@
 		<span class="number">0.00005</span>, <span class="bool-val">true</span>);
 	<span class="kw">let </span>mismatches_limit = <span class="number">0</span>;
 	<span class="kw">if </span>mismatches &gt; mismatches_limit {
-		<span class="macro">panic!</span>(<span class="string">&quot;Numer of mismatches {} was larger than limit of {}&quot;</span>,
+		<span class="macro">panic!</span>(<span class="string">"Numer of mismatches {} was larger than limit of {}"</span>,
 			mismatches, mismatches_limit);
 	}
 }
