@@ -4,9 +4,6 @@ mod fetching;
 mod parsing;
 mod types;
 
-#[macro_use]
-extern crate quick_error;
-
 use std::{
     collections::{HashMap, VecDeque},
     io::{BufReader, Cursor},
@@ -15,7 +12,6 @@ use std::{
 };
 
 pub use bytes::Bytes;
-use quick_error::ResultExt;
 use rand::prelude::*;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 #[cfg(feature = "playback")]
@@ -64,9 +60,12 @@ unsafe impl Sync for Chatsounds {}
 impl Chatsounds {
     pub fn new(#[cfg(feature = "fs")] cache_path: &Path) -> Result<Self> {
         #[cfg(feature = "fs")]
-        let cache_path = cache_path.canonicalize().context(cache_path)?;
+        let cache_path = cache_path.canonicalize().map_err(|err| Error::Io {
+            err,
+            path: cache_path.into(),
+        })?;
         #[cfg(feature = "fs")]
-        ensure!(cache_path.is_dir(), Error::DirMissing(cache_path));
+        ensure!(cache_path.is_dir(), Error::DirMissing { path: cache_path });
 
         #[cfg(feature = "playback")]
         let (output_stream, output_stream_handle) = OutputStream::try_default()?;
@@ -212,7 +211,7 @@ impl Chatsounds {
                 // TODO random hashed number passed in?
                 parsed_chatsound
                     .choose(chatsounds, &mut rng)
-                    .ok_or_else(|| Error::EmptyChoose(text.to_owned()))?
+                    .ok_or_else(|| Error::EmptyChoose { text: text.into() })?
                     .to_owned()
             } else {
                 continue;
@@ -227,7 +226,10 @@ impl Chatsounds {
                 let bytes = chatsound.load(cache).await?;
 
                 let reader = BufReader::new(Cursor::new(bytes));
-                Box::new(Decoder::new(reader).context(&chatsound)?)
+                Box::new(Decoder::new(reader).map_err(|err| Error::RodioDecoder {
+                    err,
+                    sound_path: chatsound.sound_path,
+                })?)
             };
             for modifier in parsed_chatsound.modifiers {
                 source = modifier.modify(source);

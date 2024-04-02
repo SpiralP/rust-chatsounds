@@ -61,7 +61,10 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
 pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
     match many1(parse_chatsound)(input) {
         Ok((_input, chatsounds)) => Ok(chatsounds),
-        Err(e) => Err(Error::Nom(format!("{:?}", e), input.to_owned())),
+        Err(err) => Err(Error::Nom {
+            err: err.map_input(|s| s.into()),
+            text: input.into(),
+        }),
     }
 }
 

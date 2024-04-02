@@ -1,5 +1,4 @@
 use bytes::Bytes;
-use quick_error::ResultExt;
 use reqwest::{
     header::{self, HeaderValue},
     Client, StatusCode,
@@ -27,41 +26,59 @@ pub async fn get_with_etag(
     url: &str,
     last_etag: HeaderValue,
 ) -> Result<Option<(Bytes, Option<HeaderValue>)>> {
-    let client = make_client().map_err(Error::ReqwestMakeClient)?;
+    let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
     let response = client
         .get(url)
         .header(header::IF_NONE_MATCH, last_etag)
         .send()
         .await
-        .context(url)?;
+        .map_err(|err| Error::Reqwest {
+            err,
+            url: url.into(),
+        })?;
     let etag = response.headers().get(header::ETAG).cloned();
 
     let status = response.status();
     if status.is_success() {
-        let bytes = response.bytes().await.context(url)?;
+        let bytes = response.bytes().await.map_err(|err| Error::Reqwest {
+            err,
+            url: url.into(),
+        })?;
 
         Ok(Some((bytes, etag)))
     } else if status == StatusCode::NOT_MODIFIED {
         Ok(None)
     } else {
         // TODO response text if bad
-        Err(Error::ReqwestStatus(status, url.to_owned()))
+        Err(Error::ReqwestStatus {
+            status,
+            url: url.into(),
+        })
     }
 }
 
 pub async fn get(url: &str) -> Result<(Bytes, Option<HeaderValue>)> {
-    let client = make_client().map_err(Error::ReqwestMakeClient)?;
-    let response = client.get(url).send().await.context(url)?;
+    let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
+    let response = client.get(url).send().await.map_err(|err| Error::Reqwest {
+        err,
+        url: url.into(),
+    })?;
     let etag = response.headers().get(header::ETAG).cloned();
 
     let status = response.status();
     if status.is_success() {
-        let bytes = response.bytes().await.context(url)?;
+        let bytes = response.bytes().await.map_err(|err| Error::Reqwest {
+            err,
+            url: url.into(),
+        })?;
 
         Ok((bytes, etag))
     } else {
         // TODO response text if bad
-        Err(Error::ReqwestStatus(status, url.to_owned()))
+        Err(Error::ReqwestStatus {
+            status,
+            url: url.into(),
+        })
     }
 }
 

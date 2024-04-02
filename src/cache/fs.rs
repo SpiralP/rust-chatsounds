@@ -1,13 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
-use quick_error::ResultExt;
 use reqwest::header::HeaderValue;
 use sha2::{Digest, Sha256};
 use tokio::fs;
 
 use super::utils::{get, get_with_etag};
-use crate::error::Result;
+use crate::{error::Result, Error};
 
 /// if `use_etag` is false, always used cached file if it exists
 pub async fn download(url: &str, cache_path: &Path, use_etag: bool) -> Result<Bytes> {
@@ -37,17 +36,28 @@ pub async fn download(url: &str, cache_path: &Path, use_etag: bool) -> Result<By
     };
 
     if let Some((bytes, maybe_etag)) = maybe_response {
-        fs::write(&file_path, &bytes).await.context(&file_path)?;
+        fs::write(&file_path, &bytes)
+            .await
+            .map_err(|err| Error::Io {
+                err,
+                path: file_path,
+            })?;
         if use_etag {
             if let Some(etag) = maybe_etag {
                 fs::write(&etag_file_path, etag)
                     .await
-                    .context(&etag_file_path)?;
+                    .map_err(|err| Error::Io {
+                        err,
+                        path: etag_file_path,
+                    })?;
             }
         }
         Ok(bytes)
     } else {
-        let bytes = fs::read(&file_path).await.context(&file_path)?;
+        let bytes = fs::read(&file_path).await.map_err(|err| Error::Io {
+            err,
+            path: file_path,
+        })?;
         Ok(Bytes::from(bytes))
     }
 }

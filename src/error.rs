@@ -1,65 +1,88 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use crate::types::Chatsound;
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("DirMissing: {path}")]
+    DirMissing { path: PathBuf },
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        DirMissing(path: PathBuf) {
-            display("{:?} is not a directory", path)
-        }
+    #[error("EmptyChoose: {text}")]
+    EmptyChoose { text: String },
 
-        EmptyChoose(text: String) {
-            display("empty choose for {:?}", text)
-        }
+    #[error("GitHub: {err}: {url}")]
+    GitHub { err: String, url: String },
 
-        GitHub(err: String, url: String) {
-            display("GitHub Error for {:?}: {:?}", url, err)
-        }
+    #[error("Io: {err}: {path}")]
+    Io {
+        #[source]
+        err: std::io::Error,
+        path: PathBuf,
+    },
 
-        Io(err: std::io::Error, path: PathBuf) {
-            context(path: AsRef<Path>, err: std::io::Error)
-                -> (err, path.as_ref().to_owned())
-        }
+    #[error("RodioPlayError: {err}")]
+    RodioPlay {
+        #[from]
+        err: rodio::PlayError,
+    },
 
-        RodioPlayError(err: rodio::PlayError) { from() }
+    #[error("RodioStreamError: {err}")]
+    RodioStream {
+        #[from]
+        err: rodio::StreamError,
+    },
 
-        RodioStreamError(err: rodio::StreamError) { from() }
+    #[error("RodioDecoder: {err}: {sound_path}")]
+    RodioDecoder {
+        #[source]
+        err: rodio::decoder::DecoderError,
+        sound_path: String,
+    },
 
-        RodioDecoderError(err: rodio::decoder::DecoderError, sound_path: String) {
-            context(chatsound: &Chatsound, err: rodio::decoder::DecoderError)
-                -> (err, chatsound.sound_path.to_owned())
-        }
+    #[error("Msgpack: {err}: {url}")]
+    Msgpack {
+        #[source]
+        err: rmp_serde::decode::Error,
+        url: String,
+    },
 
-        MsgpackError(err: rmp_serde::decode::Error, url:String) {
-            context(url: AsRef<str>, err: rmp_serde::decode::Error)
-                -> (err, url.as_ref().to_owned())
-        }
+    #[error("Json: {err}: {url}")]
+    Json {
+        #[source]
+        err: serde_json::Error,
+        url: String,
+    },
 
-        JsonError(err: serde_json::Error, url: String) {
-            context(url: AsRef<str>, err: serde_json::Error)
-                -> (err, url.as_ref().to_owned())
-        }
+    #[error("ReqwestMakeClientError: {err}")]
+    ReqwestMakeClient {
+        #[source]
+        err: reqwest::Error,
+    },
 
-        ReqwestMakeClient(err: reqwest::Error) { }
-        ReqwestWithContext(err: reqwest::Error, url: String) {
-            context(url: AsRef<str>, err: reqwest::Error)
-                -> (err, url.as_ref().to_owned())
-        }
+    #[error("Reqwest: {err}: {url}")]
+    Reqwest {
+        #[source]
+        err: reqwest::Error,
+        url: String,
+    },
 
-        ReqwestStatus(status: reqwest::StatusCode, url: String) {
-            display("reqwest http status Error: {:?} {:?}", status, url)
-        }
+    #[error("ReqwestStatus: {status}: {url}")]
+    ReqwestStatus {
+        status: reqwest::StatusCode,
+        url: String,
+    },
 
-        InvalidHeaderValue(err: reqwest::header::InvalidHeaderValue, url: String) {
-            context(url: AsRef<str>, err: reqwest::header::InvalidHeaderValue)
-                -> (err, url.as_ref().to_owned())
-        }
+    #[error("InvalidHeaderValue: {err}: {url}")]
+    InvalidHeaderValue {
+        #[source]
+        err: reqwest::header::InvalidHeaderValue,
+        url: String,
+    },
 
-        Nom(err: String, text: String) {
-            display("nom Error for {:?}: {:?}", text, err)
-        }
-    }
+    #[error("Nom: {err}: {text}")]
+    Nom {
+        #[source]
+        err: nom::Err<nom::error::Error<String>>,
+        text: String,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -78,4 +101,10 @@ macro_rules! bail {
     ($err:expr) => {
         return Err($err);
     };
+}
+
+#[test]
+fn test_error_nom() {
+    //
+    todo!();
 }

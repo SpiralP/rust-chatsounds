@@ -1,10 +1,9 @@
 use std::path::{Component, Path};
 
-use quick_error::ResultExt;
 pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 use serde::Deserialize;
 
-use crate::{cache::download, error::Result, types::Chatsound, Chatsounds};
+use crate::{cache::download, error::Result, types::Chatsound, Chatsounds, Error};
 
 #[derive(Deserialize)]
 pub struct GitHubApiFileEntry {
@@ -34,7 +33,8 @@ impl Chatsounds {
 
         let bytes = download(&api_url, cache, true).await?;
 
-        let trees: GitHubApiTrees = serde_json::from_slice(&bytes).context(&api_url)?;
+        let trees: GitHubApiTrees =
+            serde_json::from_slice(&bytes).map_err(|err| Error::Json { err, url: api_url })?;
 
         Ok(trees)
     }
@@ -97,7 +97,10 @@ impl Chatsounds {
 
         let bytes = download(&msgpack_url, cache, true).await?;
         let entries: GitHubMsgpackEntries =
-            rmp_serde::decode::from_slice(&bytes).context(&msgpack_url)?;
+            rmp_serde::decode::from_slice(&bytes).map_err(|err| Error::Msgpack {
+                err,
+                url: msgpack_url,
+            })?;
 
         Ok(entries)
     }
