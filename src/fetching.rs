@@ -31,7 +31,7 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
-        let bytes = download(&api_url, cache, true).await?;
+        let bytes = download(&api_url, cache, false).await?;
 
         let trees: GitHubApiTrees =
             serde_json::from_slice(&bytes).map_err(|err| Error::Json { err, url: api_url })?;
@@ -95,7 +95,7 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
-        let bytes = download(&msgpack_url, cache, true).await?;
+        let bytes = download(&msgpack_url, cache, false).await?;
         let entries: GitHubMsgpackEntries =
             rmp_serde::decode::from_slice(&bytes).map_err(|err| Error::Msgpack {
                 err,

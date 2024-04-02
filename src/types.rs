@@ -28,13 +28,13 @@ impl Chatsound {
     #[cfg(feature = "fs")]
     pub async fn load(&self, cache_path: &Path) -> Result<Bytes> {
         let url = self.get_url();
-        download(&url, cache_path, false).await
+        download(&url, cache_path, true).await
     }
 
     #[cfg(feature = "memory")]
     pub async fn load(&self, fs_memory: crate::FsMemory) -> Result<Bytes> {
         let url = self.get_url();
-        download(&url, fs_memory, false).await
+        download(&url, fs_memory, true).await
     }
 }
 
