@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.17.3/src/stream.rs`."><title>stream.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-d10b2a06af903387.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.82.0-nightly (e57f3090a 2024-08-05)" data-channel="nightly" data-search-js="search-ef54e092fea9c776.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9345f17bf569ecba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.19.0/src/stream.rs`."><title>stream.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-d10b2a06af903387.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.82.0-nightly (e57f3090a 2024-08-05)" data-channel="nightly" data-search-js="search-ef54e092fea9c776.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9345f17bf569ecba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -356,9 +356,7 @@
 <a href="#356" id="356">356</a>
 <a href="#357" id="357">357</a>
 <a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::io::{Read, Seek};
-<span class="kw">use </span>std::marker::Sync;
 <span class="kw">use </span>std::sync::{Arc, Weak};
 <span class="kw">use </span>std::{error, fmt};
 
@@ -632,7 +630,7 @@
                         <span class="kw-2">*</span>d = mixer_rx
                             .next()
                             .map(Sample::from_sample)
-                            .unwrap_or(u8::max_value() / <span class="number">2</span>)
+                            .unwrap_or(u8::MAX / <span class="number">2</span>)
                     })
                 },
                 error_callback,
@@ -645,7 +643,7 @@
                         <span class="kw-2">*</span>d = mixer_rx
                             .next()
                             .map(Sample::from_sample)
-                            .unwrap_or(u16::max_value() / <span class="number">2</span>)
+                            .unwrap_or(u16::MAX / <span class="number">2</span>)
                     })
                 },
                 error_callback,
@@ -658,7 +656,7 @@
                         <span class="kw-2">*</span>d = mixer_rx
                             .next()
                             .map(Sample::from_sample)
-                            .unwrap_or(u32::max_value() / <span class="number">2</span>)
+                            .unwrap_or(u32::MAX / <span class="number">2</span>)
                     })
                 },
                 error_callback,
@@ -671,7 +669,7 @@
                         <span class="kw-2">*</span>d = mixer_rx
                             .next()
                             .map(Sample::from_sample)
-                            .unwrap_or(u64::max_value() / <span class="number">2</span>)
+                            .unwrap_or(u64::MAX / <span class="number">2</span>)
                     })
                 },
                 error_callback,
@@ -708,9 +706,9 @@
     <span class="prelude-val">Ok</span>(supported.into_iter().flat_map(|sf| {
         <span class="kw">let </span>max_rate = sf.max_sample_rate();
         <span class="kw">let </span>min_rate = sf.min_sample_rate();
-        <span class="kw">let </span><span class="kw-2">mut </span>formats = <span class="macro">vec!</span>[sf.clone().with_max_sample_rate()];
+        <span class="kw">let </span><span class="kw-2">mut </span>formats = <span class="macro">vec!</span>[sf.with_max_sample_rate()];
         <span class="kw">if </span>HZ_44100 &lt; max_rate &amp;&amp; HZ_44100 &gt; min_rate {
-            formats.push(sf.clone().with_sample_rate(HZ_44100))
+            formats.push(sf.with_sample_rate(HZ_44100))
         }
         formats.push(sf.with_sample_rate(min_rate));
         formats
