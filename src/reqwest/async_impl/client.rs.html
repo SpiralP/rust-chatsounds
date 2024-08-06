@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/reqwest-0.12.2/src/async_impl/client.rs`."><title>client.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="reqwest" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (1684a753d 2024-04-01)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../reqwest/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/reqwest-0.12.5/src/async_impl/client.rs`."><title>client.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-d10b2a06af903387.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="reqwest" data-themes="" data-resource-suffix="" data-rustdoc-version="1.82.0-nightly (e57f3090a 2024-08-05)" data-channel="nightly" data-search-js="search-ef54e092fea9c776.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9345f17bf569ecba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2663,6 +2661,145 @@
 <a href="#2661" id="2661">2661</a>
 <a href="#2662" id="2662">2662</a>
 <a href="#2663" id="2663">2663</a>
+<a href="#2664" id="2664">2664</a>
+<a href="#2665" id="2665">2665</a>
+<a href="#2666" id="2666">2666</a>
+<a href="#2667" id="2667">2667</a>
+<a href="#2668" id="2668">2668</a>
+<a href="#2669" id="2669">2669</a>
+<a href="#2670" id="2670">2670</a>
+<a href="#2671" id="2671">2671</a>
+<a href="#2672" id="2672">2672</a>
+<a href="#2673" id="2673">2673</a>
+<a href="#2674" id="2674">2674</a>
+<a href="#2675" id="2675">2675</a>
+<a href="#2676" id="2676">2676</a>
+<a href="#2677" id="2677">2677</a>
+<a href="#2678" id="2678">2678</a>
+<a href="#2679" id="2679">2679</a>
+<a href="#2680" id="2680">2680</a>
+<a href="#2681" id="2681">2681</a>
+<a href="#2682" id="2682">2682</a>
+<a href="#2683" id="2683">2683</a>
+<a href="#2684" id="2684">2684</a>
+<a href="#2685" id="2685">2685</a>
+<a href="#2686" id="2686">2686</a>
+<a href="#2687" id="2687">2687</a>
+<a href="#2688" id="2688">2688</a>
+<a href="#2689" id="2689">2689</a>
+<a href="#2690" id="2690">2690</a>
+<a href="#2691" id="2691">2691</a>
+<a href="#2692" id="2692">2692</a>
+<a href="#2693" id="2693">2693</a>
+<a href="#2694" id="2694">2694</a>
+<a href="#2695" id="2695">2695</a>
+<a href="#2696" id="2696">2696</a>
+<a href="#2697" id="2697">2697</a>
+<a href="#2698" id="2698">2698</a>
+<a href="#2699" id="2699">2699</a>
+<a href="#2700" id="2700">2700</a>
+<a href="#2701" id="2701">2701</a>
+<a href="#2702" id="2702">2702</a>
+<a href="#2703" id="2703">2703</a>
+<a href="#2704" id="2704">2704</a>
+<a href="#2705" id="2705">2705</a>
+<a href="#2706" id="2706">2706</a>
+<a href="#2707" id="2707">2707</a>
+<a href="#2708" id="2708">2708</a>
+<a href="#2709" id="2709">2709</a>
+<a href="#2710" id="2710">2710</a>
+<a href="#2711" id="2711">2711</a>
+<a href="#2712" id="2712">2712</a>
+<a href="#2713" id="2713">2713</a>
+<a href="#2714" id="2714">2714</a>
+<a href="#2715" id="2715">2715</a>
+<a href="#2716" id="2716">2716</a>
+<a href="#2717" id="2717">2717</a>
+<a href="#2718" id="2718">2718</a>
+<a href="#2719" id="2719">2719</a>
+<a href="#2720" id="2720">2720</a>
+<a href="#2721" id="2721">2721</a>
+<a href="#2722" id="2722">2722</a>
+<a href="#2723" id="2723">2723</a>
+<a href="#2724" id="2724">2724</a>
+<a href="#2725" id="2725">2725</a>
+<a href="#2726" id="2726">2726</a>
+<a href="#2727" id="2727">2727</a>
+<a href="#2728" id="2728">2728</a>
+<a href="#2729" id="2729">2729</a>
+<a href="#2730" id="2730">2730</a>
+<a href="#2731" id="2731">2731</a>
+<a href="#2732" id="2732">2732</a>
+<a href="#2733" id="2733">2733</a>
+<a href="#2734" id="2734">2734</a>
+<a href="#2735" id="2735">2735</a>
+<a href="#2736" id="2736">2736</a>
+<a href="#2737" id="2737">2737</a>
+<a href="#2738" id="2738">2738</a>
+<a href="#2739" id="2739">2739</a>
+<a href="#2740" id="2740">2740</a>
+<a href="#2741" id="2741">2741</a>
+<a href="#2742" id="2742">2742</a>
+<a href="#2743" id="2743">2743</a>
+<a href="#2744" id="2744">2744</a>
+<a href="#2745" id="2745">2745</a>
+<a href="#2746" id="2746">2746</a>
+<a href="#2747" id="2747">2747</a>
+<a href="#2748" id="2748">2748</a>
+<a href="#2749" id="2749">2749</a>
+<a href="#2750" id="2750">2750</a>
+<a href="#2751" id="2751">2751</a>
+<a href="#2752" id="2752">2752</a>
+<a href="#2753" id="2753">2753</a>
+<a href="#2754" id="2754">2754</a>
+<a href="#2755" id="2755">2755</a>
+<a href="#2756" id="2756">2756</a>
+<a href="#2757" id="2757">2757</a>
+<a href="#2758" id="2758">2758</a>
+<a href="#2759" id="2759">2759</a>
+<a href="#2760" id="2760">2760</a>
+<a href="#2761" id="2761">2761</a>
+<a href="#2762" id="2762">2762</a>
+<a href="#2763" id="2763">2763</a>
+<a href="#2764" id="2764">2764</a>
+<a href="#2765" id="2765">2765</a>
+<a href="#2766" id="2766">2766</a>
+<a href="#2767" id="2767">2767</a>
+<a href="#2768" id="2768">2768</a>
+<a href="#2769" id="2769">2769</a>
+<a href="#2770" id="2770">2770</a>
+<a href="#2771" id="2771">2771</a>
+<a href="#2772" id="2772">2772</a>
+<a href="#2773" id="2773">2773</a>
+<a href="#2774" id="2774">2774</a>
+<a href="#2775" id="2775">2775</a>
+<a href="#2776" id="2776">2776</a>
+<a href="#2777" id="2777">2777</a>
+<a href="#2778" id="2778">2778</a>
+<a href="#2779" id="2779">2779</a>
+<a href="#2780" id="2780">2780</a>
+<a href="#2781" id="2781">2781</a>
+<a href="#2782" id="2782">2782</a>
+<a href="#2783" id="2783">2783</a>
+<a href="#2784" id="2784">2784</a>
+<a href="#2785" id="2785">2785</a>
+<a href="#2786" id="2786">2786</a>
+<a href="#2787" id="2787">2787</a>
+<a href="#2788" id="2788">2788</a>
+<a href="#2789" id="2789">2789</a>
+<a href="#2790" id="2790">2790</a>
+<a href="#2791" id="2791">2791</a>
+<a href="#2792" id="2792">2792</a>
+<a href="#2793" id="2793">2793</a>
+<a href="#2794" id="2794">2794</a>
+<a href="#2795" id="2795">2795</a>
+<a href="#2796" id="2796">2796</a>
+<a href="#2797" id="2797">2797</a>
+<a href="#2798" id="2798">2798</a>
+<a href="#2799" id="2799">2799</a>
+<a href="#2800" id="2800">2800</a>
+<a href="#2801" id="2801">2801</a>
+<a href="#2802" id="2802">2802</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(any(feature = <span class="string">"native-tls"</span>, feature = <span class="string">"__rustls"</span>,))]
 </span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::net::IpAddr;
@@ -2773,11 +2910,16 @@
     auto_sys_proxy: bool,
     redirect_policy: redirect::Policy,
     referer: bool,
+    read_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
     timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
     <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
     </span>root_certs: Vec&lt;Certificate&gt;,
     <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
     </span>tls_built_in_root_certs: bool,
+    <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)]
+    </span>tls_built_in_certs_webpki: bool,
+    <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)]
+    </span>tls_built_in_certs_native: bool,
     <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
     </span>min_tls_version: <span class="prelude-ty">Option</span>&lt;tls::Version&gt;,
     <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
@@ -2865,11 +3007,16 @@
                 auto_sys_proxy: <span class="bool-val">true</span>,
                 redirect_policy: redirect::Policy::default(),
                 referer: <span class="bool-val">true</span>,
+                read_timeout: <span class="prelude-val">None</span>,
                 timeout: <span class="prelude-val">None</span>,
                 <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
                 </span>root_certs: Vec::new(),
                 <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
                 </span>tls_built_in_root_certs: <span class="bool-val">true</span>,
+                <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)]
+                </span>tls_built_in_certs_webpki: <span class="bool-val">true</span>,
+                <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)]
+                </span>tls_built_in_certs_native: <span class="bool-val">true</span>,
                 <span class="attr">#[cfg(any(feature = <span class="string">"native-tls"</span>, feature = <span class="string">"__rustls"</span>))]
                 </span>identity: <span class="prelude-val">None</span>,
                 <span class="attr">#[cfg(feature = <span class="string">"__tls"</span>)]
@@ -3164,12 +3311,12 @@
                     }
 
                     <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)]
-                    </span><span class="kw">if </span>config.tls_built_in_root_certs {
+                    </span><span class="kw">if </span>config.tls_built_in_certs_webpki {
                         root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
                     }
 
                     <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)]
-                    </span><span class="kw">if </span>config.tls_built_in_root_certs {
+                    </span><span class="kw">if </span>config.tls_built_in_certs_native {
                         <span class="kw">let </span><span class="kw-2">mut </span>valid_count = <span class="number">0</span>;
                         <span class="kw">let </span><span class="kw-2">mut </span>invalid_count = <span class="number">0</span>;
                         <span class="kw">for </span>cert <span class="kw">in </span>rustls_native_certs::load_native_certs()
@@ -3220,10 +3367,23 @@
                         <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::error::builder(<span class="string">"empty supported tls versions"</span>));
                     }
 
+                    <span class="comment">// Allow user to have installed a runtime default.
+                    // If not, we use ring.
+                    </span><span class="kw">let </span>provider = rustls::crypto::CryptoProvider::get_default()
+                        .map(|arc| arc.clone())
+                        .unwrap_or_else(|| {
+                            <span class="attr">#[cfg(not(feature = <span class="string">"__rustls-ring"</span>))]
+                            </span><span class="macro">panic!</span>(<span class="string">"No provider set"</span>);
+
+                            <span class="attr">#[cfg(feature = <span class="string">"__rustls-ring"</span>)]
+                            </span>Arc::new(rustls::crypto::ring::default_provider())
+                        });
+
                     <span class="comment">// Build TLS config
-                    </span><span class="kw">let </span>config_builder =
-                        rustls::ClientConfig::builder_with_protocol_versions(<span class="kw-2">&amp;</span>versions)
-                            .with_root_certificates(root_cert_store);
+                    </span><span class="kw">let </span>config_builder = rustls::ClientConfig::builder_with_provider(provider)
+                        .with_protocol_versions(<span class="kw-2">&amp;</span>versions)
+                        .map_err(|<span class="kw">_</span>| <span class="kw">crate</span>::error::builder(<span class="string">"invalid TLS versions"</span>))<span class="question-mark">?
+                        </span>.with_root_certificates(root_cert_store);
 
                     <span class="comment">// Finalize TLS config
                     </span><span class="kw">let </span><span class="kw-2">mut </span>tls = <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = config.identity {
@@ -3396,6 +3556,7 @@
                 headers: config.headers,
                 redirect_policy: config.redirect_policy,
                 referer: config.referer,
+                read_timeout: config.read_timeout,
                 request_timeout: config.timeout,
                 proxies,
                 proxies_maybe_http_auth,
@@ -3461,27 +3622,6 @@
     ///     .default_headers(headers)
     ///     .build()?;
     /// let res = client.get("https://www.rust-lang.org").send().await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// Override the default headers:
-    ///
-    /// ```rust
-    /// use reqwest::header;
-    /// # async fn doc() -&gt; Result&lt;(), reqwest::Error&gt; {
-    /// let mut headers = header::HeaderMap::new();
-    /// headers.insert("X-MY-HEADER", header::HeaderValue::from_static("value"));
-    ///
-    /// // get a client builder
-    /// let client = reqwest::Client::builder()
-    ///     .default_headers(headers)
-    ///     .build()?;
-    /// let res = client
-    ///     .get("https://www.rust-lang.org")
-    ///     .header("X-MY-HEADER", "new_value")
-    ///     .send()
-    ///     .await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -3586,6 +3726,29 @@
         <span class="self">self
     </span>}
 
+    <span class="doccomment">/// Enable auto zstd decompression by checking the `Content-Encoding` response header.
+    ///
+    /// If auto zstd decompression is turned on:
+    ///
+    /// - When sending a request and if the request's headers do not already contain
+    ///   an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `zstd`.
+    ///   The request body is **not** automatically compressed.
+    /// - When receiving a response, if its headers contain a `Content-Encoding` value of
+    ///   `zstd`, both `Content-Encoding` and `Content-Length` are removed from the
+    ///   headers' set. The response body is automatically decompressed.
+    ///
+    /// If the `zstd` feature is turned on, the default option is enabled.
+    ///
+    /// # Optional
+    ///
+    /// This requires the optional `zstd` feature to be enabled
+    </span><span class="attr">#[cfg(feature = <span class="string">"zstd"</span>)]
+    #[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"zstd"</span>)))]
+    </span><span class="kw">pub fn </span>zstd(<span class="kw-2">mut </span><span class="self">self</span>, enable: bool) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.accepts.zstd = enable;
+        <span class="self">self
+    </span>}
+
     <span class="doccomment">/// Enable auto deflate decompression by checking the `Content-Encoding` response header.
     ///
     /// If auto deflate decompression is turned on:
@@ -3638,6 +3801,23 @@
         }
 
         <span class="attr">#[cfg(not(feature = <span class="string">"brotli"</span>))]
+        </span>{
+            <span class="self">self
+        </span>}
+    }
+
+    <span class="doccomment">/// Disable auto response body zstd decompression.
+    ///
+    /// This method exists even if the optional `zstd` feature is not enabled.
+    /// This can be used to ensure a `Client` doesn't use zstd decompression
+    /// even if another dependency were to enable the optional `zstd` feature.
+    </span><span class="kw">pub fn </span>no_zstd(<span class="self">self</span>) -&gt; ClientBuilder {
+        <span class="attr">#[cfg(feature = <span class="string">"zstd"</span>)]
+        </span>{
+            <span class="self">self</span>.zstd(<span class="bool-val">false</span>)
+        }
+
+        <span class="attr">#[cfg(not(feature = <span class="string">"zstd"</span>))]
         </span>{
             <span class="self">self
         </span>}
@@ -3706,14 +3886,26 @@
 
     <span class="comment">// Timeout options
 
-    </span><span class="doccomment">/// Enables a request timeout.
+    </span><span class="doccomment">/// Enables a total request timeout.
     ///
     /// The timeout is applied from when the request starts connecting until the
-    /// response body has finished.
+    /// response body has finished. Also considered a total deadline.
     ///
     /// Default is no timeout.
     </span><span class="kw">pub fn </span>timeout(<span class="kw-2">mut </span><span class="self">self</span>, timeout: Duration) -&gt; ClientBuilder {
         <span class="self">self</span>.config.timeout = <span class="prelude-val">Some</span>(timeout);
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Enables a read timeout.
+    ///
+    /// The timeout applies to each read operation, and resets after a
+    /// successful read. This is more appropriate for detecting stalled
+    /// connections when the size isn't known beforehand.
+    ///
+    /// Default is no timeout.
+    </span><span class="kw">pub fn </span>read_timeout(<span class="kw-2">mut </span><span class="self">self</span>, timeout: Duration) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.read_timeout = <span class="prelude-val">Some</span>(timeout);
         <span class="self">self
     </span>}
 
@@ -3928,6 +4120,8 @@
     /// # Example
     ///
     /// ```
+    /// # #[cfg(all(feature = "__rustls", not(feature = "__rustls-ring")))]
+    /// # let _ = rustls::crypto::ring::default_provider().install_default();
     /// use std::net::IpAddr;
     /// let local_addr = IpAddr::from([12, 4, 1, 8]);
     /// let client = reqwest::Client::builder()
@@ -3947,6 +4141,8 @@
     /// # Example
     ///
     /// ```
+    /// # #[cfg(all(feature = "__rustls", not(feature = "__rustls-ring")))]
+    /// # let _ = rustls::crypto::ring::default_provider().install_default();
     /// let interface = "lo";
     /// let client = reqwest::Client::builder()
     ///     .interface(interface)
@@ -3998,6 +4194,15 @@
     ///
     /// Defaults to `true` -- built-in system certs will be used.
     ///
+    /// # Bulk Option
+    ///
+    /// If this value is `true`, _all_ enabled system certs configured with Cargo
+    /// features will be loaded.
+    ///
+    /// You can set this to `false`, and enable only a specific source with
+    /// individual methods. Do that will prevent other sources from being loaded
+    /// even if their feature Cargo feature is enabled.
+    ///
     /// # Optional
     ///
     /// This requires the optional `default-tls`, `native-tls`, or `rustls-tls(-...)`
@@ -4013,6 +4218,37 @@
     )]
     </span><span class="kw">pub fn </span>tls_built_in_root_certs(<span class="kw-2">mut </span><span class="self">self</span>, tls_built_in_root_certs: bool) -&gt; ClientBuilder {
         <span class="self">self</span>.config.tls_built_in_root_certs = tls_built_in_root_certs;
+
+        <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)]
+        </span>{
+            <span class="self">self</span>.config.tls_built_in_certs_webpki = tls_built_in_root_certs;
+        }
+
+        <span class="attr">#[cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)]
+        </span>{
+            <span class="self">self</span>.config.tls_built_in_certs_native = tls_built_in_root_certs;
+        }
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Sets whether to load webpki root certs with rustls.
+    ///
+    /// If the feature is enabled, this value is `true` by default.
+    </span><span class="attr">#[cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)]
+    #[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"rustls-tls-webpki-roots"</span>)))]
+    </span><span class="kw">pub fn </span>tls_built_in_webpki_certs(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.tls_built_in_certs_webpki = enabled;
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Sets whether to load native root certs with rustls.
+    ///
+    /// If the feature is enabled, this value is `true` by default.
+    </span><span class="attr">#[cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)]
+    #[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"rustls-tls-native-roots"</span>)))]
+    </span><span class="kw">pub fn </span>tls_built_in_native_certs(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.tls_built_in_certs_native = enabled;
         <span class="self">self
     </span>}
 
@@ -4361,7 +4597,7 @@
     </span><span class="kw">pub fn </span>resolve_to_addrs(<span class="kw-2">mut </span><span class="self">self</span>, domain: <span class="kw-2">&amp;</span>str, addrs: <span class="kw-2">&amp;</span>[SocketAddr]) -&gt; ClientBuilder {
         <span class="self">self</span>.config
             .dns_overrides
-            .insert(domain.to_string(), addrs.to_vec());
+            .insert(domain.to_ascii_lowercase(), addrs.to_vec());
         <span class="self">self
     </span>}
 
@@ -4381,7 +4617,7 @@
     /// The default is false.
     </span><span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
     #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = <span class="string">"http3"</span>,))))]
-    </span><span class="kw">pub fn </span>set_tls_enable_early_data(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; ClientBuilder {
+    </span><span class="kw">pub fn </span>tls_early_data(<span class="kw-2">mut </span><span class="self">self</span>, enabled: bool) -&gt; ClientBuilder {
         <span class="self">self</span>.config.tls_enable_early_data = enabled;
         <span class="self">self
     </span>}
@@ -4393,7 +4629,7 @@
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     </span><span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
     #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = <span class="string">"http3"</span>,))))]
-    </span><span class="kw">pub fn </span>set_quic_max_idle_timeout(<span class="kw-2">mut </span><span class="self">self</span>, value: Duration) -&gt; ClientBuilder {
+    </span><span class="kw">pub fn </span>http3_max_idle_timeout(<span class="kw-2">mut </span><span class="self">self</span>, value: Duration) -&gt; ClientBuilder {
         <span class="self">self</span>.config.quic_max_idle_timeout = <span class="prelude-val">Some</span>(value);
         <span class="self">self
     </span>}
@@ -4404,10 +4640,14 @@
     /// Please see docs in [`TransportConfig`] in [`quinn`].
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is over 2^62.
     </span><span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
     #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = <span class="string">"http3"</span>,))))]
-    </span><span class="kw">pub fn </span>set_quic_stream_receive_window(<span class="kw-2">mut </span><span class="self">self</span>, value: VarInt) -&gt; ClientBuilder {
-        <span class="self">self</span>.config.quic_stream_receive_window = <span class="prelude-val">Some</span>(value);
+    </span><span class="kw">pub fn </span>http3_stream_receive_window(<span class="kw-2">mut </span><span class="self">self</span>, value: u64) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.quic_stream_receive_window = <span class="prelude-val">Some</span>(value.try_into().unwrap());
         <span class="self">self
     </span>}
 
@@ -4417,10 +4657,14 @@
     /// Please see docs in [`TransportConfig`] in [`quinn`].
     ///
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is over 2^62.
     </span><span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
     #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = <span class="string">"http3"</span>,))))]
-    </span><span class="kw">pub fn </span>set_quic_receive_window(<span class="kw-2">mut </span><span class="self">self</span>, value: VarInt) -&gt; ClientBuilder {
-        <span class="self">self</span>.config.quic_receive_window = <span class="prelude-val">Some</span>(value);
+    </span><span class="kw">pub fn </span>http3_conn_receive_window(<span class="kw-2">mut </span><span class="self">self</span>, value: u64) -&gt; ClientBuilder {
+        <span class="self">self</span>.config.quic_receive_window = <span class="prelude-val">Some</span>(value.try_into().unwrap());
         <span class="self">self
     </span>}
 
@@ -4431,7 +4675,7 @@
     /// [`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
     </span><span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
     #[cfg_attr(docsrs, doc(cfg(all(reqwest_unstable, feature = <span class="string">"http3"</span>,))))]
-    </span><span class="kw">pub fn </span>set_quic_send_window(<span class="kw-2">mut </span><span class="self">self</span>, value: u64) -&gt; ClientBuilder {
+    </span><span class="kw">pub fn </span>http3_send_window(<span class="kw-2">mut </span><span class="self">self</span>, value: u64) -&gt; ClientBuilder {
         <span class="self">self</span>.config.quic_send_window = <span class="prelude-val">Some</span>(value);
         <span class="self">self
     </span>}
@@ -4623,8 +4867,14 @@
             }
         };
 
-        <span class="kw">let </span>timeout = timeout
+        <span class="kw">let </span>total_timeout = timeout
             .or(<span class="self">self</span>.inner.request_timeout)
+            .map(tokio::time::sleep)
+            .map(Box::pin);
+
+        <span class="kw">let </span>read_timeout_fut = <span class="self">self
+            </span>.inner
+            .read_timeout
             .map(tokio::time::sleep)
             .map(Box::pin);
 
@@ -4642,7 +4892,9 @@
                 client: <span class="self">self</span>.inner.clone(),
 
                 in_flight,
-                timeout,
+                total_timeout,
+                read_timeout_fut,
+                read_timeout: <span class="self">self</span>.inner.read_timeout,
             }),
         }
     }
@@ -4848,6 +5100,7 @@
     redirect_policy: redirect::Policy,
     referer: bool,
     request_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+    read_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
     proxies: Arc&lt;Vec&lt;Proxy&gt;&gt;,
     proxies_maybe_http_auth: bool,
     https_only: bool,
@@ -4884,6 +5137,10 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>d) = <span class="self">self</span>.request_timeout {
             f.field(<span class="string">"timeout"</span>, d);
         }
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>d) = <span class="self">self</span>.read_timeout {
+            f.field(<span class="string">"read_timeout"</span>, d);
+        }
     }
 }
 
@@ -4915,7 +5172,10 @@
         <span class="attr">#[pin]
         </span>in_flight: ResponseFuture,
         <span class="attr">#[pin]
-        </span>timeout: <span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;,
+        </span>total_timeout: <span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;,
+        <span class="attr">#[pin]
+        </span>read_timeout_fut: <span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;,
+        read_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
     }
 }
 
@@ -4930,8 +5190,12 @@
         <span class="self">self</span>.project().in_flight
     }
 
-    <span class="kw">fn </span>timeout(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) -&gt; Pin&lt;<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;&gt; {
-        <span class="self">self</span>.project().timeout
+    <span class="kw">fn </span>total_timeout(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) -&gt; Pin&lt;<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;&gt; {
+        <span class="self">self</span>.project().total_timeout
+    }
+
+    <span class="kw">fn </span>read_timeout(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) -&gt; Pin&lt;<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;&gt; {
+        <span class="self">self</span>.project().read_timeout_fut
     }
 
     <span class="kw">fn </span>urls(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) -&gt; <span class="kw-2">&amp;mut </span>Vec&lt;Url&gt; {
@@ -4942,7 +5206,7 @@
         <span class="self">self</span>.project().headers
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">"http2"</span>)]
+    <span class="attr">#[cfg(any(feature = <span class="string">"http2"</span>, feature = <span class="string">"http3"</span>))]
     </span><span class="kw">fn </span>retry_error(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, err: <span class="kw-2">&amp;</span>(<span class="kw">dyn </span>std::error::Error + <span class="lifetime">'static</span>)) -&gt; bool {
         <span class="kw">use </span>log::trace;
 
@@ -5002,7 +5266,7 @@
     </span>}
 }
 
-<span class="attr">#[cfg(feature = <span class="string">"http2"</span>)]
+<span class="attr">#[cfg(any(feature = <span class="string">"http2"</span>, feature = <span class="string">"http3"</span>))]
 </span><span class="kw">fn </span>is_retryable_error(err: <span class="kw-2">&amp;</span>(<span class="kw">dyn </span>std::error::Error + <span class="lifetime">'static</span>)) -&gt; bool {
     <span class="comment">// pop the legacy::Error
     </span><span class="kw">let </span>err = <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.source() {
@@ -5020,7 +5284,8 @@
         }
     }
 
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(cause) = err.source() {
+    <span class="attr">#[cfg(feature = <span class="string">"http2"</span>)]
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(cause) = err.source() {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = cause.downcast_ref::&lt;h2::Error&gt;() {
             <span class="comment">// They sent us a graceful shutdown, try with a new connection!
             </span><span class="kw">if </span>err.is_go_away() &amp;&amp; err.is_remote() &amp;&amp; err.reason() == <span class="prelude-val">Some</span>(h2::Reason::NO_ERROR) {
@@ -5068,7 +5333,15 @@
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;Response, <span class="kw">crate</span>::Error&gt;;
 
     <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(delay) = <span class="self">self</span>.as_mut().timeout().as_mut().as_pin_mut() {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(delay) = <span class="self">self</span>.as_mut().total_timeout().as_mut().as_pin_mut() {
+            <span class="kw">if let </span>Poll::Ready(()) = delay.poll(cx) {
+                <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(
+                    <span class="kw">crate</span>::error::request(<span class="kw">crate</span>::error::TimedOut).with_url(<span class="self">self</span>.url.clone())
+                ));
+            }
+        }
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(delay) = <span class="self">self</span>.as_mut().read_timeout().as_mut().as_pin_mut() {
             <span class="kw">if let </span>Poll::Ready(()) = delay.poll(cx) {
                 <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(
                     <span class="kw">crate</span>::error::request(<span class="kw">crate</span>::error::TimedOut).with_url(<span class="self">self</span>.url.clone())
@@ -5088,7 +5361,7 @@
                             <span class="kw">crate</span>::error::request(e).with_url(<span class="self">self</span>.url.clone())
                         ));
                     }
-                    Poll::Ready(<span class="prelude-val">Ok</span>(res)) =&gt; res,
+                    Poll::Ready(<span class="prelude-val">Ok</span>(res)) =&gt; res.map(<span class="kw">super</span>::body::boxed),
                     Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
                 },
                 <span class="attr">#[cfg(feature = <span class="string">"http3"</span>)]
@@ -5260,7 +5533,8 @@
                 res,
                 <span class="self">self</span>.url.clone(),
                 <span class="self">self</span>.client.accepts,
-                <span class="self">self</span>.timeout.take(),
+                <span class="self">self</span>.total_timeout.take(),
+                <span class="self">self</span>.read_timeout,
             );
             <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(res));
         }
@@ -5301,7 +5575,9 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="attr">#[tokio::test]
+    <span class="attr">#![cfg(not(feature = <span class="string">"rustls-tls-manual-roots-no-provider"</span>))]
+
+    #[tokio::test]
     </span><span class="kw">async fn </span>execute_request_rejects_invalid_urls() {
         <span class="kw">let </span>url_str = <span class="string">"hxxps://www.rust-lang.org/"</span>;
         <span class="kw">let </span>url = url::Url::parse(url_str).unwrap();

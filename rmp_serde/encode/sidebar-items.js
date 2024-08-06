@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"fn":["to_vec","to_vec_named","write","write_named"],"struct":["Compound","ExtFieldSerializer","ExtSerializer","MaybeUnknownLengthCompound","Serializer"],"trait":["UnderlyingWrite"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"fn":["to_vec","to_vec_named","write","write_named"],"struct":["ExtFieldSerializer","ExtSerializer","Serializer"],"trait":["UnderlyingWrite"]};

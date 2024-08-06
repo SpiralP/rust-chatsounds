@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.2.0/src/proto/h2/client.rs`."><title>client.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (1684a753d 2024-04-01)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../hyper/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.4.1/src/proto/h2/client.rs`."><title>client.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-d10b2a06af903387.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.82.0-nightly (e57f3090a 2024-08-05)" data-channel="nightly" data-search-js="search-ef54e092fea9c776.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9345f17bf569ecba.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -712,6 +710,28 @@
 <a href="#710" id="710">710</a>
 <a href="#711" id="711">711</a>
 <a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     convert::Infallible,
     future::Future,
@@ -736,7 +756,7 @@
 <span class="kw">use </span><span class="kw">super</span>::ping::{Ponger, Recorder};
 <span class="kw">use super</span>::{ping, H2Upgraded, PipeToSendStream, SendBuf};
 <span class="kw">use </span><span class="kw">crate</span>::body::{Body, Incoming <span class="kw">as </span>IncomingBody};
-<span class="kw">use </span><span class="kw">crate</span>::client::dispatch::{Callback, SendWhen};
+<span class="kw">use </span><span class="kw">crate</span>::client::dispatch::{Callback, SendWhen, TrySendError};
 <span class="kw">use </span><span class="kw">crate</span>::common::io::Compat;
 <span class="kw">use </span><span class="kw">crate</span>::common::time::Time;
 <span class="kw">use </span><span class="kw">crate</span>::ext::Protocol;
@@ -765,19 +785,31 @@
 </span><span class="kw">const </span>DEFAULT_STREAM_WINDOW: u32 = <span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">2</span>; <span class="comment">// 2mb
 </span><span class="kw">const </span>DEFAULT_MAX_FRAME_SIZE: u32 = <span class="number">1024 </span>* <span class="number">16</span>; <span class="comment">// 16kb
 </span><span class="kw">const </span>DEFAULT_MAX_SEND_BUF_SIZE: usize = <span class="number">1024 </span>* <span class="number">1024</span>; <span class="comment">// 1mb
+</span><span class="kw">const </span>DEFAULT_MAX_HEADER_LIST_SIZE: u32 = <span class="number">1024 </span>* <span class="number">16</span>; <span class="comment">// 16kb
 
-</span><span class="attr">#[derive(Clone, Debug)]
+// The maximum number of concurrent streams that the client is allowed to open
+// before it receives the initial SETTINGS frame from the server.
+// This default value is derived from what the HTTP/2 spec recommends as the
+// minimum value that endpoints advertise to their peers. It means that using
+// this value will minimize the chance of the failure where the local endpoint
+// attempts to open too many streams and gets rejected by the remote peer with
+// the `REFUSED_STREAM` error.
+</span><span class="kw">const </span>DEFAULT_INITIAL_MAX_SEND_STREAMS: usize = <span class="number">100</span>;
+
+<span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Config {
     <span class="kw">pub</span>(<span class="kw">crate</span>) adaptive_window: bool,
     <span class="kw">pub</span>(<span class="kw">crate</span>) initial_conn_window_size: u32,
     <span class="kw">pub</span>(<span class="kw">crate</span>) initial_stream_window_size: u32,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) initial_max_send_streams: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) initial_max_send_streams: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) max_frame_size: u32,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) max_header_list_size: u32,
     <span class="kw">pub</span>(<span class="kw">crate</span>) keep_alive_interval: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) keep_alive_timeout: Duration,
     <span class="kw">pub</span>(<span class="kw">crate</span>) keep_alive_while_idle: bool,
     <span class="kw">pub</span>(<span class="kw">crate</span>) max_concurrent_reset_streams: <span class="prelude-ty">Option</span>&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) max_send_buffer_size: usize,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) max_pending_accept_reset_streams: <span class="prelude-ty">Option</span>&lt;usize&gt;,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>Config {
@@ -786,13 +818,15 @@
             adaptive_window: <span class="bool-val">false</span>,
             initial_conn_window_size: DEFAULT_CONN_WINDOW,
             initial_stream_window_size: DEFAULT_STREAM_WINDOW,
-            initial_max_send_streams: <span class="prelude-val">None</span>,
+            initial_max_send_streams: DEFAULT_INITIAL_MAX_SEND_STREAMS,
             max_frame_size: DEFAULT_MAX_FRAME_SIZE,
+            max_header_list_size: DEFAULT_MAX_HEADER_LIST_SIZE,
             keep_alive_interval: <span class="prelude-val">None</span>,
             keep_alive_timeout: Duration::from_secs(<span class="number">20</span>),
             keep_alive_while_idle: <span class="bool-val">false</span>,
             max_concurrent_reset_streams: <span class="prelude-val">None</span>,
             max_send_buffer_size: DEFAULT_MAX_SEND_BUF_SIZE,
+            max_pending_accept_reset_streams: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -800,16 +834,18 @@
 <span class="kw">fn </span>new_builder(config: <span class="kw-2">&amp;</span>Config) -&gt; Builder {
     <span class="kw">let </span><span class="kw-2">mut </span>builder = Builder::default();
     builder
+        .initial_max_send_streams(config.initial_max_send_streams)
         .initial_window_size(config.initial_stream_window_size)
         .initial_connection_window_size(config.initial_conn_window_size)
         .max_frame_size(config.max_frame_size)
+        .max_header_list_size(config.max_header_list_size)
         .max_send_buffer_size(config.max_send_buffer_size)
         .enable_push(<span class="bool-val">false</span>);
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(initial_max_send_streams) = config.initial_max_send_streams {
-        builder.initial_max_send_streams(initial_max_send_streams);
-    }
     <span class="kw">if let </span><span class="prelude-val">Some</span>(max) = config.max_concurrent_reset_streams {
         builder.max_concurrent_reset_streams(max);
+    }
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(max) = config.max_pending_accept_reset_streams {
+        builder.max_pending_accept_reset_streams(max);
     }
     builder
 }
@@ -835,7 +871,7 @@
     timer: Time,
 ) -&gt; <span class="kw">crate</span>::Result&lt;ClientTask&lt;B, E, T&gt;&gt;
 <span class="kw">where
-    </span>T: Read + Write + Unpin + <span class="lifetime">'static</span>,
+    </span>T: Read + Write + Unpin,
     B: Body + <span class="lifetime">'static</span>,
     B::Data: Send + <span class="lifetime">'static</span>,
     E: Http2ClientConnExec&lt;B, T&gt; + Unpin,
@@ -1309,7 +1345,7 @@
     </span>B: Body + <span class="lifetime">'static </span>+ Unpin,
     B::Data: Send,
     B::Error: Into&lt;Box&lt;<span class="kw">dyn </span>std::error::Error + Send + Sync&gt;&gt;,
-    E: Http2ClientConnExec&lt;B, T&gt; + <span class="lifetime">'static </span>+ Send + Sync + Unpin,
+    E: Http2ClientConnExec&lt;B, T&gt; + Unpin,
     T: Read + Write + Unpin,
 {
     <span class="kw">type </span>Output = <span class="kw">crate</span>::Result&lt;Dispatched&gt;;
@@ -1360,10 +1396,10 @@
                             .map_or(<span class="bool-val">false</span>, |len| len != <span class="number">0</span>)
                     {
                         <span class="macro">warn!</span>(<span class="string">"h2 connect request with non-zero body not supported"</span>);
-                        cb.send(<span class="prelude-val">Err</span>((
-                            <span class="kw">crate</span>::Error::new_h2(h2::Reason::INTERNAL_ERROR.into()),
-                            <span class="prelude-val">None</span>,
-                        )));
+                        cb.send(<span class="prelude-val">Err</span>(TrySendError {
+                            error: <span class="kw">crate</span>::Error::new_h2(h2::Reason::INTERNAL_ERROR.into()),
+                            message: <span class="prelude-val">None</span>,
+                        }));
                         <span class="kw">continue</span>;
                     }
 
@@ -1375,7 +1411,10 @@
                         <span class="prelude-val">Ok</span>(ok) =&gt; ok,
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">debug!</span>(<span class="string">"client send request error: {}"</span>, err);
-                            cb.send(<span class="prelude-val">Err</span>((<span class="kw">crate</span>::Error::new_h2(err), <span class="prelude-val">None</span>)));
+                            cb.send(<span class="prelude-val">Err</span>(TrySendError {
+                                error: <span class="kw">crate</span>::Error::new_h2(err),
+                                message: <span class="prelude-val">None</span>,
+                            }));
                             <span class="kw">continue</span>;
                         }
                     };
@@ -1400,7 +1439,10 @@
                         }
                         Poll::Ready(<span class="prelude-val">Ok</span>(())) =&gt; (),
                         Poll::Ready(<span class="prelude-val">Err</span>(err)) =&gt; {
-                            f.cb.send(<span class="prelude-val">Err</span>((<span class="kw">crate</span>::Error::new_h2(err), <span class="prelude-val">None</span>)));
+                            f.cb.send(<span class="prelude-val">Err</span>(TrySendError {
+                                error: <span class="kw">crate</span>::Error::new_h2(err),
+                                message: <span class="prelude-val">None</span>,
+                            }));
                             <span class="kw">continue</span>;
                         }
                     }
