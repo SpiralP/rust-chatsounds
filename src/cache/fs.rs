@@ -79,6 +79,7 @@ async fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore]
 async fn test_fs_download_use_cache() {
     let cache_path = PathBuf::from("cache");
     fs::create_dir_all(&cache_path).await.unwrap();

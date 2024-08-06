@@ -102,9 +102,3 @@ macro_rules! bail {
         return Err($err);
     };
 }
-
-#[test]
-fn test_error_nom() {
-    //
-    todo!();
-}
