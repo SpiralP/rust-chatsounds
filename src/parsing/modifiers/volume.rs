@@ -1,7 +1,8 @@
-use super::{parse_args, ModifierTrait};
-use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
+
+use super::{parse_args, ModifierTrait};
+use crate::BoxSource;
 
 #[derive(Debug, PartialEq)]
 pub struct VolumeModifier {
@@ -23,7 +24,7 @@ impl ModifierTrait for VolumeModifier {
 
         let mut modifier = VolumeModifier::default();
 
-        if let Some(volume) = args.get(0).copied().unwrap_or(None) {
+        if let Some(volume) = args.first().copied().unwrap_or(None) {
             modifier.volume = volume.max(0.0);
         }
 

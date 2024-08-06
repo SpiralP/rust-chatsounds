@@ -9,7 +9,7 @@ use chatsounds::*;
 #[cfg(all(test, not(feature = "wasm"), feature = "fs"))]
 use futures::stream::{StreamExt, TryStreamExt};
 use rand::thread_rng;
-use rodio::{source::ChannelVolume, OutputStream};
+use rodio::{queue::SourcesQueueOutput, source::ChannelVolume, Decoder, OutputStream, Sink};
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -182,7 +182,7 @@ async fn test_mono_bug() {
     let (mut chatsounds, cache_path) = setup().await;
 
     let sounds = chatsounds.get("mktheme").unwrap();
-    if let Some(chatsound) = sounds.get(0).cloned() {
+    if let Some(chatsound) = sounds.first().cloned() {
         println!("play");
 
         let data = chatsound.load(&cache_path).await.unwrap();

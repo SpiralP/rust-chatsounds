@@ -1,7 +1,8 @@
-use super::{parse_args, ModifierTrait};
-use crate::BoxSource;
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::{buffer::SamplesBuffer, Source};
+
+use super::{parse_args, ModifierTrait};
+use crate::BoxSource;
 
 #[derive(Debug, PartialEq)]
 pub struct PitchModifier {
@@ -23,7 +24,7 @@ impl ModifierTrait for PitchModifier {
 
         let mut modifier = PitchModifier::default();
 
-        if let Some(pitch) = args.get(0).copied().unwrap_or(None) {
+        if let Some(pitch) = args.first().copied().unwrap_or(None) {
             modifier.pitch = if pitch > 0.0 && pitch < 0.1 {
                 0.1
             } else if pitch < 0.0 && pitch > -0.1 {

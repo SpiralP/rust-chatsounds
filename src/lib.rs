@@ -13,7 +13,8 @@ use std::{
 
 pub use bytes::Bytes;
 use rand::prelude::*;
-pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
+pub use rodio;
+use rodio::{Decoder, Sink, SpatialSink};
 #[cfg(feature = "playback")]
 use rodio::{OutputStream, OutputStreamHandle};
 

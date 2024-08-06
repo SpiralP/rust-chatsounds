@@ -17,7 +17,7 @@ impl ModifierTrait for SelectModifier {
 
         let mut modifier = SelectModifier::default();
 
-        if let Some(select) = args.get(0).copied().unwrap_or(None) {
+        if let Some(select) = args.first().copied().unwrap_or(None) {
             modifier.select = (select.min(u32::MAX as f32) as u32).max(1) - 1;
         }
 

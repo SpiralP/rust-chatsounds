@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use bytes::Bytes;
-pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
+use rodio::{Sink, Source, SpatialSink};
 
 use crate::{cache::download, error::Result};
 

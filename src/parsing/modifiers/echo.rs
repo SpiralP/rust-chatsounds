@@ -1,8 +1,10 @@
-use super::{parse_args, ModifierTrait};
-use crate::BoxSource;
+use std::time::Duration;
+
 use nom::{branch::alt, bytes::complete::tag, IResult};
 use rodio::Source;
-use std::time::Duration;
+
+use super::{parse_args, ModifierTrait};
+use crate::BoxSource;
 
 #[derive(Debug, PartialEq)]
 pub struct EchoModifier {
@@ -29,7 +31,7 @@ impl ModifierTrait for EchoModifier {
 
         let mut modifier = EchoModifier::default();
 
-        if let Some(duration) = args.get(0).copied().unwrap_or(None) {
+        if let Some(duration) = args.first().copied().unwrap_or(None) {
             modifier.duration = duration.max(0.0);
         }
 

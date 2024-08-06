@@ -1,6 +1,5 @@
 use std::path::{Component, Path};
 
-pub use rodio::{queue::SourcesQueueOutput, Decoder, Device, Sample, Sink, Source, SpatialSink};
 use serde::Deserialize;
 
 use crate::{cache::download, error::Result, types::Chatsound, Chatsounds, Error};
