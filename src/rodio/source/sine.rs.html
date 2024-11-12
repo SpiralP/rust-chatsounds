@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.19.0/src/source/sine.rs`."><title>sine.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-590a400c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (b8c8287a2 2024-11-03)" data-channel="nightly" data-search-js="search-c5a66128.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rodio/source/</div>sine.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rodio-0.20.1/src/source/sine.rs`."><title>sine.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rodio" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0-nightly (81eef2d36 2024-11-11)" data-channel="nightly" data-search-js="search-853ef39b.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rodio/source/</div>sine.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -64,12 +64,9 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::f32::consts::PI;
-<span class="kw">use </span>std::time::Duration;
+<a href="#66" id="66">66</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
+<span class="kw">use </span><span class="kw">crate</span>::source::{Function, SignalGenerator};
 <span class="kw">use </span><span class="kw">crate</span>::Source;
 
 <span class="kw">use </span><span class="kw">super</span>::SeekError;
@@ -79,17 +76,18 @@
 /// Always has a rate of 48kHz and one channel.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>SineWave {
-    freq: f32,
-    num_sample: usize,
+    test_sine: SignalGenerator,
 }
 
 <span class="kw">impl </span>SineWave {
+    <span class="kw">const </span>SAMPLE_RATE: u32 = <span class="number">48000</span>;
+
     <span class="doccomment">/// The frequency of the sine.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>new(freq: f32) -&gt; SineWave {
+        <span class="kw">let </span>sr = cpal::SampleRate(<span class="self">Self</span>::SAMPLE_RATE);
         SineWave {
-            freq,
-            num_sample: <span class="number">0</span>,
+            test_sine: SignalGenerator::new(sr, freq, Function::Sine),
         }
     }
 }
@@ -99,10 +97,7 @@
 
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;f32&gt; {
-        <span class="self">self</span>.num_sample = <span class="self">self</span>.num_sample.wrapping_add(<span class="number">1</span>);
-
-        <span class="kw">let </span>value = <span class="number">2.0 </span>* PI * <span class="self">self</span>.freq * <span class="self">self</span>.num_sample <span class="kw">as </span>f32 / <span class="number">48000.0</span>;
-        <span class="prelude-val">Some</span>(value.sin())
+        <span class="self">self</span>.test_sine.next()
     }
 }
 
@@ -119,21 +114,20 @@
 
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>sample_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="number">48000
-    </span>}
+        <span class="self">Self</span>::SAMPLE_RATE
+    }
 
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>total_duration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
         <span class="prelude-val">None
     </span>}
 
-    <span class="attr">#[inline]
+    <span class="doccomment">/// `try_seek()` does nothing on the sine generator. If you need to
+    /// generate a sine tone with a precise phase or sample offset, consider
+    /// using `skip::skip_samples()`.
+    </span><span class="attr">#[inline]
     </span><span class="kw">fn </span>try_seek(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: Duration) -&gt; <span class="prelude-ty">Result</span>&lt;(), SeekError&gt; {
-        <span class="comment">// This is a constant sound, normal seeking would not have any effect.
-        // While changing the phase of the sine wave could change how it sounds in
-        // combination with another sound (beating) such precision is not the intend
-        // of seeking
-        </span><span class="prelude-val">Ok</span>(())
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div></section></main></body></html>
