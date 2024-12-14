@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use bytes::Bytes;
 use reqwest::header::HeaderValue;
@@ -7,6 +10,9 @@ use tokio::fs;
 
 use super::utils::{get, get_with_etag};
 use crate::{error::Result, Error};
+
+// time we allow to use the cached file when we couldn't fetch anything
+const ERROR_CACHE_FILE_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 1 day
 
 /// when `use_cache` is true, always used cached file if it exists
 pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<Bytes> {
@@ -18,7 +24,8 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
         }
     }
 
-    let maybe_etag = if fs::try_exists(&file_path).await.unwrap_or(false) {
+    let file_exists = fs::try_exists(&file_path).await.unwrap_or(false);
+    let maybe_etag = if file_exists {
         fs::read(&etag_file_path)
             .await
             .ok()
@@ -27,13 +34,28 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
         None
     };
 
-    let maybe_response = if let Some(etag) = maybe_etag {
-        get_with_etag(url, etag).await?
+    let mut result = if let Some(etag) = maybe_etag {
+        get_with_etag(url, etag).await
     } else {
-        Some(get(url).await?)
+        get(url).await.map(Some)
     };
 
-    if let Some((bytes, maybe_etag)) = maybe_response {
+    if result.is_err()
+        && file_exists
+        && fs::metadata(&file_path)
+            .await
+            .ok()
+            .and_then(|meta| meta.modified().ok())
+            .and_then(|modified| modified.elapsed().ok())
+            .map(|elapsed| elapsed < ERROR_CACHE_FILE_DURATION)
+            .unwrap_or(false)
+    {
+        // if we have a cache file, and it's younger than 1 day, and we couldn't fetch anything,
+        // treat like the etag matched, and return the cached file
+        result = Ok(None);
+    }
+
+    if let Some((bytes, maybe_etag)) = result? {
         fs::write(&file_path, &bytes)
             .await
             .map_err(|err| Error::Io {
