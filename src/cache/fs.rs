@@ -56,6 +56,9 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
     }
 
     if let Some((bytes, maybe_etag)) = result? {
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir(&parent).await.ok();
+        }
         fs::write(&file_path, &bytes)
             .await
             .map_err(|err| Error::Io {
@@ -91,8 +94,6 @@ async fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
     let hex_filename = &hex[2..];
 
     let dir_path = cache_path.join(hex_dir);
-    fs::create_dir(&dir_path).await.ok();
-
     let file_path = dir_path.join(hex_filename);
     let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
 
