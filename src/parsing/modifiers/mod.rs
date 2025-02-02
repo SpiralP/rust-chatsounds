@@ -9,7 +9,7 @@ use nom::{
     combinator::{map, opt},
     multi::separated_list0,
     number::complete::float,
-    IResult,
+    IResult, Parser,
 };
 
 pub use self::{
@@ -42,7 +42,8 @@ impl ModifierTrait for Modifier {
             map(VolumeModifier::parse, Modifier::Volume),
             map(EchoModifier::parse, Modifier::Echo),
             map(SelectModifier::parse, Modifier::Select),
-        ))(input)
+        ))
+        .parse(input)
     }
 
     fn modify(&self, source: BoxSource) -> BoxSource {
@@ -73,7 +74,7 @@ fn parse_arg(input: &str) -> IResult<&str, Option<f32>> {
     //  ^
     let input = input.trim_start();
 
-    let (input, maybe) = opt(float)(input)?;
+    let (input, maybe) = opt(float).parse(input)?;
 
     // " ,"
     //  ^
@@ -90,7 +91,7 @@ fn parse_arg_list(s: &str) -> IResult<&str, Args> {
     // fix separated_list0 not working if you start with a separator
     let mut s = s;
     loop {
-        let (s2, maybe_first) = opt(&sep)(s)?;
+        let (s2, maybe_first) = opt(&sep).parse(s)?;
         s = s2;
 
         if maybe_first.is_some() {
@@ -100,7 +101,7 @@ fn parse_arg_list(s: &str) -> IResult<&str, Args> {
         }
     }
 
-    let (s, mut items) = separated_list0(&sep, parse_arg)(s)?;
+    let (s, mut items) = separated_list0(&sep, parse_arg).parse(s)?;
     list.append(&mut items);
 
     Ok((s, list))
@@ -114,7 +115,7 @@ pub fn parse_args(input: &str) -> IResult<&str, Args> {
     //  ^
     let input = input.trim_start();
 
-    let (input, args) = opt(parse_arg_list)(input)?;
+    let (input, args) = opt(parse_arg_list).parse(input)?;
     let (input, _) = tag(")")(input)?;
 
     Ok((input, args.unwrap_or_default()))

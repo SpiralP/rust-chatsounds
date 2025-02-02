@@ -1,4 +1,4 @@
-use nom::{branch::alt, bytes::complete::tag, IResult};
+use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
 
 use super::{parse_args, ModifierTrait};
 
@@ -12,7 +12,7 @@ impl ModifierTrait for SelectModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // 1-indexed
         // input = "select(2)"
-        let (input, _) = alt((tag("select"), tag("choose")))(input)?;
+        let (input, _) = alt((tag("select"), tag("choose"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
         let mut modifier = SelectModifier::default();
