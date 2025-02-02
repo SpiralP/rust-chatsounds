@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use nom::{branch::alt, bytes::complete::tag, IResult};
+use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
 use rodio::Source;
 
 use super::{parse_args, ModifierTrait};
@@ -26,7 +26,7 @@ impl ModifierTrait for EchoModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "echo(2)"
 
-        let (input, _) = alt((tag("echo"), tag("reverb")))(input)?;
+        let (input, _) = alt((tag("echo"), tag("reverb"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
         let mut modifier = EchoModifier::default();

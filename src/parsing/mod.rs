@@ -2,11 +2,10 @@ mod modifiers;
 
 use nom::{
     bytes::complete::take_while1,
-    character::{is_alphanumeric, is_space},
     multi::{many0, many1},
-    IResult,
+    AsChar, IResult, Parser,
 };
-use rand::{seq::SliceRandom, RngCore};
+use rand::{seq::IndexedRandom, RngCore};
 
 pub use self::modifiers::ModifierTrait;
 use self::modifiers::{parse_modifier, Modifier, SelectModifier};
@@ -24,7 +23,7 @@ pub struct ParsedChatsound {
 impl ParsedChatsound {
     pub fn choose<'a, R: RngCore>(
         &self,
-        chatsounds: &'a Vec<Chatsound>,
+        chatsounds: &'a [Chatsound],
         mut rng: R,
     ) -> Option<&'a Chatsound> {
         let modifier = self
@@ -43,12 +42,13 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
     // input = "hello:pitch(2)"
 
     let input = input.trim();
-    let (input, sentence) = take_while1(|c| is_alphanumeric(c as u8) || is_space(c as u8))(input)?;
+    let (input, sentence) =
+        take_while1(|c| AsChar::is_alphanum(c as u8) || AsChar::is_space(c as u8))(input)?;
 
     // input = ":pitch(2)"
     // sentence = "hello"
 
-    let (input, modifiers) = many0(parse_modifier)(input)?;
+    let (input, modifiers) = many0(parse_modifier).parse(input)?;
 
     let chatsound = ParsedChatsound {
         sentence: sentence.to_string(),
@@ -59,7 +59,7 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
 }
 
 pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
-    match many1(parse_chatsound)(input) {
+    match many1(parse_chatsound).parse(input) {
         Ok((_input, chatsounds)) => Ok(chatsounds),
         Err(err) => Err(Error::Nom {
             err: err.map_input(|s| s.into()),

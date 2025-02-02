@@ -1,4 +1,4 @@
-use nom::{branch::alt, bytes::complete::tag, IResult};
+use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
 use rodio::Source;
 
 use super::{parse_args, ModifierTrait};
@@ -19,7 +19,7 @@ impl ModifierTrait for VolumeModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "volume(2)"
 
-        let (input, _) = alt((tag("volume"), tag("amplify")))(input)?;
+        let (input, _) = alt((tag("volume"), tag("amplify"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
         let mut modifier = VolumeModifier::default();

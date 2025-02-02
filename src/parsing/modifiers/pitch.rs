@@ -1,4 +1,4 @@
-use nom::{branch::alt, bytes::complete::tag, IResult};
+use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
 use rodio::{buffer::SamplesBuffer, Source};
 
 use super::{parse_args, ModifierTrait};
@@ -19,7 +19,7 @@ impl ModifierTrait for PitchModifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         // input = "pitch(2)"
 
-        let (input, _) = alt((tag("pitch"), tag("speed")))(input)?;
+        let (input, _) = alt((tag("pitch"), tag("speed"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
         let mut modifier = PitchModifier::default();
