@@ -23,7 +23,7 @@ pub struct ParsedChatsound {
 impl ParsedChatsound {
     pub fn choose<'a, R: RngCore>(
         &self,
-        chatsounds: &'a Vec<Chatsound>,
+        chatsounds: &'a [Chatsound],
         mut rng: R,
     ) -> Option<&'a Chatsound> {
         let modifier = self

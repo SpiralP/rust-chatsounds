@@ -8,7 +8,7 @@ use std::{
 use chatsounds::*;
 #[cfg(all(test, not(feature = "wasm"), feature = "fs"))]
 use futures::stream::{StreamExt, TryStreamExt};
-use rand::thread_rng;
+use rand::rng;
 use rodio::{queue::SourcesQueueOutput, source::ChannelVolume, Decoder, OutputStream, Sink};
 use tokio::fs;
 
@@ -87,7 +87,7 @@ async fn negative_pitch() {
     let (mut chatsounds, _) = setup().await;
 
     chatsounds
-        .play("helloh:speed(1) musicbox:pitch(-1)", thread_rng())
+        .play("helloh:speed(1) musicbox:pitch(-1)", rng())
         .await
         .unwrap()
         .sleep_until_end();
@@ -101,7 +101,7 @@ async fn it_works() {
     chatsounds
         .play(
             "helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
-            thread_rng(),
+            rng(),
         )
         .await
         .unwrap()
@@ -150,7 +150,7 @@ async fn test_spatial() {
     let sink = chatsounds
         .play_spatial(
             "fuckbeesremastered",
-            thread_rng(),
+            rng(),
             emitter_pos,
             left_ear_pos,
             right_ear_pos,
@@ -208,10 +208,7 @@ async fn test_mono_bug() {
 async fn test_get_samples() {
     let (mut chatsounds, _) = setup().await;
 
-    let mut sources = chatsounds
-        .get_sources("mktheme", thread_rng())
-        .await
-        .unwrap();
+    let mut sources = chatsounds.get_sources("mktheme", rng()).await.unwrap();
 
     let (sink, queue) = rodio::queue::queue(false);
     for source in sources.drain(..) {
