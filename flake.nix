@@ -3,18 +3,25 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
   };
 
-  outputs = { nixpkgs, ... }:
+  outputs = { self, nixpkgs }:
     let
       inherit (nixpkgs) lib;
 
-      makePackages = (pkgs:
+      rustManifest = lib.importTOML ./Cargo.toml;
+
+      revSuffix = lib.optionalString (self ? shortRev || self ? dirtyShortRev)
+        "-${self.shortRev or self.dirtyShortRev}";
+
+      makePackages = (system: dev:
         let
-          rustManifest = lib.importTOML ./Cargo.toml;
+          pkgs = import nixpkgs {
+            inherit system;
+          };
         in
         {
           default = pkgs.rustPlatform.buildRustPackage {
             pname = rustManifest.package.name;
-            version = rustManifest.package.version;
+            version = rustManifest.package.version + revSuffix;
 
             src = lib.sourceByRegex ./. [
               "^\.cargo(/.*)?$"
@@ -25,7 +32,7 @@
 
             cargoLock = {
               lockFile = ./Cargo.lock;
-              outputHashes = { };
+              allowBuiltinFetchGit = true;
             };
 
             buildInputs = with pkgs; [
@@ -33,48 +40,23 @@
               openssl
             ];
 
-            nativeBuildInputs = with pkgs; [
+            nativeBuildInputs = (with pkgs; [
               makeWrapper
               pkg-config
-            ];
+            ]) ++ (if dev then
+              with pkgs; [
+                clippy
+                rust-analyzer
+                (rustfmt.override { asNightly = true; })
+              ] else [ ]);
           };
         }
       );
     in
     builtins.foldl' lib.recursiveUpdate { } (builtins.map
-      (system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-          };
-
-          packages = makePackages pkgs;
-        in
-        {
-          devShells.${system} = packages // {
-            default =
-              let
-                allDrvsIn = (name:
-                  lib.lists.flatten (
-                    builtins.map
-                      (drv: drv.${name} or [ ])
-                      (builtins.attrValues packages)
-                  ));
-              in
-              pkgs.mkShell {
-                name = "dev-shell";
-                packages = with pkgs; [
-                  clippy
-                  (rustfmt.override { asNightly = true; })
-                  rust-analyzer
-                ];
-                buildInputs = allDrvsIn "buildInputs";
-                nativeBuildInputs = allDrvsIn "nativeBuildInputs";
-                propagatedBuildInputs = allDrvsIn "propagatedBuildInputs";
-                propagatedNativeBuildInputs = allDrvsIn "propagatedNativeBuildInputs";
-              };
-          };
-          packages.${system} = packages;
-        })
+      (system: {
+        devShells.${system} = makePackages system true;
+        packages.${system} = makePackages system false;
+      })
       lib.systems.flakeExposed);
 }
