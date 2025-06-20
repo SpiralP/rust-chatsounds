@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use bytes::Bytes;
 use rodio::{Sink, Source, SpatialSink};
 
-use crate::{cache::download, error::Result};
+use crate::{cache::download, channel_volume::ChannelVolumeSink, error::Result};
 
 pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
 
@@ -39,35 +39,49 @@ impl Chatsound {
 }
 
 pub trait ChatsoundsSink {
-    fn sleep_until_end(&mut self);
-    fn stop(&mut self);
-    fn set_volume(&mut self, volume: f32);
+    fn sleep_until_end(&self);
+    fn stop(&self);
+    fn set_volume(&self, volume: f32);
 }
 
 impl ChatsoundsSink for Arc<Sink> {
-    fn sleep_until_end(&mut self) {
+    fn sleep_until_end(&self) {
         Sink::sleep_until_end(self)
     }
 
-    fn stop(&mut self) {
+    fn stop(&self) {
         Sink::stop(self)
     }
 
-    fn set_volume(&mut self, volume: f32) {
+    fn set_volume(&self, volume: f32) {
         Sink::set_volume(self, volume)
     }
 }
 
 impl ChatsoundsSink for Arc<SpatialSink> {
-    fn sleep_until_end(&mut self) {
+    fn sleep_until_end(&self) {
         SpatialSink::sleep_until_end(self)
     }
 
-    fn stop(&mut self) {
+    fn stop(&self) {
         SpatialSink::stop(self)
     }
 
-    fn set_volume(&mut self, volume: f32) {
+    fn set_volume(&self, volume: f32) {
         SpatialSink::set_volume(self, volume)
+    }
+}
+
+impl ChatsoundsSink for Arc<ChannelVolumeSink> {
+    fn sleep_until_end(&self) {
+        Sink::sleep_until_end(&self.sink)
+    }
+
+    fn stop(&self) {
+        Sink::stop(&self.sink)
+    }
+
+    fn set_volume(&self, volume: f32) {
+        Sink::set_volume(&self.sink, volume)
     }
 }

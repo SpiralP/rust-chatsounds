@@ -1,4 +1,5 @@
 mod cache;
+mod channel_volume;
 mod error;
 mod fetching;
 mod parsing;
@@ -19,6 +20,7 @@ use rodio::{Decoder, Sink, SpatialSink};
 use rodio::{OutputStream, OutputStreamHandle};
 
 pub use self::{
+    channel_volume::ChannelVolumeSink,
     error::Error,
     fetching::{GitHubApiFileEntry, GitHubApiTrees, GitHubMsgpackEntries},
     types::Chatsound,
@@ -130,7 +132,7 @@ impl Chatsounds {
 
     #[cfg(feature = "playback")]
     pub fn stop_all(&mut self) {
-        for mut sink in self.sinks.drain(..) {
+        for sink in self.sinks.drain(..) {
             sink.stop();
         }
     }
@@ -153,7 +155,7 @@ impl Chatsounds {
 
     #[cfg(feature = "playback")]
     pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
-        let mut sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
+        let sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
 
         sink.set_volume(self.volume);
 
@@ -178,7 +180,7 @@ impl Chatsounds {
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<Arc<SpatialSink>> {
-        let mut sink = Arc::new(SpatialSink::try_new(
+        let sink = Arc::new(SpatialSink::try_new(
             &self.output_stream_handle,
             emitter_pos,
             left_ear_pos,
@@ -186,6 +188,32 @@ impl Chatsounds {
         )?);
 
         sink.set_volume(self.volume);
+
+        for source in self.get_sources(text, rng).await? {
+            sink.append(source);
+        }
+
+        self.sinks.push_back(Box::new(sink.clone()));
+        if self.sinks.len() == self.max_sinks {
+            self.sinks.pop_front();
+        }
+
+        Ok(sink)
+    }
+
+    #[cfg(feature = "playback")]
+    pub async fn play_channel_volume<R: RngCore>(
+        &mut self,
+        text: &str,
+        rng: R,
+        channel_volumes: Vec<f32>,
+    ) -> Result<Arc<ChannelVolumeSink>> {
+        let sink = Arc::new(ChannelVolumeSink::try_new(
+            &self.output_stream_handle,
+            channel_volumes,
+        )?);
+
+        sink.sink.set_volume(self.volume);
 
         for source in self.get_sources(text, rng).await? {
             sink.append(source);
@@ -244,7 +272,7 @@ impl Chatsounds {
 
     #[cfg(feature = "playback")]
     pub fn sleep_until_end(&mut self) {
-        for mut sink in self.sinks.drain(..) {
+        for sink in self.sinks.drain(..) {
             sink.sleep_until_end();
         }
     }
