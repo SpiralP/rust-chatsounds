@@ -1,5 +1,8 @@
+mod cut;
 mod echo;
+mod r#loop;
 mod pitch;
+mod seek;
 mod select;
 mod volume;
 
@@ -13,7 +16,8 @@ use nom::{
 };
 
 pub use self::{
-    echo::EchoModifier, pitch::PitchModifier, select::SelectModifier, volume::VolumeModifier,
+    cut::CutModifier, echo::EchoModifier, pitch::PitchModifier, r#loop::LoopModifier,
+    seek::SeekModifier, select::SelectModifier, volume::VolumeModifier,
 };
 use crate::BoxSource;
 
@@ -33,6 +37,9 @@ pub enum Modifier {
     Volume(VolumeModifier),
     Echo(EchoModifier),
     Select(SelectModifier),
+    Loop(LoopModifier),
+    Seek(SeekModifier),
+    Cut(CutModifier),
 }
 
 impl ModifierTrait for Modifier {
@@ -42,6 +49,9 @@ impl ModifierTrait for Modifier {
             map(VolumeModifier::parse, Modifier::Volume),
             map(EchoModifier::parse, Modifier::Echo),
             map(SelectModifier::parse, Modifier::Select),
+            map(LoopModifier::parse, Modifier::Loop),
+            map(SeekModifier::parse, Modifier::Seek),
+            map(CutModifier::parse, Modifier::Cut),
         ))
         .parse(input)
     }
@@ -52,6 +62,9 @@ impl ModifierTrait for Modifier {
             Modifier::Volume(modifier) => modifier.modify(source),
             Modifier::Echo(modifier) => modifier.modify(source),
             Modifier::Select(modifier) => modifier.modify(source),
+            Modifier::Loop(modifier) => modifier.modify(source),
+            Modifier::Seek(modifier) => modifier.modify(source),
+            Modifier::Cut(modifier) => modifier.modify(source),
         }
     }
 }
