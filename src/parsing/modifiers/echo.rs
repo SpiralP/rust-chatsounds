@@ -10,14 +10,14 @@ use crate::BoxSource;
 pub struct EchoModifier {
     /// in seconds
     pub duration: f32,
-    pub amplitude: f32,
+    pub amplitude_diff: f32,
 }
 
 impl Default for EchoModifier {
     fn default() -> Self {
         Self {
             duration: 0.25,
-            amplitude: 0.25,
+            amplitude_diff: -0.5,
         }
     }
 }
@@ -36,7 +36,7 @@ impl ModifierTrait for EchoModifier {
         }
 
         if let Some(amplitude) = args.get(1).copied().unwrap_or(None) {
-            modifier.amplitude = amplitude.max(0.0);
+            modifier.amplitude_diff = -1.0 * amplitude;
         }
 
         Ok((input, modifier))
@@ -44,6 +44,10 @@ impl ModifierTrait for EchoModifier {
 
     fn modify(&self, source: BoxSource) -> BoxSource {
         let duration = Duration::from_secs_f32(self.duration);
-        Box::new(source.buffered().reverb(duration, self.amplitude))
+        Box::new(
+            source
+                .buffered()
+                .reverb(duration, 1.0 + self.amplitude_diff),
+        )
     }
 }
