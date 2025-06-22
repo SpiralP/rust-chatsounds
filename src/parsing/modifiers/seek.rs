@@ -25,7 +25,7 @@ impl ModifierTrait for SeekModifier {
         let (input, _) = alt((tag("seek"), tag("skip"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
-        let mut modifier = SeekModifier::default();
+        let mut modifier = Self::default();
 
         if let Some(duration) = args.first().copied().unwrap_or(None) {
             modifier.duration = duration.max(0.0);

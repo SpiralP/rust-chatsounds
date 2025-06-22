@@ -29,7 +29,7 @@ impl ModifierTrait for EchoModifier {
         let (input, _) = alt((tag("echo"), tag("reverb"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
-        let mut modifier = EchoModifier::default();
+        let mut modifier = Self::default();
 
         if let Some(duration) = args.first().copied().unwrap_or(None) {
             modifier.duration = duration.max(0.0);

@@ -16,7 +16,7 @@ const ERROR_CACHE_FILE_DURATION: Duration = Duration::from_secs(24 * 60 * 60); /
 
 /// when `use_cache` is true, always used cached file if it exists
 pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<Bytes> {
-    let (file_path, etag_file_path) = cache_file_path(url, cache_path).await;
+    let (file_path, etag_file_path) = cache_file_path(url, cache_path);
 
     if use_cache {
         if let Ok(bytes) = fs::read(&file_path).await {
@@ -47,8 +47,7 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
             .ok()
             .and_then(|meta| meta.modified().ok())
             .and_then(|modified| modified.elapsed().ok())
-            .map(|elapsed| elapsed < ERROR_CACHE_FILE_DURATION)
-            .unwrap_or(false)
+            .is_some_and(|elapsed| elapsed < ERROR_CACHE_FILE_DURATION)
     {
         // if we have a cache file, and it's younger than 1 day, and we couldn't fetch anything,
         // treat like the etag matched, and return the cached file
@@ -83,7 +82,7 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
     }
 }
 
-async fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
+fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
     let hex = {
         let mut hasher = Sha256::new();
         hasher.update(url);
@@ -95,7 +94,7 @@ async fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
 
     let dir_path = cache_path.join(hex_dir);
     let file_path = dir_path.join(hex_filename);
-    let etag_file_path = dir_path.join(format!("{}.etag", hex_filename));
+    let etag_file_path = dir_path.join(format!("{hex_filename}.etag"));
 
     (file_path, etag_file_path)
 }
@@ -108,7 +107,7 @@ async fn test_fs_download_use_cache() {
     fs::create_dir_all(&cache_path).await.unwrap();
 
     let url = "https://httpbin.org/status/200";
-    let (file_path, _etag_file_path) = cache_file_path(url, &cache_path).await;
+    let (file_path, _etag_file_path) = cache_file_path(url, &cache_path);
 
     fs::remove_file(&file_path).await.ok();
 

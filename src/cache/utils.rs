@@ -20,7 +20,7 @@ fn make_client() -> reqwest::Result<Client> {
     }
 }
 
-/// * changed content or non-etag call -> Some(response_bytes, new_etag)
+/// * changed content or non-etag call -> `Some(response_bytes, new_etag)`
 /// * content not changed -> None
 pub async fn get_with_etag(
     url: &str,

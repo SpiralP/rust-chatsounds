@@ -18,6 +18,7 @@ pub struct Chatsound {
 }
 
 impl Chatsound {
+    #[must_use]
     pub fn get_url(&self) -> String {
         format!(
             "https://raw.githubusercontent.com/{}/HEAD/{}/{}",
@@ -46,42 +47,42 @@ pub trait ChatsoundsSink {
 
 impl ChatsoundsSink for Arc<Sink> {
     fn sleep_until_end(&self) {
-        Sink::sleep_until_end(self)
+        Sink::sleep_until_end(self);
     }
 
     fn stop(&self) {
-        Sink::stop(self)
+        Sink::stop(self);
     }
 
     fn set_volume(&self, volume: f32) {
-        Sink::set_volume(self, volume)
+        Sink::set_volume(self, volume);
     }
 }
 
 impl ChatsoundsSink for Arc<SpatialSink> {
     fn sleep_until_end(&self) {
-        SpatialSink::sleep_until_end(self)
+        SpatialSink::sleep_until_end(self);
     }
 
     fn stop(&self) {
-        SpatialSink::stop(self)
+        SpatialSink::stop(self);
     }
 
     fn set_volume(&self, volume: f32) {
-        SpatialSink::set_volume(self, volume)
+        SpatialSink::set_volume(self, volume);
     }
 }
 
 impl ChatsoundsSink for Arc<ChannelVolumeSink> {
     fn sleep_until_end(&self) {
-        Sink::sleep_until_end(&self.sink)
+        Sink::sleep_until_end(&self.sink);
     }
 
     fn stop(&self) {
-        Sink::stop(&self.sink)
+        Sink::stop(&self.sink);
     }
 
     fn set_volume(&self, volume: f32) {
-        Sink::set_volume(&self.sink, volume)
+        Sink::set_volume(&self.sink, volume);
     }
 }

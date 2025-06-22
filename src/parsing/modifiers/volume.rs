@@ -22,7 +22,7 @@ impl ModifierTrait for VolumeModifier {
         let (input, _) = alt((tag("volume"), tag("amplify"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
-        let mut modifier = VolumeModifier::default();
+        let mut modifier = Self::default();
 
         if let Some(volume) = args.first().copied().unwrap_or(None) {
             modifier.volume = volume.max(0.0);

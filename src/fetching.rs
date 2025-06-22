@@ -20,10 +20,7 @@ pub type GitHubMsgpackEntries = Vec<Vec<String>>;
 
 impl Chatsounds {
     pub async fn fetch_github_api(&self, repo: &str, _repo_path: &str) -> Result<GitHubApiTrees> {
-        let api_url = format!(
-            "https://api.github.com/repos/{}/git/trees/HEAD?recursive=1",
-            repo
-        );
+        let api_url = format!("https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1");
 
         #[cfg(feature = "fs")]
         let cache = &self.cache_path;
@@ -44,7 +41,7 @@ impl Chatsounds {
         repo_path: &str,
         mut trees: GitHubApiTrees,
     ) -> Result<()> {
-        for entry in trees.tree.iter_mut() {
+        for entry in &mut trees.tree {
             if entry.r#type != "blob" || !entry.path.starts_with(repo_path) {
                 continue;
             }
@@ -84,10 +81,8 @@ impl Chatsounds {
         repo: &str,
         repo_path: &str,
     ) -> Result<GitHubMsgpackEntries> {
-        let msgpack_url = format!(
-            "https://raw.githubusercontent.com/{}/HEAD/{}/list.msgpack",
-            repo, repo_path
-        );
+        let msgpack_url =
+            format!("https://raw.githubusercontent.com/{repo}/HEAD/{repo_path}/list.msgpack");
 
         #[cfg(feature = "fs")]
         let cache = &self.cache_path;
@@ -108,9 +103,9 @@ impl Chatsounds {
         &mut self,
         repo: &str,
         repo_path: &str,
-        mut entries: GitHubMsgpackEntries,
+        entries: GitHubMsgpackEntries,
     ) -> Result<()> {
-        for entry in entries.drain(..) {
+        for entry in entries {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
             let sentence = entry[1].clone();
             let sound_path = entry[2].clone();

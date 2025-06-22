@@ -4,7 +4,7 @@ use rodio::Source;
 use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct LoopModifier {}
 
 impl ModifierTrait for LoopModifier {
@@ -14,7 +14,7 @@ impl ModifierTrait for LoopModifier {
         let (input, _) = alt((tag("loop"), tag("repeat"))).parse(input)?;
         let (input, _args) = parse_args(input)?;
 
-        let modifier = LoopModifier::default();
+        let modifier = Self::default();
 
         Ok((input, modifier))
     }

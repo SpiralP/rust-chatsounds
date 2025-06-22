@@ -17,8 +17,8 @@ impl ChannelVolumeSink {
     pub fn try_new(
         stream: &OutputStreamHandle,
         channel_volumes: Vec<f32>,
-    ) -> Result<ChannelVolumeSink, PlayError> {
-        Ok(ChannelVolumeSink {
+    ) -> Result<Self, PlayError> {
+        Ok(Self {
             sink: Sink::try_new(stream)?,
             channel_volumes: Arc::new(Mutex::new(channel_volumes)),
         })
@@ -35,16 +35,13 @@ impl ChannelVolumeSink {
         S::Item: Sample + Send,
     {
         let channel_volumes = self.channel_volumes.clone();
-        let channel_volumes_lock = self.channel_volumes.lock().unwrap();
-        let source = ChannelVolume::new(source, channel_volumes_lock.clone()).periodic_access(
-            Duration::from_millis(10),
-            move |i| {
+        let source = ChannelVolume::new(source, self.channel_volumes.lock().unwrap().clone())
+            .periodic_access(Duration::from_millis(10), move |i| {
                 let channel_volumes = channel_volumes.lock().unwrap();
                 for (channel, volume) in channel_volumes.iter().enumerate() {
                     i.set_volume(channel, *volume);
                 }
-            },
-        );
+            });
         self.sink.append(source);
     }
 }

@@ -45,26 +45,26 @@ pub enum Modifier {
 impl ModifierTrait for Modifier {
     fn parse(input: &str) -> IResult<&str, Self> {
         alt((
-            map(PitchModifier::parse, Modifier::Pitch),
-            map(VolumeModifier::parse, Modifier::Volume),
-            map(EchoModifier::parse, Modifier::Echo),
-            map(SelectModifier::parse, Modifier::Select),
-            map(LoopModifier::parse, Modifier::Loop),
-            map(SeekModifier::parse, Modifier::Seek),
-            map(CutModifier::parse, Modifier::Cut),
+            map(PitchModifier::parse, Self::Pitch),
+            map(VolumeModifier::parse, Self::Volume),
+            map(EchoModifier::parse, Self::Echo),
+            map(SelectModifier::parse, Self::Select),
+            map(LoopModifier::parse, Self::Loop),
+            map(SeekModifier::parse, Self::Seek),
+            map(CutModifier::parse, Self::Cut),
         ))
         .parse(input)
     }
 
     fn modify(&self, source: BoxSource) -> BoxSource {
         match self {
-            Modifier::Pitch(modifier) => modifier.modify(source),
-            Modifier::Volume(modifier) => modifier.modify(source),
-            Modifier::Echo(modifier) => modifier.modify(source),
-            Modifier::Select(modifier) => modifier.modify(source),
-            Modifier::Loop(modifier) => modifier.modify(source),
-            Modifier::Seek(modifier) => modifier.modify(source),
-            Modifier::Cut(modifier) => modifier.modify(source),
+            Self::Pitch(modifier) => modifier.modify(source),
+            Self::Volume(modifier) => modifier.modify(source),
+            Self::Echo(modifier) => modifier.modify(source),
+            Self::Select(modifier) => modifier.modify(source),
+            Self::Loop(modifier) => modifier.modify(source),
+            Self::Seek(modifier) => modifier.modify(source),
+            Self::Cut(modifier) => modifier.modify(source),
         }
     }
 }

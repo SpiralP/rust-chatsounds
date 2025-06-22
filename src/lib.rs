@@ -1,3 +1,6 @@
+#![warn(clippy::nursery, clippy::pedantic)]
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+
 mod cache;
 mod channel_volume;
 mod error;
@@ -57,6 +60,7 @@ pub struct Chatsounds {
 }
 
 // TODO ???
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for Chatsounds {}
 unsafe impl Sync for Chatsounds {}
 
@@ -95,10 +99,12 @@ impl Chatsounds {
         })
     }
 
+    #[must_use]
     pub fn get(&self, sentence: &str) -> Option<&Vec<Chatsound>> {
         self.map_store.get(sentence)
     }
 
+    #[must_use]
     pub fn search(&self, search: &str) -> Vec<(usize, &String)> {
         #[cfg(feature = "rayon")]
         use rayon::prelude::*;
@@ -149,7 +155,8 @@ impl Chatsounds {
     }
 
     #[cfg(feature = "playback")]
-    pub fn volume(&self) -> f32 {
+    #[must_use]
+    pub const fn volume(&self) -> f32 {
         self.volume
     }
 

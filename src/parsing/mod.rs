@@ -1,5 +1,7 @@
 mod modifiers;
 
+use std::convert::Into;
+
 use nom::{
     bytes::complete::take_while1,
     multi::{many0, many1},
@@ -62,7 +64,7 @@ pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
     match many1(parse_chatsound).parse(input) {
         Ok((_input, chatsounds)) => Ok(chatsounds),
         Err(err) => Err(Error::Nom {
-            err: err.map_input(|s| s.into()),
+            err: err.map_input(Into::into),
             text: input.into(),
         }),
     }

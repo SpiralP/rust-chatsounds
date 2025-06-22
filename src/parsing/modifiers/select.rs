@@ -15,8 +15,13 @@ impl ModifierTrait for SelectModifier {
         let (input, _) = alt((tag("select"), tag("choose"))).parse(input)?;
         let (input, args) = parse_args(input)?;
 
-        let mut modifier = SelectModifier::default();
+        let mut modifier = Self::default();
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
         if let Some(select) = args.first().copied().unwrap_or(None) {
             modifier.select = (select.min(u32::MAX as f32) as u32).max(1) - 1;
         }
@@ -44,11 +49,15 @@ fn test_select_modifier() {
 
     assert_eq!(
         SelectModifier::parse("select(4294967295)").unwrap().1,
-        SelectModifier { select: 4294967294 }
+        SelectModifier {
+            select: 4_294_967_294
+        }
     );
 
     assert_eq!(
         SelectModifier::parse("select(4294967296)").unwrap().1,
-        SelectModifier { select: 4294967294 }
+        SelectModifier {
+            select: 4_294_967_294
+        }
     );
 }
