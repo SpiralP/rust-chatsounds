@@ -25,7 +25,8 @@ impl ModifierTrait for PitchModifier {
         let mut modifier = Self::default();
 
         if let Some(pitch) = args.first().copied().unwrap_or(None) {
-            modifier.pitch = if pitch > 0.0 && pitch < 0.1 {
+            // panics if 0
+            modifier.pitch = if (0.0..0.1).contains(&pitch) {
                 0.1
             } else if pitch < 0.0 && pitch > -0.1 {
                 -0.1
@@ -38,12 +39,7 @@ impl ModifierTrait for PitchModifier {
     }
 
     fn modify(&self, source: BoxSource) -> BoxSource {
-        // panics if 0
-        if self.pitch.abs() < 0.000_000_1 {
-            return Box::new(source);
-        }
-
-        if self.pitch > 0.0 {
+        if self.pitch >= 0.0 {
             Box::new(source.speed(self.pitch))
         } else {
             let channels = source.channels();
