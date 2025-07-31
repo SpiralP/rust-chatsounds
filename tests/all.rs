@@ -9,7 +9,9 @@ use chatsounds::*;
 #[cfg(all(test, not(feature = "wasm"), feature = "fs"))]
 use futures::stream::{StreamExt, TryStreamExt};
 use rand::rng;
-use rodio::{queue::SourcesQueueOutput, source::ChannelVolume, Decoder, OutputStream, Sink};
+#[cfg(feature = "playback")]
+use rodio::OutputStreamBuilder;
+use rodio::{source::ChannelVolume, Decoder, Sink};
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -81,6 +83,7 @@ async fn setup() -> (Chatsounds, PathBuf) {
     (chatsounds, cache_path)
 }
 
+#[cfg(feature = "playback")]
 #[ignore]
 #[tokio::test]
 async fn negative_pitch() {
@@ -93,6 +96,7 @@ async fn negative_pitch() {
         .sleep_until_end();
 }
 
+#[cfg(feature = "playback")]
 #[ignore]
 #[tokio::test]
 async fn it_works() {
@@ -137,6 +141,7 @@ async fn test_get() {
     );
 }
 
+#[cfg(feature = "playback")]
 #[ignore]
 #[tokio::test]
 async fn test_spatial() {
@@ -176,6 +181,7 @@ async fn test_spatial() {
     chatsounds.sleep_until_end();
 }
 
+#[cfg(feature = "playback")]
 #[ignore]
 #[tokio::test]
 async fn test_mono_bug() {
@@ -191,13 +197,12 @@ async fn test_mono_bug() {
         let source = Decoder::new(reader).unwrap();
 
         let source = ChannelVolume::new(source, vec![0.2, 1.0]);
-        let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap();
-        let sink = Sink::try_new(&output_stream_handle).unwrap();
+        let output_stream = OutputStreamBuilder::open_default_stream().unwrap();
+        let sink = Sink::connect_new(output_stream.mixer());
         sink.set_volume(0.1);
         sink.append(source);
 
         sink.sleep_until_end();
-        drop(output_stream_handle);
         drop(output_stream);
     }
 
@@ -215,8 +220,7 @@ async fn test_get_samples() {
         sink.append(source);
     }
 
-    let queue: rodio::source::UniformSourceIterator<SourcesQueueOutput<i16>, i16> =
-        rodio::source::UniformSourceIterator::new(queue, 2, 44100);
+    let queue = rodio::source::UniformSourceIterator::new(queue, 2, 44100);
 
     println!("{} samples", queue.count());
 }

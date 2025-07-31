@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
-use rodio::{dynamic_mixer::mixer, Source};
+use rodio::{mixer::mixer, Source};
 
 use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
@@ -53,18 +53,18 @@ impl ModifierTrait for EchoModifier {
         let mut amplitude = 1.0 + self.amplitude_diff;
         let mut duration = Duration::from_secs_f32(self.duration);
 
-        let (controller, mixer) = mixer(source.channels(), source.sample_rate());
+        let (mixer, mixer_source) = mixer(source.channels(), source.sample_rate());
 
-        let a = source.buffered();
-        controller.add(a.clone());
+        let source = source.buffered();
+        mixer.add(source.clone());
 
         for _i in 0..self.amount {
-            let echo = a.clone().amplify(amplitude).delay(duration);
-            controller.add(echo);
+            let echo = source.clone().amplify(amplitude).delay(duration);
+            mixer.add(echo);
             amplitude = (amplitude + self.amplitude_diff).max(0.0);
             duration += Duration::from_secs_f32(self.duration);
         }
 
-        Box::new(mixer)
+        Box::new(mixer_source)
     }
 }

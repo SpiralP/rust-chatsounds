@@ -4,9 +4,7 @@ use std::{
     time::Duration,
 };
 
-use rodio::{
-    cpal::FromSample, source::ChannelVolume, OutputStreamHandle, PlayError, Sample, Sink, Source,
-};
+use rodio::{cpal::FromSample, mixer::Mixer, source::ChannelVolume, PlayError, Sink, Source};
 
 pub struct ChannelVolumeSink {
     pub sink: Sink,
@@ -14,12 +12,9 @@ pub struct ChannelVolumeSink {
 }
 
 impl ChannelVolumeSink {
-    pub fn try_new(
-        stream: &OutputStreamHandle,
-        channel_volumes: Vec<f32>,
-    ) -> Result<Self, PlayError> {
+    pub fn connect_new(mixer: &Mixer, channel_volumes: Vec<f32>) -> Result<Self, PlayError> {
         Ok(Self {
-            sink: Sink::try_new(stream)?,
+            sink: Sink::connect_new(mixer),
             channel_volumes: Arc::new(Mutex::new(channel_volumes)),
         })
     }
@@ -32,7 +27,6 @@ impl ChannelVolumeSink {
     where
         S: Source + Send + 'static,
         f32: FromSample<S::Item>,
-        S::Item: Sample + Send,
     {
         let channel_volumes = self.channel_volumes.clone();
         let source = ChannelVolume::new(source, self.channel_volumes.lock().unwrap().clone())

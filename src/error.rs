@@ -18,12 +18,14 @@ pub enum Error {
         path: PathBuf,
     },
 
+    #[cfg(feature = "playback")]
     #[error("RodioPlayError: {err}")]
     RodioPlay {
         #[from]
         err: rodio::PlayError,
     },
 
+    #[cfg(feature = "playback")]
     #[error("RodioStreamError: {err}")]
     RodioStream {
         #[from]

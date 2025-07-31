@@ -1,11 +1,13 @@
 use std::{path::Path, sync::Arc};
 
 use bytes::Bytes;
-use rodio::{Sink, Source, SpatialSink};
+use rodio::{Sample, Sink, Source, SpatialSink};
 
-use crate::{cache::download, channel_volume::ChannelVolumeSink, error::Result};
+#[cfg(feature = "playback")]
+use crate::channel_volume::ChannelVolumeSink;
+use crate::{cache::download, error::Result};
 
-pub type BoxSource = Box<dyn Source<Item = i16> + Send>;
+pub type BoxSource = Box<dyn Source<Item = Sample> + Send>;
 
 #[derive(Clone)]
 pub struct Chatsound {
@@ -39,12 +41,14 @@ impl Chatsound {
     }
 }
 
+#[cfg(feature = "playback")]
 pub trait ChatsoundsSink {
     fn sleep_until_end(&self);
     fn stop(&self);
     fn set_volume(&self, volume: f32);
 }
 
+#[cfg(feature = "playback")]
 impl ChatsoundsSink for Arc<Sink> {
     fn sleep_until_end(&self) {
         Sink::sleep_until_end(self);
@@ -59,6 +63,7 @@ impl ChatsoundsSink for Arc<Sink> {
     }
 }
 
+#[cfg(feature = "playback")]
 impl ChatsoundsSink for Arc<SpatialSink> {
     fn sleep_until_end(&self) {
         SpatialSink::sleep_until_end(self);
@@ -73,6 +78,7 @@ impl ChatsoundsSink for Arc<SpatialSink> {
     }
 }
 
+#[cfg(feature = "playback")]
 impl ChatsoundsSink for Arc<ChannelVolumeSink> {
     fn sleep_until_end(&self) {
         Sink::sleep_until_end(&self.sink);
