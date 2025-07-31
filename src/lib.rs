@@ -2,6 +2,7 @@
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
 mod cache;
+#[cfg(feature = "playback")]
 mod channel_volume;
 mod error;
 mod fetching;
@@ -20,10 +21,13 @@ use rand::prelude::*;
 pub use rodio;
 use rodio::{Decoder, Sink, SpatialSink};
 #[cfg(feature = "playback")]
-use rodio::{OutputStream, OutputStreamHandle};
+use rodio::{OutputStream, OutputStreamBuilder};
 
+#[cfg(feature = "playback")]
+pub use self::channel_volume::ChannelVolumeSink;
+#[cfg(feature = "playback")]
+use self::types::ChatsoundsSink;
 pub use self::{
-    channel_volume::ChannelVolumeSink,
     error::Error,
     fetching::{GitHubApiFileEntry, GitHubApiTrees, GitHubMsgpackEntries},
     types::Chatsound,
@@ -31,7 +35,7 @@ pub use self::{
 use self::{
     error::Result,
     parsing::{parse, ModifierTrait},
-    types::{BoxSource, ChatsoundsSink},
+    types::BoxSource,
 };
 
 #[cfg(feature = "memory")]
@@ -49,9 +53,7 @@ pub struct Chatsounds {
     volume: f32,
 
     #[cfg(feature = "playback")]
-    _output_stream: OutputStream,
-    #[cfg(feature = "playback")]
-    output_stream_handle: OutputStreamHandle,
+    output_stream: OutputStream,
     #[cfg(feature = "playback")]
     sinks: VecDeque<Box<dyn ChatsoundsSink>>,
 
@@ -75,7 +77,7 @@ impl Chatsounds {
         ensure!(cache_path.is_dir(), Error::DirMissing { path: cache_path });
 
         #[cfg(feature = "playback")]
-        let (output_stream, output_stream_handle) = OutputStream::try_default()?;
+        let output_stream = OutputStreamBuilder::open_default_stream()?;
 
         Ok(Self {
             #[cfg(feature = "fs")]
@@ -88,9 +90,7 @@ impl Chatsounds {
             volume: 0.1,
 
             #[cfg(feature = "playback")]
-            _output_stream: output_stream,
-            #[cfg(feature = "playback")]
-            output_stream_handle,
+            output_stream,
             #[cfg(feature = "playback")]
             sinks: VecDeque::new(),
 
@@ -162,7 +162,7 @@ impl Chatsounds {
 
     #[cfg(feature = "playback")]
     pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
-        let sink = Arc::new(Sink::try_new(&self.output_stream_handle)?);
+        let sink = Arc::new(Sink::connect_new(self.output_stream.mixer()));
 
         sink.set_volume(self.volume);
 
@@ -187,12 +187,12 @@ impl Chatsounds {
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<Arc<SpatialSink>> {
-        let sink = Arc::new(SpatialSink::try_new(
-            &self.output_stream_handle,
+        let sink = Arc::new(SpatialSink::connect_new(
+            self.output_stream.mixer(),
             emitter_pos,
             left_ear_pos,
             right_ear_pos,
-        )?);
+        ));
 
         sink.set_volume(self.volume);
 
@@ -215,8 +215,8 @@ impl Chatsounds {
         rng: R,
         channel_volumes: Vec<f32>,
     ) -> Result<Arc<ChannelVolumeSink>> {
-        let sink = Arc::new(ChannelVolumeSink::try_new(
-            &self.output_stream_handle,
+        let sink = Arc::new(ChannelVolumeSink::connect_new(
+            self.output_stream.mixer(),
             channel_volumes,
         )?);
 

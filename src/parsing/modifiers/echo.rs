@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
-use rodio::{dynamic_mixer::mixer, Source};
+use rodio::{mixer::mixer, Source};
 
 use super::{parse_args, ModifierTrait};
 use crate::BoxSource;
