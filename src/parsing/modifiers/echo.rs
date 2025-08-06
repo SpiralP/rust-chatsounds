@@ -59,6 +59,9 @@ impl ModifierTrait for EchoModifier {
         mixer.add(source.clone());
 
         for _i in 0..self.amount {
+            if amplitude <= 0.0 {
+                break;
+            }
             let echo = source.clone().amplify(amplitude).delay(duration);
             mixer.add(echo);
             amplitude = (amplitude + self.amplitude_diff).max(0.0);
