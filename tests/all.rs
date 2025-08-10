@@ -89,11 +89,11 @@ async fn setup() -> (Chatsounds, PathBuf) {
 async fn negative_pitch() {
     let (mut chatsounds, _) = setup().await;
 
-    chatsounds
+    let (sink, _) = chatsounds
         .play("helloh:speed(1) musicbox:pitch(-1)", rng())
         .await
-        .unwrap()
-        .sleep_until_end();
+        .unwrap();
+    sink.sleep_until_end();
 }
 
 #[cfg(feature = "playback")]
@@ -102,14 +102,14 @@ async fn negative_pitch() {
 async fn it_works() {
     let (mut chatsounds, _) = setup().await;
 
-    chatsounds
+    let (sink, _played_chatsounds) = chatsounds
         .play(
             "helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
             rng(),
         )
         .await
-        .unwrap()
-        .sleep_until_end();
+        .unwrap();
+    sink.sleep_until_end();
 }
 
 #[tokio::test]
@@ -152,7 +152,7 @@ async fn test_spatial() {
     let right_ear_pos = [1.0, 0.0, 0.0];
 
     println!("play");
-    let sink = chatsounds
+    let (sink, _) = chatsounds
         .play_spatial(
             "fuckbeesremastered",
             rng(),
@@ -213,8 +213,12 @@ async fn test_mono_bug() {
 async fn test_get_samples() {
     let (mut chatsounds, _) = setup().await;
 
-    let mut sources = chatsounds.get_sources("mktheme", rng()).await.unwrap();
-
+    let (mut sources, _): (Vec<_>, Vec<_>) = chatsounds
+        .get_sources("mktheme", rng())
+        .await
+        .unwrap()
+        .into_iter()
+        .unzip();
     let (sink, queue) = rodio::queue::queue(false);
     for source in sources.drain(..) {
         sink.append(source);

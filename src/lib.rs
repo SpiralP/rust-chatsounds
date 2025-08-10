@@ -161,12 +161,18 @@ impl Chatsounds {
     }
 
     #[cfg(feature = "playback")]
-    pub async fn play<R: RngCore>(&mut self, text: &str, rng: R) -> Result<Arc<Sink>> {
+    pub async fn play<R: RngCore>(
+        &mut self,
+        text: &str,
+        rng: R,
+    ) -> Result<(Arc<Sink>, Vec<Chatsound>)> {
         let sink = Arc::new(Sink::connect_new(self.output_stream.mixer()));
 
         sink.set_volume(self.volume);
 
-        for source in self.get_sources(text, rng).await? {
+        let (sources, chatsounds): (Vec<_>, Vec<_>) =
+            self.get_sources(text, rng).await?.into_iter().unzip();
+        for source in sources {
             sink.append(source);
         }
 
@@ -175,7 +181,7 @@ impl Chatsounds {
             self.sinks.pop_front();
         }
 
-        Ok(sink)
+        Ok((sink, chatsounds))
     }
 
     #[cfg(feature = "playback")]
@@ -186,7 +192,7 @@ impl Chatsounds {
         emitter_pos: [f32; 3],
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
-    ) -> Result<Arc<SpatialSink>> {
+    ) -> Result<(Arc<SpatialSink>, Vec<Chatsound>)> {
         let sink = Arc::new(SpatialSink::connect_new(
             self.output_stream.mixer(),
             emitter_pos,
@@ -196,7 +202,9 @@ impl Chatsounds {
 
         sink.set_volume(self.volume);
 
-        for source in self.get_sources(text, rng).await? {
+        let (sources, chatsounds): (Vec<_>, Vec<_>) =
+            self.get_sources(text, rng).await?.into_iter().unzip();
+        for source in sources {
             sink.append(source);
         }
 
@@ -205,7 +213,7 @@ impl Chatsounds {
             self.sinks.pop_front();
         }
 
-        Ok(sink)
+        Ok((sink, chatsounds))
     }
 
     #[cfg(feature = "playback")]
@@ -214,7 +222,7 @@ impl Chatsounds {
         text: &str,
         rng: R,
         channel_volumes: Vec<f32>,
-    ) -> Result<Arc<ChannelVolumeSink>> {
+    ) -> Result<(Arc<ChannelVolumeSink>, Vec<Chatsound>)> {
         let sink = Arc::new(ChannelVolumeSink::connect_new(
             self.output_stream.mixer(),
             channel_volumes,
@@ -222,7 +230,9 @@ impl Chatsounds {
 
         sink.sink.set_volume(self.volume);
 
-        for source in self.get_sources(text, rng).await? {
+        let (sources, chatsounds): (Vec<_>, Vec<_>) =
+            self.get_sources(text, rng).await?.into_iter().unzip();
+        for source in sources {
             sink.append(source);
         }
 
@@ -231,14 +241,14 @@ impl Chatsounds {
             self.sinks.pop_front();
         }
 
-        Ok(sink)
+        Ok((sink, chatsounds))
     }
 
     pub async fn get_sources<R: RngCore>(
         &mut self,
         text: &str,
         mut rng: R,
-    ) -> Result<Vec<BoxSource>> {
+    ) -> Result<Vec<(BoxSource, Chatsound)>> {
         let mut sources = Vec::new();
 
         let parsed_chatsounds = parse(text)?;
@@ -262,16 +272,16 @@ impl Chatsounds {
                 let bytes = chatsound.load(cache).await?;
 
                 let reader = BufReader::new(Cursor::new(bytes));
-                Box::new(Decoder::new(reader).map_err(|err| Error::RodioDecoder {
-                    err,
-                    sound_path: chatsound.sound_path,
-                })?)
+                let sound_path = chatsound.sound_path.clone();
+                Box::new(
+                    Decoder::new(reader).map_err(|err| Error::RodioDecoder { err, sound_path })?,
+                )
             };
             for modifier in parsed_chatsound.modifiers {
                 source = modifier.modify(source);
             }
 
-            sources.push(source);
+            sources.push((source, chatsound));
         }
 
         Ok(sources)
