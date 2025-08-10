@@ -28,6 +28,14 @@ impl Chatsound {
         )
     }
 
+    #[must_use]
+    pub fn get_web_url(&self) -> String {
+        format!(
+            "https://github.com/{}/blob/HEAD/{}/{}",
+            self.repo, self.repo_path, self.sound_path
+        )
+    }
+
     #[cfg(feature = "fs")]
     pub async fn load(&self, cache_path: &Path) -> Result<Bytes> {
         let url = self.get_url();

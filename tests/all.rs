@@ -102,13 +102,18 @@ async fn negative_pitch() {
 async fn it_works() {
     let (mut chatsounds, _) = setup().await;
 
-    let (sink, _played_chatsounds) = chatsounds
+    let (sink, played_chatsounds) = chatsounds
         .play(
             "helloh:speed(1) idubbbz cringe:speed(1.2):echo(0.5,0.2) dad please:speed(0.5)",
             rng(),
         )
         .await
         .unwrap();
+    let urls = played_chatsounds
+        .iter()
+        .map(|c| c.get_web_url())
+        .collect::<Vec<_>>();
+    println!("{:#?}", urls);
     sink.sleep_until_end();
 }
 
