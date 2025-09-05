@@ -85,7 +85,7 @@ impl Chatsounds {
             map_store: HashMap::new(),
 
             #[cfg(feature = "playback")]
-            max_sinks: 16,
+            max_sinks: 64,
             #[cfg(feature = "playback")]
             volume: 0.1,
 
