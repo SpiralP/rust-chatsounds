@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Error"],"macro":["bail","ensure"],"struct":["Bytes","ChannelVolumeSink","Chatsound","Chatsounds","GitHubApiFileEntry","GitHubApiTrees"],"type":["GitHubMsgpackEntries"]};
