@@ -26,10 +26,10 @@ pub enum Error {
     },
 
     #[cfg(feature = "playback")]
-    #[error("RodioStreamError: {err}")]
-    RodioStream {
+    #[error("RodioDeviceSinkError: {err}")]
+    RodioDeviceSink {
         #[from]
-        err: rodio::StreamError,
+        err: rodio::DeviceSinkError,
     },
 
     #[error("RodioDecoder: {err}: {sound_path}")]

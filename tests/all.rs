@@ -10,8 +10,8 @@ use chatsounds::*;
 use futures::stream::{StreamExt, TryStreamExt};
 use rand::rng;
 #[cfg(feature = "playback")]
-use rodio::OutputStreamBuilder;
-use rodio::{source::ChannelVolume, Decoder, Sink};
+use rodio::DeviceSinkBuilder;
+use rodio::{nz, source::ChannelVolume, Decoder, Player};
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -202,8 +202,10 @@ async fn test_mono_bug() {
         let source = Decoder::new(reader).unwrap();
 
         let source = ChannelVolume::new(source, vec![0.2, 1.0]);
-        let output_stream = OutputStreamBuilder::open_default_stream().unwrap();
-        let sink = Sink::connect_new(output_stream.mixer());
+        let mut output_stream = DeviceSinkBuilder::open_default_sink().unwrap();
+        output_stream.log_on_drop(false);
+
+        let sink = Player::connect_new(output_stream.mixer());
         sink.set_volume(0.1);
         sink.append(source);
 
@@ -229,7 +231,7 @@ async fn test_get_samples() {
         sink.append(source);
     }
 
-    let queue = rodio::source::UniformSourceIterator::new(queue, 2, 44100);
+    let queue = rodio::source::UniformSourceIterator::new(queue, nz!(2), nz!(44100));
 
     println!("{} samples", queue.count());
 }

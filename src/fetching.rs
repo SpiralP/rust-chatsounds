@@ -109,7 +109,7 @@ impl Chatsounds {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
             let sentence = entry[1].clone();
             let sound_path = entry[2].clone();
-            let vec = self.map_store.entry(sentence.to_string()).or_default();
+            let vec = self.map_store.entry(sentence.clone()).or_default();
 
             let chatsound = Chatsound {
                 repo: repo.to_string(),

@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use bytes::Bytes;
-use rodio::{Sample, Sink, Source, SpatialSink};
+use rodio::{Player, Sample, Source, SpatialPlayer};
 
 #[cfg(feature = "playback")]
 use crate::channel_volume::ChannelVolumeSink;
@@ -57,46 +57,46 @@ pub trait ChatsoundsSink {
 }
 
 #[cfg(feature = "playback")]
-impl ChatsoundsSink for Arc<Sink> {
+impl ChatsoundsSink for Arc<Player> {
     fn sleep_until_end(&self) {
-        Sink::sleep_until_end(self);
+        Player::sleep_until_end(self);
     }
 
     fn stop(&self) {
-        Sink::stop(self);
+        Player::stop(self);
     }
 
     fn set_volume(&self, volume: f32) {
-        Sink::set_volume(self, volume);
+        Player::set_volume(self, volume);
     }
 }
 
 #[cfg(feature = "playback")]
-impl ChatsoundsSink for Arc<SpatialSink> {
+impl ChatsoundsSink for Arc<SpatialPlayer> {
     fn sleep_until_end(&self) {
-        SpatialSink::sleep_until_end(self);
+        SpatialPlayer::sleep_until_end(self);
     }
 
     fn stop(&self) {
-        SpatialSink::stop(self);
+        SpatialPlayer::stop(self);
     }
 
     fn set_volume(&self, volume: f32) {
-        SpatialSink::set_volume(self, volume);
+        SpatialPlayer::set_volume(self, volume);
     }
 }
 
 #[cfg(feature = "playback")]
 impl ChatsoundsSink for Arc<ChannelVolumeSink> {
     fn sleep_until_end(&self) {
-        Sink::sleep_until_end(&self.sink);
+        Player::sleep_until_end(&self.sink);
     }
 
     fn stop(&self) {
-        Sink::stop(&self.sink);
+        Player::stop(&self.sink);
     }
 
     fn set_volume(&self, volume: f32) {
-        Sink::set_volume(&self.sink, volume);
+        Player::set_volume(&self.sink, volume);
     }
 }

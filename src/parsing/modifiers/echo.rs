@@ -38,7 +38,7 @@ impl ModifierTrait for EchoModifier {
         }
 
         if let Some(amplitude) = args.get(1).copied().unwrap_or(None) {
-            modifier.amplitude_diff = -1.0 * amplitude;
+            modifier.amplitude_diff = -amplitude;
         }
 
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
