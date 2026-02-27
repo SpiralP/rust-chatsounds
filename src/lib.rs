@@ -161,7 +161,7 @@ impl Chatsounds {
     }
 
     #[cfg(feature = "playback")]
-    pub async fn play<R: RngCore>(
+    pub async fn play<R: Rng>(
         &mut self,
         text: &str,
         rng: R,
@@ -185,7 +185,7 @@ impl Chatsounds {
     }
 
     #[cfg(feature = "playback")]
-    pub async fn play_spatial<R: RngCore>(
+    pub async fn play_spatial<R: Rng>(
         &mut self,
         text: &str,
         rng: R,
@@ -217,7 +217,7 @@ impl Chatsounds {
     }
 
     #[cfg(feature = "playback")]
-    pub async fn play_channel_volume<R: RngCore>(
+    pub async fn play_channel_volume<R: Rng>(
         &mut self,
         text: &str,
         rng: R,
@@ -244,7 +244,7 @@ impl Chatsounds {
         Ok((sink, chatsounds))
     }
 
-    pub async fn get_sources<R: RngCore>(
+    pub async fn get_sources<R: Rng>(
         &mut self,
         text: &str,
         mut rng: R,
