@@ -7,7 +7,7 @@ use nom::{
     multi::{many0, many1},
     AsChar, IResult, Parser,
 };
-use rand::{seq::IndexedRandom, RngCore};
+use rand::{seq::IndexedRandom, Rng};
 
 pub use self::modifiers::ModifierTrait;
 use self::modifiers::{parse_modifier, Modifier, SelectModifier};
@@ -23,7 +23,7 @@ pub struct ParsedChatsound {
 }
 
 impl ParsedChatsound {
-    pub fn choose<'a, R: RngCore>(
+    pub fn choose<'a, R: Rng>(
         &self,
         chatsounds: &'a [Chatsound],
         mut rng: R,
