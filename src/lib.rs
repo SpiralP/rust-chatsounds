@@ -19,9 +19,9 @@ use std::{
 pub use bytes::Bytes;
 use rand::prelude::*;
 pub use rodio;
-use rodio::{Decoder, Sink, SpatialSink};
+use rodio::{Decoder, Player, SpatialPlayer};
 #[cfg(feature = "playback")]
-use rodio::{OutputStream, OutputStreamBuilder};
+use rodio::{DeviceSinkBuilder, MixerDeviceSink};
 
 #[cfg(feature = "playback")]
 pub use self::channel_volume::ChannelVolumeSink;
@@ -53,7 +53,7 @@ pub struct Chatsounds {
     volume: f32,
 
     #[cfg(feature = "playback")]
-    output_stream: OutputStream,
+    output_stream: MixerDeviceSink,
     #[cfg(feature = "playback")]
     sinks: VecDeque<Box<dyn ChatsoundsSink>>,
 
@@ -77,7 +77,8 @@ impl Chatsounds {
         ensure!(cache_path.is_dir(), Error::DirMissing { path: cache_path });
 
         #[cfg(feature = "playback")]
-        let output_stream = OutputStreamBuilder::open_default_stream()?;
+        let mut output_stream = DeviceSinkBuilder::open_default_sink()?;
+        output_stream.log_on_drop(false);
 
         Ok(Self {
             #[cfg(feature = "fs")]
@@ -165,8 +166,8 @@ impl Chatsounds {
         &mut self,
         text: &str,
         rng: R,
-    ) -> Result<(Arc<Sink>, Vec<Chatsound>)> {
-        let sink = Arc::new(Sink::connect_new(self.output_stream.mixer()));
+    ) -> Result<(Arc<Player>, Vec<Chatsound>)> {
+        let sink = Arc::new(Player::connect_new(self.output_stream.mixer()));
 
         sink.set_volume(self.volume);
 
@@ -192,8 +193,8 @@ impl Chatsounds {
         emitter_pos: [f32; 3],
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
-    ) -> Result<(Arc<SpatialSink>, Vec<Chatsound>)> {
-        let sink = Arc::new(SpatialSink::connect_new(
+    ) -> Result<(Arc<SpatialPlayer>, Vec<Chatsound>)> {
+        let sink = Arc::new(SpatialPlayer::connect_new(
             self.output_stream.mixer(),
             emitter_pos,
             left_ear_pos,
