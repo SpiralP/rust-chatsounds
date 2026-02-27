@@ -78,6 +78,7 @@ impl Chatsounds {
 
         #[cfg(feature = "playback")]
         let mut output_stream = DeviceSinkBuilder::open_default_sink()?;
+        #[cfg(feature = "playback")]
         output_stream.log_on_drop(false);
 
         Ok(Self {
