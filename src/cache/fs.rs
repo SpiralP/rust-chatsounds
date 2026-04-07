@@ -86,7 +86,7 @@ fn cache_file_path(url: &str, cache_path: &Path) -> (PathBuf, PathBuf) {
     let hex = {
         let mut hasher = Sha256::new();
         hasher.update(url);
-        format!("{:x}", hasher.finalize())
+        format!("{:x}", base16ct::HexDisplay(&hasher.finalize()))
     };
 
     let hex_dir = &hex[0..2];
