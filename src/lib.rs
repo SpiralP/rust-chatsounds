@@ -34,7 +34,7 @@ pub use self::{
 };
 use self::{
     error::Result,
-    parsing::{parse, ModifierTrait},
+    parsing::{ModifierTrait, parse},
     types::BoxSource,
 };
 

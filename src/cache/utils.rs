@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use reqwest::{
-    header::{self, HeaderValue},
     Client, StatusCode,
+    header::{self, HeaderValue},
 };
 
 use crate::error::{Error, Result};

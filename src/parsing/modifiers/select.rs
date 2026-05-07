@@ -1,6 +1,6 @@
-use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
+use nom::{IResult, Parser, branch::alt, bytes::complete::tag};
 
-use super::{parse_args, ModifierTrait};
+use super::{ModifierTrait, parse_args};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct SelectModifier {

@@ -11,7 +11,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use rand::rng;
 #[cfg(feature = "playback")]
 use rodio::DeviceSinkBuilder;
-use rodio::{nz, source::ChannelVolume, Decoder, Player};
+use rodio::{Decoder, Player, nz, source::ChannelVolume};
 use tokio::fs;
 
 #[derive(Debug, Clone)]

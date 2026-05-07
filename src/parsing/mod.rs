@@ -3,17 +3,17 @@ mod modifiers;
 use std::convert::Into;
 
 use nom::{
+    AsChar, IResult, Parser,
     bytes::complete::take_while1,
     multi::{many0, many1},
-    AsChar, IResult, Parser,
 };
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 
 pub use self::modifiers::ModifierTrait;
-use self::modifiers::{parse_modifier, Modifier, SelectModifier};
+use self::modifiers::{Modifier, SelectModifier, parse_modifier};
 use crate::{
-    error::{Error, Result},
     Chatsound,
+    error::{Error, Result},
 };
 
 #[derive(Debug, PartialEq)]

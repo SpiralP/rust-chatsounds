@@ -1,7 +1,7 @@
-use nom::{branch::alt, bytes::complete::tag, IResult, Parser};
-use rodio::{buffer::SamplesBuffer, Source};
+use nom::{IResult, Parser, branch::alt, bytes::complete::tag};
+use rodio::{Source, buffer::SamplesBuffer};
 
-use super::{parse_args, ModifierTrait};
+use super::{ModifierTrait, parse_args};
 use crate::BoxSource;
 
 #[derive(Debug, PartialEq)]

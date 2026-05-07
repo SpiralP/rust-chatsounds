@@ -7,16 +7,16 @@ mod select;
 mod volume;
 
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::tag,
     combinator::{map, opt},
     multi::separated_list0,
     number::complete::float,
-    IResult, Parser,
 };
 
 pub use self::{
-    cut::CutModifier, echo::EchoModifier, pitch::PitchModifier, r#loop::LoopModifier,
+    cut::CutModifier, echo::EchoModifier, r#loop::LoopModifier, pitch::PitchModifier,
     seek::SeekModifier, select::SelectModifier, volume::VolumeModifier,
 };
 use crate::BoxSource;

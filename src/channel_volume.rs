@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use rodio::{cpal::FromSample, mixer::Mixer, source::ChannelVolume, PlayError, Player, Source};
+use rodio::{PlayError, Player, Source, cpal::FromSample, mixer::Mixer, source::ChannelVolume};
 
 pub struct ChannelVolumeSink {
     pub sink: Player,

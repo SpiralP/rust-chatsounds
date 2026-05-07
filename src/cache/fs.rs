@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use tokio::fs;
 
 use super::utils::{get, get_with_etag};
-use crate::{error::Result, Error};
+use crate::{Error, error::Result};
 
 // time we allow to use the cached file when we couldn't fetch anything
 const ERROR_CACHE_FILE_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 1 day
@@ -18,10 +18,8 @@ const ERROR_CACHE_FILE_DURATION: Duration = Duration::from_secs(24 * 60 * 60); /
 pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<Bytes> {
     let (file_path, etag_file_path) = cache_file_path(url, cache_path);
 
-    if use_cache {
-        if let Ok(bytes) = fs::read(&file_path).await {
-            return Ok(Bytes::from(bytes));
-        }
+    if use_cache && let Ok(bytes) = fs::read(&file_path).await {
+        return Ok(Bytes::from(bytes));
     }
 
     let file_exists = fs::try_exists(&file_path).await.unwrap_or(false);
