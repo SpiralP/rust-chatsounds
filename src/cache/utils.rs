@@ -8,6 +8,14 @@ use crate::error::{Error, Result};
 
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
+#[cfg(not(feature = "wasm"))]
+static GITHUB_TOKEN: std::sync::LazyLock<Option<String>> = std::sync::LazyLock::new(|| {
+    std::env::var("GITHUB_TOKEN")
+        .ok()
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty())
+});
+
 fn make_client() -> reqwest::Result<Client> {
     #[cfg(not(feature = "wasm"))]
     {
@@ -20,6 +28,29 @@ fn make_client() -> reqwest::Result<Client> {
     }
 }
 
+#[cfg(not(feature = "wasm"))]
+fn github_auth_header(url: &str) -> Option<HeaderValue> {
+    let token = GITHUB_TOKEN.as_deref()?;
+    let host = reqwest::Url::parse(url)
+        .ok()?
+        .host_str()?
+        .to_ascii_lowercase();
+    if !matches!(
+        host.as_str(),
+        "api.github.com" | "raw.githubusercontent.com" | "codeload.github.com"
+    ) {
+        return None;
+    }
+    let mut hv = HeaderValue::from_str(&format!("Bearer {token}")).ok()?;
+    hv.set_sensitive(true);
+    Some(hv)
+}
+
+#[cfg(feature = "wasm")]
+fn github_auth_header(_url: &str) -> Option<HeaderValue> {
+    None
+}
+
 /// * changed content or non-etag call -> `Some(response_bytes, new_etag)`
 /// * content not changed -> None
 pub async fn get_with_etag(
@@ -27,15 +58,14 @@ pub async fn get_with_etag(
     last_etag: HeaderValue,
 ) -> Result<Option<(Bytes, Option<HeaderValue>)>> {
     let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
-    let response = client
-        .get(url)
-        .header(header::IF_NONE_MATCH, last_etag)
-        .send()
-        .await
-        .map_err(|err| Error::Reqwest {
-            err,
-            url: url.into(),
-        })?;
+    let mut req = client.get(url).header(header::IF_NONE_MATCH, last_etag);
+    if let Some(auth) = github_auth_header(url) {
+        req = req.header(header::AUTHORIZATION, auth);
+    }
+    let response = req.send().await.map_err(|err| Error::Reqwest {
+        err,
+        url: url.into(),
+    })?;
     let etag = response.headers().get(header::ETAG).cloned();
 
     let status = response.status();
@@ -59,7 +89,11 @@ pub async fn get_with_etag(
 
 pub async fn get(url: &str) -> Result<(Bytes, Option<HeaderValue>)> {
     let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
-    let response = client.get(url).send().await.map_err(|err| Error::Reqwest {
+    let mut req = client.get(url);
+    if let Some(auth) = github_auth_header(url) {
+        req = req.header(header::AUTHORIZATION, auth);
+    }
+    let response = req.send().await.map_err(|err| Error::Reqwest {
         err,
         url: url.into(),
     })?;
