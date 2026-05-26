@@ -30,6 +30,7 @@ use self::types::ChatsoundsSink;
 pub use self::{
     error::Error,
     fetching::{GitHubApiFileEntry, GitHubApiTrees, GitHubMsgpackEntries},
+    parsing::normalize_sentence,
     types::Chatsound,
 };
 use self::{
@@ -103,7 +104,7 @@ impl Chatsounds {
 
     #[must_use]
     pub fn get(&self, sentence: &str) -> Option<&Vec<Chatsound>> {
-        self.map_store.get(sentence)
+        self.map_store.get(&normalize_sentence(sentence))
     }
 
     #[must_use]
@@ -121,9 +122,11 @@ impl Chatsounds {
         #[cfg(not(feature = "rayon"))]
         let sort_by = <[(usize, &String)]>::sort_unstable_by;
 
+        let search = normalize_sentence(search);
+
         let mut positions: Vec<_> = iter(&self.map_store)
             .map(|(key, _value)| key)
-            .filter_map(|sentence| twoway::find_str(sentence, search).map(|pos| (pos, sentence)))
+            .filter_map(|sentence| twoway::find_str(sentence, &search).map(|pos| (pos, sentence)))
             .collect();
 
         sort_by(

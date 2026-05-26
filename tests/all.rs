@@ -148,6 +148,17 @@ async fn test_get() {
     );
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_punctuation_lookup() {
+    let (chatsounds, _) = setup().await;
+
+    assert!(
+        chatsounds.get("they're on").is_some(),
+        "apostrophe input should resolve to theyre on"
+    );
+}
+
 #[cfg(feature = "playback")]
 #[ignore]
 #[tokio::test]
