@@ -1,11 +1,9 @@
-name: Build
+name: build
 
 on:
   pull_request:
-    branches: [master, main]
-  push:
-    branches: ["*"]
-    tags: ["*"]
+    branches: [main, master, alpha, beta]
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -17,76 +15,59 @@ permissions:
 
 jobs:
   linux_nix:
+    # Skip when dispatched from release.yml's publish phase: the smoke `build`
+    # job already validated nix against this commit minutes earlier, and the
+    # nix output isn't attached to the release.
+    if: ${{ github.event_name != 'workflow_dispatch' }}
     uses: SpiralP/github-reusable-workflows/.github/workflows/build.yml@14f3ff0a30de650ab794eecf41a03f1f9d702822 # main
 
   windows:
-    runs-on: windows-latest
-
+    name: Build Windows ${{ matrix.config.arch }}
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { arch: x86_64, target: x86_64-pc-windows-msvc }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install nightly
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+      - uses: ./.github/actions/install-build-test
         with:
-          toolchain: nightly
-          override: true
-
-      - name: Build
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1
-        with:
-          command: build
+          target: ${{ matrix.config.target }}
 
   linux:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # for publishing docs
-
+    name: Build Linux ${{ matrix.config.arch }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { arch: x86_64, target: x86_64-unknown-linux-gnu, build-docs: true }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - name: Install deps
         run: |
-          sudo apt-get -y update \
-          && sudo apt-get -y install libasound2-dev
-
-      - name: Install nightly
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+          sudo apt-get -y update
+          sudo apt-get -y install libasound2-dev
+      - uses: ./.github/actions/install-build-test
         with:
-          toolchain: nightly
-          override: true
-
-      - name: Build
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1
+          target: ${{ matrix.config.target }}
+      - uses: ./.github/actions/build-docs
+        if: ${{ matrix.config.build-docs }}
         with:
-          command: build
-
-      - name: Build docs
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1
-        if: github.ref == 'refs/heads/main'
-        with:
-          command: doc
-
-      - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4
-        if: github.ref == 'refs/heads/main'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/doc
-          force_orphan: true
+          target: ${{ matrix.config.target }}
+          upload: ${{ github.event_name == 'workflow_dispatch' }}
 
   mac:
-    runs-on: macos-latest
-
+    name: Build MacOS ${{ matrix.config.arch }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { arch: aarch64, target: aarch64-apple-darwin }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install nightly
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+      - uses: ./.github/actions/install-build-test
         with:
-          toolchain: nightly
-          override: true
-
-      - name: Build
-        uses: actions-rs/cargo@844f36862e911db73fe0815f00a4a2602c279505 # v1
-        with:
-          command: build
+          target: ${{ matrix.config.target }}

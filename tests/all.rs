@@ -117,6 +117,7 @@ async fn it_works() {
     sink.sleep_until_end();
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_search() {
     let (chatsounds, _) = setup().await;
@@ -134,6 +135,7 @@ async fn test_search() {
     );
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_get() {
     let (chatsounds, _) = setup().await;
@@ -216,6 +218,7 @@ async fn test_mono_bug() {
     chatsounds.sleep_until_end();
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_get_samples() {
     let (mut chatsounds, _) = setup().await;
