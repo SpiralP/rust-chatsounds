@@ -74,10 +74,9 @@ fn parse_chatsound(input: &str) -> IResult<&str, ParsedChatsound> {
     // input = "hello:pitch(2)"
 
     let input = input.trim();
-    let (input, sentence) =
-        take_while1(|c: char| c.is_ascii_alphanumeric() || c.is_ascii_whitespace() || c == '\'')(
-            input,
-        )?;
+    let (input, sentence) = take_while1(|c: char| {
+        c.is_ascii_alphanumeric() || c.is_ascii_whitespace() || c == '\'' || c == ','
+    })(input)?;
 
     // input = ":pitch(2)"
     // sentence = "hello"
@@ -103,6 +102,7 @@ pub fn parse(input: &str) -> Result<Vec<ParsedChatsound>> {
 }
 
 #[test]
+#[expect(clippy::too_many_lines, reason = "table-driven test cases")]
 fn test_parser() {
     use self::modifiers::*;
 
@@ -182,6 +182,53 @@ fn test_parser() {
             modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })]
         }]
     );
+    // `,` is allowed inside the sentence span so user input with thousands
+    // separators / Oxford-comma phrasing round-trips through normalization.
+    assert_eq!(
+        parse("hello,world").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "hello,world".to_string(),
+            modifiers: vec![]
+        }]
+    );
+    assert_eq!(
+        parse("hello, world").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "hello, world".to_string(),
+            modifiers: vec![]
+        }]
+    );
+    assert_eq!(
+        parse("1,000:pitch(2)").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "1,000".to_string(),
+            modifiers: vec![Modifier::Pitch(PitchModifier { pitch: 2.0 })]
+        }]
+    );
+    assert_eq!(
+        parse("we've got 1,000:volume(4)").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "we've got 1,000".to_string(),
+            modifiers: vec![Modifier::Volume(VolumeModifier { volume: 4.0 })]
+        }]
+    );
+    // Commas inside modifier args (e.g. `echo(duration, amplitude)`) still
+    // parse as arg separators — the sentence span ends at `:`, so allowing
+    // `,` in the sentence only affects what comes before the first `:`.
+    assert_eq!(
+        parse("1,000:pitch(1.5):echo(0.5,0.2)").unwrap(),
+        vec![ParsedChatsound {
+            sentence: "1,000".to_string(),
+            modifiers: vec![
+                Modifier::Pitch(PitchModifier { pitch: 1.5 }),
+                Modifier::Echo(EchoModifier {
+                    duration: 0.5,
+                    amplitude_diff: -0.2,
+                    amount: 1,
+                }),
+            ]
+        }]
+    );
     // `-` is not in the allowed set; the sentence ends at the dash.
     assert_eq!(
         parse("hello-world").unwrap(),
@@ -216,6 +263,15 @@ fn test_normalize_sentence() {
     assert_eq!(normalize_sentence("a,b,c"), "abc");
     assert_eq!(normalize_sentence("hello,world"), "helloworld");
     assert_eq!(normalize_sentence(",,,"), "");
+    assert_eq!(normalize_sentence(",leading"), "leading");
+    assert_eq!(normalize_sentence("trailing,"), "trailing");
+    assert_eq!(normalize_sentence("5,4,3,2,1"), "54321");
+    // Comma is dropped, then the space is the only boundary between words.
+    assert_eq!(normalize_sentence("hello, world"), "hello world");
+    // `,` drops; `.` and `$` become spaces and collapse with the spaces around them.
+    assert_eq!(normalize_sentence("$1,000.00"), "1000 00");
+    // Apostrophe + comma combined.
+    assert_eq!(normalize_sentence("we've got 1,000"), "weve got 1000");
 
     // Any other non-alnum char becomes a space; runs collapse; ends trim.
     assert_eq!(normalize_sentence("dad-please"), "dad please");

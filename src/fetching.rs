@@ -270,4 +270,34 @@ mod tests {
             Some(("foo".to_string(), "cat/foo".to_string())),
         );
     }
+
+    #[test]
+    fn commas_in_filename_drop_without_space() {
+        // Commas inside a filename collapse the surrounding tokens into one
+        // word — like apostrophes — so `1,000 meme.ogg` keys to `1000 meme`
+        // (the space between words is preserved on its own).
+        let repo = "sounds";
+        assert_eq!(
+            parse_api_entry(repo, "sounds/cat/1,000 meme.ogg"),
+            Some(("1000 meme".to_string(), "cat/1,000 meme.ogg".to_string())),
+        );
+        assert_eq!(
+            parse_api_entry(repo, "sounds/cat/a,b,c.ogg"),
+            Some(("abc".to_string(), "cat/a,b,c.ogg".to_string())),
+        );
+        assert_eq!(
+            parse_api_entry(repo, "sounds/cat/yes,no,maybe.ogg"),
+            Some(("yesnomaybe".to_string(), "cat/yes,no,maybe.ogg".to_string(),)),
+        );
+        // Comma + apostrophe in the same filename.
+        assert_eq!(
+            parse_api_entry(repo, "sounds/cat/we've got 1,000.ogg"),
+            Some((
+                "weve got 1000".to_string(),
+                "cat/we've got 1,000.ogg".to_string(),
+            )),
+        );
+        // Comma-only filename collapses to empty and is skipped.
+        assert_eq!(parse_api_entry(repo, "sounds/cat/,,,.ogg"), None);
+    }
 }
