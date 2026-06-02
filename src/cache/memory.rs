@@ -12,6 +12,7 @@ pub async fn download(url: &str, fs_memory: crate::FsMemory, _use_cache: bool) -
     {
         let fs_memory = fs_memory.read().await;
         if let Some(bytes) = fs_memory.get(url) {
+            tracing::trace!(url, "memory cache hit");
             return Ok(bytes.clone());
         }
     }

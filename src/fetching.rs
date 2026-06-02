@@ -58,11 +58,13 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
+        tracing::debug!(repo, "fetching GitHub tree API");
         let bytes = download(&api_url, cache, false).await?;
 
         let trees: GitHubApiTrees =
             serde_json::from_slice(&bytes).map_err(|err| Error::Json { err, url: api_url })?;
 
+        tracing::debug!(repo, entries = trees.tree.len(), "fetched GitHub tree API");
         Ok(trees)
     }
 
@@ -72,6 +74,7 @@ impl Chatsounds {
         repo_path: &str,
         trees: GitHubApiTrees,
     ) -> Result<()> {
+        let mut added = 0usize;
         for entry in trees.tree {
             if entry.r#type != "blob" {
                 continue;
@@ -94,10 +97,18 @@ impl Chatsounds {
                 }
                 Err(pos) => {
                     vec.insert(pos, chatsound);
+                    added += 1;
                 }
             }
         }
 
+        tracing::debug!(
+            repo,
+            repo_path,
+            added,
+            total_keys = self.map_store.len(),
+            "loaded chatsounds from GitHub tree API"
+        );
         Ok(())
     }
 
@@ -114,6 +125,7 @@ impl Chatsounds {
         #[cfg(feature = "memory")]
         let cache = self.fs_memory.clone();
 
+        tracing::debug!(repo, repo_path, "fetching list.msgpack");
         let bytes = download(&msgpack_url, cache, false).await?;
         let entries: GitHubMsgpackEntries =
             rmp_serde::decode::from_slice(&bytes).map_err(|err| Error::Msgpack {
@@ -121,6 +133,12 @@ impl Chatsounds {
                 url: msgpack_url,
             })?;
 
+        tracing::debug!(
+            repo,
+            repo_path,
+            entries = entries.len(),
+            "fetched list.msgpack"
+        );
         Ok(entries)
     }
 
@@ -130,6 +148,7 @@ impl Chatsounds {
         repo_path: &str,
         entries: GitHubMsgpackEntries,
     ) -> Result<()> {
+        let mut added = 0usize;
         for entry in entries {
             // e26/stop.ogg or e26/nestetrismusic/1.ogg
             let sentence = normalize_sentence(&entry[1]);
@@ -152,10 +171,18 @@ impl Chatsounds {
                 }
                 Err(pos) => {
                     vec.insert(pos, chatsound);
+                    added += 1;
                 }
             }
         }
 
+        tracing::debug!(
+            repo,
+            repo_path,
+            added,
+            total_keys = self.map_store.len(),
+            "loaded chatsounds from list.msgpack"
+        );
         Ok(())
     }
 }

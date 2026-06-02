@@ -57,6 +57,7 @@ pub async fn get_with_etag(
     url: &str,
     last_etag: HeaderValue,
 ) -> Result<Option<(Bytes, Option<HeaderValue>)>> {
+    tracing::debug!(url, "conditional GET (If-None-Match)");
     let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
     let mut req = client.get(url).header(header::IF_NONE_MATCH, last_etag);
     if let Some(auth) = github_auth_header(url) {
@@ -75,8 +76,10 @@ pub async fn get_with_etag(
             url: url.into(),
         })?;
 
+        tracing::debug!(url, %status, bytes = bytes.len(), "conditional GET: content changed");
         Ok(Some((bytes, etag)))
     } else if status == StatusCode::NOT_MODIFIED {
+        tracing::debug!(url, "conditional GET: not modified (304)");
         Ok(None)
     } else {
         // TODO response text if bad
@@ -88,6 +91,7 @@ pub async fn get_with_etag(
 }
 
 pub async fn get(url: &str) -> Result<(Bytes, Option<HeaderValue>)> {
+    tracing::debug!(url, "GET");
     let client = make_client().map_err(|err| Error::ReqwestMakeClient { err })?;
     let mut req = client.get(url);
     if let Some(auth) = github_auth_header(url) {
@@ -106,6 +110,7 @@ pub async fn get(url: &str) -> Result<(Bytes, Option<HeaderValue>)> {
             url: url.into(),
         })?;
 
+        tracing::debug!(url, %status, bytes = bytes.len(), "GET: ok");
         Ok((bytes, etag))
     } else {
         // TODO response text if bad

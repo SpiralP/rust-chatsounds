@@ -21,7 +21,10 @@ use rand::prelude::*;
 pub use rodio;
 use rodio::{Decoder, Player, SpatialPlayer};
 #[cfg(feature = "playback")]
-use rodio::{DeviceSinkBuilder, MixerDeviceSink};
+use rodio::{
+    DeviceSinkBuilder, MixerDeviceSink,
+    cpal::traits::{DeviceTrait, HostTrait},
+};
 
 #[cfg(feature = "playback")]
 pub use self::channel_volume::ChannelVolumeSink;
@@ -76,11 +79,38 @@ impl Chatsounds {
         })?;
         #[cfg(feature = "fs")]
         ensure!(cache_path.is_dir(), Error::DirMissing { path: cache_path });
+        #[cfg(feature = "fs")]
+        tracing::debug!(cache_path = %cache_path.display(), "using cache directory");
 
+        // `open_default_sink()` discards the `cpal::Device`, so the returned
+        // sink can't tell us what it opened. Open the default device ourselves
+        // (exactly what `open_default_sink` tries first, same buffer tuning via
+        // `from_device`) so we hold the device and can log its name. Fall back
+        // to `open_default_sink` -- which also retries alternate configs and
+        // other devices -- if the direct attempt fails; the device is unknown
+        // in that case.
         #[cfg(feature = "playback")]
-        let mut output_stream = DeviceSinkBuilder::open_default_sink()?;
+        let (mut output_stream, device_name) =
+            match rodio::cpal::default_host().default_output_device() {
+                Some(device) => {
+                    let name = device.description().ok().map(|d| d.name().to_string());
+                    match DeviceSinkBuilder::from_device(device)
+                        .and_then(DeviceSinkBuilder::open_stream)
+                    {
+                        Ok(stream) => (stream, name),
+                        Err(_) => (DeviceSinkBuilder::open_default_sink()?, None),
+                    }
+                }
+                None => (DeviceSinkBuilder::open_default_sink()?, None),
+            };
         #[cfg(feature = "playback")]
         output_stream.log_on_drop(false);
+        #[cfg(feature = "playback")]
+        tracing::debug!(
+            device = device_name.as_deref().unwrap_or("unknown"),
+            config = ?output_stream.config(),
+            "opened audio output device"
+        );
 
         Ok(Self {
             #[cfg(feature = "fs")]
@@ -138,11 +168,13 @@ impl Chatsounds {
             },
         );
 
+        tracing::trace!(search, results = positions.len(), "search");
         positions
     }
 
     #[cfg(feature = "playback")]
     pub fn stop_all(&mut self) {
+        tracing::debug!(sinks = self.sinks.len(), "stopping all sinks");
         for sink in self.sinks.drain(..) {
             sink.stop();
         }
@@ -171,6 +203,7 @@ impl Chatsounds {
         text: &str,
         rng: R,
     ) -> Result<(Arc<Player>, Vec<Chatsound>)> {
+        tracing::debug!(text, "play");
         let sink = Arc::new(Player::connect_new(self.output_stream.mixer()));
 
         sink.set_volume(self.volume);
@@ -183,6 +216,10 @@ impl Chatsounds {
 
         self.sinks.push_back(Box::new(sink.clone()));
         if self.sinks.len() == self.max_sinks {
+            tracing::debug!(
+                max_sinks = self.max_sinks,
+                "sink limit reached; dropping oldest sink"
+            );
             self.sinks.pop_front();
         }
 
@@ -198,6 +235,7 @@ impl Chatsounds {
         left_ear_pos: [f32; 3],
         right_ear_pos: [f32; 3],
     ) -> Result<(Arc<SpatialPlayer>, Vec<Chatsound>)> {
+        tracing::debug!(text, ?emitter_pos, "play_spatial");
         let sink = Arc::new(SpatialPlayer::connect_new(
             self.output_stream.mixer(),
             emitter_pos,
@@ -215,6 +253,10 @@ impl Chatsounds {
 
         self.sinks.push_back(Box::new(sink.clone()));
         if self.sinks.len() == self.max_sinks {
+            tracing::debug!(
+                max_sinks = self.max_sinks,
+                "sink limit reached; dropping oldest sink"
+            );
             self.sinks.pop_front();
         }
 
@@ -228,6 +270,7 @@ impl Chatsounds {
         rng: R,
         channel_volumes: Vec<f32>,
     ) -> Result<(Arc<ChannelVolumeSink>, Vec<Chatsound>)> {
+        tracing::debug!(text, ?channel_volumes, "play_channel_volume");
         let sink = Arc::new(ChannelVolumeSink::connect_new(
             self.output_stream.mixer(),
             channel_volumes,
@@ -243,6 +286,10 @@ impl Chatsounds {
 
         self.sinks.push_back(Box::new(sink.clone()));
         if self.sinks.len() == self.max_sinks {
+            tracing::debug!(
+                max_sinks = self.max_sinks,
+                "sink limit reached; dropping oldest sink"
+            );
             self.sinks.pop_front();
         }
 
@@ -257,6 +304,11 @@ impl Chatsounds {
         let mut sources = Vec::new();
 
         let parsed_chatsounds = parse(text)?;
+        tracing::debug!(
+            text,
+            count = parsed_chatsounds.len(),
+            "resolving chatsounds"
+        );
         for parsed_chatsound in parsed_chatsounds {
             let chatsound = if let Some(chatsounds) = self.get(&parsed_chatsound.sentence) {
                 // TODO random hashed number passed in?
@@ -265,8 +317,14 @@ impl Chatsounds {
                     .ok_or_else(|| Error::EmptyChoose { text: text.into() })?
                     .to_owned()
             } else {
+                tracing::debug!(sentence = %parsed_chatsound.sentence, "no chatsound matched sentence");
                 continue;
             };
+            tracing::trace!(
+                sentence = %parsed_chatsound.sentence,
+                url = %chatsound.get_url(),
+                "chose chatsound"
+            );
 
             let mut source: BoxSource = {
                 #[cfg(feature = "fs")]

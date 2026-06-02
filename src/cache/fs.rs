@@ -19,6 +19,7 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
     let (file_path, etag_file_path) = cache_file_path(url, cache_path);
 
     if use_cache && let Ok(bytes) = fs::read(&file_path).await {
+        tracing::trace!(url, "cache hit");
         return Ok(Bytes::from(bytes));
     }
 
@@ -49,6 +50,7 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
     {
         // if we have a cache file, and it's younger than 1 day, and we couldn't fetch anything,
         // treat like the etag matched, and return the cached file
+        tracing::warn!(url, "network request failed; serving stale cached copy");
         result = Ok(None);
     }
 
@@ -72,6 +74,7 @@ pub async fn download(url: &str, cache_path: &Path, use_cache: bool) -> Result<B
         }
         Ok(bytes)
     } else {
+        tracing::trace!(url, "serving cached copy (not modified)");
         let bytes = fs::read(&file_path).await.map_err(|err| Error::Io {
             err,
             path: file_path,
